@@ -26,6 +26,7 @@ import SettingsPage from "./pages/SettingsPage";
 import Approvals from "./pages/Approvals";
 import NotFound from "./pages/NotFound";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
