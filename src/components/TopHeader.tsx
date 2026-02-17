@@ -1,17 +1,26 @@
-import { Bell, Globe, Wifi, WifiOff, ChevronDown, User } from "lucide-react";
+import { Bell, Globe, Wifi, WifiOff, ChevronDown, User, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSidebarState } from "@/contexts/SidebarContext";
 
 const TopHeader = () => {
   const { lang, setLang, t } = useLanguage();
+  const { toggle } = useSidebarState();
   const [isOnline] = useState(true);
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-primary z-40 flex items-center justify-between px-6 shadow-md border-b border-primary/80">
-      {/* Left: Tagline - hidden on small screens to prevent overflow */}
+    <header className="fixed top-0 left-0 right-0 h-16 bg-primary z-30 flex items-center justify-between px-4 shadow-md border-b border-primary/80">
+      {/* Left: Three-dot menu + Tagline */}
       <div className="flex items-center gap-3 min-w-0">
-        <p className="text-xs font-medium text-primary-foreground/80 truncate">
+        <button
+          onClick={toggle}
+          className="p-2 rounded-lg text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
+          aria-label="Toggle menu"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </button>
+        <p className="text-xs font-medium text-primary-foreground/80 truncate hidden sm:block">
           {t("header.tagline")}
         </p>
       </div>
