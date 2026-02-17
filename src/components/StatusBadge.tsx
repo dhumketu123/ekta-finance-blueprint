@@ -16,7 +16,7 @@ const config: Record<string, { label: string; className: string }> = {
 };
 
 const StatusBadge = ({ status, labelBn }: StatusBadgeProps) => {
-  const c = config[status];
+  const c = config[status] || config.none;
   return (
     <Badge variant="outline" className={`${c.className} border-0 text-[11px] rounded-full px-2.5 py-0.5`}>
       {c.label} {labelBn && <span className="ml-1 font-bangla opacity-70">({labelBn})</span>}
