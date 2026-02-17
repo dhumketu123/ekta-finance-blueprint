@@ -68,8 +68,6 @@ export const AppSidebar = () => {
     });
   }, [searchQuery, t]);
 
-  const isSubPage = location.pathname !== "/";
-
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar flex flex-col z-50 shadow-xl">
       {/* Brand */}
@@ -87,16 +85,14 @@ export const AppSidebar = () => {
         </div>
       </div>
 
-      {/* Back Button */}
-      {isSubPage && (
-        <button
-          onClick={() => navigate(-1)}
-          className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-[13px] font-medium">{t("back")}</span>
-        </button>
-      )}
+      {/* Back Button - always visible */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-[13px] font-medium">{t("back")}</span>
+      </button>
 
       {/* Search */}
       <div className="px-3 pt-3 pb-1">
