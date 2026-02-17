@@ -34,7 +34,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
 
   const [form, setForm] = useState({
     client_id: "",
-    type: "loan_repayment" as "loan_repayment" | "savings_deposit",
+    type: "loan_repayment" as "loan_repayment" | "savings_deposit" | "savings_withdrawal",
     amount: "",
     notes: "",
   });
@@ -68,7 +68,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
       if (error) throw error;
       return data;
     },
-    enabled: !!form.client_id && form.type === "savings_deposit",
+    enabled: !!form.client_id && (form.type === "savings_deposit" || form.type === "savings_withdrawal"),
   });
 
   const [selectedLoanId, setSelectedLoanId] = useState("");
@@ -87,9 +87,18 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
       setErrors({ loan: lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan" });
       return;
     }
-    if (form.type === "savings_deposit" && !selectedSavingsId) {
+    if ((form.type === "savings_deposit" || form.type === "savings_withdrawal") && !selectedSavingsId) {
       setErrors({ savings: lang === "bn" ? "সঞ্চয় অ্যাকাউন্ট নির্বাচন করুন" : "Select savings account" });
       return;
+    }
+
+    // Validate withdrawal doesn't exceed balance
+    if (form.type === "savings_withdrawal" && selectedSavingsId) {
+      const account = clientSavings?.find((s) => s.id === selectedSavingsId);
+      if (account && Number(form.amount) > account.balance) {
+        setErrors({ amount: lang === "bn" ? `ব্যালেন্স ৳${account.balance.toLocaleString()} এর বেশি উত্তোলন করা যাবে না` : `Cannot withdraw more than balance ৳${account.balance.toLocaleString()}` });
+        return;
+      }
     }
 
     setErrors({});
@@ -102,7 +111,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
         amount: parsed.data.amount,
         client_id: parsed.data.client_id,
         loan_id: form.type === "loan_repayment" ? selectedLoanId : undefined,
-        savings_id: form.type === "savings_deposit" ? selectedSavingsId : undefined,
+        savings_id: (form.type === "savings_deposit" || form.type === "savings_withdrawal") ? selectedSavingsId : undefined,
         notes: parsed.data.notes || undefined,
       },
       {
@@ -165,6 +174,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
               <SelectContent>
                 <SelectItem value="loan_repayment">{bn ? "ঋণ পরিশোধ" : "Loan Repayment"}</SelectItem>
                 <SelectItem value="savings_deposit">{bn ? "সঞ্চয় জমা" : "Savings Deposit"}</SelectItem>
+                <SelectItem value="savings_withdrawal">{bn ? "সঞ্চয় উত্তোলন" : "Savings Withdrawal"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,7 +201,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
             </div>
           )}
 
-          {form.client_id && form.type === "savings_deposit" && (
+          {form.client_id && (form.type === "savings_deposit" || form.type === "savings_withdrawal") && (
             <div>
               <Label className="text-xs">{bn ? "সঞ্চয় অ্যাকাউন্ট *" : "Savings Account *"}</Label>
               <Select value={selectedSavingsId} onValueChange={setSelectedSavingsId}>
