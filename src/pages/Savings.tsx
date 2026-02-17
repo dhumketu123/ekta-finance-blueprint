@@ -1,27 +1,67 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { Plus, PiggyBank, Search, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSavingsProducts } from "@/hooks/useSupabaseData";
-import { sampleSavingsProducts } from "@/data/sampleData";
-import { PiggyBank } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
+import SavingsProductForm from "@/components/forms/SavingsProductForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Savings = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: dbSavings, isLoading } = useSavingsProducts();
+  const { data: savings, isLoading } = useSavingsProducts();
+  const { canEditSavings } = usePermissions();
+  const softDelete = useSoftDelete("savings_products");
 
-  const hasDb = dbSavings && dbSavings.length > 0;
-  const savings = hasDb ? dbSavings : sampleSavingsProducts;
+  const [formOpen, setFormOpen] = useState(false);
+  const [editData, setEditData] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = (savings ?? []).filter((sp) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return sp.product_name_en.toLowerCase().includes(q) || sp.product_name_bn.toLowerCase().includes(q);
+  });
+
+  const handleEdit = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setEditData(sp); setFormOpen(true); };
+  const handleDelete = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setDeleteTarget(sp); };
 
   return (
     <AppLayout>
-      <PageHeader title={t("savings.title")} description={t("savings.description")} />
+      <PageHeader
+        title={t("savings.title")}
+        description={t("savings.description")}
+        actions={
+          canEditSavings ? (
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+              <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
+            </Button>
+          ) : null
+        }
+      />
+
+      <div className="mb-4">
+        <div className="relative max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === "bn" ? "পণ্য খুঁজুন..." : "Search products..."} className="pl-9 text-xs h-9" />
+        </div>
+      </div>
 
       {isLoading ? (
         <TableSkeleton rows={4} cols={5} />
+      ) : filtered.length === 0 ? (
+        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
+          {lang === "bn" ? "কোনো সঞ্চয় পণ্য পাওয়া যায়নি" : "No savings products found"}
+        </div>
       ) : (
         <>
           <div className="card-elevated overflow-hidden hidden sm:block">
@@ -32,52 +72,46 @@ const Savings = () => {
                   <TableHead>{t("table.frequency")}</TableHead>
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
+                  {canEditSavings && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {savings.map((sp: any) => {
-                  const name = hasDb ? (lang === "bn" ? sp.product_name_bn : sp.product_name_en) : (lang === "bn" ? sp.nameBn : sp.nameEn);
-                  const freq = hasDb ? sp.frequency : sp.frequency;
-                  const minAmt = hasDb ? sp.min_amount : sp.minAmount;
-                  const maxAmt = hasDb ? sp.max_amount : sp.maxAmount;
-
-                  return (
-                    <TableRow key={sp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/savings/${sp.id}`)}>
-                      <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
-                      <TableCell className="text-xs capitalize">{freq}</TableCell>
-                      <TableCell className="text-xs">৳{Number(minAmt).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">৳{Number(maxAmt).toLocaleString()}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filtered.map((sp) => (
+                  <TableRow key={sp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/savings/${sp.id}`)}>
+                    <TableCell><p className="text-xs font-medium">{lang === "bn" ? sp.product_name_bn : sp.product_name_en}</p></TableCell>
+                    <TableCell className="text-xs capitalize">{sp.frequency}</TableCell>
+                    <TableCell className="text-xs">৳{Number(sp.min_amount).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">৳{Number(sp.max_amount).toLocaleString()}</TableCell>
+                    {canEditSavings && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <button onClick={(e) => handleEdit(e, sp)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                          <button onClick={(e) => handleDelete(e, sp)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
 
-          {/* Mobile cards */}
           <div className="sm:hidden space-y-3">
-            {savings.map((sp: any) => {
-              const name = hasDb ? (lang === "bn" ? sp.product_name_bn : sp.product_name_en) : (lang === "bn" ? sp.nameBn : sp.nameEn);
-              const freq = hasDb ? sp.frequency : sp.frequency;
-              const minAmt = hasDb ? sp.min_amount : sp.minAmount;
-              const maxAmt = hasDb ? sp.max_amount : sp.maxAmount;
-
-              return (
-                <div key={sp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/savings/${sp.id}`)}>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <PiggyBank className="w-4.5 h-4.5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <span className="capitalize">{freq}</span>
-                      <span>•</span>
-                      <span>৳{Number(minAmt).toLocaleString()} - ৳{Number(maxAmt).toLocaleString()}</span>
-                    </div>
+            {filtered.map((sp) => (
+              <div key={sp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/savings/${sp.id}`)}>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <PiggyBank className="w-4.5 h-4.5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{lang === "bn" ? sp.product_name_bn : sp.product_name_en}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    <span className="capitalize">{sp.frequency}</span>
+                    <span>•</span>
+                    <span>৳{Number(sp.min_amount).toLocaleString()} - ৳{Number(sp.max_amount).toLocaleString()}</span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
           <div className="card-elevated p-5">
@@ -89,6 +123,17 @@ const Savings = () => {
             </ul>
           </div>
         </>
+      )}
+
+      {formOpen && <SavingsProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
+          itemName={deleteTarget.product_name_en}
+          loading={softDelete.isPending}
+        />
       )}
     </AppLayout>
   );
