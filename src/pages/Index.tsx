@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
@@ -7,23 +6,41 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight } from "lucide-react";
-import { sampleClients, sampleInvestors } from "@/data/sampleData";
+import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
+import { sampleClients, sampleInvestors } from "@/data/sampleData";
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const { data: dbClients, isLoading: clientsLoading } = useClients();
+  const { data: dbInvestors, isLoading: investorsLoading } = useInvestors();
 
-  const totalCapital = sampleInvestors.reduce((s, i) => s + i.capital, 0);
-  const activeLoans = sampleClients.filter((c) => c.loanStatus === "active");
-  const totalLoanAmount = activeLoans.reduce((s, c) => s + (c.loanAmount || 0), 0);
+  const loading = metricsLoading || clientsLoading || investorsLoading;
+
+  // Use DB data if available, fallback to sample
+  const hasDbClients = dbClients && dbClients.length > 0;
+  const hasDbInvestors = dbInvestors && dbInvestors.length > 0;
+
+  const displayClients = hasDbClients
+    ? dbClients.slice(0, 4)
+    : sampleClients.slice(0, 4);
+
+  const displayInvestors = hasDbInvestors
+    ? dbInvestors
+    : sampleInvestors;
+
+  const totalClients = metrics?.totalClients ?? sampleClients.length;
+  const activeLoansCount = metrics?.activeLoansCount ?? sampleClients.filter((c) => c.loanStatus === "active").length;
+  const totalLoanAmount = metrics?.totalLoanAmount ?? sampleClients.filter((c) => c.loanStatus === "active").reduce((s, c) => s + (c.loanAmount || 0), 0);
+  const totalCapital = metrics?.totalCapital ?? sampleInvestors.reduce((s, i) => s + i.capital, 0);
+  const investorCount = metrics?.investorCount ?? sampleInvestors.length;
+  const savingsThisMonth = metrics?.savingsThisMonth ?? 45000;
+  const overdueCount = metrics?.overdueCount ?? 3;
+  const pendingCount = metrics?.pendingCount ?? 5;
 
   if (loading) {
     return (
@@ -60,15 +77,15 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <MetricCard
           title={t("dashboard.totalClients")}
-          value={sampleClients.length}
-          subtitle={`${activeLoans.length} ${t("dashboard.activeLoansCount")}`}
+          value={totalClients}
+          subtitle={`${activeLoansCount} ${t("dashboard.activeLoansCount")}`}
           icon={<Users className="w-5 h-5" />}
           trend={{ value: 8, positive: true }}
         />
         <MetricCard
           title={t("dashboard.activeLoans")}
           value={`৳${(totalLoanAmount / 1000).toFixed(0)}K`}
-          subtitle={`${activeLoans.length} ${t("dashboard.disbursed")}`}
+          subtitle={`${activeLoansCount} ${t("dashboard.disbursed")}`}
           icon={<Wallet className="w-5 h-5" />}
           variant="warning"
           trend={{ value: 12, positive: true }}
@@ -76,14 +93,14 @@ const Dashboard = () => {
         <MetricCard
           title={t("dashboard.investorCapital")}
           value={`৳${(totalCapital / 100000).toFixed(1)}L`}
-          subtitle={`${sampleInvestors.length} ${t("dashboard.investors")}`}
+          subtitle={`${investorCount} ${t("dashboard.investors")}`}
           icon={<TrendingUp className="w-5 h-5" />}
           variant="success"
           trend={{ value: 5, positive: true }}
         />
         <MetricCard
           title={t("dashboard.savingsCollected")}
-          value="৳45K"
+          value={`৳${(savingsThisMonth / 1000).toFixed(0)}K`}
           subtitle={t("dashboard.thisMonth")}
           icon={<PiggyBank className="w-5 h-5" />}
           variant="default"
@@ -92,16 +109,27 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-4 border-l-4 border-l-destructive">
-          <p className="text-xs font-semibold text-destructive">3 {t("dashboard.overduePayments")}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Abdul Karim, Jahid Hasan + 1 more</p>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <p className="text-xs font-semibold text-destructive">{overdueCount} {t("dashboard.overduePayments")}</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">{t("dashboard.overduePayments")}</p>
         </div>
         <div className="card-elevated p-4 border-l-4 border-l-warning">
-          <p className="text-xs font-semibold text-warning">5 {t("dashboard.pendingDeposits")}</p>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-warning" />
+            <p className="text-xs font-semibold text-warning">{pendingCount} {t("dashboard.pendingDeposits")}</p>
+          </div>
           <p className="text-[11px] text-muted-foreground mt-1">Due within next 3 days</p>
         </div>
         <div className="card-elevated p-4 border-l-4 border-l-success">
-          <p className="text-xs font-semibold text-success">2 {t("dashboard.profitDistributions")}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Hasan Ali, Shamim Ahmed — auto-reinvest</p>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-success" />
+            <p className="text-xs font-semibold text-success">{t("dashboard.profitDistributions")}</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {metrics?.profitThisMonth ? `৳${metrics.profitThisMonth.toLocaleString()} this month` : "Auto-reinvest active"}
+          </p>
         </div>
       </div>
 
@@ -119,19 +147,18 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Recent Clients */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
-          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
-            <a href="/clients">{t("dashboard.viewAll")}</a>
+          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" onClick={() => navigate("/clients")}>
+            {t("dashboard.viewAll")}
           </Button>
         </div>
-
         <div className="hidden sm:block">
           <Table className="table-premium">
             <TableHeader className="table-header-premium">
               <TableRow>
-                <TableHead>{t("table.id")}</TableHead>
                 <TableHead>{t("table.name")}</TableHead>
                 <TableHead>{t("table.area")}</TableHead>
                 <TableHead>{t("table.loan")}</TableHead>
@@ -139,62 +166,69 @@ const Dashboard = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sampleClients.slice(0, 4).map((client) => (
-                <TableRow key={client.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${client.id}`)}>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{client.id}</TableCell>
-                  <TableCell>
-                    <p className="text-xs font-medium">{lang === "bn" ? client.nameBn : client.nameEn}</p>
-                  </TableCell>
-                  <TableCell className="text-xs">{client.area}</TableCell>
-                  <TableCell className="text-xs font-semibold">
-                    {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={client.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {displayClients.map((client) => {
+                const isDb = hasDbClients;
+                const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
+                const area = isDb ? (client as any).area : (client as any).area;
+                const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
+                const status = (client as any).status;
+                const id = (client as any).id;
+
+                return (
+                  <TableRow key={id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
+                    <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                    <TableCell className="text-xs">{area || "—"}</TableCell>
+                    <TableCell className="text-xs font-semibold">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</TableCell>
+                    <TableCell><StatusBadge status={status === "overdue" ? "overdue" : status === "pending" ? "pending" : status === "active" ? "active" : "inactive"} /></TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
-
         <div className="sm:hidden divide-y divide-border">
-          {sampleClients.slice(0, 4).map((client) => (
-            <div key={client.id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${client.id}`)}>
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold truncate">{lang === "bn" ? client.nameBn : client.nameEn}</p>
-                  <StatusBadge status={client.status} />
+          {displayClients.map((client) => {
+            const isDb = hasDbClients;
+            const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
+            const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
+            const area = isDb ? (client as any).area : (client as any).area;
+            const status = (client as any).status;
+            const id = (client as any).id;
+
+            return (
+              <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 text-primary" />
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                  <span>{client.area}</span>
-                  <span>•</span>
-                  <span className="font-semibold text-foreground">
-                    {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold truncate">{name}</p>
+                    <StatusBadge status={status === "overdue" ? "overdue" : status === "active" ? "active" : "inactive"} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    <span>{area}</span>
+                    <span>•</span>
+                    <span className="font-semibold text-foreground">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
+      {/* Investors */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("nav.investors")}</h2>
-          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
-            <a href="/investors">{t("dashboard.viewAll")}</a>
+          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" onClick={() => navigate("/investors")}>
+            {t("dashboard.viewAll")}
           </Button>
         </div>
-
         <div className="hidden sm:block">
           <Table className="table-premium">
             <TableHeader className="table-header-premium">
               <TableRow>
-                <TableHead>{t("table.id")}</TableHead>
                 <TableHead>{t("table.name")}</TableHead>
                 <TableHead>{t("table.capital")}</TableHead>
                 <TableHead>{t("table.monthlyProfit")}</TableHead>
@@ -202,42 +236,54 @@ const Dashboard = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sampleInvestors.map((inv) => (
-                <TableRow key={inv.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
-                  <TableCell>
-                    <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
-                  </TableCell>
-                  <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
-                  <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>
-                  <TableCell>
-                    <StatusBadge status={inv.reinvest ? "active" : "inactive"} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {displayInvestors.map((inv) => {
+                const isDb = hasDbInvestors;
+                const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
+                const capital = isDb ? (inv as any).capital : (inv as any).capital;
+                const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+                const reinvest = (inv as any).reinvest;
+                const id = (inv as any).id;
+
+                return (
+                  <TableRow key={id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
+                    <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                    <TableCell className="text-xs font-semibold">৳{Number(capital).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{profitPct}%</TableCell>
+                    <TableCell><StatusBadge status={reinvest ? "active" : "inactive"} /></TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
-
         <div className="sm:hidden divide-y divide-border">
-          {sampleInvestors.map((inv) => (
-            <div key={inv.id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
-              <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-4 h-4 text-success" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold truncate">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
-                  <StatusBadge status={inv.reinvest ? "active" : "inactive"} />
+          {displayInvestors.map((inv) => {
+            const isDb = hasDbInvestors;
+            const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
+            const capital = isDb ? (inv as any).capital : (inv as any).capital;
+            const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+            const reinvest = (inv as any).reinvest;
+            const id = (inv as any).id;
+
+            return (
+              <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
+                <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-4 h-4 text-success" />
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">৳{inv.capital.toLocaleString()}</span>
-                  <span>•</span>
-                  <span>{inv.monthlyProfitPercent}% {t("table.monthlyProfit")}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold truncate">{name}</p>
+                    <StatusBadge status={reinvest ? "active" : "inactive"} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">৳{Number(capital).toLocaleString()}</span>
+                    <span>•</span>
+                    <span>{profitPct}% {t("table.monthlyProfit")}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </AppLayout>
