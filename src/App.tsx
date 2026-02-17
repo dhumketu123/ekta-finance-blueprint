@@ -23,6 +23,7 @@ import Savings from "./pages/Savings";
 import SavingsDetail from "./pages/SavingsDetail";
 import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
+import Approvals from "./pages/Approvals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
               <Route path="/savings/:id" element={<ProtectedRoute><SavingsDetail /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Notifications /></ProtectedRoute>} />
+              <Route path="/approvals" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Approvals /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
