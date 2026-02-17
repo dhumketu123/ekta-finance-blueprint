@@ -112,44 +112,59 @@ export type Database = {
       }
       investors: {
         Row: {
+          accumulated_profit: number
           capital: number
           created_at: string
           deleted_at: string | null
           id: string
+          investment_model: Database["public"]["Enums"]["investment_model"]
           last_profit_date: string | null
+          maturity_date: string | null
           monthly_profit_percent: number
           name_bn: string
           name_en: string
           phone: string | null
+          principal_amount: number
           reinvest: boolean
+          status: Database["public"]["Enums"]["investor_status"]
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          accumulated_profit?: number
           capital?: number
           created_at?: string
           deleted_at?: string | null
           id?: string
+          investment_model?: Database["public"]["Enums"]["investment_model"]
           last_profit_date?: string | null
+          maturity_date?: string | null
           monthly_profit_percent?: number
           name_bn?: string
           name_en: string
           phone?: string | null
+          principal_amount?: number
           reinvest?: boolean
+          status?: Database["public"]["Enums"]["investor_status"]
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          accumulated_profit?: number
           capital?: number
           created_at?: string
           deleted_at?: string | null
           id?: string
+          investment_model?: Database["public"]["Enums"]["investment_model"]
           last_profit_date?: string | null
+          maturity_date?: string | null
           monthly_profit_percent?: number
           name_bn?: string
           name_en?: string
           phone?: string | null
+          principal_amount?: number
           reinvest?: boolean
+          status?: Database["public"]["Enums"]["investor_status"]
           updated_at?: string
           user_id?: string | null
         }
@@ -199,6 +214,84 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      loans: {
+        Row: {
+          assigned_officer: string | null
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          disbursement_date: string | null
+          emi_amount: number
+          id: string
+          loan_model: Database["public"]["Enums"]["loan_model"]
+          loan_product_id: string | null
+          maturity_date: string | null
+          notes: string | null
+          outstanding_interest: number
+          outstanding_principal: number
+          penalty_amount: number
+          status: Database["public"]["Enums"]["loan_status"]
+          total_interest: number
+          total_principal: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_officer?: string | null
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          disbursement_date?: string | null
+          emi_amount?: number
+          id?: string
+          loan_model?: Database["public"]["Enums"]["loan_model"]
+          loan_product_id?: string | null
+          maturity_date?: string | null
+          notes?: string | null
+          outstanding_interest?: number
+          outstanding_principal?: number
+          penalty_amount?: number
+          status?: Database["public"]["Enums"]["loan_status"]
+          total_interest?: number
+          total_principal?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_officer?: string | null
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          disbursement_date?: string | null
+          emi_amount?: number
+          id?: string
+          loan_model?: Database["public"]["Enums"]["loan_model"]
+          loan_product_id?: string | null
+          maturity_date?: string | null
+          notes?: string | null
+          outstanding_interest?: number
+          outstanding_principal?: number
+          penalty_amount?: number
+          status?: Database["public"]["Enums"]["loan_status"]
+          total_interest?: number
+          total_principal?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_loan_product_id_fkey"
+            columns: ["loan_product_id"]
+            isOneToOne: false
+            referencedRelation: "loan_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -266,6 +359,60 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_accounts: {
+        Row: {
+          balance: number
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          opened_date: string
+          savings_product_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          opened_date?: string
+          savings_product_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          opened_date?: string
+          savings_product_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_accounts_savings_product_id_fkey"
+            columns: ["savings_product_id"]
+            isOneToOne: false
+            referencedRelation: "savings_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       savings_products: {
         Row: {
           advance_lock: boolean
@@ -273,11 +420,15 @@ export type Database = {
           deleted_at: string | null
           frequency: Database["public"]["Enums"]["deposit_frequency"]
           id: string
+          lock_period_days: number
           max_amount: number
           min_amount: number
+          minimum_balance: number
           partial_payment_allowed: boolean
           product_name_bn: string
           product_name_en: string
+          product_type: Database["public"]["Enums"]["savings_product_type"]
+          profit_rate: number
           updated_at: string
         }
         Insert: {
@@ -286,11 +437,15 @@ export type Database = {
           deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["deposit_frequency"]
           id?: string
+          lock_period_days?: number
           max_amount?: number
           min_amount?: number
+          minimum_balance?: number
           partial_payment_allowed?: boolean
           product_name_bn?: string
           product_name_en: string
+          product_type?: Database["public"]["Enums"]["savings_product_type"]
+          profit_rate?: number
           updated_at?: string
         }
         Update: {
@@ -299,11 +454,15 @@ export type Database = {
           deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["deposit_frequency"]
           id?: string
+          lock_period_days?: number
           max_amount?: number
           min_amount?: number
+          minimum_balance?: number
           partial_payment_allowed?: boolean
           product_name_bn?: string
           product_name_en?: string
+          product_type?: Database["public"]["Enums"]["savings_product_type"]
+          profit_rate?: number
           updated_at?: string
         }
         Relationships: []
@@ -316,8 +475,12 @@ export type Database = {
           deleted_at: string | null
           id: string
           investor_id: string | null
+          loan_id: string | null
           notes: string | null
           partial_flag: boolean
+          performed_by: string | null
+          reference_id: string | null
+          savings_id: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -329,8 +492,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           investor_id?: string | null
+          loan_id?: string | null
           notes?: string | null
           partial_flag?: boolean
+          performed_by?: string | null
+          reference_id?: string | null
+          savings_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -342,8 +509,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           investor_id?: string | null
+          loan_id?: string | null
           notes?: string | null
           partial_flag?: boolean
+          performed_by?: string | null
+          reference_id?: string | null
+          savings_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           type?: Database["public"]["Enums"]["transaction_type"]
@@ -361,6 +532,20 @@ export type Database = {
             columns: ["investor_id"]
             isOneToOne: false
             referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_savings_id_fkey"
+            columns: ["savings_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -388,6 +573,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_loan_payment: {
+        Args: { _amount: number; _loan_id: string; _performed_by?: string }
+        Returns: Json
+      }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
@@ -414,6 +603,10 @@ export type Database = {
       app_role: "admin" | "field_officer" | "owner" | "investor"
       client_status: "active" | "pending" | "overdue" | "inactive"
       deposit_frequency: "daily" | "weekly" | "monthly"
+      investment_model: "profit_only" | "profit_plus_principal"
+      investor_status: "active" | "matured" | "closed"
+      loan_model: "flat" | "reducing"
+      loan_status: "active" | "closed" | "default"
       notification_channel: "sms" | "whatsapp"
       notification_event:
         | "loan_due"
@@ -422,6 +615,7 @@ export type Database = {
         | "overdue_alert"
         | "deposit_reminder"
       payment_type: "monthly" | "weekly" | "emi" | "bullet" | "monthly_profit"
+      savings_product_type: "general" | "locked"
       transaction_status: "paid" | "pending" | "overdue"
       transaction_type:
         | "loan_disbursement"
@@ -429,6 +623,11 @@ export type Database = {
         | "savings_deposit"
         | "savings_withdrawal"
         | "investor_profit"
+        | "loan_principal"
+        | "loan_interest"
+        | "loan_penalty"
+        | "investor_principal_return"
+        | "owner_profit_share"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -559,6 +758,10 @@ export const Constants = {
       app_role: ["admin", "field_officer", "owner", "investor"],
       client_status: ["active", "pending", "overdue", "inactive"],
       deposit_frequency: ["daily", "weekly", "monthly"],
+      investment_model: ["profit_only", "profit_plus_principal"],
+      investor_status: ["active", "matured", "closed"],
+      loan_model: ["flat", "reducing"],
+      loan_status: ["active", "closed", "default"],
       notification_channel: ["sms", "whatsapp"],
       notification_event: [
         "loan_due",
@@ -568,6 +771,7 @@ export const Constants = {
         "deposit_reminder",
       ],
       payment_type: ["monthly", "weekly", "emi", "bullet", "monthly_profit"],
+      savings_product_type: ["general", "locked"],
       transaction_status: ["paid", "pending", "overdue"],
       transaction_type: [
         "loan_disbursement",
@@ -575,6 +779,11 @@ export const Constants = {
         "savings_deposit",
         "savings_withdrawal",
         "investor_profit",
+        "loan_principal",
+        "loan_interest",
+        "loan_penalty",
+        "investor_principal_return",
+        "owner_profit_share",
       ],
     },
   },
