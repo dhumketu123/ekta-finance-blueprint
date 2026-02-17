@@ -538,6 +538,13 @@ export type Database = {
             foreignKeyName: "transactions_loan_id_fkey"
             columns: ["loan_id"]
             isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "transactions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
             referencedRelation: "loans"
             referencedColumns: ["id"]
           },
@@ -570,16 +577,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      loan_financial_summary: {
+        Row: {
+          client_id: string | null
+          disbursement_date: string | null
+          loan_id: string | null
+          loan_model: Database["public"]["Enums"]["loan_model"] | null
+          maturity_date: string | null
+          remaining_balance: number | null
+          status: Database["public"]["Enums"]["loan_status"] | null
+          total_interest: number | null
+          total_interest_collected: number | null
+          total_penalty_collected: number | null
+          total_principal: number | null
+          total_principal_collected: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      apply_loan_payment: {
-        Args: { _amount: number; _loan_id: string; _performed_by?: string }
-        Returns: Json
-      }
+      apply_loan_payment:
+        | {
+            Args: { _amount: number; _loan_id: string; _performed_by?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _amount: number
+              _loan_id: string
+              _performed_by?: string
+              _reference_id?: string
+            }
+            Returns: Json
+          }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
+      }
+      check_and_apply_overdue_penalty: {
+        Args: { _penalty_percent?: number }
+        Returns: Json
       }
       has_role: {
         Args: {
