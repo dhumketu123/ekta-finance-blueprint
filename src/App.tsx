@@ -25,6 +25,7 @@ import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
 import Approvals from "./pages/Approvals";
 import NotFound from "./pages/NotFound";
+import InvestorWallet from "./pages/InvestorWallet";
 
 
 const queryClient = new QueryClient();
@@ -40,11 +41,11 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><Index /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
               <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-              <Route path="/investors" element={<ProtectedRoute allowedRoles={["admin", "owner", "investor", "treasurer"]}><Investors /></ProtectedRoute>} />
-              <Route path="/investors/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "investor", "treasurer"]}><InvestorDetail /></ProtectedRoute>} />
+              <Route path="/investors" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><Investors /></ProtectedRoute>} />
+              <Route path="/investors/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><InvestorDetail /></ProtectedRoute>} />
               <Route path="/owners" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Owners /></ProtectedRoute>} />
               <Route path="/owners/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OwnerDetail /></ProtectedRoute>} />
               <Route path="/field-officers" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><FieldOfficers /></ProtectedRoute>} />
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/notifications" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Notifications /></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer", "field_officer"]}><Approvals /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><SettingsPage /></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute allowedRoles={["investor"]}><InvestorWallet /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

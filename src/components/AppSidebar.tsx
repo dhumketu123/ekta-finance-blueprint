@@ -17,9 +17,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
+  { path: "/", icon: LayoutDashboard, labelKey: "nav.dashboard", roles: ["admin", "owner", "field_officer", "treasurer"] },
+  { path: "/wallet", icon: Wallet, labelKey: "nav.wallet", roles: ["investor"] },
   { path: "/clients", icon: Users, labelKey: "nav.clients", roles: ["admin", "owner", "field_officer"] },
-  { path: "/investors", icon: TrendingUp, labelKey: "nav.investors", roles: ["admin", "owner", "investor", "treasurer"] },
+  { path: "/investors", icon: TrendingUp, labelKey: "nav.investors", roles: ["admin", "owner", "treasurer"] },
   { path: "/owners", icon: Shield, labelKey: "nav.owners", roles: ["admin", "owner"] },
   { path: "/field-officers", icon: UserCog, labelKey: "nav.fieldOfficers", roles: ["admin", "owner"] },
   { path: "/loans", icon: Wallet, labelKey: "nav.loans", roles: ["admin", "owner", "field_officer"] },

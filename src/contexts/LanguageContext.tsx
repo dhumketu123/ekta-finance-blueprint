@@ -20,6 +20,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.approvals": { bn: "অনুমোদন", en: "Approvals" },
   "nav.notifications": { bn: "বিজ্ঞপ্তি", en: "Notifications" },
   "nav.settings": { bn: "সেটিংস", en: "Settings" },
+  "nav.wallet": { bn: "আমার ওয়ালেট", en: "My Wallet" },
 
   // Header
   "header.tagline": { bn: "সমবায় ক্ষুদ্রঋণ ব্যবস্থাপনা", en: "Cooperative Microfinance Management" },
