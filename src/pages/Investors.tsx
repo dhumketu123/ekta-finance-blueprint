@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import TablePagination from "@/components/TablePagination";
 import { Plus, TrendingUp, Search, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useInvestors } from "@/hooks/useSupabaseData";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSoftDelete } from "@/hooks/useCrudOperations";
 import InvestorForm from "@/components/forms/InvestorForm";
@@ -18,8 +19,7 @@ import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 const Investors = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: investors, isLoading } = useInvestors();
-  const { canEditInvestors, canViewInvestors } = usePermissions();
+  const { canEditInvestors } = usePermissions();
   const softDelete = useSoftDelete("investors");
 
   const [formOpen, setFormOpen] = useState(false);
@@ -27,7 +27,13 @@ const Investors = () => {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
 
-  const filtered = (investors ?? []).filter((inv) => {
+  const { data: investors, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
+    table: "investors",
+    queryKey: ["investors"],
+    pageSize: 10,
+  });
+
+  const filtered = (investors ?? []).filter((inv: any) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return inv.name_en.toLowerCase().includes(q) || inv.name_bn.toLowerCase().includes(q) || inv.phone?.toLowerCase().includes(q);
@@ -79,7 +85,7 @@ const Investors = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((inv) => {
+                {filtered.map((inv: any) => {
                   const capital = Number(inv.capital);
                   const profitPct = Number(inv.monthly_profit_percent);
                   const profitAmt = Math.round(capital * profitPct / 100);
@@ -105,10 +111,11 @@ const Investors = () => {
                 })}
               </TableBody>
             </Table>
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="sm:hidden space-y-3">
-            {filtered.map((inv) => {
+            {filtered.map((inv: any) => {
               const capital = Number(inv.capital);
               const profitPct = Number(inv.monthly_profit_percent);
               return (
@@ -130,6 +137,7 @@ const Investors = () => {
                 </div>
               );
             })}
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="card-elevated p-5">

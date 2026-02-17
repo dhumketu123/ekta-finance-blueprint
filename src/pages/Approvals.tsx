@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import TablePagination from "@/components/TablePagination";
 import { CheckCircle2, XCircle, Clock, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
@@ -29,9 +30,11 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   rejected: { label: "প্রত্যাখ্যাত", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
+const PAGE_SIZE = 10;
+
 const Approvals = () => {
   const [tab, setTab] = useState("pending");
-  const { data: txs, isLoading } = usePendingTransactions(tab === "all" ? undefined : tab);
+  const { data: allTxs, isLoading } = usePendingTransactions(tab === "all" ? undefined : tab);
   const { canApproveTransactions, canRecordPayments } = usePermissions();
   const { lang } = useLanguage();
   const approveMut = useApprovePendingTransaction();
@@ -41,7 +44,17 @@ const Approvals = () => {
   const [reviewAction, setReviewAction] = useState<"approve" | "reject">("approve");
   const [reason, setReason] = useState("");
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const bn = lang === "bn";
+
+  // Client-side pagination for pending_transactions (already fetched)
+  const txs = allTxs ?? [];
+  const totalCount = txs.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const paginatedTxs = txs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page on tab change
+  const handleTabChange = (v: string) => { setTab(v); setPage(1); };
 
   const handleReview = () => {
     if (!reviewTx) return;
@@ -67,7 +80,7 @@ const Approvals = () => {
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="pending">অপেক্ষমান</TabsTrigger>
           <TabsTrigger value="approved">অনুমোদিত</TabsTrigger>
@@ -78,7 +91,7 @@ const Approvals = () => {
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-          ) : !txs?.length ? (
+          ) : !txs.length ? (
             <p className="text-center text-muted-foreground py-12">কোনো লেনদেন পাওয়া যায়নি</p>
           ) : (
             <div className="rounded-lg border bg-card overflow-x-auto">
@@ -95,7 +108,7 @@ const Approvals = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {txs.map((tx: any) => {
+                  {paginatedTxs.map((tx: any) => {
                     const sc = statusConfig[tx.status] || statusConfig.pending;
                     const Icon = sc.icon;
                     return (
@@ -129,6 +142,7 @@ const Approvals = () => {
                   })}
                 </TableBody>
               </Table>
+              <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
             </div>
           )}
         </TabsContent>

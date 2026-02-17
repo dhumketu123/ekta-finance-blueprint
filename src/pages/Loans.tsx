@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import TablePagination from "@/components/TablePagination";
 import { Plus, CreditCard, Search, Edit2, Trash2, Banknote, FlaskConical } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useLoanProducts } from "@/hooks/useSupabaseData";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSoftDelete } from "@/hooks/useCrudOperations";
 import LoanProductForm from "@/components/forms/LoanProductForm";
@@ -19,7 +20,6 @@ import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 const Loans = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: loans, isLoading } = useLoanProducts();
   const { canEditLoans, isAdmin } = usePermissions();
   const softDelete = useSoftDelete("loan_products");
 
@@ -30,7 +30,13 @@ const Loans = () => {
   const [testOpen, setTestOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filtered = (loans ?? []).filter((lp) => {
+  const { data: loans, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
+    table: "loan_products",
+    queryKey: ["loan_products"],
+    pageSize: 10,
+  });
+
+  const filtered = (loans ?? []).filter((lp: any) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return lp.product_name_en.toLowerCase().includes(q) || lp.product_name_bn.toLowerCase().includes(q);
@@ -95,7 +101,7 @@ const Loans = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((lp) => (
+                {filtered.map((lp: any) => (
                   <TableRow key={lp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/loans/${lp.id}`)}>
                     <TableCell><p className="text-xs font-medium">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p></TableCell>
                     <TableCell className="text-xs font-semibold">{lp.interest_rate}%</TableCell>
@@ -116,10 +122,11 @@ const Loans = () => {
                 ))}
               </TableBody>
             </Table>
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="sm:hidden space-y-3">
-            {filtered.map((lp) => (
+            {filtered.map((lp: any) => (
               <div key={lp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/loans/${lp.id}`)}>
                 <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
                   <CreditCard className="w-4.5 h-4.5 text-warning" />
@@ -136,6 +143,7 @@ const Loans = () => {
                 </div>
               </div>
             ))}
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
         </>
       )}
