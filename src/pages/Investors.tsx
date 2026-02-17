@@ -74,7 +74,7 @@ const Investors = () => {
             </Table>
           </div>
 
-          <div className="mt-4 card-elevated p-5">
+          <div className="card-elevated p-5">
             <h3 className="text-xs font-bold text-primary mb-1.5">{t("investors.reinvestTitle")}</h3>
             <p className="text-[11px] text-muted-foreground">
               {t("investors.reinvestDescBn")}

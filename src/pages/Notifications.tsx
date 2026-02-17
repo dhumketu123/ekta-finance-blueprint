@@ -17,11 +17,11 @@ const Notifications = () => {
     <AppLayout>
       <PageHeader title={t("notifications.title")} description={t("notifications.description")} />
       
-      <div className="card-elevated mb-6 overflow-hidden">
+      <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="text-sm font-bold text-primary">{t("notifications.channels")}</h2>
         </div>
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
           <div className="p-4 rounded-xl bg-muted/50 border border-border">
             <p className="text-xs font-semibold text-foreground">SMS (Night SIM / API)</p>
             <p className="text-[11px] text-muted-foreground mt-1">{t("notifications.sms")}</p>

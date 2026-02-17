@@ -55,7 +55,7 @@ const Savings = () => {
             </Table>
           </div>
 
-          <div className="mt-4 card-elevated p-5">
+          <div className="card-elevated p-5">
             <h3 className="text-xs font-bold text-primary mb-1.5">{t("savings.validationTitle")}</h3>
             <ul className="text-[11px] text-muted-foreground space-y-1.5 list-disc ml-4">
               <li>{t("savings.rule1")}</li>
