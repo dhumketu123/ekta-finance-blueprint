@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import TablePagination from "@/components/TablePagination";
 import { Plus, Users, Search, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useClients } from "@/hooks/useSupabaseData";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSoftDelete } from "@/hooks/useCrudOperations";
 import ClientForm from "@/components/forms/ClientForm";
@@ -18,7 +19,6 @@ import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 const Clients = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: clients, isLoading } = useClients();
   const { canEditClients, canDeleteClients } = usePermissions();
   const softDelete = useSoftDelete("clients");
 
@@ -27,7 +27,14 @@ const Clients = () => {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
 
-  const filtered = (clients ?? []).filter((c) => {
+  const { data: clients, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
+    table: "clients",
+    queryKey: ["clients"],
+    pageSize: 10,
+    orderBy: { column: "created_at", ascending: false },
+  });
+
+  const filtered = (clients ?? []).filter((c: any) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return c.name_en.toLowerCase().includes(q) || c.name_bn.toLowerCase().includes(q) || c.phone?.toLowerCase().includes(q) || c.area?.toLowerCase().includes(q);
@@ -78,7 +85,7 @@ const Clients = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c) => (
+                {filtered.map((c: any) => (
                   <TableRow key={c.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${c.id}`)}>
                     <TableCell><p className="text-xs font-medium">{lang === "bn" ? c.name_bn : c.name_en}</p></TableCell>
                     <TableCell className="text-xs">{c.phone || "—"}</TableCell>
@@ -97,10 +104,11 @@ const Clients = () => {
                 ))}
               </TableBody>
             </Table>
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="sm:hidden space-y-3">
-            {filtered.map((c) => (
+            {filtered.map((c: any) => (
               <div key={c.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/clients/${c.id}`)}>
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-4.5 h-4.5 text-primary" />
@@ -118,6 +126,7 @@ const Clients = () => {
                 </div>
               </div>
             ))}
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
         </>
       )}
