@@ -1,5 +1,5 @@
-import { Bell, Globe, Wifi, WifiOff, ChevronDown, User, MoreVertical } from "lucide-react";
-import { useState } from "react";
+import { Bell, Globe, Wifi, WifiOff, ChevronDown, User, MoreVertical, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
@@ -8,6 +8,22 @@ const TopHeader = () => {
   const { lang, setLang, t } = useLanguage();
   const { toggle } = useSidebarState();
   const [isOnline] = useState(true);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      setIsDark(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-primary z-30 flex items-center justify-between px-4 shadow-md border-b border-primary/80">
@@ -38,6 +54,17 @@ const TopHeader = () => {
             {isOnline ? t("header.online") : t("header.offline")}
           </span>
         </div>
+
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="h-9 w-9 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </Button>
 
         {/* Language Toggle */}
         <Button
