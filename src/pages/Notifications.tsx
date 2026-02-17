@@ -15,34 +15,34 @@ const Notifications = () => {
     <AppLayout>
       <PageHeader titleEn="Notifications" titleBn="বিজ্ঞপ্তি ব্যবস্থাপনা" description="SMS & WhatsApp notification templates and trigger mapping" />
       
-      <div className="card-elevated mb-6">
+      <div className="card-elevated mb-6 overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-semibold">Channels / চ্যানেল</h2>
+          <h2 className="text-sm font-bold text-primary">Channels / চ্যানেল</h2>
         </div>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs font-semibold">SMS (Night SIM / API)</p>
-            <p className="text-[11px] text-muted-foreground font-bangla">রাতের সিম বা API এর মাধ্যমে এসএমএস পাঠানো হবে</p>
+          <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <p className="text-xs font-semibold text-foreground">SMS (Night SIM / API)</p>
+            <p className="text-[11px] text-muted-foreground font-bangla mt-1">রাতের সিম বা API এর মাধ্যমে এসএমএস পাঠানো হবে</p>
           </div>
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs font-semibold">WhatsApp (Button Fallback)</p>
-            <p className="text-[11px] text-muted-foreground font-bangla">হোয়াটসঅ্যাপ বোতাম ফলব্যাক হিসাবে ব্যবহৃত হবে</p>
+          <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <p className="text-xs font-semibold text-foreground">WhatsApp (Button Fallback)</p>
+            <p className="text-[11px] text-muted-foreground font-bangla mt-1">হোয়াটসঅ্যাপ বোতাম ফলব্যাক হিসাবে ব্যবহৃত হবে</p>
           </div>
         </div>
       </div>
 
-      <div className="card-elevated">
+      <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-semibold">Templates / টেমপ্লেট</h2>
+          <h2 className="text-sm font-bold text-primary">Templates / টেমপ্লেট</h2>
         </div>
-        <Table>
-          <TableHeader>
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Event / ঘটনা</TableHead>
-              <TableHead className="text-xs">Channel</TableHead>
-              <TableHead className="text-xs">Template (Bangla)</TableHead>
-              <TableHead className="text-xs">Template (English)</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Event / ঘটনা</TableHead>
+              <TableHead>Channel</TableHead>
+              <TableHead>Template (Bangla)</TableHead>
+              <TableHead>Template (English)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -54,7 +54,7 @@ const Notifications = () => {
                   <p className="text-[11px] text-muted-foreground font-bangla">{t.eventBn}</p>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className="text-[10px]">{t.channel}</Badge>
+                  <Badge variant="secondary" className="text-[10px] rounded-full">{t.channel}</Badge>
                 </TableCell>
                 <TableCell className="text-[11px] font-bangla max-w-[200px]">{t.templateBn}</TableCell>
                 <TableCell className="text-[11px] max-w-[200px]">{t.templateEn}</TableCell>

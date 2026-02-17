@@ -7,15 +7,15 @@ const Savings = () => {
   return (
     <AppLayout>
       <PageHeader titleEn="Savings Products" titleBn="সঞ্চয় পণ্য" description="Configure savings products with frequency and amount limits" />
-      <div className="card-elevated">
-        <Table>
-          <TableHeader>
+      <div className="card-elevated overflow-hidden">
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Product / পণ্য</TableHead>
-              <TableHead className="text-xs">Frequency / ফ্রিকোয়েন্সি</TableHead>
-              <TableHead className="text-xs">Min Amount</TableHead>
-              <TableHead className="text-xs">Max Amount</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Product / পণ্য</TableHead>
+              <TableHead>Frequency / ফ্রিকোয়েন্সি</TableHead>
+              <TableHead>Min Amount</TableHead>
+              <TableHead>Max Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -35,9 +35,9 @@ const Savings = () => {
         </Table>
       </div>
 
-      <div className="mt-4 card-elevated p-4">
-        <h3 className="text-xs font-semibold text-foreground mb-1">Validation Rules / যাচাইকরণ নিয়ম</h3>
-        <ul className="text-[11px] text-muted-foreground space-y-1 list-disc ml-4">
+      <div className="mt-4 card-elevated p-5">
+        <h3 className="text-xs font-bold text-primary mb-1.5">Validation Rules / যাচাইকরণ নিয়ম</h3>
+        <ul className="text-[11px] text-muted-foreground space-y-1.5 list-disc ml-4">
           <li>Duplicate deposits on same day are blocked / একই দিনে ডুপ্লিকেট জমা বন্ধ</li>
           <li>Advance deposits locked until current cycle complete / অগ্রিম জমা বর্তমান চক্র শেষ না হওয়া পর্যন্ত লক</li>
           <li>Partial payments tracked with flags / আংশিক পরিশোধ ফ্ল্যাগ সহ ট্র্যাক করা হয়</li>

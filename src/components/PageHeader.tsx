@@ -7,9 +7,9 @@ interface PageHeaderProps {
 
 const PageHeader = ({ titleEn, titleBn, description, actions }: PageHeaderProps) => {
   return (
-    <div className="flex items-start justify-between mb-6">
+    <div className="flex items-start justify-between mb-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground font-english">{titleEn}</h1>
+        <h1 className="text-2xl font-bold text-primary font-english">{titleEn}</h1>
         <p className="text-sm text-muted-foreground font-bangla">{titleBn}</p>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>

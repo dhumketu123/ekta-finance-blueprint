@@ -14,25 +14,25 @@ const Clients = () => {
         titleBn="গ্রাহক তালিকা"
         description="Manage all cooperative members and their loan/savings details"
         actions={
-          <Button size="sm" className="gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="w-3.5 h-3.5" /> Add Client / গ্রাহক যোগ
           </Button>
         }
       />
-      <div className="card-elevated">
-        <Table>
-          <TableHeader>
+      <div className="card-elevated overflow-hidden">
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Name / নাম</TableHead>
-              <TableHead className="text-xs">Phone</TableHead>
-              <TableHead className="text-xs">Area / এলাকা</TableHead>
-              <TableHead className="text-xs">Officer</TableHead>
-              <TableHead className="text-xs">Loan</TableHead>
-              <TableHead className="text-xs">Interest</TableHead>
-              <TableHead className="text-xs">Payment</TableHead>
-              <TableHead className="text-xs">Savings</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name / নাম</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Area / এলাকা</TableHead>
+              <TableHead>Officer</TableHead>
+              <TableHead>Loan</TableHead>
+              <TableHead>Interest</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead>Savings</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -46,7 +46,7 @@ const Clients = () => {
                 <TableCell className="text-xs">{c.phone}</TableCell>
                 <TableCell className="text-xs font-bangla">{c.area}</TableCell>
                 <TableCell className="text-xs font-mono">{c.assignedOfficer}</TableCell>
-                <TableCell className="text-xs">{c.loanAmount ? `৳${c.loanAmount.toLocaleString()}` : "—"}</TableCell>
+                <TableCell className="text-xs font-semibold">{c.loanAmount ? `৳${c.loanAmount.toLocaleString()}` : "—"}</TableCell>
                 <TableCell className="text-xs">{c.interestRate ? `${c.interestRate}%` : "—"}</TableCell>
                 <TableCell className="text-xs capitalize">{c.paymentType?.replace("_", " ") || "—"}</TableCell>
                 <TableCell className="text-xs uppercase">{c.savingsType || "—"}</TableCell>

@@ -7,18 +7,18 @@ const Loans = () => {
   return (
     <AppLayout>
       <PageHeader titleEn="Loan Products" titleBn="ঋণ পণ্য" description="Configure loan products with interest rates, tenure, and validation rules" />
-      <div className="card-elevated">
-        <Table>
-          <TableHeader>
+      <div className="card-elevated overflow-hidden">
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Product / পণ্য</TableHead>
-              <TableHead className="text-xs">Interest %</TableHead>
-              <TableHead className="text-xs">Tenure</TableHead>
-              <TableHead className="text-xs">Payment Type</TableHead>
-              <TableHead className="text-xs">Min ৳</TableHead>
-              <TableHead className="text-xs">Max ৳</TableHead>
-              <TableHead className="text-xs">Max Concurrent</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Product / পণ্য</TableHead>
+              <TableHead>Interest %</TableHead>
+              <TableHead>Tenure</TableHead>
+              <TableHead>Payment Type</TableHead>
+              <TableHead>Min ৳</TableHead>
+              <TableHead>Max ৳</TableHead>
+              <TableHead>Max Concurrent</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -29,7 +29,7 @@ const Loans = () => {
                   <p className="text-xs font-medium">{lp.nameEn}</p>
                   <p className="text-[11px] text-muted-foreground font-bangla">{lp.nameBn}</p>
                 </TableCell>
-                <TableCell className="text-xs">{lp.interestRate}%</TableCell>
+                <TableCell className="text-xs font-semibold">{lp.interestRate}%</TableCell>
                 <TableCell className="text-xs">{lp.tenure} months</TableCell>
                 <TableCell className="text-xs capitalize">{lp.paymentType.replace("_", " ")}</TableCell>
                 <TableCell className="text-xs">৳{lp.minAmount.toLocaleString()}</TableCell>
