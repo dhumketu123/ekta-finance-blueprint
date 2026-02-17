@@ -68,7 +68,15 @@ Deno.serve(async (req) => {
       results.overdue_notifications = overdueNotifs.length;
     }
 
-    // 5. Audit log
+    // 5. Run overdue penalty check (2% monthly penalty on overdue loans)
+    const { data: penaltyResult, error: penaltyErr } = await supabase.rpc(
+      "check_and_apply_overdue_penalty",
+      { _penalty_percent: 2 }
+    );
+    results.overdue_penalties = penaltyResult ?? {};
+    if (penaltyErr) results.penalty_error = penaltyErr.message;
+
+    // 6. Audit log
     await supabase.from("audit_logs").insert({
       action_type: "daily_cron",
       entity_type: "system",
