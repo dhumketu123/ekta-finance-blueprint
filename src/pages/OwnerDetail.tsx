@@ -2,15 +2,30 @@ import { useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
-import StatusBadge from "@/components/StatusBadge";
-import { sampleOwners } from "@/data/sampleData";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useOwner } from "@/hooks/useSupabaseData";
+import { sampleOwners } from "@/data/sampleData";
 import { Crown, Phone } from "lucide-react";
 
 const OwnerDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
-  const owner = sampleOwners.find((o) => o.id === id);
+  const { data: dbOwner, isLoading } = useOwner(id || "");
+
+  const sampleOwner = sampleOwners.find((o) => o.id === id);
+  const hasDb = !!dbOwner;
+  const owner: any = hasDb ? dbOwner : sampleOwner;
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <PageHeader title="..." />
+        <div className="card-elevated p-8 text-center animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!owner) {
     return (
@@ -23,11 +38,13 @@ const OwnerDetail = () => {
     );
   }
 
-  const name = lang === "bn" ? owner.nameBn : owner.nameEn;
+  const name = hasDb ? (lang === "bn" ? owner.name_bn : owner.name_en) : (lang === "bn" ? owner.nameBn : owner.nameEn);
+  const nameEn = hasDb ? owner.name_en : owner.nameEn;
+  const phone = owner.phone;
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.owner")} — ${owner.id}`} />
+      <PageHeader title={name} description={`${t("detail.owner")} — ${owner.id.slice(0, 8)}`} />
 
       <div className="card-elevated p-6 border-l-4 border-l-warning">
         <div className="flex items-center gap-4">
@@ -36,10 +53,7 @@ const OwnerDetail = () => {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="text-xs text-muted-foreground font-mono">{owner.id}</span>
-              <StatusBadge status={owner.advanceDepositStatus ? "active" : "inactive"} />
-            </div>
+            <span className="text-xs text-muted-foreground font-mono">{owner.id.slice(0, 8)}</span>
           </div>
         </div>
       </div>
@@ -51,10 +65,8 @@ const OwnerDetail = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <DetailField label={t("table.name")} value={name} />
-          <DetailField label={t("detail.nameEn")} value={owner.nameEn} />
-          <DetailField label={t("table.phone")} value={owner.phone} />
-          <DetailField label={t("table.weeklyDeposit")} value={`৳${owner.weeklyDeposit.toLocaleString()}`} highlight />
-          <DetailField label={t("table.advanceStatus")} value={owner.advanceDepositStatus ? "✅ Active" : "❌ Inactive"} />
+          <DetailField label={t("detail.nameEn")} value={nameEn} />
+          <DetailField label={t("table.phone")} value={phone || "—"} />
         </div>
       </div>
     </AppLayout>
