@@ -110,28 +110,40 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <div className="card-elevated p-4 border-l-4 border-l-destructive">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
-            <p className="text-xs font-semibold text-destructive">{overdueCount} {t("dashboard.overduePayments")}</p>
+        <div className="card-elevated p-5 border-l-4 border-l-destructive">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-destructive/10">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-card-foreground">{overdueCount} {t("dashboard.overduePayments")}</p>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{t("dashboard.overduePayments")}</p>
+            </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">{t("dashboard.overduePayments")}</p>
         </div>
-        <div className="card-elevated p-4 border-l-4 border-l-warning">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-warning" />
-            <p className="text-xs font-semibold text-warning">{pendingCount} {t("dashboard.pendingDeposits")}</p>
+        <div className="card-elevated p-5 border-l-4 border-l-warning">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Clock className="w-4 h-4 text-warning" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-card-foreground">{pendingCount} {t("dashboard.pendingDeposits")}</p>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Due within next 3 days</p>
+            </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Due within next 3 days</p>
         </div>
-        <div className="card-elevated p-4 border-l-4 border-l-success">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-success" />
-            <p className="text-xs font-semibold text-success">{t("dashboard.profitDistributions")}</p>
+        <div className="card-elevated p-5 border-l-4 border-l-success">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-success/10">
+              <TrendingUp className="w-4 h-4 text-success" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-card-foreground">{t("dashboard.profitDistributions")}</p>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                {metrics?.profitThisMonth ? `৳${metrics.profitThisMonth.toLocaleString()} this month` : "Auto-reinvest active"}
+              </p>
+            </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            {metrics?.profitThisMonth ? `৳${metrics.profitThisMonth.toLocaleString()} this month` : "Auto-reinvest active"}
-          </p>
         </div>
       </div>
 
@@ -152,7 +164,7 @@ const Dashboard = () => {
       {/* Recent Clients */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
+          <h2 className="text-sm font-bold text-card-foreground">{t("dashboard.recentClients")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" onClick={() => navigate("/clients")}>
             {t("dashboard.viewAll")}
           </Button>
@@ -233,7 +245,7 @@ const Dashboard = () => {
       {/* Investors */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-bold text-primary">{t("nav.investors")}</h2>
+          <h2 className="text-sm font-bold text-card-foreground">{t("nav.investors")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" onClick={() => navigate("/investors")}>
             {t("dashboard.viewAll")}
           </Button>
