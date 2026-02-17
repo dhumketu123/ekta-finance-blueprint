@@ -4,7 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Investors from "./pages/Investors";
@@ -27,28 +30,31 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/clients/:id" element={<ClientDetail />} />
-            <Route path="/investors" element={<Investors />} />
-            <Route path="/investors/:id" element={<InvestorDetail />} />
-            <Route path="/owners" element={<Owners />} />
-            <Route path="/owners/:id" element={<OwnerDetail />} />
-            <Route path="/field-officers" element={<FieldOfficers />} />
-            <Route path="/field-officers/:id" element={<OfficerDetail />} />
-            <Route path="/loans" element={<Loans />} />
-            <Route path="/loans/:id" element={<LoanDetail />} />
-            <Route path="/savings" element={<Savings />} />
-            <Route path="/savings/:id" element={<SavingsDetail />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+              <Route path="/investors" element={<ProtectedRoute><Investors /></ProtectedRoute>} />
+              <Route path="/investors/:id" element={<ProtectedRoute><InvestorDetail /></ProtectedRoute>} />
+              <Route path="/owners" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Owners /></ProtectedRoute>} />
+              <Route path="/owners/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OwnerDetail /></ProtectedRoute>} />
+              <Route path="/field-officers" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><FieldOfficers /></ProtectedRoute>} />
+              <Route path="/field-officers/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OfficerDetail /></ProtectedRoute>} />
+              <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
+              <Route path="/loans/:id" element={<ProtectedRoute><LoanDetail /></ProtectedRoute>} />
+              <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
+              <Route path="/savings/:id" element={<ProtectedRoute><SavingsDetail /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Notifications /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><SettingsPage /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
