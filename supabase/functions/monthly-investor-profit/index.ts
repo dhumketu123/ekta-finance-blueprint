@@ -15,10 +15,11 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all active investors
+    // Get only active investors (exclude matured/closed)
     const { data: investors, error } = await supabase
       .from("investors")
       .select("*")
+      .eq("status", "active")
       .is("deleted_at", null);
 
     if (error) throw error;
@@ -45,11 +46,16 @@ Deno.serve(async (req) => {
       });
 
       if (inv.reinvest) {
-        // Add profit to capital
+        // Add profit to capital + update accumulated_profit
         const newCapital = inv.capital + profit;
+        const newAccumulatedProfit = (inv.accumulated_profit ?? 0) + profit;
         await supabase
           .from("investors")
-          .update({ capital: newCapital, last_profit_date: new Date().toISOString().split("T")[0] })
+          .update({
+            capital: newCapital,
+            accumulated_profit: newAccumulatedProfit,
+            last_profit_date: new Date().toISOString().split("T")[0],
+          })
           .eq("id", inv.id);
 
         results.push({
@@ -60,9 +66,13 @@ Deno.serve(async (req) => {
           new_capital: newCapital,
         });
       } else {
+        const newAccumulatedProfit = (inv.accumulated_profit ?? 0) + profit;
         await supabase
           .from("investors")
-          .update({ last_profit_date: new Date().toISOString().split("T")[0] })
+          .update({
+            accumulated_profit: newAccumulatedProfit,
+            last_profit_date: new Date().toISOString().split("T")[0],
+          })
           .eq("id", inv.id);
 
         results.push({
