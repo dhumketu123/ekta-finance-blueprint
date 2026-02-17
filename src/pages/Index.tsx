@@ -1,18 +1,42 @@
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight } from "lucide-react";
 import { sampleClients, sampleInvestors } from "@/data/sampleData";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const totalCapital = sampleInvestors.reduce((s, i) => s + i.capital, 0);
   const activeLoans = sampleClients.filter((c) => c.loanStatus === "active");
   const totalLoanAmount = activeLoans.reduce((s, c) => s + (c.loanAmount || 0), 0);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <PageHeader title={t("dashboard.title")} description={t("dashboard.description")} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+          {Array.from({ length: 3 }).map((_, i) => <SummaryCardSkeleton key={i} />)}
+        </div>
+        <TableSkeleton rows={4} cols={5} />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
