@@ -1,27 +1,83 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { Plus, CreditCard, Search, Edit2, Trash2, Banknote, FlaskConical } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoanProducts } from "@/hooks/useSupabaseData";
-import { sampleLoanProducts } from "@/data/sampleData";
-import { CreditCard } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
+import LoanProductForm from "@/components/forms/LoanProductForm";
+import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
+import PaymentTestPanel from "@/components/forms/PaymentTestPanel";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Loans = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: dbLoans, isLoading } = useLoanProducts();
+  const { data: loans, isLoading } = useLoanProducts();
+  const { canEditLoans, isAdmin } = usePermissions();
+  const softDelete = useSoftDelete("loan_products");
 
-  const hasDb = dbLoans && dbLoans.length > 0;
-  const loans = hasDb ? dbLoans : sampleLoanProducts;
+  const [formOpen, setFormOpen] = useState(false);
+  const [editData, setEditData] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = (loans ?? []).filter((lp) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return lp.product_name_en.toLowerCase().includes(q) || lp.product_name_bn.toLowerCase().includes(q);
+  });
+
+  const handleEdit = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setEditData(lp); setFormOpen(true); };
+  const handleDelete = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setDeleteTarget(lp); };
 
   return (
     <AppLayout>
-      <PageHeader title={t("loans.title")} description={t("loans.description")} />
+      <PageHeader
+        title={t("loans.title")}
+        description={t("loans.description")}
+        actions={
+          <div className="flex gap-2">
+            {canEditLoans && (
+              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+                <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
+              </Button>
+            )}
+            {(isAdmin || canEditLoans) && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setPaymentOpen(true)}>
+                <Banknote className="w-3.5 h-3.5" /> {lang === "bn" ? "পেমেন্ট" : "Payment"}
+              </Button>
+            )}
+            {isAdmin && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setTestOpen(true)}>
+                <FlaskConical className="w-3.5 h-3.5" /> Test
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="mb-4">
+        <div className="relative max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === "bn" ? "পণ্য খুঁজুন..." : "Search products..."} className="pl-9 text-xs h-9" />
+        </div>
+      </div>
 
       {isLoading ? (
         <TableSkeleton rows={4} cols={6} />
+      ) : filtered.length === 0 ? (
+        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
+          {lang === "bn" ? "কোনো ঋণ পণ্য পাওয়া যায়নি" : "No loan products found"}
+        </div>
       ) : (
         <>
           <div className="card-elevated overflow-hidden hidden sm:block">
@@ -35,62 +91,66 @@ const Loans = () => {
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
                   <TableHead>{t("table.maxConcurrent")}</TableHead>
+                  {canEditLoans && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loans.map((lp: any) => {
-                  const name = hasDb ? (lang === "bn" ? lp.product_name_bn : lp.product_name_en) : (lang === "bn" ? lp.nameBn : lp.nameEn);
-                  const interest = hasDb ? lp.interest_rate : lp.interestRate;
-                  const tenure = hasDb ? lp.tenure_months : lp.tenure;
-                  const paymentType = hasDb ? lp.payment_type : lp.paymentType;
-                  const minAmt = hasDb ? lp.min_amount : lp.minAmount;
-                  const maxAmt = hasDb ? lp.max_amount : lp.maxAmount;
-                  const maxConc = hasDb ? lp.max_concurrent : lp.maxConcurrent;
-
-                  return (
-                    <TableRow key={lp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/loans/${lp.id}`)}>
-                      <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
-                      <TableCell className="text-xs font-semibold">{interest}%</TableCell>
-                      <TableCell className="text-xs">{tenure} {t("table.months")}</TableCell>
-                      <TableCell className="text-xs capitalize">{String(paymentType).replace("_", " ")}</TableCell>
-                      <TableCell className="text-xs">৳{Number(minAmt).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">৳{Number(maxAmt).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs text-center">{maxConc}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filtered.map((lp) => (
+                  <TableRow key={lp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/loans/${lp.id}`)}>
+                    <TableCell><p className="text-xs font-medium">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p></TableCell>
+                    <TableCell className="text-xs font-semibold">{lp.interest_rate}%</TableCell>
+                    <TableCell className="text-xs">{lp.tenure_months} {t("table.months")}</TableCell>
+                    <TableCell className="text-xs capitalize">{String(lp.payment_type).replace("_", " ")}</TableCell>
+                    <TableCell className="text-xs">৳{Number(lp.min_amount).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">৳{Number(lp.max_amount).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs text-center">{lp.max_concurrent}</TableCell>
+                    {canEditLoans && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <button onClick={(e) => handleEdit(e, lp)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                          <button onClick={(e) => handleDelete(e, lp)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
 
-          {/* Mobile cards */}
           <div className="sm:hidden space-y-3">
-            {loans.map((lp: any) => {
-              const name = hasDb ? (lang === "bn" ? lp.product_name_bn : lp.product_name_en) : (lang === "bn" ? lp.nameBn : lp.nameEn);
-              const interest = hasDb ? lp.interest_rate : lp.interestRate;
-              const tenure = hasDb ? lp.tenure_months : lp.tenure;
-              const paymentType = hasDb ? lp.payment_type : lp.paymentType;
-
-              return (
-                <div key={lp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/loans/${lp.id}`)}>
-                  <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4.5 h-4.5 text-warning" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">{interest}%</span>
-                      <span>•</span>
-                      <span>{tenure} {t("table.months")}</span>
-                      <span>•</span>
-                      <span className="capitalize">{String(paymentType).replace("_", " ")}</span>
-                    </div>
+            {filtered.map((lp) => (
+              <div key={lp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/loans/${lp.id}`)}>
+                <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-4.5 h-4.5 text-warning" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{lp.interest_rate}%</span>
+                    <span>•</span>
+                    <span>{lp.tenure_months} {t("table.months")}</span>
+                    <span>•</span>
+                    <span className="capitalize">{String(lp.payment_type).replace("_", " ")}</span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </>
+      )}
+
+      {formOpen && <LoanProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
+      {paymentOpen && <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} />}
+      {testOpen && <PaymentTestPanel open={testOpen} onClose={() => setTestOpen(false)} />}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
+          itemName={deleteTarget.product_name_en}
+          loading={softDelete.isPending}
+        />
       )}
     </AppLayout>
   );
