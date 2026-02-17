@@ -317,6 +317,7 @@ export type Database = {
           id: string
           investor_id: string | null
           notes: string | null
+          partial_flag: boolean
           status: Database["public"]["Enums"]["transaction_status"]
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -329,6 +330,7 @@ export type Database = {
           id?: string
           investor_id?: string | null
           notes?: string | null
+          partial_flag?: boolean
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -341,6 +343,7 @@ export type Database = {
           id?: string
           investor_id?: string | null
           notes?: string | null
+          partial_flag?: boolean
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           type?: Database["public"]["Enums"]["transaction_type"]
@@ -385,6 +388,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_installment: {
+        Args: { _interest_rate: number; _principal: number; _tenure: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -398,6 +405,10 @@ export type Database = {
       is_field_officer: { Args: never; Returns: boolean }
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      process_investor_reinvest: {
+        Args: { _investor_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "field_officer" | "owner" | "investor"
