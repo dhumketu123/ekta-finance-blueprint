@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 
 interface MetricCardProps {
   title: string;
-  titleBn: string;
   value: string | number;
   subtitle?: string;
   icon: ReactNode;
@@ -24,14 +23,13 @@ const iconBg = {
   destructive: "bg-destructive/10 text-destructive",
 };
 
-const MetricCard = ({ title, titleBn, value, subtitle, icon, trend, variant = "default" }: MetricCardProps) => {
+const MetricCard = ({ title, value, subtitle, icon, trend, variant = "default" }: MetricCardProps) => {
   return (
     <div className={`card-elevated p-5 border-l-4 ${variantStyles[variant]} animate-fade-in`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-semibold text-muted-foreground font-english uppercase tracking-wider">{title}</p>
-          <p className="text-[10px] text-muted-foreground/70 font-bangla">{titleBn}</p>
-          <p className="mt-2 text-2xl font-bold text-foreground font-english">{value}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
           {trend && (
             <p className={`mt-1.5 text-xs font-semibold ${trend.positive ? "text-success" : "text-destructive"}`}>

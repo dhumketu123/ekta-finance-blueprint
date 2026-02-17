@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Index from "./pages/Index";
 import Clients from "./pages/Clients";
 import Investors from "./pages/Investors";
@@ -19,22 +20,24 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/investors" element={<Investors />} />
-          <Route path="/owners" element={<Owners />} />
-          <Route path="/field-officers" element={<FieldOfficers />} />
-          <Route path="/loans" element={<Loans />} />
-          <Route path="/savings" element={<Savings />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <LanguageProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/investors" element={<Investors />} />
+            <Route path="/owners" element={<Owners />} />
+            <Route path="/field-officers" element={<FieldOfficers />} />
+            <Route path="/loans" element={<Loans />} />
+            <Route path="/savings" element={<Savings />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

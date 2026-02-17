@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight } from "lucide-react";
 import { sampleClients, sampleInvestors } from "@/data/sampleData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Dashboard = () => {
+  const { t, lang } = useLanguage();
   const totalCapital = sampleInvestors.reduce((s, i) => s + i.capital, 0);
   const activeLoans = sampleClients.filter((c) => c.loanStatus === "active");
   const totalLoanAmount = activeLoans.reduce((s, c) => s + (c.loanAmount || 0), 0);
@@ -15,109 +17,97 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <PageHeader
-        titleEn="Dashboard"
-        titleBn="ড্যাশবোর্ড"
-        description="Overview of Ekta Finance cooperative operations"
+        title={t("dashboard.title")}
+        description={t("dashboard.description")}
         actions={
           <>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm">
-              <Send className="w-3.5 h-3.5" /> Send Notification
+              <Send className="w-3.5 h-3.5" /> {t("dashboard.sendNotification")}
             </Button>
             <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="w-3.5 h-3.5" /> New Client
+              <Plus className="w-3.5 h-3.5" /> {t("dashboard.newClient")}
             </Button>
           </>
         }
       />
 
-      {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <MetricCard
-          title="Total Clients"
-          titleBn="মোট গ্রাহক"
+          title={t("dashboard.totalClients")}
           value={sampleClients.length}
-          subtitle={`${activeLoans.length} active loans`}
+          subtitle={`${activeLoans.length} ${t("dashboard.activeLoansCount")}`}
           icon={<Users className="w-5 h-5" />}
           trend={{ value: 8, positive: true }}
         />
         <MetricCard
-          title="Active Loans"
-          titleBn="সক্রিয় ঋণ"
+          title={t("dashboard.activeLoans")}
           value={`৳${(totalLoanAmount / 1000).toFixed(0)}K`}
-          subtitle={`${activeLoans.length} disbursed`}
+          subtitle={`${activeLoans.length} ${t("dashboard.disbursed")}`}
           icon={<Wallet className="w-5 h-5" />}
           variant="warning"
           trend={{ value: 12, positive: true }}
         />
         <MetricCard
-          title="Investor Capital"
-          titleBn="বিনিয়োগ মূলধন"
+          title={t("dashboard.investorCapital")}
           value={`৳${(totalCapital / 100000).toFixed(1)}L`}
-          subtitle={`${sampleInvestors.length} investors`}
+          subtitle={`${sampleInvestors.length} ${t("dashboard.investors")}`}
           icon={<TrendingUp className="w-5 h-5" />}
           variant="success"
           trend={{ value: 5, positive: true }}
         />
         <MetricCard
-          title="Savings Collected"
-          titleBn="সঞ্চয় সংগ্রহ"
+          title={t("dashboard.savingsCollected")}
           value="৳45K"
-          subtitle="This month"
+          subtitle={t("dashboard.thisMonth")}
           icon={<PiggyBank className="w-5 h-5" />}
           variant="default"
         />
       </div>
 
-      {/* Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         <div className="card-elevated p-4 border-l-4 border-l-destructive">
-          <p className="text-xs font-semibold text-destructive">3 Overdue Payments / বকেয়া পরিশোধ</p>
+          <p className="text-xs font-semibold text-destructive">3 {t("dashboard.overduePayments")}</p>
           <p className="text-[11px] text-muted-foreground mt-1">Abdul Karim, Jahid Hasan + 1 more</p>
         </div>
         <div className="card-elevated p-4 border-l-4 border-l-warning">
-          <p className="text-xs font-semibold text-warning">5 Pending Deposits / জমা বাকি</p>
+          <p className="text-xs font-semibold text-warning">5 {t("dashboard.pendingDeposits")}</p>
           <p className="text-[11px] text-muted-foreground mt-1">Due within next 3 days</p>
         </div>
         <div className="card-elevated p-4 border-l-4 border-l-success">
-          <p className="text-xs font-semibold text-success">2 Profit Distributions / মুনাফা বিতরণ</p>
+          <p className="text-xs font-semibold text-success">2 {t("dashboard.profitDistributions")}</p>
           <p className="text-[11px] text-muted-foreground mt-1">Hasan Ali, Shamim Ahmed — auto-reinvest</p>
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="flex flex-wrap gap-2 mb-8">
         {[
-          { icon: CreditCard, label: "Pay Loan / ঋণ পরিশোধ" },
-          { icon: PiggyBank, label: "Deposit / জমা" },
-          { icon: ArrowUpRight, label: "Reinvest / পুনঃবিনিয়োগ" },
-          { icon: Send, label: "Send Message / বার্তা" },
+          { icon: CreditCard, labelKey: "action.payLoan" },
+          { icon: PiggyBank, labelKey: "action.deposit" },
+          { icon: ArrowUpRight, labelKey: "action.reinvest" },
+          { icon: Send, labelKey: "action.sendMessage" },
         ].map((action) => (
-          <Button key={action.label} variant="outline" size="sm" className="gap-1.5 text-xs font-bangla rounded-lg shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
+          <Button key={action.labelKey} variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
             <action.icon className="w-3.5 h-3.5" />
-            {action.label}
+            {t(action.labelKey)}
           </Button>
         ))}
       </div>
 
-      {/* Recent Clients */}
       <div className="card-elevated mb-8 overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-primary font-english">Recent Clients</h2>
-            <p className="text-[11px] text-muted-foreground font-bangla">সাম্প্রতিক গ্রাহক</p>
-          </div>
+          <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
-            <a href="/clients">View All →</a>
+            <a href="/clients">{t("dashboard.viewAll")}</a>
           </Button>
         </div>
         <Table className="table-premium">
           <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name / নাম</TableHead>
-              <TableHead>Area / এলাকা</TableHead>
-              <TableHead>Loan / ঋণ</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("table.id")}</TableHead>
+              <TableHead>{t("table.name")}</TableHead>
+              <TableHead>{t("table.area")}</TableHead>
+              <TableHead>{t("table.loan")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,10 +115,9 @@ const Dashboard = () => {
               <TableRow key={client.id}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{client.id}</TableCell>
                 <TableCell>
-                  <p className="text-xs font-medium">{client.nameEn}</p>
-                  <p className="text-[11px] text-muted-foreground font-bangla">{client.nameBn}</p>
+                  <p className="text-xs font-medium">{lang === "bn" ? client.nameBn : client.nameEn}</p>
                 </TableCell>
-                <TableCell className="text-xs font-bangla">{client.area}</TableCell>
+                <TableCell className="text-xs">{client.area}</TableCell>
                 <TableCell className="text-xs font-semibold">
                   {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
                 </TableCell>
@@ -141,25 +130,21 @@ const Dashboard = () => {
         </Table>
       </div>
 
-      {/* Investors */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-primary font-english">Investors</h2>
-            <p className="text-[11px] text-muted-foreground font-bangla">বিনিয়োগকারী</p>
-          </div>
+          <h2 className="text-sm font-bold text-primary">{t("nav.investors")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
-            <a href="/investors">View All →</a>
+            <a href="/investors">{t("dashboard.viewAll")}</a>
           </Button>
         </div>
         <Table className="table-premium">
           <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name / নাম</TableHead>
-              <TableHead>Capital / মূলধন</TableHead>
-              <TableHead>Profit %</TableHead>
-              <TableHead>Reinvest</TableHead>
+              <TableHead>{t("table.id")}</TableHead>
+              <TableHead>{t("table.name")}</TableHead>
+              <TableHead>{t("table.capital")}</TableHead>
+              <TableHead>{t("table.monthlyProfit")}</TableHead>
+              <TableHead>{t("table.reinvest")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,8 +152,7 @@ const Dashboard = () => {
               <TableRow key={inv.id}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
                 <TableCell>
-                  <p className="text-xs font-medium">{inv.nameEn}</p>
-                  <p className="text-[11px] text-muted-foreground font-bangla">{inv.nameBn}</p>
+                  <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
                 </TableCell>
                 <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
                 <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>

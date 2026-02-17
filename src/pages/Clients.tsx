@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import { sampleClients } from "@/data/sampleData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Clients = () => {
+  const { t, lang } = useLanguage();
   return (
     <AppLayout>
       <PageHeader
-        titleEn="Clients"
-        titleBn="গ্রাহক তালিকা"
-        description="Manage all cooperative members and their loan/savings details"
+        title={t("clients.title")}
+        description={t("clients.description")}
         actions={
           <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-3.5 h-3.5" /> Add Client / গ্রাহক যোগ
+            <Plus className="w-3.5 h-3.5" /> {t("clients.add")}
           </Button>
         }
       />
@@ -23,16 +24,16 @@ const Clients = () => {
         <Table className="table-premium">
           <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name / নাম</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Area / এলাকা</TableHead>
-              <TableHead>Officer</TableHead>
-              <TableHead>Loan</TableHead>
-              <TableHead>Interest</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead>Savings</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("table.id")}</TableHead>
+              <TableHead>{t("table.name")}</TableHead>
+              <TableHead>{t("table.phone")}</TableHead>
+              <TableHead>{t("table.area")}</TableHead>
+              <TableHead>{t("table.officer")}</TableHead>
+              <TableHead>{t("table.loan")}</TableHead>
+              <TableHead>{t("table.interest")}</TableHead>
+              <TableHead>{t("table.payment")}</TableHead>
+              <TableHead>{t("table.savings")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -40,11 +41,10 @@ const Clients = () => {
               <TableRow key={c.id}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{c.id}</TableCell>
                 <TableCell>
-                  <p className="text-xs font-medium">{c.nameEn}</p>
-                  <p className="text-[11px] text-muted-foreground font-bangla">{c.nameBn}</p>
+                  <p className="text-xs font-medium">{lang === "bn" ? c.nameBn : c.nameEn}</p>
                 </TableCell>
                 <TableCell className="text-xs">{c.phone}</TableCell>
-                <TableCell className="text-xs font-bangla">{c.area}</TableCell>
+                <TableCell className="text-xs">{c.area}</TableCell>
                 <TableCell className="text-xs font-mono">{c.assignedOfficer}</TableCell>
                 <TableCell className="text-xs font-semibold">{c.loanAmount ? `৳${c.loanAmount.toLocaleString()}` : "—"}</TableCell>
                 <TableCell className="text-xs">{c.interestRate ? `${c.interestRate}%` : "—"}</TableCell>
