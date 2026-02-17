@@ -65,4 +65,4 @@ export interface SavingsProduct {
   maxAmount: number;
 }
 
-export type UserRole = "admin" | "field_officer" | "owner" | "investor";
+export type UserRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer";

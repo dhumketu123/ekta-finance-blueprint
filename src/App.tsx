@@ -43,18 +43,18 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
               <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-              <Route path="/investors" element={<ProtectedRoute><Investors /></ProtectedRoute>} />
-              <Route path="/investors/:id" element={<ProtectedRoute><InvestorDetail /></ProtectedRoute>} />
+              <Route path="/investors" element={<ProtectedRoute allowedRoles={["admin", "owner", "investor", "treasurer"]}><Investors /></ProtectedRoute>} />
+              <Route path="/investors/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "investor", "treasurer"]}><InvestorDetail /></ProtectedRoute>} />
               <Route path="/owners" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Owners /></ProtectedRoute>} />
               <Route path="/owners/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OwnerDetail /></ProtectedRoute>} />
               <Route path="/field-officers" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><FieldOfficers /></ProtectedRoute>} />
               <Route path="/field-officers/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OfficerDetail /></ProtectedRoute>} />
               <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
               <Route path="/loans/:id" element={<ProtectedRoute><LoanDetail /></ProtectedRoute>} />
-              <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
-              <Route path="/savings/:id" element={<ProtectedRoute><SavingsDetail /></ProtectedRoute>} />
+              <Route path="/savings" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><Savings /></ProtectedRoute>} />
+              <Route path="/savings/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><SavingsDetail /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Notifications /></ProtectedRoute>} />
-              <Route path="/approvals" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Approvals /></ProtectedRoute>} />
+              <Route path="/approvals" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><Approvals /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

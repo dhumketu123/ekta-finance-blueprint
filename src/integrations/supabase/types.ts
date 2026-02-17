@@ -726,6 +726,7 @@ export type Database = {
       is_field_officer: { Args: never; Returns: boolean }
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_treasurer: { Args: never; Returns: boolean }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
