@@ -11,14 +11,14 @@ const config: Record<string, { label: string; className: string }> = {
   paid: { label: "Paid", className: "status-paid" },
   pending: { label: "Pending", className: "status-pending" },
   overdue: { label: "Overdue", className: "status-overdue" },
-  closed: { label: "Closed", className: "status-inactive" },
+  closed: { label: "Closed", className: "status-closed" },
   none: { label: "None", className: "status-inactive" },
 };
 
 const StatusBadge = ({ status, labelBn }: StatusBadgeProps) => {
   const c = config[status];
   return (
-    <Badge variant="outline" className={`${c.className} border-0 text-[11px] font-medium`}>
+    <Badge variant="outline" className={`${c.className} border-0 text-[11px] rounded-full px-2.5 py-0.5`}>
       {c.label} {labelBn && <span className="ml-1 font-bangla opacity-70">({labelBn})</span>}
     </Badge>
   );

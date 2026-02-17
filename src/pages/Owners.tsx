@@ -8,15 +8,15 @@ const Owners = () => {
   return (
     <AppLayout>
       <PageHeader titleEn="Owners" titleBn="মালিক তালিকা" description="Manage cooperative owners and profit distribution" />
-      <div className="card-elevated">
-        <Table>
-          <TableHeader>
+      <div className="card-elevated overflow-hidden">
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Name / নাম</TableHead>
-              <TableHead className="text-xs">Phone</TableHead>
-              <TableHead className="text-xs">Weekly Deposit</TableHead>
-              <TableHead className="text-xs">Advance Status</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name / নাম</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Weekly Deposit</TableHead>
+              <TableHead>Advance Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -28,7 +28,7 @@ const Owners = () => {
                   <p className="text-[11px] text-muted-foreground font-bangla">{o.nameBn}</p>
                 </TableCell>
                 <TableCell className="text-xs">{o.phone}</TableCell>
-                <TableCell className="text-xs">৳{o.weeklyDeposit.toLocaleString()}</TableCell>
+                <TableCell className="text-xs font-semibold">৳{o.weeklyDeposit.toLocaleString()}</TableCell>
                 <TableCell><StatusBadge status={o.advanceDepositStatus ? "active" : "inactive"} /></TableCell>
               </TableRow>
             ))}

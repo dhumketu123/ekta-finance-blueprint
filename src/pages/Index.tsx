@@ -20,10 +20,10 @@ const Dashboard = () => {
         description="Overview of Ekta Finance cooperative operations"
         actions={
           <>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm">
               <Send className="w-3.5 h-3.5" /> Send Notification
             </Button>
-            <Button size="sm" className="gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-3.5 h-3.5" /> New Client
             </Button>
           </>
@@ -31,7 +31,7 @@ const Dashboard = () => {
       />
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <MetricCard
           title="Total Clients"
           titleBn="মোট গ্রাহক"
@@ -92,7 +92,7 @@ const Dashboard = () => {
           { icon: ArrowUpRight, label: "Reinvest / পুনঃবিনিয়োগ" },
           { icon: Send, label: "Send Message / বার্তা" },
         ].map((action) => (
-          <Button key={action.label} variant="outline" size="sm" className="gap-1.5 text-xs font-bangla">
+          <Button key={action.label} variant="outline" size="sm" className="gap-1.5 text-xs font-bangla rounded-lg shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
             <action.icon className="w-3.5 h-3.5" />
             {action.label}
           </Button>
@@ -100,24 +100,24 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Clients */}
-      <div className="card-elevated mb-8">
+      <div className="card-elevated mb-8 overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold font-english">Recent Clients</h2>
+            <h2 className="text-sm font-bold text-primary font-english">Recent Clients</h2>
             <p className="text-[11px] text-muted-foreground font-bangla">সাম্প্রতিক গ্রাহক</p>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-primary" asChild>
+          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
             <a href="/clients">View All →</a>
           </Button>
         </div>
-        <Table>
-          <TableHeader>
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Name / নাম</TableHead>
-              <TableHead className="text-xs">Area / এলাকা</TableHead>
-              <TableHead className="text-xs">Loan / ঋণ</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name / নাম</TableHead>
+              <TableHead>Area / এলাকা</TableHead>
+              <TableHead>Loan / ঋণ</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -129,7 +129,7 @@ const Dashboard = () => {
                   <p className="text-[11px] text-muted-foreground font-bangla">{client.nameBn}</p>
                 </TableCell>
                 <TableCell className="text-xs font-bangla">{client.area}</TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="text-xs font-semibold">
                   {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
                 </TableCell>
                 <TableCell>
@@ -142,24 +142,24 @@ const Dashboard = () => {
       </div>
 
       {/* Investors */}
-      <div className="card-elevated">
+      <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold font-english">Investors</h2>
+            <h2 className="text-sm font-bold text-primary font-english">Investors</h2>
             <p className="text-[11px] text-muted-foreground font-bangla">বিনিয়োগকারী</p>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-primary" asChild>
+          <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
             <a href="/investors">View All →</a>
           </Button>
         </div>
-        <Table>
-          <TableHeader>
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Name / নাম</TableHead>
-              <TableHead className="text-xs">Capital / মূলধন</TableHead>
-              <TableHead className="text-xs">Profit %</TableHead>
-              <TableHead className="text-xs">Reinvest</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name / নাম</TableHead>
+              <TableHead>Capital / মূলধন</TableHead>
+              <TableHead>Profit %</TableHead>
+              <TableHead>Reinvest</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -170,7 +170,7 @@ const Dashboard = () => {
                   <p className="text-xs font-medium">{inv.nameEn}</p>
                   <p className="text-[11px] text-muted-foreground font-bangla">{inv.nameBn}</p>
                 </TableCell>
-                <TableCell className="text-xs">৳{inv.capital.toLocaleString()}</TableCell>
+                <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
                 <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>
                 <TableCell>
                   <StatusBadge status={inv.reinvest ? "active" : "inactive"} />

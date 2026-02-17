@@ -14,22 +14,22 @@ const Investors = () => {
         titleBn="বিনিয়োগকারী তালিকা"
         description="Manage investor capital, profit rates, and reinvestment settings"
         actions={
-          <Button size="sm" className="gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="w-3.5 h-3.5" /> Add Investor
           </Button>
         }
       />
-      <div className="card-elevated">
-        <Table>
-          <TableHeader>
+      <div className="card-elevated overflow-hidden">
+        <Table className="table-premium">
+          <TableHeader className="table-header-premium">
             <TableRow>
-              <TableHead className="text-xs">ID</TableHead>
-              <TableHead className="text-xs">Name / নাম</TableHead>
-              <TableHead className="text-xs">Phone</TableHead>
-              <TableHead className="text-xs">Capital / মূলধন</TableHead>
-              <TableHead className="text-xs">Monthly Profit %</TableHead>
-              <TableHead className="text-xs">Monthly Profit ৳</TableHead>
-              <TableHead className="text-xs">Reinvest</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name / নাম</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Capital / মূলধন</TableHead>
+              <TableHead>Monthly Profit %</TableHead>
+              <TableHead>Monthly Profit ৳</TableHead>
+              <TableHead>Reinvest</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -41,9 +41,9 @@ const Investors = () => {
                   <p className="text-[11px] text-muted-foreground font-bangla">{inv.nameBn}</p>
                 </TableCell>
                 <TableCell className="text-xs">{inv.phone}</TableCell>
-                <TableCell className="text-xs font-medium">৳{inv.capital.toLocaleString()}</TableCell>
+                <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
                 <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>
-                <TableCell className="text-xs text-success font-medium">
+                <TableCell className="text-xs text-success font-semibold">
                   ৳{((inv.capital * inv.monthlyProfitPercent) / 100).toLocaleString()}
                 </TableCell>
                 <TableCell>
@@ -56,8 +56,8 @@ const Investors = () => {
       </div>
 
       {/* Reinvest Logic Note */}
-      <div className="mt-4 card-elevated p-4">
-        <h3 className="text-xs font-semibold text-foreground mb-1">Reinvestment Logic / পুনঃবিনিয়োগ নিয়ম</h3>
+      <div className="mt-4 card-elevated p-5">
+        <h3 className="text-xs font-bold text-primary mb-1.5">Reinvestment Logic / পুনঃবিনিয়োগ নিয়ম</h3>
         <p className="text-[11px] text-muted-foreground font-bangla">
           যদি পুনঃবিনিয়োগ = হ্যাঁ, তাহলে মাসিক মুনাফা পরবর্তী মাসে মূলধনের সাথে স্বয়ংক্রিয়ভাবে যুক্ত হবে।
         </p>
