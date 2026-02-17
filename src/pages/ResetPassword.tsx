@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 
 const ResetPassword = () => {
@@ -20,45 +21,29 @@ const ResetPassword = () => {
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
+    if (hash && hash.includes("type=recovery")) setIsRecovery(true);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecovery(true);
-      }
+      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({
-        title: lang === "bn" ? "ত্রুটি" : "Error",
-        description: lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords do not match.",
-        variant: "destructive",
-      });
+      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords do not match.", variant: "destructive" });
       return;
     }
-    if (password.length < 6) {
-      toast({
-        title: lang === "bn" ? "ত্রুটি" : "Error",
-        description: lang === "bn" ? "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।" : "Password must be at least 6 characters.",
-        variant: "destructive",
-      });
+    if (password.length < 8) {
+      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: lang === "bn" ? "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।" : "Password must be at least 8 characters.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast({
-        title: lang === "bn" ? "সফল!" : "Success!",
-        description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।" : "Password updated successfully.",
-      });
+      toast({ title: lang === "bn" ? "সফল! 🎉" : "Success! 🎉", description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।" : "Password updated successfully." });
       navigate("/auth");
     } catch (error: any) {
       toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: error.message, variant: "destructive" });
@@ -69,18 +54,14 @@ const ResetPassword = () => {
 
   if (!isRecovery) {
     return (
-      <div className="auth-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="auth-orb auth-orb-1" />
-        <div className="auth-orb auth-orb-2" />
-        <div className="auth-grid" />
-        <Card className="auth-glass-card border-0 w-full max-w-md relative z-10">
+      <div className="auth-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden" role="main">
+        <div className="auth-orb auth-orb-1" aria-hidden="true" />
+        <div className="auth-orb auth-orb-2" aria-hidden="true" />
+        <div className="auth-grid" aria-hidden="true" />
+        <Card className="auth-glass-card border-0 !bg-transparent w-full max-w-md relative z-20">
           <CardContent className="p-8 text-center">
-            <p className="text-white/70 font-bangla">
-              {lang === "bn" ? "অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক।" : "Invalid or expired reset link."}
-            </p>
-            <Button onClick={() => navigate("/auth")} className="mt-4 auth-submit-btn">
-              {lang === "bn" ? "লগইনে ফিরে যান" : "Back to Login"}
-            </Button>
+            <p className="text-white/70 font-bangla">{lang === "bn" ? "অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক।" : "Invalid or expired reset link."}</p>
+            <Button onClick={() => navigate("/auth")} className="mt-4 auth-submit-btn">{lang === "bn" ? "লগইনে ফিরে যান" : "Back to Login"}</Button>
           </CardContent>
         </Card>
       </div>
@@ -88,46 +69,48 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="auth-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="auth-orb auth-orb-1" />
-      <div className="auth-orb auth-orb-2" />
-      <div className="auth-grid" />
-      <div className="relative z-10 w-full max-w-md animate-fade-in">
+    <div className="auth-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden" role="main">
+      <div className="auth-orb auth-orb-1" aria-hidden="true" />
+      <div className="auth-orb auth-orb-2" aria-hidden="true" />
+      <div className="auth-grid" aria-hidden="true" />
+      <div className="relative z-20 w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl auth-logo-box mb-4">
             <span className="text-white font-bold text-2xl font-bangla">একতা</span>
           </div>
-          <h1 className="auth-brand-title font-bangla">নতুন পাসওয়ার্ড সেট করুন</h1>
+          <h1 className="auth-brand-title font-bangla">{lang === "bn" ? "নতুন পাসওয়ার্ড সেট করুন" : "Set New Password"}</h1>
+          <p className="auth-brand-subtitle mt-2 font-bangla">{lang === "bn" ? "শক্তিশালী পাসওয়ার্ড দিয়ে আপনার অ্যাকাউন্ট সুরক্ষিত করুন 🔒" : "Secure your account with a strong password 🔒"}</p>
         </div>
-        <Card className="auth-glass-card border-0">
-          <CardHeader className="pb-2 pt-8 px-8">
-            <p className="text-white/60 text-sm text-center font-bangla">
-              {lang === "bn" ? "আপনার নতুন পাসওয়ার্ড দিন" : "Enter your new password"}
-            </p>
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
+        <Card className="auth-glass-card border-0 !bg-transparent" role="form" aria-label="Reset password form">
+          <CardContent className="px-8 py-8">
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               <div>
-                <label className="auth-label">{lang === "bn" ? "নতুন পাসওয়ার্ড" : "New Password"}</label>
+                <label htmlFor="newPassword" className="auth-label">{lang === "bn" ? "নতুন পাসওয়ার্ড" : "New Password"}</label>
                 <div className="relative">
                   <Input
+                    id="newPassword"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    required minLength={6} maxLength={72}
+                    required minLength={8} maxLength={72}
                     className="auth-input pr-10"
+                    aria-required="true"
+                    aria-describedby="reset-password-strength"
                   />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors" onClick={() => setShowPassword(!showPassword)}>
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <div id="reset-password-strength">
+                  <PasswordStrengthMeter password={password} />
+                </div>
               </div>
               <div>
-                <label className="auth-label">{lang === "bn" ? "পাসওয়ার্ড নিশ্চিত করুন" : "Confirm Password"}</label>
-                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required minLength={6} maxLength={72} className="auth-input" />
+                <label htmlFor="confirmPassword" className="auth-label">{lang === "bn" ? "পাসওয়ার্ড নিশ্চিত করুন" : "Confirm Password"}</label>
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required minLength={8} maxLength={72} className="auth-input" aria-required="true" />
               </div>
-              <Button type="submit" className="w-full auth-submit-btn" disabled={loading}>
+              <Button type="submit" className="w-full auth-submit-btn" disabled={loading} aria-busy={loading}>
                 {loading ? <span className="animate-spin mr-2">⏳</span> : <KeyRound size={16} className="mr-2" />}
                 {lang === "bn" ? "পাসওয়ার্ড আপডেট করুন" : "Update Password"}
               </Button>
