@@ -40,9 +40,9 @@ const Dashboard = () => {
   const totalLoanAmount = metrics?.totalLoanAmount ?? sampleClients.filter((c) => c.loanStatus === "active").reduce((s, c) => s + (c.loanAmount || 0), 0);
   const totalCapital = metrics?.totalCapital ?? sampleInvestors.reduce((s, i) => s + i.capital, 0);
   const investorCount = metrics?.investorCount ?? sampleInvestors.length;
-  const savingsThisMonth = metrics?.savingsThisMonth ?? 45000;
-  const overdueCount = metrics?.overdueCount ?? 3;
-  const pendingCount = metrics?.pendingCount ?? 5;
+  const savingsThisMonth = metrics?.savingsThisMonth ?? 0;
+  const overdueCount = metrics?.overdueCount ?? 0;
+  const pendingCount = metrics?.pendingCount ?? 0;
 
   if (loading) {
     return (
@@ -66,10 +66,10 @@ const Dashboard = () => {
         description={t("dashboard.description")}
         actions={
           <>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth" onClick={() => navigate("/notifications")}>
               <Send className="w-3.5 h-3.5" /> {t("dashboard.sendNotification")}
             </Button>
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 btn-depth">
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 btn-depth" onClick={() => navigate("/clients")}>
               <Plus className="w-3.5 h-3.5" /> {t("dashboard.newClient")}
             </Button>
           </>
@@ -149,12 +149,13 @@ const Dashboard = () => {
 
       <div className="flex flex-wrap gap-2">
         {[
-          { icon: CreditCard, labelKey: "action.payLoan" },
-          { icon: PiggyBank, labelKey: "action.deposit" },
-          { icon: ArrowUpRight, labelKey: "action.reinvest" },
-          { icon: Send, labelKey: "action.sendMessage" },
+          { icon: CreditCard, labelKey: "action.payLoan", path: "/loans" },
+          { icon: PiggyBank, labelKey: "action.deposit", path: "/savings" },
+          { icon: ArrowUpRight, labelKey: "action.reinvest", path: "/investors" },
+          { icon: Send, labelKey: "action.sendMessage", path: "/notifications" },
         ].map((action) => (
-          <Button key={action.labelKey} variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
+          <Button key={action.labelKey} variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+            onClick={() => navigate(action.path)}>
             <action.icon className="w-3.5 h-3.5" />
             {t(action.labelKey)}
           </Button>

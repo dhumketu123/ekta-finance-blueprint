@@ -129,6 +129,7 @@ const TopHeader = () => {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => navigate("/notifications")}
           className="relative h-9 w-9 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
         >
           <Bell className="w-4.5 h-4.5" />

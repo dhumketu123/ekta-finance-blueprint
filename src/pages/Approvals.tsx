@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { useApprovePendingTransaction, useRejectPendingTransaction } from "@/hooks/usePendingTransactions";
@@ -16,6 +16,8 @@ import { CheckCircle2, XCircle, Clock, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const typeLabels: Record<string, string> = {
   loan_repayment: "ঋণ পরিশোধ",
@@ -41,6 +43,18 @@ const Approvals = () => {
   const approveMut = useApprovePendingTransaction();
   const rejectMut = useRejectPendingTransaction();
   const bn = lang === "bn";
+  const qc = useQueryClient();
+
+  // Realtime subscription for pending_transactions
+  useEffect(() => {
+    const channel = supabase
+      .channel("approvals-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pending_transactions" }, () => {
+        qc.invalidateQueries({ queryKey: ["pending_transactions"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const statusFilter = tab === "all" ? undefined : tab;
 
@@ -97,10 +111,10 @@ const Approvals = () => {
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="pending">অপেক্ষমান</TabsTrigger>
-          <TabsTrigger value="approved">অনুমোদিত</TabsTrigger>
-          <TabsTrigger value="rejected">প্রত্যাখ্যাত</TabsTrigger>
-          <TabsTrigger value="all">সব</TabsTrigger>
+          <TabsTrigger value="pending">{bn ? "অপেক্ষমান" : "Pending"}</TabsTrigger>
+          <TabsTrigger value="approved">{bn ? "অনুমোদিত" : "Approved"}</TabsTrigger>
+          <TabsTrigger value="rejected">{bn ? "প্রত্যাখ্যাত" : "Rejected"}</TabsTrigger>
+          <TabsTrigger value="all">{bn ? "সব" : "All"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
