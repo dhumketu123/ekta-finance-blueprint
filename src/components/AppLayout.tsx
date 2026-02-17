@@ -13,8 +13,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
         <TopHeader />
-        <main className="w-full min-w-0 mt-16 px-4 py-6 sm:px-6 lg:px-8 animate-page-enter">
-          {children}
+        <main className="w-full min-w-0 mt-16 animate-page-enter">
+          <div className="max-w-[1400px] mx-auto px-4 py-6 md:px-6 lg:px-8">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarStateProvider>
