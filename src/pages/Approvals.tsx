@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
+import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const typeLabels: Record<string, string> = {
   loan_repayment: "ঋণ পরিশোধ",
@@ -30,13 +32,16 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
 const Approvals = () => {
   const [tab, setTab] = useState("pending");
   const { data: txs, isLoading } = usePendingTransactions(tab === "all" ? undefined : tab);
-  const { canApproveTransactions } = usePermissions();
+  const { canApproveTransactions, canRecordPayments } = usePermissions();
+  const { lang } = useLanguage();
   const approveMut = useApprovePendingTransaction();
   const rejectMut = useRejectPendingTransaction();
 
   const [reviewTx, setReviewTx] = useState<any | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject">("approve");
   const [reason, setReason] = useState("");
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const bn = lang === "bn";
 
   const handleReview = () => {
     if (!reviewTx) return;
@@ -52,7 +57,15 @@ const Approvals = () => {
 
   return (
     <AppLayout>
-      <PageHeader title="অনুমোদন সারি" description="Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" />
+      <div className="flex items-center justify-between mb-2">
+        <PageHeader title={bn ? "অনুমোদন সারি" : "Approval Queue"} description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"} />
+        {canRecordPayments && (
+          <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            {bn ? "সংগ্রহ জমা দিন" : "Submit Collection"}
+          </Button>
+        )}
+      </div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -151,6 +164,9 @@ const Approvals = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Field Officer Collection Form */}
+      <FieldOfficerCollectionForm open={collectionOpen} onClose={() => setCollectionOpen(false)} />
     </AppLayout>
   );
 };
