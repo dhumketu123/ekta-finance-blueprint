@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 97.6%;
+    --background: 192 20% 96%;
     --foreground: 180 100% 10%;
 
     --card: 0 0% 100%;
@@ -43,7 +43,11 @@
     --input: 180 10% 88%;
     --ring: 51 100% 50%;
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
+
+    --shadow-card: 0 2px 12px -2px hsla(180, 40%, 20%, 0.08);
+    --shadow-card-hover: 0 8px 24px -4px hsla(180, 40%, 20%, 0.14);
+    --shadow-metric: 0 4px 20px -4px hsla(180, 40%, 20%, 0.12);
 
     --sidebar-background: 180 100% 15%;
     --sidebar-foreground: 0 0% 95%;
@@ -100,6 +104,10 @@
     --input: 200 10% 22%;
     --ring: 51 100% 50%;
 
+    --shadow-card: 0 2px 12px -2px hsla(200, 30%, 10%, 0.3);
+    --shadow-card-hover: 0 8px 24px -4px hsla(200, 30%, 10%, 0.4);
+    --shadow-metric: 0 4px 20px -4px hsla(200, 30%, 10%, 0.35);
+
     --sidebar-background: 200 15% 10%;
     --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 51 100% 50%;
@@ -147,11 +155,20 @@
   }
 
   .card-elevated {
-    @apply bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply bg-card rounded-xl border transition-all duration-300 ease-out;
+    box-shadow: var(--shadow-card);
+    border-color: hsl(180 20% 90%);
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
   }
 
   .card-premium {
-    @apply bg-card rounded-xl border shadow-md;
+    @apply bg-card rounded-xl border;
+    box-shadow: var(--shadow-metric);
+    border-color: hsl(51 60% 75% / 0.4);
   }
 
   .status-paid {
@@ -180,15 +197,38 @@
 
   /* Premium table header */
   .table-header-premium th {
-    @apply bg-primary text-primary-foreground font-semibold text-xs tracking-wide uppercase;
+    @apply font-semibold text-xs tracking-wider uppercase sticky top-0 z-10;
+    background: linear-gradient(135deg, hsl(180 100% 15%), hsl(180 80% 22%));
+    color: hsl(0 0% 100%);
   }
 
   /* Premium table row hover */
   .table-premium tbody tr {
-    @apply hover:bg-primary/5 transition-colors duration-150;
+    @apply transition-colors duration-200;
+  }
+
+  .table-premium tbody tr:hover {
+    background: hsl(180 40% 95% / 0.6);
   }
 
   .table-premium tbody tr:nth-child(even) {
     @apply bg-muted/30;
+  }
+
+  /* Button premium hover */
+  .btn-depth {
+    @apply transition-all duration-200;
+  }
+  .btn-depth:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px hsl(180 40% 20% / 0.15);
+  }
+  .btn-depth:active {
+    transform: translateY(0);
+  }
+
+  /* Section highlight strip */
+  .section-highlight {
+    background: linear-gradient(180deg, hsl(180 20% 96%) 0%, hsl(180 15% 98%) 100%);
   }
 }

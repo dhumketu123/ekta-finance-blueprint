@@ -21,10 +21,10 @@ const Dashboard = () => {
         description={t("dashboard.description")}
         actions={
           <>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth">
               <Send className="w-3.5 h-3.5" /> {t("dashboard.sendNotification")}
             </Button>
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 btn-depth">
               <Plus className="w-3.5 h-3.5" /> {t("dashboard.newClient")}
             </Button>
           </>
@@ -86,7 +86,7 @@ const Dashboard = () => {
           { icon: ArrowUpRight, labelKey: "action.reinvest" },
           { icon: Send, labelKey: "action.sendMessage" },
         ].map((action) => (
-          <Button key={action.labelKey} variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
+          <Button key={action.labelKey} variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all">
             <action.icon className="w-3.5 h-3.5" />
             {t(action.labelKey)}
           </Button>
