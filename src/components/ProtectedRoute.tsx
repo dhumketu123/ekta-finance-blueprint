@@ -21,6 +21,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Redirect investor away from dashboard to wallet
+  if (role === "investor" && allowedRoles && !allowedRoles.includes("investor")) {
+    return <Navigate to="/wallet" replace />;
+  }
+
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     return <Navigate to="/" replace />;
   }
