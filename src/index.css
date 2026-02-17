@@ -277,4 +277,153 @@
     @apply bg-foreground text-background text-[11px] px-3 py-1.5 rounded-lg;
     box-shadow: 0 4px 16px hsl(180 30% 10% / 0.2);
   }
+
+  /* ========== Auth Page Styles ========== */
+  .auth-bg {
+    background: linear-gradient(135deg, hsl(220 60% 12%) 0%, hsl(220 70% 18%) 30%, hsl(210 65% 22%) 60%, hsl(220 60% 14%) 100%);
+  }
+
+  .auth-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+  }
+
+  .auth-orb-1 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, hsl(210 80% 50% / 0.4), transparent);
+    top: -100px;
+    right: -100px;
+    animation: auth-float 12s ease-in-out infinite;
+  }
+
+  .auth-orb-2 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, hsl(180 70% 40% / 0.3), transparent);
+    bottom: -80px;
+    left: -80px;
+    animation: auth-float 16s ease-in-out infinite reverse;
+  }
+
+  .auth-orb-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, hsl(51 100% 50% / 0.15), transparent);
+    top: 40%;
+    left: 50%;
+    animation: auth-float 10s ease-in-out infinite 2s;
+  }
+
+  .auth-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(hsl(210 60% 40% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(210 60% 40% / 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: auth-grid-drift 30s linear infinite;
+  }
+
+  @keyframes auth-float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.05); }
+    66% { transform: translate(-20px, 15px) scale(0.95); }
+  }
+
+  @keyframes auth-grid-drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(60px, 60px); }
+  }
+
+  .auth-logo-box {
+    background: linear-gradient(135deg, hsl(180 100% 15%), hsl(180 80% 25%));
+    box-shadow: 0 8px 32px hsl(180 100% 15% / 0.4);
+    animation: auth-logo-glow 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes auth-logo-glow {
+    0% { box-shadow: 0 8px 32px hsl(180 100% 15% / 0.4); }
+    100% { box-shadow: 0 8px 48px hsl(180 100% 15% / 0.6), 0 0 20px hsl(51 100% 50% / 0.15); }
+  }
+
+  .auth-brand-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 20px hsl(210 80% 50% / 0.3);
+    animation: auth-title-in 0.8s ease-out both 0.2s;
+  }
+
+  .auth-brand-subtitle {
+    font-size: 0.875rem;
+    color: hsl(210 30% 70%);
+    letter-spacing: 0.05em;
+    animation: auth-title-in 0.8s ease-out both 0.4s;
+  }
+
+  @keyframes auth-title-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-glass-card {
+    background: hsl(220 50% 20% / 0.5);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border: 1px solid hsl(210 50% 50% / 0.15) !important;
+    border-radius: 1.25rem;
+    box-shadow: 
+      0 24px 48px -12px hsl(220 60% 8% / 0.5),
+      inset 0 1px 0 hsl(210 60% 60% / 0.1);
+  }
+
+  .auth-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: hsl(210 30% 75%);
+    margin-bottom: 0.375rem;
+  }
+
+  .auth-input {
+    background: hsl(220 40% 16% / 0.6) !important;
+    border: 1px solid hsl(210 40% 40% / 0.25) !important;
+    color: white !important;
+    border-radius: 0.75rem;
+    height: 2.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .auth-input::placeholder {
+    color: hsl(210 20% 50%) !important;
+  }
+
+  .auth-input:focus {
+    border-color: hsl(210 70% 55% / 0.6) !important;
+    box-shadow: 0 0 0 3px hsl(210 70% 55% / 0.15) !important;
+  }
+
+  .auth-submit-btn {
+    background: linear-gradient(135deg, hsl(180 100% 15%), hsl(210 70% 30%)) !important;
+    color: white !important;
+    border: none !important;
+    height: 2.875rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px hsl(210 70% 20% / 0.4);
+  }
+
+  .auth-submit-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px hsl(210 70% 20% / 0.5);
+  }
+
+  .auth-submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
 }
