@@ -106,7 +106,7 @@ const Auth = () => {
       <div className="auth-orb auth-orb-3" />
       <div className="auth-grid" />
 
-      <div className="relative z-10 w-full max-w-lg animate-fade-in">
+      <div className="relative z-20 w-full max-w-lg animate-fade-in">
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl auth-logo-box mb-4 animate-scale-in">
@@ -121,7 +121,7 @@ const Auth = () => {
         </div>
 
         {/* Glass Card */}
-        <Card className="auth-glass-card border-0">
+        <Card className="auth-glass-card border-0 !bg-transparent">
           <CardHeader className="pb-4 pt-8 px-8">
             <h2 className="text-xl font-semibold text-white text-center font-bangla">
               {mode === "login" && (lang === "bn" ? "আপনার অ্যাকাউন্টে লগইন করুন" : "Sign in to your account")}
