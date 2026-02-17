@@ -1,14 +1,23 @@
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { sampleClients } from "@/data/sampleData";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Clients = () => {
   const { t, lang } = useLanguage();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <AppLayout>
       <PageHeader
@@ -20,42 +29,47 @@ const Clients = () => {
           </Button>
         }
       />
-      <div className="card-elevated overflow-hidden">
-        <Table className="table-premium">
-          <TableHeader className="table-header-premium">
-            <TableRow>
-              <TableHead>{t("table.id")}</TableHead>
-              <TableHead>{t("table.name")}</TableHead>
-              <TableHead>{t("table.phone")}</TableHead>
-              <TableHead>{t("table.area")}</TableHead>
-              <TableHead>{t("table.officer")}</TableHead>
-              <TableHead>{t("table.loan")}</TableHead>
-              <TableHead>{t("table.interest")}</TableHead>
-              <TableHead>{t("table.payment")}</TableHead>
-              <TableHead>{t("table.savings")}</TableHead>
-              <TableHead>{t("table.status")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sampleClients.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{c.id}</TableCell>
-                <TableCell>
-                  <p className="text-xs font-medium">{lang === "bn" ? c.nameBn : c.nameEn}</p>
-                </TableCell>
-                <TableCell className="text-xs">{c.phone}</TableCell>
-                <TableCell className="text-xs">{c.area}</TableCell>
-                <TableCell className="text-xs font-mono">{c.assignedOfficer}</TableCell>
-                <TableCell className="text-xs font-semibold">{c.loanAmount ? `৳${c.loanAmount.toLocaleString()}` : "—"}</TableCell>
-                <TableCell className="text-xs">{c.interestRate ? `${c.interestRate}%` : "—"}</TableCell>
-                <TableCell className="text-xs capitalize">{c.paymentType?.replace("_", " ") || "—"}</TableCell>
-                <TableCell className="text-xs uppercase">{c.savingsType || "—"}</TableCell>
-                <TableCell><StatusBadge status={c.status} /></TableCell>
+
+      {loading ? (
+        <TableSkeleton rows={6} cols={6} />
+      ) : (
+        <div className="card-elevated overflow-hidden">
+          <Table className="table-premium">
+            <TableHeader className="table-header-premium">
+              <TableRow>
+                <TableHead>{t("table.id")}</TableHead>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.phone")}</TableHead>
+                <TableHead>{t("table.area")}</TableHead>
+                <TableHead>{t("table.officer")}</TableHead>
+                <TableHead>{t("table.loan")}</TableHead>
+                <TableHead>{t("table.interest")}</TableHead>
+                <TableHead>{t("table.payment")}</TableHead>
+                <TableHead>{t("table.savings")}</TableHead>
+                <TableHead>{t("table.status")}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {sampleClients.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{c.id}</TableCell>
+                  <TableCell>
+                    <p className="text-xs font-medium">{lang === "bn" ? c.nameBn : c.nameEn}</p>
+                  </TableCell>
+                  <TableCell className="text-xs">{c.phone}</TableCell>
+                  <TableCell className="text-xs">{c.area}</TableCell>
+                  <TableCell className="text-xs font-mono">{c.assignedOfficer}</TableCell>
+                  <TableCell className="text-xs font-semibold">{c.loanAmount ? `৳${c.loanAmount.toLocaleString()}` : "—"}</TableCell>
+                  <TableCell className="text-xs">{c.interestRate ? `${c.interestRate}%` : "—"}</TableCell>
+                  <TableCell className="text-xs capitalize">{c.paymentType?.replace("_", " ") || "—"}</TableCell>
+                  <TableCell className="text-xs uppercase">{c.savingsType || "—"}</TableCell>
+                  <TableCell><StatusBadge status={c.status} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </AppLayout>
   );
 };
