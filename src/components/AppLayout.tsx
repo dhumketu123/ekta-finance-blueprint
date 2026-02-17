@@ -10,10 +10,10 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <SidebarStateProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
         <TopHeader />
-        <main className="flex-1 mt-16 p-6 lg:p-8">
+        <main className="w-full min-w-0 mt-16 px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>

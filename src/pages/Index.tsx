@@ -93,7 +93,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="card-elevated mb-8 overflow-hidden">
+      <div className="card-elevated mb-8 overflow-hidden overflow-x-auto">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
@@ -130,7 +130,7 @@ const Dashboard = () => {
         </Table>
       </div>
 
-      <div className="card-elevated overflow-hidden">
+      <div className="card-elevated overflow-hidden overflow-x-auto">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("nav.investors")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
