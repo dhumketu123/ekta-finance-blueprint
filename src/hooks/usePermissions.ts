@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "field_officer" | "owner" | "investor";
+export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer";
 
 interface PermissionMatrix {
   canViewClients: boolean;
@@ -72,6 +72,17 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
     canViewOwnWallet: true,
     isAdmin: false, isOwner: false, isFieldOfficer: false, isInvestor: true,
+  },
+  treasurer: {
+    canViewClients: false, canEditClients: false, canDeleteClients: false,
+    canViewInvestors: true, canEditInvestors: false,
+    canViewLoans: false, canEditLoans: false,
+    canViewSavings: true, canEditSavings: false,
+    canViewOwners: false, canViewOfficers: false, canEditOfficers: false,
+    canViewNotifications: false, canViewSettings: false, canViewReports: true,
+    canApproveTransactions: true, canRecordPayments: false, canDeleteMasterData: false,
+    canViewOwnWallet: false,
+    isAdmin: false, isOwner: false, isFieldOfficer: false, isInvestor: false,
   },
 };
 
