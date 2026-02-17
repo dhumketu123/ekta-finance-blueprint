@@ -61,6 +61,58 @@
     --font-bangla: 'Hind Siliguri', sans-serif;
     --font-english: 'Inter', sans-serif;
   }
+
+  .dark {
+    --background: 200 15% 10%;
+    --foreground: 0 0% 93%;
+
+    --card: 200 15% 13%;
+    --card-foreground: 0 0% 93%;
+
+    --popover: 200 15% 13%;
+    --popover-foreground: 0 0% 93%;
+
+    --primary: 180 60% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 12% 20%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 200 10% 18%;
+    --muted-foreground: 200 8% 55%;
+
+    --accent: 51 100% 50%;
+    --accent-foreground: 51 100% 10%;
+
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 122 39% 49%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 36 100% 50%;
+    --warning-foreground: 36 100% 10%;
+
+    --closed: 0 0% 50%;
+    --closed-foreground: 0 0% 70%;
+
+    --border: 200 10% 22%;
+    --input: 200 10% 22%;
+    --ring: 51 100% 50%;
+
+    --sidebar-background: 200 15% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 51 100% 50%;
+    --sidebar-primary-foreground: 51 100% 10%;
+    --sidebar-accent: 200 12% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 200 10% 22%;
+    --sidebar-ring: 51 100% 50%;
+    --sidebar-muted: 200 8% 50%;
+
+    --header-background: 200 15% 8%;
+    --header-foreground: 0 0% 100%;
+  }
 }
 
 @layer base {
