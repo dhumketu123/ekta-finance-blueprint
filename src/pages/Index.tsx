@@ -93,76 +93,126 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="card-elevated mb-8 overflow-hidden overflow-x-auto">
+      <div className="card-elevated mb-8 overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
             <a href="/clients">{t("dashboard.viewAll")}</a>
           </Button>
         </div>
-        <Table className="table-premium">
-          <TableHeader className="table-header-premium">
-            <TableRow>
-              <TableHead>{t("table.id")}</TableHead>
-              <TableHead>{t("table.name")}</TableHead>
-              <TableHead>{t("table.area")}</TableHead>
-              <TableHead>{t("table.loan")}</TableHead>
-              <TableHead>{t("table.status")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sampleClients.slice(0, 4).map((client) => (
-              <TableRow key={client.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{client.id}</TableCell>
-                <TableCell>
-                  <p className="text-xs font-medium">{lang === "bn" ? client.nameBn : client.nameEn}</p>
-                </TableCell>
-                <TableCell className="text-xs">{client.area}</TableCell>
-                <TableCell className="text-xs font-semibold">
-                  {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={client.status} />
-                </TableCell>
+
+        <div className="hidden sm:block">
+          <Table className="table-premium">
+            <TableHeader className="table-header-premium">
+              <TableRow>
+                <TableHead>{t("table.id")}</TableHead>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.area")}</TableHead>
+                <TableHead>{t("table.loan")}</TableHead>
+                <TableHead>{t("table.status")}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sampleClients.slice(0, 4).map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{client.id}</TableCell>
+                  <TableCell>
+                    <p className="text-xs font-medium">{lang === "bn" ? client.nameBn : client.nameEn}</p>
+                  </TableCell>
+                  <TableCell className="text-xs">{client.area}</TableCell>
+                  <TableCell className="text-xs font-semibold">
+                    {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={client.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="sm:hidden divide-y divide-border">
+          {sampleClients.slice(0, 4).map((client) => (
+            <div key={client.id} className="p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold truncate">{lang === "bn" ? client.nameBn : client.nameEn}</p>
+                  <StatusBadge status={client.status} />
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <span>{client.area}</span>
+                  <span>•</span>
+                  <span className="font-semibold text-foreground">
+                    {client.loanAmount ? `৳${client.loanAmount.toLocaleString()}` : "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="card-elevated overflow-hidden overflow-x-auto">
+      <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("nav.investors")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
             <a href="/investors">{t("dashboard.viewAll")}</a>
           </Button>
         </div>
-        <Table className="table-premium">
-          <TableHeader className="table-header-premium">
-            <TableRow>
-              <TableHead>{t("table.id")}</TableHead>
-              <TableHead>{t("table.name")}</TableHead>
-              <TableHead>{t("table.capital")}</TableHead>
-              <TableHead>{t("table.monthlyProfit")}</TableHead>
-              <TableHead>{t("table.reinvest")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sampleInvestors.map((inv) => (
-              <TableRow key={inv.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
-                <TableCell>
-                  <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
-                </TableCell>
-                <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
-                <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>
-                <TableCell>
-                  <StatusBadge status={inv.reinvest ? "active" : "inactive"} />
-                </TableCell>
+
+        <div className="hidden sm:block">
+          <Table className="table-premium">
+            <TableHeader className="table-header-premium">
+              <TableRow>
+                <TableHead>{t("table.id")}</TableHead>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.capital")}</TableHead>
+                <TableHead>{t("table.monthlyProfit")}</TableHead>
+                <TableHead>{t("table.reinvest")}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sampleInvestors.map((inv) => (
+                <TableRow key={inv.id}>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
+                  <TableCell>
+                    <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
+                  </TableCell>
+                  <TableCell className="text-xs font-semibold">৳{inv.capital.toLocaleString()}</TableCell>
+                  <TableCell className="text-xs">{inv.monthlyProfitPercent}%</TableCell>
+                  <TableCell>
+                    <StatusBadge status={inv.reinvest ? "active" : "inactive"} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="sm:hidden divide-y divide-border">
+          {sampleInvestors.map((inv) => (
+            <div key={inv.id} className="p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-4 h-4 text-success" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold truncate">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
+                  <StatusBadge status={inv.reinvest ? "active" : "inactive"} />
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">৳{inv.capital.toLocaleString()}</span>
+                  <span>•</span>
+                  <span>{inv.monthlyProfitPercent}% {t("table.monthlyProfit")}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </AppLayout>
   );
