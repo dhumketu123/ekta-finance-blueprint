@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
+import RepaymentProgress from "@/components/RepaymentProgress";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -173,14 +175,25 @@ const Dashboard = () => {
                 const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
                 const status = (client as any).status;
                 const id = (client as any).id;
+                const nextPayment = isDb ? (client as any).next_payment_date : (client as any).nextDepositDate;
 
                 return (
-                  <TableRow key={id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
-                    <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
-                    <TableCell className="text-xs">{area || "—"}</TableCell>
-                    <TableCell className="text-xs font-semibold">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</TableCell>
-                    <TableCell><StatusBadge status={status === "overdue" ? "overdue" : status === "pending" ? "pending" : status === "active" ? "active" : "inactive"} /></TableCell>
-                  </TableRow>
+                  <TooltipProvider key={id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TableRow className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
+                          <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                          <TableCell className="text-xs">{area || "—"}</TableCell>
+                          <TableCell className="text-xs font-semibold">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</TableCell>
+                          <TableCell><StatusBadge status={status === "overdue" ? "overdue" : status === "pending" ? "pending" : status === "active" ? "active" : "inactive"} /></TableCell>
+                        </TableRow>
+                      </TooltipTrigger>
+                      <TooltipContent className="tooltip-premium" side="top">
+                        <p>{nextPayment ? `Next payment: ${nextPayment}` : "No payment scheduled"}</p>
+                        {loanAmt && <p>Loan: ৳{Number(loanAmt).toLocaleString()}</p>}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 );
               })}
             </TableBody>
