@@ -6,31 +6,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { Plus, PiggyBank, Search, Edit2, Trash2 } from "lucide-react";
+import TablePagination from "@/components/TablePagination";
+import { Plus, PiggyBank, Search, Edit2, Trash2, ArrowDownCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useSavingsProducts } from "@/hooks/useSupabaseData";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSoftDelete } from "@/hooks/useCrudOperations";
 import SavingsProductForm from "@/components/forms/SavingsProductForm";
+import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
 import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Savings = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { data: savings, isLoading } = useSavingsProducts();
-  const { canEditSavings } = usePermissions();
+  const { canEditSavings, canRecordPayments, isAdmin, isOwner } = usePermissions();
   const softDelete = useSoftDelete("savings_products");
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
+  const [txModalOpen, setTxModalOpen] = useState(false);
 
-  const filtered = (savings ?? []).filter((sp) => {
+  const { data: savings, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
+    table: "savings_products",
+    queryKey: ["savings_products"],
+    pageSize: 10,
+  });
+
+  const filtered = (savings ?? []).filter((sp: any) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return sp.product_name_en.toLowerCase().includes(q) || sp.product_name_bn.toLowerCase().includes(q);
   });
+
+  const canDoSavingsTx = canRecordPayments || isAdmin || isOwner;
 
   const handleEdit = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setEditData(sp); setFormOpen(true); };
   const handleDelete = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setDeleteTarget(sp); };
@@ -41,11 +51,18 @@ const Savings = () => {
         title={t("savings.title")}
         description={t("savings.description")}
         actions={
-          canEditSavings ? (
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
-              <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
-            </Button>
-          ) : null
+          <div className="flex gap-2">
+            {canEditSavings && (
+              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+                <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
+              </Button>
+            )}
+            {canDoSavingsTx && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setTxModalOpen(true)}>
+                <ArrowDownCircle className="w-3.5 h-3.5" /> {lang === "bn" ? "জমা/উত্তোলন" : "Deposit/Withdraw"}
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -76,7 +93,7 @@ const Savings = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((sp) => (
+                {filtered.map((sp: any) => (
                   <TableRow key={sp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/savings/${sp.id}`)}>
                     <TableCell><p className="text-xs font-medium">{lang === "bn" ? sp.product_name_bn : sp.product_name_en}</p></TableCell>
                     <TableCell className="text-xs capitalize">{sp.frequency}</TableCell>
@@ -94,10 +111,11 @@ const Savings = () => {
                 ))}
               </TableBody>
             </Table>
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="sm:hidden space-y-3">
-            {filtered.map((sp) => (
+            {filtered.map((sp: any) => (
               <div key={sp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/savings/${sp.id}`)}>
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <PiggyBank className="w-4.5 h-4.5 text-primary" />
@@ -112,6 +130,7 @@ const Savings = () => {
                 </div>
               </div>
             ))}
+            <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
           </div>
 
           <div className="card-elevated p-5">
@@ -126,6 +145,7 @@ const Savings = () => {
       )}
 
       {formOpen && <SavingsProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
+      {txModalOpen && <SavingsTransactionModal open={txModalOpen} onClose={() => setTxModalOpen(false)} />}
       {deleteTarget && (
         <DeleteConfirmDialog
           open={!!deleteTarget}

@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const schema = z.object({
   client_id: z.string().uuid("গ্রাহক নির্বাচন করুন"),
-  type: z.enum(["loan_repayment", "savings_deposit"]),
+  type: z.enum(["loan_repayment", "savings_deposit", "savings_withdrawal"]),
   amount: z.coerce.number().positive("পরিমাণ ০ এর বেশি হতে হবে"),
   notes: z.string().trim().max(500).optional(),
 });
