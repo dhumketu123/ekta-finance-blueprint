@@ -27,10 +27,10 @@ const Dashboard = () => {
     return (
       <AppLayout>
         <PageHeader title={t("dashboard.title")} description={t("dashboard.description")} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {Array.from({ length: 3 }).map((_, i) => <SummaryCardSkeleton key={i} />)}
         </div>
         <TableSkeleton rows={4} cols={5} />
@@ -55,7 +55,7 @@ const Dashboard = () => {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <MetricCard
           title={t("dashboard.totalClients")}
           value={sampleClients.length}
@@ -88,7 +88,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-4 border-l-4 border-l-destructive">
           <p className="text-xs font-semibold text-destructive">3 {t("dashboard.overduePayments")}</p>
           <p className="text-[11px] text-muted-foreground mt-1">Abdul Karim, Jahid Hasan + 1 more</p>
@@ -103,7 +103,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-2">
         {[
           { icon: CreditCard, labelKey: "action.payLoan" },
           { icon: PiggyBank, labelKey: "action.deposit" },
@@ -117,7 +117,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="card-elevated mb-8 overflow-hidden">
+      <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-primary">{t("dashboard.recentClients")}</h2>
           <Button variant="ghost" size="sm" className="text-xs text-primary font-semibold" asChild>
