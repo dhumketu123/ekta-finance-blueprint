@@ -134,6 +134,26 @@ const translations: Record<string, { bn: string; en: string }> = {
 
   // Back
   "back": { bn: "পেছনে যান", en: "Go Back" },
+
+  // Detail pages
+  "detail.notFound": { bn: "তথ্য পাওয়া যায়নি", en: "Not Found" },
+  "detail.notFoundDesc": { bn: "অনুরোধকৃত তথ্য খুঁজে পাওয়া যায়নি।", en: "The requested record was not found." },
+  "detail.client": { bn: "গ্রাহক", en: "Client" },
+  "detail.investor": { bn: "বিনিয়োগকারী", en: "Investor" },
+  "detail.owner": { bn: "মালিক", en: "Owner" },
+  "detail.officer": { bn: "মাঠকর্মী", en: "Field Officer" },
+  "detail.loanProduct": { bn: "ঋণ পণ্য", en: "Loan Product" },
+  "detail.savingsProduct": { bn: "সঞ্চয় পণ্য", en: "Savings Product" },
+  "detail.personalInfo": { bn: "ব্যক্তিগত তথ্য", en: "Personal Info" },
+  "detail.loanInfo": { bn: "ঋণ তথ্য", en: "Loan Info" },
+  "detail.savingsInfo": { bn: "সঞ্চয় তথ্য", en: "Savings Info" },
+  "detail.contactInfo": { bn: "যোগাযোগ", en: "Contact Info" },
+  "detail.details": { bn: "বিস্তারিত", en: "Details" },
+  "detail.configuration": { bn: "কনফিগারেশন", en: "Configuration" },
+  "detail.nameEn": { bn: "নাম (ইংরেজি)", en: "Name (English)" },
+  "detail.frequency": { bn: "ফ্রিকোয়েন্সি", en: "Frequency" },
+  "detail.nextDeposit": { bn: "পরবর্তী জমা", en: "Next Deposit" },
+  "detail.monthlyProfitAmt": { bn: "মাসিক মুনাফা ৳", en: "Monthly Profit ৳" },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

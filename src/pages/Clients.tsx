@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -11,6 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Clients = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ const Clients = () => {
             </TableHeader>
             <TableBody>
               {sampleClients.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${c.id}`)}>
                   <TableCell className="text-xs font-mono text-muted-foreground">{c.id}</TableCell>
                   <TableCell>
                     <p className="text-xs font-medium">{lang === "bn" ? c.nameBn : c.nameEn}</p>
