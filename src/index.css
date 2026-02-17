@@ -120,10 +120,14 @@
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-english);
-    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
