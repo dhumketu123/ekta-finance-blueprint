@@ -53,15 +53,26 @@ export const AppSidebar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLElement>(null);
 
-  // Close sidebar on click outside
+  // Close sidebar on click outside (use mousedown with a small delay to avoid conflicts with toggle button)
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        close();
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        // Check if the click target is the toggle button in the header
+        const toggleBtn = (e.target as HTMLElement).closest('[aria-label="Toggle menu"]');
+        if (!toggleBtn) {
+          close();
+        }
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Use setTimeout to avoid the same click that opened the sidebar from closing it
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen, close]);
 
   // Close sidebar on route change
