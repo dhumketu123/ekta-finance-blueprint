@@ -1,42 +1,23 @@
-import { useState, useRef, useCallback } from "react";
-import { Camera, Loader2, X } from "lucide-react";
+import { useState, useCallback, forwardRef } from "react";
+import { Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-const ProfileAvatarUpload = () => {
+const ProfileAvatarUpload = forwardRef<HTMLInputElement>((_, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile-avatar", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("avatar_url, name_en, name_bn")
-        .eq("id", user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  const avatarUrl = profile?.avatar_url;
-  const initials = (profile?.name_en?.charAt(0) || user?.email?.charAt(0) || "U").toUpperCase();
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,8 +35,7 @@ const ProfileAvatarUpload = () => {
     setPreviewFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setDialogOpen(true);
-    // Reset input
-    if (fileRef.current) fileRef.current.value = "";
+    if (e.target) e.target.value = "";
   }, [toast]);
 
   const handleUpload = async () => {
@@ -66,18 +46,15 @@ const ProfileAvatarUpload = () => {
       const ext = previewFile.name.split(".").pop() || "jpg";
       const filePath = `${user.id}/avatar.${ext}`;
 
-      // Upload to storage (upsert)
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, previewFile, { upsert: true, contentType: previewFile.type });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-      // Update profile
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
@@ -107,28 +84,8 @@ const ProfileAvatarUpload = () => {
 
   return (
     <>
-      <div
-        className="relative group cursor-pointer"
-        onClick={() => fileRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        aria-label="Upload profile photo"
-      >
-        <Avatar className="w-9 h-9 ring-2 ring-primary-foreground/20 group-hover:ring-accent transition-all duration-200">
-          {avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt="Profile" className="object-cover" />
-          ) : null}
-          <AvatarFallback className="bg-accent text-accent-foreground text-xs font-bold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-all duration-200">
-          <Camera className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-        </div>
-      </div>
-
       <input
-        ref={fileRef}
+        ref={ref}
         type="file"
         accept={ACCEPTED_TYPES.join(",")}
         onChange={handleFileSelect}
@@ -171,6 +128,8 @@ const ProfileAvatarUpload = () => {
       </Dialog>
     </>
   );
-};
+});
+
+ProfileAvatarUpload.displayName = "ProfileAvatarUpload";
 
 export default ProfileAvatarUpload;
