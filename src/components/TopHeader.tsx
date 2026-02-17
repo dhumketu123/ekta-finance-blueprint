@@ -14,7 +14,7 @@ const TopHeader = () => {
       {/* Left: Three-dot menu + Tagline */}
       <div className="flex items-center gap-3 min-w-0">
         <button
-          onClick={toggle}
+          onClick={(e) => { e.stopPropagation(); toggle(); }}
           className="p-2 rounded-lg text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
           aria-label="Toggle menu"
         >
