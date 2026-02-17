@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, Landmark, UserCog, Wallet, PiggyBank,
-  Bell, Settings, Shield, TrendingUp, ArrowLeft, Search, X, LogOut, FlaskConical,
+  Bell, Settings, Shield, TrendingUp, ArrowLeft, Search, X, LogOut, FlaskConical, ClipboardCheck,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { path: "/field-officers", icon: UserCog, labelKey: "nav.fieldOfficers", roles: ["admin", "owner"] },
   { path: "/loans", icon: Wallet, labelKey: "nav.loans", roles: ["admin", "owner", "field_officer"] },
   { path: "/savings", icon: PiggyBank, labelKey: "nav.savings", roles: ["admin", "owner", "field_officer"] },
+  { path: "/approvals", icon: ClipboardCheck, labelKey: "nav.approvals", roles: ["admin", "owner"] },
   { path: "/notifications", icon: Bell, labelKey: "nav.notifications", roles: ["admin", "owner"] },
   { path: "/settings", icon: Settings, labelKey: "nav.settings", roles: ["admin", "owner"] },
 ];

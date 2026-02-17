@@ -332,6 +332,89 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_transactions: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          id: string
+          loan_id: string | null
+          notes: string | null
+          reference_id: string
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          savings_id: string | null
+          status: string
+          submitted_by: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          notes?: string | null
+          reference_id: string
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          savings_id?: string | null
+          status?: string
+          submitted_by: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          notes?: string | null
+          reference_id?: string
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          savings_id?: string | null
+          status?: string
+          submitted_by?: string
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_transactions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "pending_transactions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_transactions_savings_id_fkey"
+            columns: ["savings_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -618,6 +701,10 @@ export type Database = {
             }
             Returns: Json
           }
+      approve_pending_transaction: {
+        Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
+        Returns: Json
+      }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
@@ -641,6 +728,10 @@ export type Database = {
       is_owner: { Args: never; Returns: boolean }
       process_investor_reinvest: {
         Args: { _investor_id: string }
+        Returns: undefined
+      }
+      reject_pending_transaction: {
+        Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
     }

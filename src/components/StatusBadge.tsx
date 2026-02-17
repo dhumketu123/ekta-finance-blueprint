@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 
 interface StatusBadgeProps {
-  status: "active" | "inactive" | "paid" | "pending" | "overdue" | "closed" | "none";
+  status: "active" | "inactive" | "paid" | "pending" | "overdue" | "closed" | "none" | "approved" | "rejected";
   labelBn?: string;
 }
 
@@ -12,6 +12,8 @@ const config: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "status-pending" },
   overdue: { label: "Overdue", className: "status-overdue" },
   closed: { label: "Closed", className: "status-closed" },
+  approved: { label: "Approved", className: "status-active" },
+  rejected: { label: "Rejected", className: "status-overdue" },
   none: { label: "None", className: "status-inactive" },
 };
 
