@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
+import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 
 const ResetPassword = () => {
@@ -18,6 +18,8 @@ const ResetPassword = () => {
   const { toast } = useToast();
   const { lang } = useLanguage();
   const navigate = useNavigate();
+
+  const passwordValidation = validatePassword(password);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -31,12 +33,18 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords do not match.", variant: "destructive" });
+    if (!passwordValidation.isValid) {
+      toast({
+        title: lang === "bn" ? "দুর্বল পাসওয়ার্ড" : "Weak Password",
+        description: lang === "bn"
+          ? "পাসওয়ার্ডে কমপক্ষে ১০ অক্ষর, বড় হাতের, ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।"
+          : "Password must include at least 10 characters, uppercase, lowercase and a number.",
+        variant: "destructive",
+      });
       return;
     }
-    if (password.length < 8) {
-      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: lang === "bn" ? "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।" : "Password must be at least 8 characters.", variant: "destructive" });
+    if (password !== confirmPassword) {
+      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords do not match.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -92,8 +100,8 @@ const ResetPassword = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required minLength={8} maxLength={72}
+                    placeholder="••••••••••"
+                    required minLength={10} maxLength={72}
                     className="auth-input pr-10"
                     aria-required="true"
                     aria-describedby="reset-password-strength"
@@ -103,14 +111,14 @@ const ResetPassword = () => {
                   </button>
                 </div>
                 <div id="reset-password-strength">
-                  <PasswordStrengthMeter password={password} />
+                  <PasswordStrengthMeter password={password} showChecklist />
                 </div>
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="auth-label">{lang === "bn" ? "পাসওয়ার্ড নিশ্চিত করুন" : "Confirm Password"}</label>
-                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required minLength={8} maxLength={72} className="auth-input" aria-required="true" />
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••••" required minLength={10} maxLength={72} className="auth-input" aria-required="true" />
               </div>
-              <Button type="submit" className="w-full auth-submit-btn" disabled={loading} aria-busy={loading}>
+              <Button type="submit" className="w-full auth-submit-btn" disabled={loading || !passwordValidation.isValid} aria-busy={loading}>
                 {loading ? <span className="animate-spin mr-2">⏳</span> : <KeyRound size={16} className="mr-2" />}
                 {lang === "bn" ? "পাসওয়ার্ড আপডেট করুন" : "Update Password"}
               </Button>
