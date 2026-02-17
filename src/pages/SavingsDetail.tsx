@@ -2,14 +2,30 @@ import { useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
-import { sampleSavingsProducts } from "@/data/sampleData";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSavingsProduct } from "@/hooks/useSupabaseData";
+import { sampleSavingsProducts } from "@/data/sampleData";
 import { PiggyBank, Settings } from "lucide-react";
 
 const SavingsDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
-  const sp = sampleSavingsProducts.find((s) => s.id === id);
+  const { data: dbSp, isLoading } = useSavingsProduct(id || "");
+
+  const sampleSp = sampleSavingsProducts.find((s) => s.id === id);
+  const hasDb = !!dbSp;
+  const sp: any = hasDb ? dbSp : sampleSp;
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <PageHeader title="..." />
+        <div className="card-elevated p-8 text-center animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!sp) {
     return (
@@ -22,11 +38,15 @@ const SavingsDetail = () => {
     );
   }
 
-  const name = lang === "bn" ? sp.nameBn : sp.nameEn;
+  const name = hasDb ? (lang === "bn" ? sp.product_name_bn : sp.product_name_en) : (lang === "bn" ? sp.nameBn : sp.nameEn);
+  const nameEn = hasDb ? sp.product_name_en : sp.nameEn;
+  const freq = hasDb ? sp.frequency : sp.frequency;
+  const minAmt = hasDb ? sp.min_amount : sp.minAmount;
+  const maxAmt = hasDb ? sp.max_amount : sp.maxAmount;
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id}`} />
+      <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id.slice(0, 8)}`} />
 
       <div className="card-elevated p-6 border-l-4 border-l-success">
         <div className="flex items-center gap-4">
@@ -35,7 +55,7 @@ const SavingsDetail = () => {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <span className="text-xs text-muted-foreground font-mono">{sp.id}</span>
+            <span className="text-xs text-muted-foreground font-mono">{sp.id.slice(0, 8)}</span>
           </div>
         </div>
       </div>
@@ -43,15 +63,15 @@ const SavingsDetail = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-5 border-l-4 border-l-primary text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.frequency")}</p>
-          <p className="mt-2 text-xl font-bold text-primary capitalize">{sp.frequency}</p>
+          <p className="mt-2 text-xl font-bold text-primary capitalize">{freq}</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-warning text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.minAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-warning">৳{sp.minAmount.toLocaleString()}</p>
+          <p className="mt-2 text-2xl font-bold text-warning">৳{Number(minAmt).toLocaleString()}</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-success text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.maxAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-success">৳{sp.maxAmount.toLocaleString()}</p>
+          <p className="mt-2 text-2xl font-bold text-success">৳{Number(maxAmt).toLocaleString()}</p>
         </div>
       </div>
 
@@ -62,10 +82,10 @@ const SavingsDetail = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <DetailField label={t("table.product")} value={name} />
-          <DetailField label={t("detail.nameEn")} value={sp.nameEn} />
-          <DetailField label={t("table.frequency")} value={sp.frequency} />
-          <DetailField label={t("table.minAmount")} value={`৳${sp.minAmount.toLocaleString()}`} />
-          <DetailField label={t("table.maxAmount")} value={`৳${sp.maxAmount.toLocaleString()}`} highlight />
+          <DetailField label={t("detail.nameEn")} value={nameEn} />
+          <DetailField label={t("table.frequency")} value={freq} />
+          <DetailField label={t("table.minAmount")} value={`৳${Number(minAmt).toLocaleString()}`} />
+          <DetailField label={t("table.maxAmount")} value={`৳${Number(maxAmt).toLocaleString()}`} highlight />
         </div>
       </div>
     </AppLayout>

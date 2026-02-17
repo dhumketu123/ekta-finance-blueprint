@@ -14,9 +14,11 @@ import {
   ArrowLeft,
   Search,
   X,
+  LogOut,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { path: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
@@ -48,10 +50,17 @@ const fuzzyMatch = (query: string, target: string): boolean => {
 export const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { isOpen, close } = useSidebarState();
+  const { user, role, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLElement>(null);
+
+  const handleLogout = async () => {
+    close();
+    await signOut();
+    navigate("/auth");
+  };
 
   // Close sidebar on click outside (use mousedown with a small delay to avoid conflicts with toggle button)
   useEffect(() => {
@@ -193,16 +202,23 @@ export const AppSidebar = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground shadow-sm">
-              A
+              {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
-            <div>
-              <p className="text-xs font-medium text-sidebar-foreground">Admin User</p>
-              <p className="text-[10px] text-sidebar-muted">{t("header.admin")}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.email || "User"}</p>
+              <p className="text-[10px] text-sidebar-muted capitalize">{role || t("header.admin")}</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            {lang === "bn" ? "লগআউট" : "Logout"}
+          </button>
         </div>
       </aside>
     </>

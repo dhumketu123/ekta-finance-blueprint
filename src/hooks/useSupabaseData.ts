@@ -149,6 +149,85 @@ export const useTransactions = (filters?: { client_id?: string; investor_id?: st
     },
   });
 
+export const useOwners = () =>
+  useQuery({
+    queryKey: ["owners"],
+    queryFn: async () => {
+      const { data: roles, error: rolesErr } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "owner");
+      if (rolesErr) throw rolesErr;
+      if (!roles?.length) return [];
+      const ids = roles.map((r) => r.user_id);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", ids);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+export const useOwner = (id: string) =>
+  useQuery({
+    queryKey: ["owners", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+export const useFieldOfficers = () =>
+  useQuery({
+    queryKey: ["field_officers"],
+    queryFn: async () => {
+      const { data: roles, error: rolesErr } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "field_officer");
+      if (rolesErr) throw rolesErr;
+      if (!roles?.length) return [];
+      const ids = roles.map((r) => r.user_id);
+      const [profilesRes, clientsRes] = await Promise.all([
+        supabase.from("profiles").select("*").in("id", ids),
+        supabase.from("clients").select("id, assigned_officer").is("deleted_at", null),
+      ]);
+      if (profilesRes.error) throw profilesRes.error;
+      const clients = clientsRes.data ?? [];
+      return (profilesRes.data ?? []).map((p) => ({
+        ...p,
+        clientCount: clients.filter((c) => c.assigned_officer === p.id).length,
+      }));
+    },
+  });
+
+export const useFieldOfficer = (id: string) =>
+  useQuery({
+    queryKey: ["field_officers", id],
+    queryFn: async () => {
+      const [profileRes, clientsRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
+        supabase.from("clients").select("id, area").eq("assigned_officer", id).is("deleted_at", null),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      if (!profileRes.data) return null;
+      const areas = [...new Set((clientsRes.data ?? []).map((c) => c.area).filter(Boolean))];
+      return {
+        ...profileRes.data,
+        clientCount: clientsRes.data?.length ?? 0,
+        assignedAreas: areas as string[],
+      };
+    },
+    enabled: !!id,
+  });
+
 export const useDashboardMetrics = () =>
   useQuery({
     queryKey: ["dashboard_metrics"],
