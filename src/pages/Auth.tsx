@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
-import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound, Sparkles } from "lucide-react";
+import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
+import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot";
 type LoginMethod = "email" | "phone";
+
+const LOGIN_COOLDOWN_MS = 3000;
+const RESET_COOLDOWN_MS = 30000;
 
 const Auth = () => {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -23,6 +26,9 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shakeError, setShakeError] = useState(false);
+  const [loginCooldown, setLoginCooldown] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(false);
+  const failCountRef = useRef(0);
   const { toast } = useToast();
   const { lang } = useLanguage();
   const navigate = useNavigate();
@@ -32,6 +38,19 @@ const Auth = () => {
     setTimeout(() => setShakeError(false), 600);
   };
 
+  const startLoginCooldown = useCallback(() => {
+    failCountRef.current += 1;
+    const delay = failCountRef.current >= 3
+      ? Math.min(LOGIN_COOLDOWN_MS * failCountRef.current, 15000)
+      : LOGIN_COOLDOWN_MS;
+    setLoginCooldown(true);
+    setTimeout(() => setLoginCooldown(false), delay);
+  }, []);
+
+  const passwordValidation = validatePassword(password);
+
+  const isSignupDisabled = mode === "signup" && !passwordValidation.isValid;
+
   const handleLogin = async () => {
     if (loginMethod === "email") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -40,6 +59,8 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithPassword({ phone, password });
       if (error) throw error;
     }
+
+    failCountRef.current = 0;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -57,6 +78,17 @@ const Auth = () => {
   };
 
   const handleSignup = async () => {
+    if (!passwordValidation.isValid) {
+      toast({
+        title: lang === "bn" ? "দুর্বল পাসওয়ার্ড" : "Weak Password",
+        description: lang === "bn"
+          ? "পাসওয়ার্ডে কমপক্ষে ১০ অক্ষর, বড় হাতের, ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।"
+          : "Password must include at least 10 characters, uppercase, lowercase and a number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -75,20 +107,27 @@ const Auth = () => {
   };
 
   const handleForgotPassword = async () => {
+    if (resetCooldown) return;
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) throw error;
+
+    setResetCooldown(true);
+    setTimeout(() => setResetCooldown(false), RESET_COOLDOWN_MS);
+
     toast({
-      title: lang === "bn" ? "ইমেইল পাঠানো হয়েছে ✉️" : "Email Sent ✉️",
+      title: lang === "bn" ? "লিংক পাঠানো হয়েছে ✉️" : "Link Sent ✉️",
       description: lang === "bn"
-        ? "পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।"
-        : "A password reset link has been sent to your email.",
+        ? "যদি এই ইমেইলে অ্যাকাউন্ট থাকে, রিসেট লিংক পাঠানো হয়েছে।"
+        : "If an account exists with this email, a reset link has been sent.",
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginCooldown || loading) return;
     setLoading(true);
     try {
       if (mode === "login") await handleLogin();
@@ -96,6 +135,7 @@ const Auth = () => {
       else await handleForgotPassword();
     } catch (error: any) {
       triggerShake();
+      if (mode === "login") startLoginCooldown();
       toast({
         title: lang === "bn" ? "ত্রুটি" : "Error",
         description: error.message,
@@ -105,6 +145,12 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const isSubmitDisabled =
+    loading ||
+    loginCooldown ||
+    (mode === "signup" && isSignupDisabled) ||
+    (mode === "forgot" && resetCooldown);
 
   const friendlyCopy = {
     login: lang === "bn" ? "স্বাগতম! আপনার ফাইন্যান্স ওয়ার্ল্ডে প্রবেশ করুন ✨" : "Welcome back, your finance world awaits ✨",
@@ -212,9 +258,9 @@ const Auth = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="••••••••••"
                       required
-                      minLength={6}
+                      minLength={10}
                       maxLength={72}
                       className="auth-input pr-10"
                       aria-required="true"
@@ -231,7 +277,7 @@ const Auth = () => {
                   </div>
                   {mode === "signup" && (
                     <div id="password-strength">
-                      <PasswordStrengthMeter password={password} />
+                      <PasswordStrengthMeter password={password} showChecklist />
                     </div>
                   )}
                 </div>
@@ -247,9 +293,11 @@ const Auth = () => {
               )}
 
               {/* Submit */}
-              <Button type="submit" className="w-full auth-submit-btn group" disabled={loading} aria-busy={loading}>
+              <Button type="submit" className="w-full auth-submit-btn group" disabled={isSubmitDisabled} aria-busy={loading}>
                 {loading ? (
                   <span className="animate-spin mr-2">⏳</span>
+                ) : loginCooldown ? (
+                  <span className="mr-2">🔒</span>
                 ) : mode === "login" ? (
                   <LogIn size={16} className="mr-2 group-hover:translate-x-0.5 transition-transform" />
                 ) : mode === "signup" ? (
@@ -257,9 +305,15 @@ const Auth = () => {
                 ) : (
                   <KeyRound size={16} className="mr-2" />
                 )}
-                {mode === "login" && (lang === "bn" ? "লগইন" : "Sign In")}
-                {mode === "signup" && (lang === "bn" ? "রেজিস্ট্রেশন" : "Sign Up")}
-                {mode === "forgot" && (lang === "bn" ? "রিসেট লিংক পাঠান" : "Send Reset Link")}
+                {loginCooldown
+                  ? (lang === "bn" ? "অপেক্ষা করুন..." : "Please wait...")
+                  : mode === "login"
+                    ? (lang === "bn" ? "লগইন" : "Sign In")
+                    : mode === "signup"
+                      ? (lang === "bn" ? "রেজিস্ট্রেশন" : "Sign Up")
+                      : resetCooldown
+                        ? (lang === "bn" ? "ইতিমধ্যে পাঠানো হয়েছে" : "Already sent")
+                        : (lang === "bn" ? "রিসেট লিংক পাঠান" : "Send Reset Link")}
               </Button>
             </form>
 
@@ -271,7 +325,7 @@ const Auth = () => {
                   {lang === "bn" ? "লগইনে ফিরে যান" : "Back to login"}
                 </button>
               ) : (
-                <button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-sm text-white/60 hover:text-white transition-colors font-bangla focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-2 py-1">
+                <button type="button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setPassword(""); }} className="text-sm text-white/60 hover:text-white transition-colors font-bangla focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-2 py-1">
                   {mode === "login"
                     ? (lang === "bn" ? "অ্যাকাউন্ট নেই? রেজিস্ট্রেশন করুন" : "No account? Sign up")
                     : (lang === "bn" ? "অ্যাকাউন্ট আছে? লগইন করুন" : "Already have an account? Sign in")}
