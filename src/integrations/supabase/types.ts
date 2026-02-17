@@ -736,7 +736,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "field_officer" | "owner" | "investor"
+      app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
       client_status: "active" | "pending" | "overdue" | "inactive"
       deposit_frequency: "daily" | "weekly" | "monthly"
       investment_model: "profit_only" | "profit_plus_principal"
@@ -891,7 +891,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "field_officer", "owner", "investor"],
+      app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
       client_status: ["active", "pending", "overdue", "inactive"],
       deposit_frequency: ["daily", "weekly", "monthly"],
       investment_model: ["profit_only", "profit_plus_principal"],
