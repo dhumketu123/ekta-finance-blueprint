@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -7,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Owners = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   return (
     <AppLayout>
       <PageHeader title={t("owners.title")} description={t("owners.description")} />
@@ -23,7 +25,7 @@ const Owners = () => {
           </TableHeader>
           <TableBody>
             {sampleOwners.map((o) => (
-              <TableRow key={o.id}>
+              <TableRow key={o.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/owners/${o.id}`)}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{o.id}</TableCell>
                 <TableCell>
                   <p className="text-xs font-medium">{lang === "bn" ? o.nameBn : o.nameEn}</p>

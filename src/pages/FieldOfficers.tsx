@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const FieldOfficers = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   return (
     <AppLayout>
       <PageHeader title={t("fieldOfficers.title")} description={t("fieldOfficers.description")} />
@@ -23,7 +25,7 @@ const FieldOfficers = () => {
           </TableHeader>
           <TableBody>
             {sampleOfficers.map((fo) => (
-              <TableRow key={fo.id}>
+              <TableRow key={fo.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/field-officers/${fo.id}`)}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{fo.id}</TableCell>
                 <TableCell>
                   <p className="text-xs font-medium">{lang === "bn" ? fo.nameBn : fo.nameEn}</p>

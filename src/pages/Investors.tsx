@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -11,6 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Investors = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ const Investors = () => {
               </TableHeader>
               <TableBody>
                 {sampleInvestors.map((inv) => (
-                  <TableRow key={inv.id}>
+                  <TableRow key={inv.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
                     <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
                     <TableCell>
                       <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>

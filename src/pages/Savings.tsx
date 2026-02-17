@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Savings = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ const Savings = () => {
               </TableHeader>
               <TableBody>
                 {sampleSavingsProducts.map((sp) => (
-                  <TableRow key={sp.id}>
+                  <TableRow key={sp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/savings/${sp.id}`)}>
                     <TableCell className="text-xs font-mono text-muted-foreground">{sp.id}</TableCell>
                     <TableCell>
                       <p className="text-xs font-medium">{lang === "bn" ? sp.nameBn : sp.nameEn}</p>

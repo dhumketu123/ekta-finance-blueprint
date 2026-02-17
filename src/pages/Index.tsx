@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -12,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -138,7 +140,7 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {sampleClients.slice(0, 4).map((client) => (
-                <TableRow key={client.id}>
+                <TableRow key={client.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${client.id}`)}>
                   <TableCell className="text-xs font-mono text-muted-foreground">{client.id}</TableCell>
                   <TableCell>
                     <p className="text-xs font-medium">{lang === "bn" ? client.nameBn : client.nameEn}</p>
@@ -158,7 +160,7 @@ const Dashboard = () => {
 
         <div className="sm:hidden divide-y divide-border">
           {sampleClients.slice(0, 4).map((client) => (
-            <div key={client.id} className="p-4 flex items-center gap-3">
+            <div key={client.id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${client.id}`)}>
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Users className="w-4 h-4 text-primary" />
               </div>
@@ -201,7 +203,7 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {sampleInvestors.map((inv) => (
-                <TableRow key={inv.id}>
+                <TableRow key={inv.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
                   <TableCell className="text-xs font-mono text-muted-foreground">{inv.id}</TableCell>
                   <TableCell>
                     <p className="text-xs font-medium">{lang === "bn" ? inv.nameBn : inv.nameEn}</p>
@@ -219,7 +221,7 @@ const Dashboard = () => {
 
         <div className="sm:hidden divide-y divide-border">
           {sampleInvestors.map((inv) => (
-            <div key={inv.id} className="p-4 flex items-center gap-3">
+            <div key={inv.id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
               <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-4 h-4 text-success" />
               </div>
