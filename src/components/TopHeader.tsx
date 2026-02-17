@@ -1,4 +1,5 @@
-import { Bell, Globe, Wifi, WifiOff, ChevronDown, User, MoreVertical, Sun, Moon } from "lucide-react";
+import { Bell, Globe, Wifi, WifiOff, ChevronDown, MoreVertical, Sun, Moon } from "lucide-react";
+import ProfileAvatarUpload from "@/components/ProfileAvatarUpload";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -97,10 +98,8 @@ const TopHeader = () => {
         </Button>
 
         {/* Profile */}
-        <div className="flex items-center gap-2 pl-2 border-l border-primary-foreground/20 cursor-pointer hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-            <User className="w-4 h-4 text-accent-foreground" />
-          </div>
+        <div className="flex items-center gap-2 pl-2 border-l border-primary-foreground/20">
+          <ProfileAvatarUpload />
           <div className="hidden md:block">
             <p className="text-xs font-medium text-primary-foreground leading-tight">{t("header.admin")}</p>
           </div>
