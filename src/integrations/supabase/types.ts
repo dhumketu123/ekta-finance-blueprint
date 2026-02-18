@@ -49,49 +49,97 @@ export type Database = {
           area: string | null
           assigned_officer: string | null
           created_at: string
+          date_of_birth: string | null
           deleted_at: string | null
+          district: string | null
+          father_or_husband_name: string | null
           id: string
           loan_amount: number | null
           loan_product_id: string | null
+          marital_status: string | null
+          mother_name: string | null
           name_bn: string
           name_en: string
           next_payment_date: string | null
+          nid_number: string | null
+          nominee_name: string | null
+          nominee_nid: string | null
+          nominee_phone: string | null
+          nominee_relation: string | null
+          occupation: string | null
           phone: string | null
+          photo_url: string | null
+          post_office: string | null
           savings_product_id: string | null
           status: Database["public"]["Enums"]["client_status"]
+          union_name: string | null
+          upazila: string | null
           updated_at: string
+          village: string | null
         }
         Insert: {
           area?: string | null
           assigned_officer?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deleted_at?: string | null
+          district?: string | null
+          father_or_husband_name?: string | null
           id?: string
           loan_amount?: number | null
           loan_product_id?: string | null
+          marital_status?: string | null
+          mother_name?: string | null
           name_bn?: string
           name_en: string
           next_payment_date?: string | null
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_phone?: string | null
+          nominee_relation?: string | null
+          occupation?: string | null
           phone?: string | null
+          photo_url?: string | null
+          post_office?: string | null
           savings_product_id?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          union_name?: string | null
+          upazila?: string | null
           updated_at?: string
+          village?: string | null
         }
         Update: {
           area?: string | null
           assigned_officer?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deleted_at?: string | null
+          district?: string | null
+          father_or_husband_name?: string | null
           id?: string
           loan_amount?: number | null
           loan_product_id?: string | null
+          marital_status?: string | null
+          mother_name?: string | null
           name_bn?: string
           name_en?: string
           next_payment_date?: string | null
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_phone?: string | null
+          nominee_relation?: string | null
+          occupation?: string | null
           phone?: string | null
+          photo_url?: string | null
+          post_office?: string | null
           savings_product_id?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          union_name?: string | null
+          upazila?: string | null
           updated_at?: string
+          village?: string | null
         }
         Relationships: [
           {
