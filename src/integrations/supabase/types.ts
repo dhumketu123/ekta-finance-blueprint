@@ -284,6 +284,7 @@ export type Database = {
           disbursement_date: string | null
           emi_amount: number
           id: string
+          loan_id: string | null
           loan_model: Database["public"]["Enums"]["loan_model"]
           loan_product_id: string | null
           maturity_date: string | null
@@ -291,6 +292,7 @@ export type Database = {
           outstanding_interest: number
           outstanding_principal: number
           penalty_amount: number
+          serial_number: number | null
           status: Database["public"]["Enums"]["loan_status"]
           total_interest: number
           total_principal: number
@@ -304,6 +306,7 @@ export type Database = {
           disbursement_date?: string | null
           emi_amount?: number
           id?: string
+          loan_id?: string | null
           loan_model?: Database["public"]["Enums"]["loan_model"]
           loan_product_id?: string | null
           maturity_date?: string | null
@@ -311,6 +314,7 @@ export type Database = {
           outstanding_interest?: number
           outstanding_principal?: number
           penalty_amount?: number
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["loan_status"]
           total_interest?: number
           total_principal?: number
@@ -324,6 +328,7 @@ export type Database = {
           disbursement_date?: string | null
           emi_amount?: number
           id?: string
+          loan_id?: string | null
           loan_model?: Database["public"]["Enums"]["loan_model"]
           loan_product_id?: string | null
           maturity_date?: string | null
@@ -331,6 +336,7 @@ export type Database = {
           outstanding_interest?: number
           outstanding_principal?: number
           penalty_amount?: number
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["loan_status"]
           total_interest?: number
           total_principal?: number
