@@ -57,6 +57,7 @@ export type Database = {
           loan_amount: number | null
           loan_product_id: string | null
           marital_status: string | null
+          member_id: string | null
           mother_name: string | null
           name_bn: string
           name_en: string
@@ -71,6 +72,7 @@ export type Database = {
           photo_url: string | null
           post_office: string | null
           savings_product_id: string | null
+          serial_number: number | null
           status: Database["public"]["Enums"]["client_status"]
           union_name: string | null
           upazila: string | null
@@ -89,6 +91,7 @@ export type Database = {
           loan_amount?: number | null
           loan_product_id?: string | null
           marital_status?: string | null
+          member_id?: string | null
           mother_name?: string | null
           name_bn?: string
           name_en: string
@@ -103,6 +106,7 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           savings_product_id?: string | null
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
           union_name?: string | null
           upazila?: string | null
@@ -121,6 +125,7 @@ export type Database = {
           loan_amount?: number | null
           loan_product_id?: string | null
           marital_status?: string | null
+          member_id?: string | null
           mother_name?: string | null
           name_bn?: string
           name_en?: string
@@ -135,6 +140,7 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           savings_product_id?: string | null
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
           union_name?: string | null
           upazila?: string | null

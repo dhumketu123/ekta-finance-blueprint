@@ -87,7 +87,10 @@ const Clients = () => {
               <TableBody>
                 {filtered.map((c: any) => (
                   <TableRow key={c.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${c.id}`)}>
-                    <TableCell><p className="text-xs font-medium">{lang === "bn" ? c.name_bn : c.name_en}</p></TableCell>
+                     <TableCell>
+                       <p className="text-xs font-medium">{lang === "bn" ? c.name_bn : c.name_en}</p>
+                       {c.member_id && <p className="text-[10px] font-mono text-primary/70 mt-0.5">{c.member_id}</p>}
+                     </TableCell>
                     <TableCell className="text-xs">{c.phone || "—"}</TableCell>
                     <TableCell className="text-xs">{c.area || "—"}</TableCell>
                     <TableCell className="text-xs font-semibold">{c.loan_amount ? `৳${Number(c.loan_amount).toLocaleString()}` : "—"}</TableCell>
