@@ -83,7 +83,10 @@ const Owners = () => {
                   const name = lang === "bn" ? (o.name_bn || o.name_en) : o.name_en;
                   return (
                     <TableRow key={o.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/owners/${o.id}`)}>
-                      <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                      <TableCell>
+                        <p className="text-xs font-medium">{name}</p>
+                        {o.owner_id && <p className="text-[10px] text-muted-foreground font-mono">{o.owner_id}</p>}
+                      </TableCell>
                       <TableCell className="text-xs">{o.phone || "—"}</TableCell>
                       {isAdmin && (
                         <TableCell>

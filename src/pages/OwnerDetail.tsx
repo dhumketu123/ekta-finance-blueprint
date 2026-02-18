@@ -44,7 +44,7 @@ const OwnerDetail = () => {
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.owner")} — ${owner.id.slice(0, 8)}`} />
+      <PageHeader title={name} description={`${t("detail.owner")} — ${owner.owner_id ?? owner.id.slice(0, 8)}`} />
 
       <div className="card-elevated p-6 border-l-4 border-l-warning">
         <div className="flex items-center gap-4">
@@ -53,7 +53,7 @@ const OwnerDetail = () => {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <span className="text-xs text-muted-foreground font-mono">{owner.id.slice(0, 8)}</span>
+            <span className="text-xs text-muted-foreground font-mono">{owner.owner_id ?? owner.id.slice(0, 8)}</span>
           </div>
         </div>
       </div>

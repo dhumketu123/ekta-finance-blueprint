@@ -488,6 +488,7 @@ export type Database = {
           id: string
           name_bn: string
           name_en: string
+          owner_id: string | null
           phone: string | null
           role: string | null
           updated_at: string
@@ -498,6 +499,7 @@ export type Database = {
           id: string
           name_bn?: string
           name_en?: string
+          owner_id?: string | null
           phone?: string | null
           role?: string | null
           updated_at?: string
@@ -508,6 +510,7 @@ export type Database = {
           id?: string
           name_bn?: string
           name_en?: string
+          owner_id?: string | null
           phone?: string | null
           role?: string | null
           updated_at?: string
