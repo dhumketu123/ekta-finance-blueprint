@@ -172,6 +172,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           investment_model: Database["public"]["Enums"]["investment_model"]
+          investor_id: string | null
           last_profit_date: string | null
           maturity_date: string | null
           monthly_profit_percent: number
@@ -180,6 +181,7 @@ export type Database = {
           phone: string | null
           principal_amount: number
           reinvest: boolean
+          serial_number: number | null
           status: Database["public"]["Enums"]["investor_status"]
           updated_at: string
           user_id: string | null
@@ -191,6 +193,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           investment_model?: Database["public"]["Enums"]["investment_model"]
+          investor_id?: string | null
           last_profit_date?: string | null
           maturity_date?: string | null
           monthly_profit_percent?: number
@@ -199,6 +202,7 @@ export type Database = {
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["investor_status"]
           updated_at?: string
           user_id?: string | null
@@ -210,6 +214,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           investment_model?: Database["public"]["Enums"]["investment_model"]
+          investor_id?: string | null
           last_profit_date?: string | null
           maturity_date?: string | null
           monthly_profit_percent?: number
@@ -218,6 +223,7 @@ export type Database = {
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
+          serial_number?: number | null
           status?: Database["public"]["Enums"]["investor_status"]
           updated_at?: string
           user_id?: string | null
