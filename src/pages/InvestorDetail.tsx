@@ -54,7 +54,7 @@ const InvestorDetail = () => {
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.investor")} — ${inv.id.slice(0, 8)}`} />
+      <PageHeader title={name} description={`${t("detail.investor")} — ${inv.investor_id ?? inv.id.slice(0, 8)}`} />
 
       <div className="card-elevated p-6 border-l-4 border-l-success">
         <div className="flex items-center gap-4">
@@ -64,7 +64,7 @@ const InvestorDetail = () => {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="text-xs text-muted-foreground font-mono">{inv.id.slice(0, 8)}</span>
+              <span className="text-xs text-muted-foreground font-mono">{inv.investor_id ?? inv.id.slice(0, 8)}</span>
               <StatusBadge status={reinvest ? "active" : "inactive"} />
             </div>
           </div>

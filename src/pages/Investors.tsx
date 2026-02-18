@@ -92,7 +92,10 @@ const Investors = () => {
 
                   return (
                     <TableRow key={inv.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${inv.id}`)}>
-                      <TableCell><p className="text-xs font-medium">{lang === "bn" ? inv.name_bn : inv.name_en}</p></TableCell>
+                      <TableCell>
+                        <p className="text-xs font-medium">{lang === "bn" ? inv.name_bn : inv.name_en}</p>
+                        {inv.investor_id && <p className="text-[10px] text-muted-foreground font-mono">{inv.investor_id}</p>}
+                      </TableCell>
                       <TableCell className="text-xs">{inv.phone || "—"}</TableCell>
                       <TableCell className="text-xs font-semibold">৳{capital.toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{profitPct}%</TableCell>
