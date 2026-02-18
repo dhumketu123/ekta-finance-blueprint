@@ -46,7 +46,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loans")
-        .select("id, total_principal, outstanding_principal, status")
+        .select("id, loan_id, total_principal, outstanding_principal, status")
         .eq("client_id", form.client_id)
         .eq("status", "active")
         .is("deleted_at", null);
@@ -190,7 +190,7 @@ export default function FieldOfficerCollectionForm({ open, onClose }: Props) {
                 <SelectContent>
                   {clientLoans?.length ? clientLoans.map((l) => (
                     <SelectItem key={l.id} value={l.id}>
-                      ৳{l.outstanding_principal.toLocaleString()} {bn ? "বাকি" : "outstanding"} ({l.id.slice(0, 8)})
+                      {l.loan_id ?? l.id.slice(0, 8)} — ৳{l.outstanding_principal.toLocaleString()} {bn ? "বাকি" : "outstanding"}
                     </SelectItem>
                   )) : (
                     <SelectItem value="none" disabled>{bn ? "সক্রিয় ঋণ নেই" : "No active loans"}</SelectItem>
