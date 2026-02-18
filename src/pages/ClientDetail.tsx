@@ -91,7 +91,13 @@ const ClientDetail = () => {
             <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{c.name_bn || ""}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <span className="text-xs text-muted-foreground font-mono">{client.id.slice(0, 8)}</span>
+              {c.member_id ? (
+                <span className="text-xs font-mono font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 tracking-wider">
+                  {c.member_id}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground font-mono">{client.id.slice(0, 8)}</span>
+              )}
               <StatusBadge status={c.status as any} />
             </div>
             {c.occupation && (
