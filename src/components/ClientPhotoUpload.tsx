@@ -4,17 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-const MAX_BEFORE_COMPRESS = 1 * 1024 * 1024; // 1MB hard reject
-const MAX_AFTER = 300 * 1024;                  // 300KB target
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_BEFORE_COMPRESS = 2 * 1024 * 1024; // 2MB hard reject
+const TARGET_SIZE = 380 * 1024;               // 380KB ideal target
+const HARD_CAP = 450 * 1024;                  // 450KB hard cap
+const ACCEPTED = ["image/jpeg", "image/png"];
 
-async function compressToWebP(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+async function compressToWebP(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const MAX_W = 800;
+      const MAX_W = 1000;
       let w = img.naturalWidth;
       let h = img.naturalHeight;
       if (w > MAX_W) { h = Math.round((h * MAX_W) / w); w = MAX_W; }
@@ -24,23 +25,28 @@ async function compressToWebP(file: File): Promise<Blob> {
       canvas.height = h;
       canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
 
-      // Binary search quality
-      let lo = 0.4, hi = 0.92, best: Blob | null = null;
       const tryQuality = (q: number) =>
         new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/webp", q));
 
       (async () => {
-        for (let i = 0; i < 6; i++) {
+        // Binary search between 0.5–0.95 for ideal size
+        let lo = 0.5, hi = 0.95, best: Blob | null = null;
+        for (let i = 0; i < 7; i++) {
           const mid = (lo + hi) / 2;
           const blob = await tryQuality(mid);
           best = blob;
-          if (blob.size <= MAX_AFTER) lo = mid;
+          if (blob.size <= TARGET_SIZE) lo = mid;
           else hi = mid;
         }
-        resolve(best!);
+        // Final check: if still above hard cap, do one more aggressive pass
+        if (best && best.size > HARD_CAP) {
+          const fallback = await tryQuality(0.4);
+          best = fallback.size <= HARD_CAP ? fallback : null;
+        }
+        resolve(best);
       })();
     };
-    img.onerror = reject;
+    img.onerror = () => resolve(null);
     img.src = url;
   });
 }
@@ -64,19 +70,23 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
     if (e.target) e.target.value = "";
 
     if (!ACCEPTED.includes(file.type)) {
-      toast({ title: "ফরম্যাট সঠিক নয়", description: "JPG, PNG বা WebP ব্যবহার করুন", variant: "destructive" });
+      toast({ title: "অসমর্থিত ফরম্যাট", description: "শুধুমাত্র JPG বা PNG ছবি আপলোড করুন", variant: "destructive" });
       return;
     }
     if (file.size > MAX_BEFORE_COMPRESS) {
-      toast({ title: "ছবি অনেক বড়", description: "সর্বোচ্চ ১MB এর ফাইল আপলোড করুন", variant: "destructive" });
+      toast({ title: "ছবি অনেক বড়", description: "সর্বোচ্চ ২MB এর ফাইল আপলোড করুন", variant: "destructive" });
       return;
     }
 
     setUploading(true);
     try {
       const blob = await compressToWebP(file);
-      const path = `${clientId}.webp`;
+      if (!blob) {
+        toast({ title: "কম্প্রেশন ব্যর্থ", description: "ছোট ছবি ব্যবহার করে আবার চেষ্টা করুন", variant: "destructive" });
+        return;
+      }
 
+      const path = `${clientId}.webp`;
       const { error: upErr } = await supabase.storage
         .from("client-photos")
         .upload(path, blob, { upsert: true, contentType: "image/webp" });
