@@ -512,6 +512,54 @@ export type Database = {
           },
         ]
       }
+      master_ledger: {
+        Row: {
+          account_code: Database["public"]["Enums"]["account_code"]
+          created_at: string
+          credit_amount: number
+          debit_amount: number
+          id: string
+          member_id: string | null
+          narration: string | null
+          transaction_id: string
+        }
+        Insert: {
+          account_code: Database["public"]["Enums"]["account_code"]
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          id?: string
+          member_id?: string | null
+          narration?: string | null
+          transaction_id: string
+        }
+        Update: {
+          account_code?: Database["public"]["Enums"]["account_code"]
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          id?: string
+          member_id?: string | null
+          narration?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_ledger_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_ledger_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           channel: Database["public"]["Enums"]["notification_channel"]
@@ -1049,8 +1097,21 @@ export type Database = {
         Returns: undefined
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
+      validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }
     }
     Enums: {
+      account_code:
+        | "CASH_ON_HAND"
+        | "LOAN_PRINCIPAL"
+        | "LOAN_INTEREST"
+        | "PENALTY_INCOME"
+        | "SAVINGS_LIABILITY"
+        | "SHARE_CAPITAL"
+        | "INSURANCE_PAYABLE"
+        | "ADMISSION_FEE_INCOME"
+        | "INSURANCE_PREMIUM_INCOME"
+        | "ADJUSTMENT_ACCOUNT"
+        | "DISBURSEMENT_OUTFLOW"
       app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
@@ -1217,6 +1278,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_code: [
+        "CASH_ON_HAND",
+        "LOAN_PRINCIPAL",
+        "LOAN_INTEREST",
+        "PENALTY_INCOME",
+        "SAVINGS_LIABILITY",
+        "SHARE_CAPITAL",
+        "INSURANCE_PAYABLE",
+        "ADMISSION_FEE_INCOME",
+        "INSURANCE_PREMIUM_INCOME",
+        "ADJUSTMENT_ACCOUNT",
+        "DISBURSEMENT_OUTFLOW",
+      ],
       app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
