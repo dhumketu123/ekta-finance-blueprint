@@ -275,6 +275,85 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_schedules: {
+        Row: {
+          client_id: string
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          interest_due: number
+          interest_paid: number
+          loan_id: string
+          notes: string | null
+          paid_date: string | null
+          penalty_due: number
+          principal_due: number
+          principal_paid: number
+          status: string
+          total_due: number | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_due?: number
+          interest_paid?: number
+          loan_id: string
+          notes?: string | null
+          paid_date?: string | null
+          penalty_due?: number
+          principal_due?: number
+          principal_paid?: number
+          status?: string
+          total_due?: number | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_due?: number
+          interest_paid?: number
+          loan_id?: string
+          notes?: string | null
+          paid_date?: string | null
+          penalty_due?: number
+          principal_due?: number
+          principal_paid?: number
+          status?: string
+          total_due?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_schedules_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "loan_schedules_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loans: {
         Row: {
           assigned_officer: string | null
@@ -788,6 +867,31 @@ export type Database = {
         Args: { _penalty_percent?: number }
         Returns: Json
       }
+      disburse_loan: {
+        Args: {
+          _assigned_officer?: string
+          _client_id: string
+          _disbursement_date?: string
+          _loan_model?: string
+          _loan_product_id: string
+          _notes?: string
+          _principal_amount: number
+        }
+        Returns: Json
+      }
+      generate_loan_schedule: {
+        Args: {
+          _client_id: string
+          _disbursement_date: string
+          _interest_rate: number
+          _loan_id: string
+          _loan_model: string
+          _payment_type: string
+          _principal: number
+          _tenure: number
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -802,6 +906,10 @@ export type Database = {
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
+      mark_schedule_payment: {
+        Args: { _amount: number; _loan_id: string; _paid_date?: string }
+        Returns: undefined
+      }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
@@ -810,6 +918,7 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      sync_overdue_schedules: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
