@@ -8,7 +8,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock, AlertTriangle, Banknote } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Banknote, ArrowLeftRight } from "lucide-react";
 
 const PaymentStatusPage = () => {
   const { lang } = useLanguage();
@@ -93,7 +93,7 @@ const PaymentStatusPage = () => {
       />
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <MetricCard
           title={lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid Installments"}
           value={metrics?.paidCount ?? 0}
@@ -114,6 +114,12 @@ const PaymentStatusPage = () => {
           subtitle={lang === "bn" ? "আসন্ন পেমেন্ট" : "Upcoming payments"}
           icon={<Clock className="w-5 h-5" />}
           variant="warning"
+        />
+        <MetricCard
+          title={lang === "bn" ? "আংশিক পরিশোধ" : "Partial"}
+          value={metrics?.partialCount ?? 0}
+          subtitle={lang === "bn" ? "অসম্পূর্ণ পেমেন্ট" : "Incomplete payments"}
+          icon={<ArrowLeftRight className="w-5 h-5" />}
         />
         <MetricCard
           title={lang === "bn" ? "মোট আদায়" : "Total Collected"}
