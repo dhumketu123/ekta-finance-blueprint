@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { path: "/field-officers", icon: UserCog, labelKey: "nav.fieldOfficers", roles: ["admin", "owner"] },
   { path: "/loans", icon: Wallet, labelKey: "nav.loans", roles: ["admin", "owner", "field_officer"] },
   { path: "/savings", icon: PiggyBank, labelKey: "nav.savings", roles: ["admin", "owner", "field_officer", "treasurer"] },
+  { path: "/transactions", icon: Landmark, labelKey: "nav.transactions", roles: ["admin", "owner", "treasurer", "field_officer"] },
   { path: "/approvals", icon: ClipboardCheck, labelKey: "nav.approvals", roles: ["admin", "owner", "treasurer", "field_officer"] },
   { path: "/notifications", icon: Bell, labelKey: "nav.notifications", roles: ["admin", "owner"] },
   { path: "/settings", icon: Settings, labelKey: "nav.settings", roles: ["admin", "owner"] },
