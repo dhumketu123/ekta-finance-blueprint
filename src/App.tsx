@@ -27,6 +27,9 @@ import Approvals from "./pages/Approvals";
 import NotFound from "./pages/NotFound";
 import InvestorWallet from "./pages/InvestorWallet";
 import FinancialTransactions from "./pages/FinancialTransactions";
+import Reports from "./pages/Reports";
+import TrialBalance from "./pages/TrialBalance";
+import ProfitLoss from "./pages/ProfitLoss";
 
 
 const queryClient = new QueryClient();
@@ -59,6 +62,9 @@ const App = () => (
               <Route path="/approvals" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer", "field_officer"]}><Approvals /></ProtectedRoute>} />
               <Route path="/transactions" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer", "field_officer"]}><FinancialTransactions /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><SettingsPage /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><Reports /></ProtectedRoute>} />
+              <Route path="/reports/trial-balance" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><TrialBalance /></ProtectedRoute>} />
+              <Route path="/reports/profit-loss" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><ProfitLoss /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute allowedRoles={["investor"]}><InvestorWallet /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
