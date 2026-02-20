@@ -3,7 +3,7 @@ import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, Activity, CreditCard } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users } from "lucide-react";
 
 const reportLinks = [
   {
@@ -29,6 +29,14 @@ const reportLinks = [
     titleEn: "Payment Status",
     descBn: "কিস্তি পরিশোধ অবস্থা — বকেয়া, পরিশোধিত, মুলতুবি",
     descEn: "Installment payment status — Overdue, Paid, Pending",
+  },
+  {
+    path: "/reports/investor-summary",
+    icon: Users,
+    titleBn: "বিনিয়োগকারী সারাংশ",
+    titleEn: "Investor Summary",
+    descBn: "পোর্টফোলিও, লভ্যাংশ বিতরণ ও পুনর্বিনিয়োগ রিপোর্ট",
+    descEn: "Portfolio, profit distribution & reinvestment report",
   },
   {
     path: "/transactions",
