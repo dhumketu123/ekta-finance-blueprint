@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, CreditCard, Search, Edit2, Trash2, Banknote, FlaskConical } from "lucide-react";
+import { Plus, CreditCard, Search, Edit2, Trash2, Banknote, FlaskConical, TrendingUp } from "lucide-react";
+import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -23,12 +24,13 @@ const Loans = () => {
   const { canEditLoans, isAdmin } = usePermissions();
   const softDelete = useSoftDelete("loan_products");
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
+  const [formOpen, setFormOpen]       = useState(false);
+  const [editData, setEditData]       = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [testOpen, setTestOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [testOpen, setTestOpen]       = useState(false);
+  const [disburseOpen, setDisburseOpen] = useState(false);
+  const [search, setSearch]           = useState("");
 
   const { data: loans, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
     table: "loan_products",
@@ -51,10 +53,15 @@ const Loans = () => {
         title={t("loans.title")}
         description={t("loans.description")}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {canEditLoans && (
               <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
                 <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
+              </Button>
+            )}
+            {isAdmin && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg border-primary/40 text-primary hover:bg-primary/10" onClick={() => setDisburseOpen(true)}>
+                <TrendingUp className="w-3.5 h-3.5" /> {lang === "bn" ? "ঋণ বিতরণ" : "Disburse Loan"}
               </Button>
             )}
             {(isAdmin || canEditLoans) && (
@@ -151,6 +158,7 @@ const Loans = () => {
       {formOpen && <LoanProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
       {paymentOpen && <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} />}
       {testOpen && <PaymentTestPanel open={testOpen} onClose={() => setTestOpen(false)} />}
+      {disburseOpen && <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} />}
       {deleteTarget && (
         <DeleteConfirmDialog
           open={!!deleteTarget}

@@ -76,7 +76,14 @@ Deno.serve(async (req) => {
     results.overdue_penalties = penaltyResult ?? {};
     if (penaltyErr) results.penalty_error = penaltyErr.message;
 
-    // 6. Audit log
+    // 6. Sync loan_schedules overdue status
+    const { data: scheduleSync, error: scheduleSyncErr } = await supabase.rpc(
+      "sync_overdue_schedules" as any
+    );
+    results.schedule_overdue_sync = scheduleSync ?? {};
+    if (scheduleSyncErr) results.schedule_sync_error = scheduleSyncErr.message;
+
+    // 7. Audit log
     await supabase.from("audit_logs").insert({
       action_type: "daily_cron",
       entity_type: "system",
