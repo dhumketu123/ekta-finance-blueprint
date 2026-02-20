@@ -76,7 +76,7 @@ const Dashboard = () => {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <MetricCard
           title={t("dashboard.totalClients")}
           value={totalClients}
@@ -149,7 +149,7 @@ const Dashboard = () => {
       </div>
 
       {/* Investor Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <MetricCard
           title={lang === "bn" ? "মোট বিনিয়োগ" : "Total Investment"}
           value={`৳${((metrics?.totalPrincipalInvested ?? 0) / 1000).toFixed(0)}K`}
