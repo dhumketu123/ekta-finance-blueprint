@@ -29,10 +29,10 @@ const ProfitLossPage = () => {
     queryKey: ["profit-loss"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("master_ledger")
-        .select("account_code, debit_amount, credit_amount");
+        .from("ledger_entries")
+        .select("amount, entry_type, accounts(account_code)");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -41,10 +41,11 @@ const ProfitLossPage = () => {
 
     const map: Record<string, { debit: number; credit: number }> = {};
     for (const row of ledgerData) {
-      const code = row.account_code;
+      const code = row.accounts?.account_code;
+      if (!code) continue;
       if (!map[code]) map[code] = { debit: 0, credit: 0 };
-      map[code].debit += Number(row.debit_amount);
-      map[code].credit += Number(row.credit_amount);
+      if (row.entry_type === 'debit') map[code].debit += Number(row.amount);
+      else map[code].credit += Number(row.amount);
     }
 
     // Income = credit side of income accounts
