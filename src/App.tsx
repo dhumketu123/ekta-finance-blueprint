@@ -30,6 +30,7 @@ import FinancialTransactions from "./pages/FinancialTransactions";
 import Reports from "./pages/Reports";
 import TrialBalance from "./pages/TrialBalance";
 import ProfitLoss from "./pages/ProfitLoss";
+import PaymentStatus from "./pages/PaymentStatus";
 
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><Reports /></ProtectedRoute>} />
               <Route path="/reports/trial-balance" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><TrialBalance /></ProtectedRoute>} />
               <Route path="/reports/profit-loss" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><ProfitLoss /></ProtectedRoute>} />
+              <Route path="/reports/payment-status" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><PaymentStatus /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute allowedRoles={["investor"]}><InvestorWallet /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
