@@ -1,0 +1,66 @@
+import AppLayout from "@/components/AppLayout";
+import PageHeader from "@/components/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Link } from "react-router-dom";
+import { Scale, TrendingUp, Landmark, Activity } from "lucide-react";
+
+const reportLinks = [
+  {
+    path: "/reports/trial-balance",
+    icon: Scale,
+    titleBn: "ট্রায়াল ব্যালেন্স",
+    titleEn: "Trial Balance",
+    descBn: "সকল হিসাবের মোট ডেবিট ও ক্রেডিট সারাংশ",
+    descEn: "Summary of total debit & credit for all accounts",
+  },
+  {
+    path: "/reports/profit-loss",
+    icon: TrendingUp,
+    titleBn: "আয়-ব্যয় বিবরণী",
+    titleEn: "Profit & Loss",
+    descBn: "আয় ও ব্যয় হিসাব থেকে নিট আয় গণনা",
+    descEn: "Net income from income & expense accounts",
+  },
+  {
+    path: "/transactions",
+    icon: Landmark,
+    titleBn: "আর্থিক লেনদেন",
+    titleEn: "Financial Transactions",
+    descBn: "সকল লেনদেন, রিসিপ্ট ও অনুমোদন",
+    descEn: "All transactions, receipts & approvals",
+  },
+];
+
+const ReportsPage = () => {
+  const { lang } = useLanguage();
+
+  return (
+    <AppLayout>
+      <PageHeader
+        title={lang === "bn" ? "রিপোর্ট" : "Reports"}
+        description={lang === "bn" ? "আর্থিক রিপোর্ট ও বিশ্লেষণ" : "Financial reports & analytics"}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {reportLinks.map((r) => (
+          <Link key={r.path} to={r.path}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-border/50 hover:border-primary/30">
+              <CardContent className="p-5 flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-primary/10">
+                  <r.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{lang === "bn" ? r.titleBn : r.titleEn}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{lang === "bn" ? r.descBn : r.descEn}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </AppLayout>
+  );
+};
+
+export default ReportsPage;
