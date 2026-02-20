@@ -164,6 +164,80 @@ export type Database = {
           },
         ]
       }
+      financial_transactions: {
+        Row: {
+          account_id: string | null
+          allocation_breakdown: Json | null
+          amount: number
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          id: string
+          manual_flag: boolean
+          member_id: string | null
+          notes: string | null
+          receipt_number: string | null
+          receipt_snapshot: Json | null
+          reference_id: string | null
+          rejection_reason: string | null
+          running_balance: Json | null
+          transaction_type: Database["public"]["Enums"]["fin_transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          allocation_breakdown?: Json | null
+          amount: number
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          manual_flag?: boolean
+          member_id?: string | null
+          notes?: string | null
+          receipt_number?: string | null
+          receipt_snapshot?: Json | null
+          reference_id?: string | null
+          rejection_reason?: string | null
+          running_balance?: Json | null
+          transaction_type: Database["public"]["Enums"]["fin_transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          allocation_breakdown?: Json | null
+          amount?: number
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          manual_flag?: boolean
+          member_id?: string | null
+          notes?: string | null
+          receipt_number?: string | null
+          receipt_snapshot?: Json | null
+          reference_id?: string | null
+          rejection_reason?: string | null
+          running_balance?: Json | null
+          transaction_type?: Database["public"]["Enums"]["fin_transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investors: {
         Row: {
           accumulated_profit: number
@@ -704,6 +778,53 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_text: string
+          message_type: string
+          recipient_name: string | null
+          recipient_phone: string
+          sent_at: string | null
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_text: string
+          message_type?: string
+          recipient_name?: string | null
+          recipient_phone: string
+          sent_at?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_text?: string
+          message_type?: string
+          recipient_name?: string | null
+          recipient_phone?: string
+          sent_at?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -855,6 +976,10 @@ export type Database = {
             }
             Returns: Json
           }
+      approve_financial_transaction: {
+        Args: { _approver_id: string; _reason?: string; _tx_id: string }
+        Returns: Json
+      }
       approve_pending_transaction: {
         Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
         Returns: Json
@@ -892,6 +1017,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_receipt_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -914,6 +1040,10 @@ export type Database = {
         Args: { _investor_id: string }
         Returns: undefined
       }
+      reject_financial_transaction: {
+        Args: { _reason: string; _rejector_id: string; _tx_id: string }
+        Returns: undefined
+      }
       reject_pending_transaction: {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
@@ -922,8 +1052,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
+      approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
       deposit_frequency: "daily" | "weekly" | "monthly"
+      fin_transaction_type:
+        | "loan_repayment"
+        | "loan_disbursement"
+        | "savings_deposit"
+        | "savings_withdrawal"
+        | "admission_fee"
+        | "share_capital_deposit"
+        | "insurance_premium"
+        | "insurance_claim_payout"
+        | "adjustment_entry"
       investment_model: "profit_only" | "profit_plus_principal"
       investor_status: "active" | "matured" | "closed"
       loan_model: "flat" | "reducing"
@@ -1077,8 +1218,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
+      approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
       deposit_frequency: ["daily", "weekly", "monthly"],
+      fin_transaction_type: [
+        "loan_repayment",
+        "loan_disbursement",
+        "savings_deposit",
+        "savings_withdrawal",
+        "admission_fee",
+        "share_capital_deposit",
+        "insurance_premium",
+        "insurance_claim_payout",
+        "adjustment_entry",
+      ],
       investment_model: ["profit_only", "profit_plus_principal"],
       investor_status: ["active", "matured", "closed"],
       loan_model: ["flat", "reducing"],
