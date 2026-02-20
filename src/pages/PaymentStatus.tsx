@@ -28,17 +28,17 @@ const PaymentStatusPage = () => {
     },
   });
 
-  // Fetch penalty & interest earned from master_ledger
+  // Fetch penalty & interest earned from V2 ledger_entries
   const { data: ledgerSums } = useQuery({
     queryKey: ["payment-status-ledger"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("master_ledger")
-        .select("account_code, credit_amount")
-        .in("account_code", ["PENALTY_INCOME", "LOAN_INTEREST"]);
+        .from("ledger_entries")
+        .select("amount, entry_type, accounts(account_code)");
       if (error) throw error;
-      const penaltyEarned = (data ?? []).filter(r => r.account_code === "PENALTY_INCOME").reduce((s, r) => s + Number(r.credit_amount), 0);
-      const interestEarned = (data ?? []).filter(r => r.account_code === "LOAN_INTEREST").reduce((s, r) => s + Number(r.credit_amount), 0);
+      const rows = (data ?? []) as any[];
+      const penaltyEarned = rows.filter(r => r.accounts?.account_code === "PENALTY_INCOME" && r.entry_type === "credit").reduce((s: number, r: any) => s + Number(r.amount), 0);
+      const interestEarned = rows.filter(r => r.accounts?.account_code === "LOAN_INTEREST" && r.entry_type === "credit").reduce((s: number, r: any) => s + Number(r.amount), 0);
       return { penaltyEarned, interestEarned };
     },
   });
