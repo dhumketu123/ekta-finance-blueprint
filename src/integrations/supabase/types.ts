@@ -14,9 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_code: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          branch_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string
+          parent_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          branch_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          account_type?: Database["public"]["Enums"]["account_type"]
+          branch_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
+          branch_id: string | null
           created_at: string
           details: Json | null
           entity_id: string | null
@@ -26,6 +81,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          branch_id?: string | null
           created_at?: string
           details?: Json | null
           entity_id?: string | null
@@ -35,12 +91,54 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          branch_id?: string | null
           created_at?: string
           details?: Json | null
           entity_id?: string | null
           entity_type?: string
           id?: string
           user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branches: {
+        Row: {
+          address: string | null
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -303,6 +401,72 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      ledger_entries: {
+        Row: {
+          account_id: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          amount: number
+          branch_id: string
+          created_at: string
+          created_by: string
+          entry_type: Database["public"]["Enums"]["entry_type"]
+          id: string
+          is_reversal: boolean
+          narration: string | null
+          original_group_id: string | null
+          reference_id: string | null
+          reference_type: string
+          transaction_group_id: string
+        }
+        Insert: {
+          account_id: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          amount: number
+          branch_id: string
+          created_at?: string
+          created_by: string
+          entry_type: Database["public"]["Enums"]["entry_type"]
+          id?: string
+          is_reversal?: boolean
+          narration?: string | null
+          original_group_id?: string | null
+          reference_id?: string | null
+          reference_type: string
+          transaction_group_id: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: Database["public"]["Enums"]["account_type"]
+          amount?: number
+          branch_id?: string
+          created_at?: string
+          created_by?: string
+          entry_type?: Database["public"]["Enums"]["entry_type"]
+          id?: string
+          is_reversal?: boolean
+          narration?: string | null
+          original_group_id?: string | null
+          reference_id?: string | null
+          reference_type?: string
+          transaction_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loan_products: {
         Row: {
@@ -1040,6 +1204,16 @@ export type Database = {
         Args: { _penalty_percent?: number }
         Returns: Json
       }
+      create_ledger_entry: {
+        Args: {
+          _branch_id: string
+          _created_by?: string
+          _entries: Json
+          _reference_id: string
+          _reference_type: string
+        }
+        Returns: Json
+      }
       disburse_loan: {
         Args: {
           _assigned_officer?: string
@@ -1096,8 +1270,20 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      reverse_ledger_transaction: {
+        Args: {
+          _reason: string
+          _reversed_by?: string
+          _transaction_group_id: string
+        }
+        Returns: Json
+      }
       sync_overdue_schedules: { Args: never; Returns: Json }
       validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }
+      validate_ledger_v2_balance: {
+        Args: { _txn_group_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_code:
@@ -1112,10 +1298,12 @@ export type Database = {
         | "INSURANCE_PREMIUM_INCOME"
         | "ADJUSTMENT_ACCOUNT"
         | "DISBURSEMENT_OUTFLOW"
+      account_type: "asset" | "liability" | "income" | "expense" | "equity"
       app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
       deposit_frequency: "daily" | "weekly" | "monthly"
+      entry_type: "debit" | "credit"
       fin_transaction_type:
         | "loan_repayment"
         | "loan_disbursement"
@@ -1291,10 +1479,12 @@ export const Constants = {
         "ADJUSTMENT_ACCOUNT",
         "DISBURSEMENT_OUTFLOW",
       ],
+      account_type: ["asset", "liability", "income", "expense", "equity"],
       app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
       deposit_frequency: ["daily", "weekly", "monthly"],
+      entry_type: ["debit", "credit"],
       fin_transaction_type: [
         "loan_repayment",
         "loan_disbursement",
