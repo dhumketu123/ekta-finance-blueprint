@@ -109,6 +109,7 @@ const Dashboard = () => {
         />
       </div>
 
+      {/* Summary Cards Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-5 border-l-4 border-l-destructive">
           <div className="flex items-center gap-2.5">
@@ -145,6 +146,37 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Investor Metrics Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <MetricCard
+          title={lang === "bn" ? "মোট বিনিয়োগ" : "Total Investment"}
+          value={`৳${((metrics?.totalPrincipalInvested ?? 0) / 1000).toFixed(0)}K`}
+          subtitle={`${metrics?.activeInvestorCount ?? 0} ${lang === "bn" ? "সক্রিয়" : "active"}`}
+          icon={<Wallet className="w-5 h-5" />}
+          variant="success"
+        />
+        <MetricCard
+          title={lang === "bn" ? "লভ্যাংশ বিতরণ" : "Profit Distributed"}
+          value={`৳${((metrics?.totalProfitDistributed ?? 0) / 1000).toFixed(0)}K`}
+          subtitle={`${lang === "bn" ? "সঞ্চিত" : "Accrued"}: ৳${((metrics?.totalAccumulatedProfit ?? 0) / 1000).toFixed(0)}K`}
+          icon={<TrendingUp className="w-5 h-5" />}
+          variant="warning"
+        />
+        <MetricCard
+          title={lang === "bn" ? "পুনর্বিনিয়োগকারী" : "Reinvestors"}
+          value={metrics?.reinvestorCount ?? 0}
+          subtitle={`${lang === "bn" ? "মোট" : "of"} ${metrics?.investorCount ?? 0}`}
+          icon={<ArrowUpRight className="w-5 h-5" />}
+        />
+        <MetricCard
+          title={lang === "bn" ? "এই মাসের লভ্যাংশ" : "Profit This Month"}
+          value={`৳${((metrics?.profitThisMonth ?? 0) / 1000).toFixed(0)}K`}
+          subtitle={lang === "bn" ? "চলতি মাস" : "Current month"}
+          icon={<PiggyBank className="w-5 h-5" />}
+          variant="default"
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">

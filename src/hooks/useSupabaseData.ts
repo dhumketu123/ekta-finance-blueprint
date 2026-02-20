@@ -232,23 +232,35 @@ export const useDashboardMetrics = () =>
   useQuery({
     queryKey: ["dashboard_metrics"],
     queryFn: async () => {
-      const [clientsRes, investorsRes, transactionsRes] = await Promise.all([
+      const [clientsRes, investorsRes, transactionsRes, profitTxRes] = await Promise.all([
         supabase.from("clients").select("id, status, loan_amount").is("deleted_at", null),
-        supabase.from("investors").select("id, capital, monthly_profit_percent, reinvest").is("deleted_at", null),
+        supabase.from("investors").select("id, capital, principal_amount, accumulated_profit, monthly_profit_percent, reinvest, status").is("deleted_at", null),
         supabase
           .from("transactions")
           .select("id, type, amount, status, transaction_date")
           .is("deleted_at", null)
           .gte("transaction_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]),
+        supabase
+          .from("transactions")
+          .select("amount")
+          .eq("type", "investor_profit")
+          .eq("status", "paid")
+          .is("deleted_at", null),
       ]);
 
       const clients = clientsRes.data ?? [];
       const investors = investorsRes.data ?? [];
       const transactions = transactionsRes.data ?? [];
+      const allProfitTxs = profitTxRes.data ?? [];
 
       const activeLoans = clients.filter((c) => c.status === "active" && (c.loan_amount ?? 0) > 0);
       const totalLoanAmount = activeLoans.reduce((s, c) => s + (c.loan_amount ?? 0), 0);
       const totalCapital = investors.reduce((s, i) => s + i.capital, 0);
+      const totalPrincipalInvested = investors.reduce((s, i) => s + i.principal_amount, 0);
+      const totalAccumulatedProfit = investors.reduce((s, i) => s + i.accumulated_profit, 0);
+      const totalProfitDistributed = allProfitTxs.reduce((s, t) => s + t.amount, 0);
+      const activeInvestorCount = investors.filter((i) => i.status === "active").length;
+      const reinvestorCount = investors.filter((i) => i.reinvest).length;
       const overdueCount = clients.filter((c) => c.status === "overdue").length;
       const pendingCount = clients.filter((c) => c.status === "pending").length;
 
@@ -265,7 +277,12 @@ export const useDashboardMetrics = () =>
         activeLoansCount: activeLoans.length,
         totalLoanAmount,
         totalCapital,
+        totalPrincipalInvested,
+        totalAccumulatedProfit,
+        totalProfitDistributed,
         investorCount: investors.length,
+        activeInvestorCount,
+        reinvestorCount,
         overdueCount,
         pendingCount,
         savingsThisMonth,
