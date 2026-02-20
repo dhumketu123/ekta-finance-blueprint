@@ -31,8 +31,8 @@ const variantConfig = {
   destructive: {
     border: "border-l-destructive",
     iconBg: "bg-destructive/10 text-destructive",
-    gradientFrom: "hsl(4 90% 58%)",
-    gradientTo: "hsl(4 70% 68%)",
+    gradientFrom: "hsl(0 100% 65%)",
+    gradientTo: "hsl(0 80% 72%)",
   },
 };
 
