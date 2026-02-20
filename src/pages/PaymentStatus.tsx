@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import MetricCard from "@/components/MetricCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton, MetricCardSkeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock, AlertTriangle, Banknote, ArrowLeftRight } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Banknote, ArrowLeftRight, Download } from "lucide-react";
+import { format } from "date-fns";
 
 const PaymentStatusPage = () => {
   const { lang } = useLanguage();
@@ -73,6 +75,30 @@ const PaymentStatusPage = () => {
       .slice(0, 20);
   }, [schedules]);
 
+  // CSV Export
+  const exportCsv = useCallback(() => {
+    if (!schedules) return;
+    const headers = ["Member", "Loan ID", "#", "Due Date", "Principal Due", "Interest Due", "Paid", "Status"];
+    const rows = schedules.map(s => [
+      s.clients?.name_en || "—",
+      s.loans?.loan_id || s.loan_id?.slice(0, 8) || "—",
+      s.installment_number,
+      s.due_date,
+      s.principal_due,
+      s.interest_due,
+      Number(s.principal_paid ?? 0) + Number(s.interest_paid ?? 0),
+      s.status,
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payment-status-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [schedules]);
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -90,6 +116,12 @@ const PaymentStatusPage = () => {
       <PageHeader
         title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস ড্যাশবোর্ড" : "Payment Status Dashboard"}
         description={lang === "bn" ? "সকল কিস্তির পেমেন্ট অবস্থা ও সারাংশ" : "Overview of all installment payment statuses"}
+        actions={
+          <Button variant="outline" size="sm" onClick={exportCsv} className="gap-2">
+            <Download className="w-4 h-4" />
+            {lang === "bn" ? "CSV ডাউনলোড" : "Export CSV"}
+          </Button>
+        }
       />
 
       {/* Metric Cards */}
