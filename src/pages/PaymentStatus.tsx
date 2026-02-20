@@ -125,7 +125,7 @@ const PaymentStatusPage = () => {
       />
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
         <MetricCard
           title={lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid Installments"}
           value={metrics?.paidCount ?? 0}
@@ -201,6 +201,7 @@ const PaymentStatusPage = () => {
 
       {/* Overdue & Upcoming Table */}
       <div className="card-elevated overflow-hidden">
+        <div className="overflow-x-auto -mx-0">
         <div className="p-4 border-b border-border">
           <h2 className="text-sm font-bold text-card-foreground">
             {lang === "bn" ? "বকেয়া ও আসন্ন কিস্তি" : "Overdue & Upcoming Installments"}
@@ -260,6 +261,7 @@ const PaymentStatusPage = () => {
             </TableBody>
           </Table>
         )}
+        </div>
       </div>
     </AppLayout>
   );

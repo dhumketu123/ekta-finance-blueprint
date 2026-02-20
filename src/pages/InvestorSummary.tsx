@@ -131,7 +131,7 @@ const InvestorSummaryPage = () => {
       />
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <MetricCard
           title={bn ? "মোট বিনিয়োগকারী" : "Total Investors"}
           value={metrics?.totalInvestors ?? 0}
@@ -180,6 +180,7 @@ const InvestorSummaryPage = () => {
 
       {/* Investor Table */}
       <div className="card-elevated overflow-hidden">
+        <div className="overflow-x-auto">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-sm font-bold text-card-foreground flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
@@ -240,6 +241,7 @@ const InvestorSummaryPage = () => {
             </TableBody>
           </Table>
         )}
+        </div>
       </div>
     </AppLayout>
   );
