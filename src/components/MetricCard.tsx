@@ -13,26 +13,26 @@ const variantConfig = {
   default: {
     border: "border-l-primary",
     iconBg: "bg-primary/10 text-primary",
-    gradientFrom: "hsl(180 100% 15%)",
-    gradientTo: "hsl(180 80% 25%)",
+    gradientFrom: "hsl(var(--primary))",
+    gradientTo: "hsl(var(--ring))",
   },
   success: {
     border: "border-l-success",
     iconBg: "bg-success/10 text-success",
-    gradientFrom: "hsl(152 55% 42%)",
-    gradientTo: "hsl(152 45% 52%)",
+    gradientFrom: "hsl(var(--success))",
+    gradientTo: "hsl(var(--success) / 0.7)",
   },
   warning: {
     border: "border-l-warning",
     iconBg: "bg-warning/10 text-warning",
-    gradientFrom: "hsl(36 100% 50%)",
-    gradientTo: "hsl(36 80% 60%)",
+    gradientFrom: "hsl(var(--warning))",
+    gradientTo: "hsl(var(--warning) / 0.7)",
   },
   destructive: {
     border: "border-l-destructive",
     iconBg: "bg-destructive/10 text-destructive",
-    gradientFrom: "hsl(0 100% 65%)",
-    gradientTo: "hsl(0 80% 72%)",
+    gradientFrom: "hsl(var(--destructive))",
+    gradientTo: "hsl(var(--destructive) / 0.7)",
   },
 };
 

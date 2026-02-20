@@ -40,11 +40,11 @@ const PasswordStrengthMeter = ({ password, showChecklist = true }: PasswordStren
     if (/[^a-zA-Z0-9]/.test(password)) score++;
 
     const levels = [
-      { label: lang === "bn" ? "খুব দুর্বল" : "Very Weak", color: "hsl(0 70% 55%)" },
-      { label: lang === "bn" ? "দুর্বল" : "Weak", color: "hsl(25 80% 55%)" },
-      { label: lang === "bn" ? "মাঝারি" : "Fair", color: "hsl(45 80% 55%)" },
-      { label: lang === "bn" ? "ভালো" : "Good", color: "hsl(120 50% 50%)" },
-      { label: lang === "bn" ? "শক্তিশালী" : "Strong", color: "hsl(160 70% 45%)" },
+      { label: lang === "bn" ? "খুব দুর্বল" : "Very Weak", color: "hsl(var(--destructive))" },
+      { label: lang === "bn" ? "দুর্বল" : "Weak", color: "hsl(var(--warning))" },
+      { label: lang === "bn" ? "মাঝারি" : "Fair", color: "hsl(var(--warning))" },
+      { label: lang === "bn" ? "ভালো" : "Good", color: "hsl(var(--success))" },
+      { label: lang === "bn" ? "শক্তিশালী" : "Strong", color: "hsl(var(--success))" },
     ];
 
     const level = levels[Math.min(score, 4)];
@@ -69,7 +69,7 @@ const PasswordStrengthMeter = ({ password, showChecklist = true }: PasswordStren
             key={i}
             className="h-1 flex-1 rounded-full transition-all duration-500"
             style={{
-              background: i <= strength.score ? strength.color : "hsl(220 30% 25%)",
+              background: i <= strength.score ? strength.color : "hsl(var(--muted))",
             }}
           />
         ))}
@@ -84,11 +84,11 @@ const PasswordStrengthMeter = ({ password, showChecklist = true }: PasswordStren
           {checklist.map((item) => (
             <li key={item.key} className="flex items-center gap-1.5 text-xs">
               {item.passed ? (
-                <Check size={13} className="text-emerald-400 shrink-0" />
+                <Check size={13} className="text-success shrink-0" />
               ) : (
-                <X size={13} className="text-white/30 shrink-0" />
+                <X size={13} className="text-muted-foreground/50 shrink-0" />
               )}
-              <span className={item.passed ? "text-emerald-400" : "text-white/40"}>
+              <span className={item.passed ? "text-success" : "text-muted-foreground/60"}>
                 {item.label}
               </span>
             </li>
