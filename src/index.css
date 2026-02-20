@@ -167,7 +167,7 @@
   .card-premium {
     @apply bg-card rounded-xl border;
     box-shadow: var(--shadow-metric);
-    border-color: hsl(51 60% 75% / 0.4);
+    border-color: hsl(var(--accent) / 0.4);
   }
 
   .status-paid {

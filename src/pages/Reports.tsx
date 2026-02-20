@@ -3,7 +3,7 @@ import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, Activity } from "lucide-react";
+import { Scale, TrendingUp, Landmark, Activity, CreditCard } from "lucide-react";
 
 const reportLinks = [
   {
@@ -21,6 +21,14 @@ const reportLinks = [
     titleEn: "Profit & Loss",
     descBn: "আয় ও ব্যয় হিসাব থেকে নিট আয় গণনা",
     descEn: "Net income from income & expense accounts",
+  },
+  {
+    path: "/reports/payment-status",
+    icon: CreditCard,
+    titleBn: "পেমেন্ট স্ট্যাটাস",
+    titleEn: "Payment Status",
+    descBn: "কিস্তি পরিশোধ অবস্থা — বকেয়া, পরিশোধিত, মুলতুবি",
+    descEn: "Installment payment status — Overdue, Paid, Pending",
   },
   {
     path: "/transactions",

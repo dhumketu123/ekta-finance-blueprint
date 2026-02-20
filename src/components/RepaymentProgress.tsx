@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,14 +12,14 @@ interface RepaymentProgressProps {
   compact?: boolean;
 }
 
-const RepaymentProgress = ({
+const RepaymentProgress = forwardRef<HTMLDivElement, RepaymentProgressProps>(({
   totalAmount,
   paidAmount,
   tenure,
   paidInstallments,
   nextPaymentDate,
   compact = false,
-}: RepaymentProgressProps) => {
+}, ref) => {
   const { t } = useLanguage();
   const percentage = totalAmount > 0 ? Math.min(Math.round((paidAmount / totalAmount) * 100), 100) : 0;
   const remaining = Math.max(totalAmount - paidAmount, 0);
@@ -32,7 +33,7 @@ const RepaymentProgress = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`w-full ${compact ? "" : "space-y-1.5"}`}>
+          <div ref={ref} className={`w-full ${compact ? "" : "space-y-1.5"}`}>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
               <div
                 className={`h-full rounded-full transition-all duration-700 ease-out ${progressColor} progress-glow`}
@@ -63,6 +64,8 @@ const RepaymentProgress = ({
       </Tooltip>
     </TooltipProvider>
   );
-};
+});
+
+RepaymentProgress.displayName = "RepaymentProgress";
 
 export default RepaymentProgress;
