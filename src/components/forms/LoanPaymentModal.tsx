@@ -66,8 +66,50 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId }: Pro
       });
 
       if (error) throw error;
-      setResult(data as unknown as PaymentResult);
+      const paymentData = data as unknown as PaymentResult;
+      setResult(paymentData);
       toast.success(lang === "bn" ? "পেমেন্ট সফল" : "Payment successful");
+
+      // Queue payment confirmation notification
+      try {
+        // Get client info for the loan
+        const { data: loanData } = await supabase
+          .from("loans")
+          .select("loan_id, client_id, clients!loans_client_id_fkey(name_en, name_bn, phone)")
+          .eq("id", parsed.data.loan_id)
+          .single();
+
+        if (loanData) {
+          const client = (loanData as any).clients;
+          if (client?.phone) {
+            const clientName = client.name_bn || client.name_en;
+            const remaining = Number(paymentData.new_outstanding);
+            const paid = Number(paymentData.total_payment);
+            const msgBn = paymentData.loan_closed
+              ? `✅ ${clientName}, আপনার ঋণ ${loanData.loan_id || ''} সম্পূর্ণ পরিশোধিত! ৳${paid.toLocaleString()} গৃহীত। ধন্যবাদ!`
+              : `✅ ${clientName}, ৳${paid.toLocaleString()} পরিশোধ গৃহীত। অবশিষ্ট: ৳${remaining.toLocaleString()}। ধন্যবাদ!`;
+            const msgEn = paymentData.loan_closed
+              ? `✅ ${client.name_en}, your loan ${loanData.loan_id || ''} is fully paid! ৳${paid.toLocaleString()} received. Thank you!`
+              : `✅ ${client.name_en}, ৳${paid.toLocaleString()} payment received. Remaining: ৳${remaining.toLocaleString()}. Thank you!`;
+
+            await supabase.from("notification_logs").insert({
+              loan_id: parsed.data.loan_id,
+              client_id: loanData.client_id,
+              event_type: "payment_confirmation",
+              installment_number: null,
+              channel: "sms",
+              message_bn: msgBn,
+              message_en: msgEn,
+              recipient_phone: client.phone,
+              recipient_name: client.name_en,
+              delivery_status: "queued",
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error("Payment notification error:", notifErr);
+        // Don't block payment success on notification failure
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
