@@ -33,6 +33,7 @@ import ProfitLoss from "./pages/ProfitLoss";
 import PaymentStatus from "./pages/PaymentStatus";
 import InvestorSummary from "./pages/InvestorSummary";
 import RiskDashboard from "./pages/RiskDashboard";
+import MonitoringDashboard from "./pages/MonitoringDashboard";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/reports/payment-status" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><PaymentStatus /></ProtectedRoute>} />
               <Route path="/reports/investor-summary" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><InvestorSummary /></ProtectedRoute>} />
               <Route path="/risk-dashboard" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><RiskDashboard /></ProtectedRoute>} />
+              <Route path="/monitoring" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><MonitoringDashboard /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute allowedRoles={["investor"]}><InvestorWallet /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
