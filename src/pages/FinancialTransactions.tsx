@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Search, Plus, CheckCircle2, XCircle, Clock, Receipt, MessageSquare,
-  AlertTriangle, FileText,
+  AlertTriangle, FileText, Share2, Copy,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -193,10 +193,16 @@ const FinancialTransactionsPage = () => {
                                 </>
                               )}
                               {tx.receipt_snapshot && (
-                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
-                                  onClick={() => setReceiptView(tx)}>
-                                  <Receipt className="w-3.5 h-3.5" />
-                                </Button>
+                                <>
+                                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                                    onClick={() => setReceiptView(tx)}>
+                                    <Receipt className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-[#25D366] hover:bg-[#25D366]/10"
+                                    onClick={() => shareViaWhatsApp(tx)} title="WhatsApp-এ শেয়ার">
+                                    <Share2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
                               )}
                             </div>
                           </TableCell>
@@ -246,9 +252,15 @@ const FinancialTransactionsPage = () => {
                           </>
                         )}
                         {tx.receipt_snapshot && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setReceiptView(tx)}>
-                            <Receipt className="w-3 h-3" /> {lang === "bn" ? "রিসিপ্ট" : "Receipt"}
-                          </Button>
+                          <>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setReceiptView(tx)}>
+                              <Receipt className="w-3 h-3" /> {lang === "bn" ? "রিসিপ্ট" : "Receipt"}
+                            </Button>
+                            <Button size="sm" className="h-7 text-xs gap-1 bg-[#25D366] hover:bg-[#1fb855] text-white"
+                              onClick={() => shareViaWhatsApp(tx)}>
+                              <Share2 className="w-3 h-3" /> WhatsApp
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -298,10 +310,63 @@ const FinancialTransactionsPage = () => {
   );
 };
 
+// ── WhatsApp Share Helper ─────────────────────────────────────
+const buildReceiptMessage = (tx: FinancialTransaction): string => {
+  const snap = tx.receipt_snapshot as any;
+  if (!snap) return "";
+  const typeLabel = TX_TYPE_LABELS[snap.transaction_type as FinTransactionType];
+
+  let msg = `📋 লেনদেন রিসিপ্ট\n━━━━━━━━━━━━━━━━\n একতা ফাইন্যান্স\n সমবায় ক্ষুদ্রঋণ ব্যবস্থাপনা\n\n`;
+  msg += `🔖 রিসিপ্ট নং: ${snap.receipt_number}\n`;
+  msg += `👤 সদস্য: ${snap.member_name || "—"}\n`;
+  msg += `📂 ধরন: ${typeLabel?.bn || snap.transaction_type}\n`;
+  msg += `💰 পরিমাণ: ৳${Number(snap.amount).toLocaleString()}\n`;
+
+  if (snap.allocation && Object.keys(snap.allocation).length > 0) {
+    msg += `\n📊 বরাদ্দ বিবরণ:\n`;
+    Object.entries(snap.allocation).forEach(([key, val]) => {
+      const label = key.replace(/_/g, " ");
+      msg += `  • ${label}: ${typeof val === "number" ? `৳${Number(val).toLocaleString()}` : String(val)}\n`;
+    });
+  }
+
+  if (snap.running_balance && Object.keys(snap.running_balance).length > 0) {
+    msg += `\n💼 হালনাগাদ ব্যালেন্স:\n`;
+    Object.entries(snap.running_balance).forEach(([key, val]) => {
+      const label = key.replace(/_/g, " ");
+      msg += `  • ${label}: ${typeof val === "number" ? `৳${Number(val).toLocaleString()}` : String(val)}\n`;
+    });
+  }
+
+  msg += `\n📅 তারিখ/সময়: ${new Date(snap.approved_at).toLocaleString("bn-BD")}\n`;
+  msg += `━━━━━━━━━━━━━━━━\n✅ একতা ফাইন্যান্স — ধন্যবাদ`;
+  return msg;
+};
+
+const shareViaWhatsApp = (tx: FinancialTransaction) => {
+  const phone = tx.clients?.phone?.replace(/[^0-9]/g, "") || "";
+  const message = buildReceiptMessage(tx);
+  const url = phone
+    ? `https://wa.me/${phone.startsWith("88") ? phone : "88" + phone}?text=${encodeURIComponent(message)}`
+    : `https://wa.me/?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank");
+};
+
+const copyReceiptToClipboard = async (tx: FinancialTransaction) => {
+  const message = buildReceiptMessage(tx);
+  try {
+    await navigator.clipboard.writeText(message);
+    toast.success("রিসিপ্ট কপি করা হয়েছে");
+  } catch {
+    toast.error("কপি করা যায়নি");
+  }
+};
+
 // ── Receipt Card ──────────────────────────────────────────────
 const ReceiptCard = ({ tx, lang }: { tx: FinancialTransaction; lang: string }) => {
   const snap = tx.receipt_snapshot as any;
   if (!snap) return null;
+  const hasPhone = !!tx.clients?.phone;
 
   return (
     <div className="space-y-3 text-xs">
@@ -352,6 +417,27 @@ const ReceiptCard = ({ tx, lang }: { tx: FinancialTransaction; lang: string }) =
       <div className="border-t border-dashed pt-2 text-center text-muted-foreground">
         <p>{new Date(snap.approved_at).toLocaleString("bn-BD")}</p>
         <p className="mt-1">{lang === "bn" ? "ধন্যবাদ" : "Thank you"}</p>
+      </div>
+
+      {/* WhatsApp Share & Copy Buttons */}
+      <div className="border-t pt-3 flex gap-2">
+        <Button
+          size="sm"
+          className="flex-1 h-8 text-xs gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white"
+          onClick={() => shareViaWhatsApp(tx)}
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          {lang === "bn" ? "WhatsApp-এ শেয়ার" : "Share via WhatsApp"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-xs gap-1.5"
+          onClick={() => copyReceiptToClipboard(tx)}
+        >
+          <Copy className="w-3.5 h-3.5" />
+          {lang === "bn" ? "কপি" : "Copy"}
+        </Button>
       </div>
     </div>
   );
