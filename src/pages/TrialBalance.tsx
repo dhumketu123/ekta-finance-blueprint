@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
@@ -76,41 +76,40 @@ const TrialBalancePage = () => {
 
       {isLoading ? <TableSkeleton rows={8} cols={3} /> : (
         <div className="card-elevated overflow-hidden">
-          <Table className="table-premium">
-            <TableHeader className="table-header-premium">
-              <TableRow>
-                <TableHead className="text-xs">{lang === "bn" ? "হিসাব কোড" : "Account Code"}</TableHead>
-                <TableHead className="text-xs text-right">{lang === "bn" ? "ডেবিট (৳)" : "Debit (৳)"}</TableHead>
-                <TableHead className="text-xs text-right">{lang === "bn" ? "ক্রেডিট (৳)" : "Credit (৳)"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full table-fixed text-sm">
+            <thead className="bg-muted/60 border-b">
+              <tr>
+                <th className="text-left text-xs font-medium text-muted-foreground p-3 w-[50%]">{lang === "bn" ? "হিসাব কোড" : "Account Code"}</th>
+                <th className="text-right text-xs font-medium text-muted-foreground p-3 w-[25%]">{lang === "bn" ? "ডেবিট (৳)" : "Debit (৳)"}</th>
+                <th className="text-right text-xs font-medium text-muted-foreground p-3 w-[25%]">{lang === "bn" ? "ক্রেডিট (৳)" : "Credit (৳)"}</th>
+              </tr>
+            </thead>
+            <tbody>
               {trialBalance.accounts.map((acc) => (
-                <TableRow key={acc.code}>
-                  <TableCell>
-                    <p className="text-xs font-medium">{ACCOUNT_LABELS[acc.code]?.[lang === "bn" ? "bn" : "en"] ?? acc.code}</p>
+                <tr key={acc.code} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="p-3">
+                    <p className="text-xs font-medium truncate">{ACCOUNT_LABELS[acc.code]?.[lang === "bn" ? "bn" : "en"] ?? acc.code}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{acc.code}</p>
-                  </TableCell>
-                  <TableCell className="text-xs text-right font-mono font-medium">
+                  </td>
+                  <td className="p-3 text-xs text-right font-mono font-medium">
                     {acc.debit > 0 ? `৳${acc.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-right font-mono font-medium">
+                  </td>
+                  <td className="p-3 text-xs text-right font-mono font-medium">
                     {acc.credit > 0 ? `৳${acc.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-              {/* Totals row */}
-              <TableRow className="bg-muted/50 font-bold border-t-2">
-                <TableCell className="text-xs">{lang === "bn" ? "মোট" : "Total"}</TableCell>
-                <TableCell className="text-xs text-right font-mono">
+              <tr className="bg-muted/50 font-bold border-t-2">
+                <td className="p-3 text-xs">{lang === "bn" ? "মোট" : "Total"}</td>
+                <td className="p-3 text-xs text-right font-mono">
                   ৳{trialBalance.totalDebit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </TableCell>
-                <TableCell className="text-xs text-right font-mono">
+                </td>
+                <td className="p-3 text-xs text-right font-mono">
                   ৳{trialBalance.totalCredit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
 
