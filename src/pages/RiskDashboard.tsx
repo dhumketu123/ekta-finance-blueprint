@@ -146,7 +146,7 @@ const RiskDashboard = () => {
       />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
         <MetricCard
           title={lang === "bn" ? "মোট স্কোরকৃত" : "Total Scored"}
           value={totalScored}
@@ -178,26 +178,26 @@ const RiskDashboard = () => {
 
       {/* Portfolio Impact Cards */}
       {predictions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-          <div className="card-elevated p-4">
-            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "মোট বকেয়া" : "Total Outstanding"}</p>
-            <p className="text-xl font-bold text-foreground mt-1">৳{totalOutstanding.toLocaleString()}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
+          <div className="card-elevated p-5">
+            <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "মোট বকেয়া" : "Total Outstanding"}</p>
+            <p className="text-2xl font-extrabold text-foreground mt-1.5">৳{totalOutstanding.toLocaleString()}</p>
           </div>
-          <div className="card-elevated p-4">
-            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "প্রত্যাশিত ক্ষতি" : "Expected Loss"}</p>
-            <p className="text-xl font-bold text-destructive mt-1">৳{Math.round(expectedLoss).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{lang === "bn" ? "ঝুঁকি স্কোর ভিত্তিক" : "Based on risk scores"}</p>
+          <div className="card-elevated p-5">
+            <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "প্রত্যাশিত ক্ষতি" : "Expected Loss"}</p>
+            <p className="text-2xl font-extrabold text-destructive mt-1.5">৳{Math.round(expectedLoss).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">{lang === "bn" ? "ঝুঁকি স্কোর ভিত্তিক" : "Based on risk scores"}</p>
           </div>
-          <div className="card-elevated p-4">
-            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "প্রত্যাশিত রিকভারি" : "Expected Recovery"}</p>
-            <p className="text-xl font-bold text-success mt-1">৳{Math.round(expectedRecovery).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{totalOutstanding > 0 ? `${((expectedRecovery / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "আদায়যোগ্য" : "recoverable"}</p>
+          <div className="card-elevated p-5">
+            <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "প্রত্যাশিত রিকভারি" : "Expected Recovery"}</p>
+            <p className="text-2xl font-extrabold text-success mt-1.5">৳{Math.round(expectedRecovery).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">{totalOutstanding > 0 ? `${((expectedRecovery / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "আদায়যোগ্য" : "recoverable"}</p>
           </div>
         </div>
       )}
 
       {/* Sort & Filter Controls */}
-      <div className="flex gap-2 flex-wrap items-center">
+      <div className="flex gap-2.5 flex-wrap items-center">
         {([
           { key: "risk", label: lang === "bn" ? "ঝুঁকি স্কোর" : "Risk Score" },
           { key: "overdue", label: lang === "bn" ? "বকেয়া দিন" : "Overdue Days" },
@@ -207,14 +207,14 @@ const RiskDashboard = () => {
             key={s.key}
             size="sm"
             variant={sortBy === s.key ? "default" : "outline"}
-            className="text-xs"
+            className="text-sm font-medium"
             onClick={() => setSortBy(s.key)}
           >
             {s.label}
           </Button>
         ))}
         <Select value={alertFilter} onValueChange={setAlertFilter}>
-          <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectTrigger className="w-[160px] h-9 text-sm">
             <SelectValue placeholder={lang === "bn" ? "সতর্কতা ফিল্টার" : "Alert Filter"} />
           </SelectTrigger>
           <SelectContent>
@@ -228,11 +228,11 @@ const RiskDashboard = () => {
       {/* Top 10 Risky Clients */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-bold text-card-foreground flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
+          <h2 className="text-base font-bold text-card-foreground flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
             {lang === "bn" ? "শীর্ষ ১০ ঝুঁকিপূর্ণ ক্লায়েন্ট" : "Top 10 Risky Clients"}
           </h2>
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge variant="secondary" className="text-xs font-medium">
             {lang === "bn" ? `${totalScored} টি ঋণ বিশ্লেষিত` : `${totalScored} loans analyzed`}
           </Badge>
         </div>
@@ -264,47 +264,47 @@ const RiskDashboard = () => {
                     <TableRow key={p.loan_id} className="hover:bg-accent/50 transition-colors">
                       <TableCell>
                         <div>
-                          <p className="text-xs font-medium">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
-                          <p className="text-[10px] text-muted-foreground">{p.next_due_date ? `📅 ${p.next_due_date}` : "—"}</p>
+                          <p className="text-sm font-semibold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{p.next_due_date ? `📅 ${p.next_due_date}` : "—"}</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16">
-                            <Progress value={p.risk_score} className="h-2" />
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-20">
+                            <Progress value={p.risk_score} className="h-2.5" />
                           </div>
-                          <span className={`text-xs font-bold ${getRiskColor(p.risk_score)}`}>
+                          <span className={`text-sm font-bold ${getRiskColor(p.risk_score)}`}>
                             {p.risk_score}
                           </span>
                         </div>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
                           {getRiskLabel(p.risk_score, lang)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">{getAlertIcon(p.alert_type)}</span>
+                        <span className="text-base">{getAlertIcon(p.alert_type)}</span>
                         {p.predicted_7day_overdue && (
-                          <Badge variant="destructive" className="text-[9px] ml-1">7d</Badge>
+                          <Badge variant="destructive" className="text-[10px] ml-1.5">7d</Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs font-semibold ${p.overdue_days > 30 ? "text-destructive" : p.overdue_days > 0 ? "text-warning" : "text-muted-foreground"}`}>
+                        <span className={`text-sm font-bold ${p.overdue_days > 30 ? "text-destructive" : p.overdue_days > 0 ? "text-warning" : "text-muted-foreground"}`}>
                           {p.overdue_days > 0 ? `${p.overdue_days}d` : "—"}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs">
-                          <p className="font-semibold">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</p>
+                        <div>
+                          <p className="text-sm font-bold text-foreground">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</p>
                           {p.penalty_amount > 0 && (
-                            <p className="text-[10px] text-destructive">+৳{p.penalty_amount.toLocaleString()} {lang === "bn" ? "জরিমানা" : "penalty"}</p>
+                            <p className="text-xs text-destructive font-medium mt-0.5">+৳{p.penalty_amount.toLocaleString()} {lang === "bn" ? "জরিমানা" : "penalty"}</p>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-sm font-medium text-foreground">
                           {p.paid_installments}/{p.total_installments}
                           {p.overdue_installments > 0 && (
-                            <span className="text-destructive ml-1">({p.overdue_installments} ⚠️)</span>
+                            <span className="text-destructive font-bold ml-1">({p.overdue_installments} ⚠️)</span>
                           )}
                         </span>
                       </TableCell>
@@ -330,17 +330,17 @@ const RiskDashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span>{getAlertIcon(p.alert_type)}</span>
-                      <p className="text-sm font-semibold">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
-                    </div>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
-                      {p.risk_score}/100
-                    </span>
+                    <p className="text-base font-bold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</span>
-                    {p.overdue_days > 0 && <span className="text-destructive">{p.overdue_days}d overdue</span>}
-                    <span>{p.paid_installments}/{p.total_installments} inst.</span>
-                  </div>
+                  <span className={`text-sm font-bold px-2.5 py-1 rounded-full ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
+                    {p.risk_score}/100
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                  <span className="text-foreground font-semibold">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</span>
+                  {p.overdue_days > 0 && <span className="text-destructive font-bold">{p.overdue_days}d overdue</span>}
+                  <span>{p.paid_installments}/{p.total_installments} inst.</span>
+                </div>
                   <Progress value={p.risk_score} className="h-1.5 mt-2" />
                 </div>
               ))}
@@ -352,19 +352,19 @@ const RiskDashboard = () => {
       {/* All Loans Risk Distribution */}
       {predictions.length > 0 && (
         <div className="card-elevated p-5">
-          <h3 className="text-sm font-bold text-card-foreground mb-4">
+          <h3 className="text-base font-bold text-card-foreground mb-4">
             {lang === "bn" ? "ঝুঁকি বিতরণ" : "Risk Distribution"}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: lang === "bn" ? "নিম্ন (0-39)" : "Low (0-39)", count: predictions.filter(p => p.risk_score < 40).length, color: "bg-success/10 text-success border-success/20" },
               { label: lang === "bn" ? "মাঝারি (40-69)" : "Medium (40-69)", count: predictions.filter(p => p.risk_score >= 40 && p.risk_score < 70).length, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
               { label: lang === "bn" ? "উচ্চ (70-79)" : "High (70-79)", count: predictions.filter(p => p.risk_score >= 70 && p.risk_score < 80).length, color: "bg-warning/10 text-warning border-warning/20" },
               { label: lang === "bn" ? "গুরুতর (80+)" : "Critical (80+)", count: criticalCount, color: "bg-destructive/10 text-destructive border-destructive/20" },
             ].map(bucket => (
-              <div key={bucket.label} className={`p-3 rounded-xl border ${bucket.color}`}>
-                <p className="text-2xl font-bold">{bucket.count}</p>
-                <p className="text-[11px] font-medium mt-1">{bucket.label}</p>
+              <div key={bucket.label} className={`p-4 rounded-xl border ${bucket.color}`}>
+                <p className="text-3xl font-extrabold">{bucket.count}</p>
+                <p className="text-sm font-semibold mt-1.5">{bucket.label}</p>
               </div>
             ))}
           </div>
