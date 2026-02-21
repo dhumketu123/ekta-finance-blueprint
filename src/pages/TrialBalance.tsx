@@ -75,37 +75,41 @@ const TrialBalancePage = () => {
       />
 
       {isLoading ? <TableSkeleton rows={8} cols={3} /> : (
-        <div className="card-elevated overflow-hidden">
+        <div className="card-elevated overflow-hidden rounded-xl border border-border/60 shadow-md">
           <table className="w-full table-fixed text-sm">
-            <thead className="bg-muted/60 border-b">
-              <tr>
-                <th className="text-left text-xs font-medium text-muted-foreground p-3 w-[50%]">{lang === "bn" ? "হিসাব কোড" : "Account Code"}</th>
-                <th className="text-right text-xs font-medium text-muted-foreground p-3 w-[25%]">{lang === "bn" ? "ডেবিট (৳)" : "Debit (৳)"}</th>
-                <th className="text-right text-xs font-medium text-muted-foreground p-3 w-[25%]">{lang === "bn" ? "ক্রেডিট (৳)" : "Credit (৳)"}</th>
+            <thead>
+              <tr className="bg-primary text-primary-foreground">
+                <th className="text-left text-xs font-semibold tracking-wide uppercase p-3.5 w-[50%]">{lang === "bn" ? "হিসাব কোড" : "Account Code"}</th>
+                <th className="text-right text-xs font-semibold tracking-wide uppercase p-3.5 w-[25%]">{lang === "bn" ? "ডেবিট (৳)" : "Debit (৳)"}</th>
+                <th className="text-right text-xs font-semibold tracking-wide uppercase p-3.5 w-[25%]">{lang === "bn" ? "ক্রেডিট (৳)" : "Credit (৳)"}</th>
               </tr>
             </thead>
             <tbody>
-              {trialBalance.accounts.map((acc) => (
-                <tr key={acc.code} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-3">
-                    <p className="text-xs font-medium truncate">{ACCOUNT_LABELS[acc.code]?.[lang === "bn" ? "bn" : "en"] ?? acc.code}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{acc.code}</p>
+              {trialBalance.accounts.map((acc, i) => (
+                <tr key={acc.code} className={`border-b border-border/40 last:border-0 hover:bg-accent/40 transition-colors duration-200 ${i % 2 === 0 ? "bg-background" : "bg-muted/30"}`}>
+                  <td className="p-3.5">
+                    <p className="text-xs font-semibold text-foreground truncate">{ACCOUNT_LABELS[acc.code]?.[lang === "bn" ? "bn" : "en"] ?? acc.code}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{acc.code}</p>
                   </td>
-                  <td className="p-3 text-xs text-right font-mono font-medium">
-                    {acc.debit > 0 ? `৳${acc.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
+                  <td className="p-3.5 text-right">
+                    <span className={`text-xs font-mono font-bold ${acc.debit > 0 ? "text-primary" : "text-muted-foreground/50"}`}>
+                      {acc.debit > 0 ? `৳${acc.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
+                    </span>
                   </td>
-                  <td className="p-3 text-xs text-right font-mono font-medium">
-                    {acc.credit > 0 ? `৳${acc.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
+                  <td className="p-3.5 text-right">
+                    <span className={`text-xs font-mono font-bold ${acc.credit > 0 ? "text-destructive" : "text-muted-foreground/50"}`}>
+                      {acc.credit > 0 ? `৳${acc.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
+                    </span>
                   </td>
                 </tr>
               ))}
-              <tr className="bg-muted/50 font-bold border-t-2">
-                <td className="p-3 text-xs">{lang === "bn" ? "মোট" : "Total"}</td>
-                <td className="p-3 text-xs text-right font-mono">
-                  ৳{trialBalance.totalDebit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              <tr className="bg-primary/10 border-t-2 border-primary/30">
+                <td className="p-3.5 text-xs font-extrabold text-foreground">{lang === "bn" ? "মোট" : "Total"}</td>
+                <td className="p-3.5 text-right">
+                  <span className="text-xs font-mono font-extrabold text-primary">৳{trialBalance.totalDebit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </td>
-                <td className="p-3 text-xs text-right font-mono">
-                  ৳{trialBalance.totalCredit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                <td className="p-3.5 text-right">
+                  <span className="text-xs font-mono font-extrabold text-destructive">৳{trialBalance.totalCredit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </td>
               </tr>
             </tbody>
