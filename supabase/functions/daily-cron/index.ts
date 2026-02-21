@@ -432,11 +432,52 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ═══ Phase 9: AI-PREDICTIVE RISK SCORING ═══
+    const { data: riskResult, error: riskErr } = await supabase.rpc("predict_loan_risk" as any);
+    if (riskErr) {
+      results.risk_scoring_error = riskErr.message;
+    } else {
+      const riskData = riskResult as any;
+      results.risk_scoring = {
+        total_scored: riskData?.total_scored ?? 0,
+        high_risk_count: riskData?.high_risk_count ?? 0,
+      };
+
+      // Send notifications for high-risk clients not already notified today
+      const predictions = riskData?.predictions ?? [];
+      let riskNotifCount = 0;
+      for (const pred of predictions) {
+        if (pred.risk_score < 70 || !pred.phone) continue;
+        const alertType = pred.alert_type === 'default_alert' ? 'default_alert' : 'escalation_alert';
+        const msgBn = pred.risk_score >= 80
+          ? `গুরুতর ঝুঁকি: ${pred.client_name_bn || pred.client_name_en}, আপনার ঋণের ঝুঁকি স্কোর ${pred.risk_score}/100। বকেয়া: ৳${Number(pred.outstanding_principal + pred.outstanding_interest).toLocaleString()}। অবিলম্বে যোগাযোগ করুন।`
+          : `সতর্কতা: ${pred.client_name_bn || pred.client_name_en}, ঋণের ঝুঁকি স্কোর ${pred.risk_score}/100। বকেয়া: ৳${Number(pred.outstanding_principal + pred.outstanding_interest).toLocaleString()}।`;
+        const msgEn = pred.risk_score >= 80
+          ? `CRITICAL RISK: ${pred.client_name_en}, loan risk score ${pred.risk_score}/100. Outstanding: ৳${Number(pred.outstanding_principal + pred.outstanding_interest).toLocaleString()}. Contact office immediately.`
+          : `WARNING: ${pred.client_name_en}, loan risk score ${pred.risk_score}/100. Outstanding: ৳${Number(pred.outstanding_principal + pred.outstanding_interest).toLocaleString()}.`;
+
+        await insertNotification({
+          loan_id: pred.loan_id,
+          client_id: pred.client_id,
+          event_type: alertType,
+          installment_number: null,
+          channel: 'sms',
+          message_bn: msgBn,
+          message_en: msgEn,
+          recipient_phone: pred.phone,
+          recipient_name: pred.client_name_en,
+        });
+        riskNotifCount++;
+      }
+      results.risk_notifications = riskNotifCount;
+    }
+
     // ═══ Summary & Audit ═══
     const totalNotifCount = (results.upcoming_reminders as number ?? 0)
       + (results.due_today_notifications as number ?? 0)
       + (results.overdue_alerts as number ?? 0)
-      + (results.escalation_alerts as number ?? 0);
+      + (results.escalation_alerts as number ?? 0)
+      + (results.risk_notifications as number ?? 0);
 
     if (totalNotifCount > 0) {
       await supabase.from("sms_logs").insert({
