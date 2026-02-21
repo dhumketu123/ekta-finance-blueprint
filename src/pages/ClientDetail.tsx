@@ -16,7 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays } from "lucide-react";
+import { User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays, AlertTriangle, CheckCircle } from "lucide-react";
 
 const ClientDetail = () => {
   const { id } = useParams();
@@ -210,64 +210,106 @@ const ClientDetail = () => {
         )}
       </div>
 
-      {/* ── Active Loan Summary (Phase 6 Dashboard Intelligence) ── */}
-      {hasActiveLoan && (
-        <div className="card-elevated p-5 border-l-4 border-l-warning animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-warning" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-warning">
-                {lang === "bn" ? "সক্রিয় ঋণ" : "Active Loan"}
-              </h3>
+      {/* ── Active Loan Summary (Phase 6+8 Dashboard Intelligence + Forecasting) ── */}
+      {hasActiveLoan && (() => {
+        const daysUntilDue = activeLoan.next_due_date
+          ? Math.ceil((new Date(activeLoan.next_due_date).getTime() - Date.now()) / 86400000)
+          : null;
+        const totalOutstanding = Number(activeLoan.outstanding_principal) + Number(activeLoan.outstanding_interest) + Number(activeLoan.penalty_amount);
+        const isOverdue90 = activeLoan.status === 'default';
+        const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+        const isDueSoon = daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 3;
+
+        return (
+          <div className={`card-elevated p-5 border-l-4 animate-slide-up ${isOverdue90 ? 'border-l-destructive' : isOverdue ? 'border-l-destructive' : isDueSoon ? 'border-l-warning' : 'border-l-primary'}`} style={{ animationDelay: "0.1s" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Wallet className={`w-4 h-4 ${isOverdue90 ? 'text-destructive' : 'text-warning'}`} />
+                <h3 className={`text-xs font-bold uppercase tracking-wider ${isOverdue90 ? 'text-destructive' : 'text-warning'}`}>
+                  {lang === "bn" ? "সক্রিয় ঋণ" : "Active Loan"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeLoan.loan_id && (
+                  <span className="text-xs font-mono font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-md border border-warning/20">
+                    {activeLoan.loan_id}
+                  </span>
+                )}
+                <StatusBadge status={activeLoan.status as any} />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {activeLoan.loan_id && (
-                <span className="text-xs font-mono font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-md border border-warning/20">
-                  {activeLoan.loan_id}
-                </span>
-              )}
-              <StatusBadge status={activeLoan.status as any} />
+
+            {/* Risk Indicator */}
+            {(isOverdue90 || isOverdue || isDueSoon) && (
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold ${
+                isOverdue90 ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                isOverdue ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                'bg-warning/10 text-warning border border-warning/20'
+              }`}>
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                {isOverdue90
+                  ? (lang === "bn" ? "⚠️ এই ঋণ খেলাপি (৯০+ দিন বকেয়া)" : "⚠️ This loan is in DEFAULT (90+ days overdue)")
+                  : isOverdue
+                  ? (lang === "bn" ? `⚠️ কিস্তি ${Math.abs(daysUntilDue!)} দিন বকেয়া` : `⚠️ Payment ${Math.abs(daysUntilDue!)} days overdue`)
+                  : (lang === "bn" ? `📅 পরবর্তী কিস্তি ${daysUntilDue} দিনে` : `📅 Next payment in ${daysUntilDue} days`)}
+              </div>
+            )}
+
+            {totalOutstanding <= 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold bg-success/10 text-success border border-success/20">
+                <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                {lang === "bn" ? "✅ সম্পূর্ণ পরিশোধিত — বন্ধ হওয়ার অপেক্ষায়" : "✅ Fully repaid — pending closure"}
+              </div>
+            )}
+
+            <RepaymentProgress totalAmount={totalOwed} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={(activeLoan as any).next_due_date ?? nextPaymentDate} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "ঋণের পরিমাণ" : "Loan Amount"}</p>
+                <p className="text-sm font-bold text-foreground">৳{Number(activeLoan.total_principal).toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া আসল" : "Outstanding"}</p>
+                <p className="text-sm font-bold text-destructive">৳{Number(activeLoan.outstanding_principal).toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া সুদ" : "Interest Due"}</p>
+                <p className="text-sm font-bold text-warning">৳{Number(activeLoan.outstanding_interest).toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "EMI"}</p>
+                <p className="text-sm font-bold text-primary">৳{Number(activeLoan.emi_amount).toLocaleString()}</p>
+              </div>
             </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরবর্তী কিস্তি" : "Next Due"}</p>
+                <p className={`text-sm font-bold ${isOverdue ? 'text-destructive' : isDueSoon ? 'text-warning' : 'text-primary'}`}>{(activeLoan as any).next_due_date ?? "—"}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid"}</p>
+                <p className="text-sm font-bold text-success">{scheduleStats?.paid ?? "—"}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট কিস্তি" : "Remaining"}</p>
+                <p className="text-sm font-bold text-destructive">{scheduleStats?.remaining ?? "—"}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরিপক্কতা" : "Maturity"}</p>
+                <p className="text-sm font-bold">{activeLoan.maturity_date ?? "—"}</p>
+              </div>
+            </div>
+            {/* Installment Day indicator */}
+            {(activeLoan as any).installment_day && (
+              <div className="mt-2 pt-2 border-t border-border text-center">
+                <p className="text-[10px] text-muted-foreground">
+                  {lang === "bn" ? `📌 নির্ধারিত কিস্তির তারিখ: প্রতি মাসের ${(activeLoan as any).installment_day} তারিখ` : `📌 Fixed installment day: ${(activeLoan as any).installment_day}th of every month`}
+                </p>
+              </div>
+            )}
           </div>
-          <RepaymentProgress totalAmount={totalOwed} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={(activeLoan as any).next_due_date ?? nextPaymentDate} />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "ঋণের পরিমাণ" : "Loan Amount"}</p>
-              <p className="text-sm font-bold text-foreground">৳{Number(activeLoan.total_principal).toLocaleString()}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া আসল" : "Outstanding"}</p>
-              <p className="text-sm font-bold text-destructive">৳{Number(activeLoan.outstanding_principal).toLocaleString()}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া সুদ" : "Interest Due"}</p>
-              <p className="text-sm font-bold text-warning">৳{Number(activeLoan.outstanding_interest).toLocaleString()}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "EMI"}</p>
-              <p className="text-sm font-bold text-primary">৳{Number(activeLoan.emi_amount).toLocaleString()}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরবর্তী কিস্তি" : "Next Due"}</p>
-              <p className="text-sm font-bold text-primary">{(activeLoan as any).next_due_date ?? "—"}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid"}</p>
-              <p className="text-sm font-bold text-success">{scheduleStats?.paid ?? "—"}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট কিস্তি" : "Remaining"}</p>
-              <p className="text-sm font-bold text-destructive">{scheduleStats?.remaining ?? "—"}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরিপক্কতা" : "Maturity"}</p>
-              <p className="text-sm font-bold">{activeLoan.maturity_date ?? "—"}</p>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Savings Summary ── */}
       {savingsAccount && (

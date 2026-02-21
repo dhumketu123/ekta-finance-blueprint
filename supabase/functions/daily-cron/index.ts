@@ -5,6 +5,98 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ═══════════════════════════════════════════════════════════
+// Phase 7: Smart Notification Message Builder
+// ═══════════════════════════════════════════════════════════
+interface LoanContext {
+  name_en: string;
+  name_bn: string | null;
+  phone: string | null;
+  loan_id: string | null;
+  loan_model: string;
+  total_principal: number;
+  outstanding_principal: number;
+  outstanding_interest: number;
+  penalty_amount: number;
+  emi_amount: number;
+  next_due_date: string | null;
+  installment_day: number | null;
+  paid_count: number;
+  remaining_count: number;
+  total_count: number;
+  installment_number?: number;
+  installment_total?: number;
+  due_date?: string;
+}
+
+function buildSmartMessage(ctx: LoanContext, eventType: string): { bn: string; en: string } {
+  const name = ctx.name_bn || ctx.name_en;
+  const totalPaid = ctx.total_principal - ctx.outstanding_principal;
+  const totalOutstanding = ctx.outstanding_principal + ctx.outstanding_interest + ctx.penalty_amount;
+  const loanRef = ctx.loan_id || '';
+
+  // Common status line
+  const statusBn = `ঋণ: ${loanRef} | পরিশোধিত: ৳${totalPaid.toLocaleString()} | বকেয়া: ৳${totalOutstanding.toLocaleString()} | কিস্তি: ${ctx.paid_count}/${ctx.total_count}`;
+  const statusEn = `Loan: ${loanRef} | Paid: ৳${totalPaid.toLocaleString()} | Due: ৳${totalOutstanding.toLocaleString()} | Inst: ${ctx.paid_count}/${ctx.total_count}`;
+
+  // Model-specific details
+  let modelDetailBn = '';
+  let modelDetailEn = '';
+  if (ctx.loan_model === 'flat') {
+    modelDetailBn = `মাসিক কিস্তি: ৳${ctx.emi_amount.toLocaleString()}`;
+    modelDetailEn = `Monthly EMI: ৳${ctx.emi_amount.toLocaleString()}`;
+  } else if (ctx.loan_model === 'reducing') {
+    modelDetailBn = `EMI (হ্রাসমান): ৳${ctx.emi_amount.toLocaleString()} | বকেয়া সুদ: ৳${ctx.outstanding_interest.toLocaleString()}`;
+    modelDetailEn = `EMI (Reducing): ৳${ctx.emi_amount.toLocaleString()} | Int Due: ৳${ctx.outstanding_interest.toLocaleString()}`;
+  }
+
+  const nextDueBn = ctx.next_due_date ? `পরবর্তী কিস্তি: ${ctx.next_due_date}` : '';
+  const nextDueEn = ctx.next_due_date ? `Next Due: ${ctx.next_due_date}` : '';
+
+  switch (eventType) {
+    case 'upcoming_reminder': {
+      const instAmt = ctx.installment_total ?? ctx.emi_amount;
+      return {
+        bn: `স্মারক: প্রিয় ${name}, আপনার কিস্তি #${ctx.installment_number} ৳${instAmt.toLocaleString()} ${ctx.due_date} তারিখে পরিশোধযোগ্য। ${modelDetailBn} | ${statusBn}`,
+        en: `Reminder: Dear ${ctx.name_en}, installment #${ctx.installment_number} of ৳${instAmt.toLocaleString()} is due on ${ctx.due_date}. ${modelDetailEn} | ${statusEn}`,
+      };
+    }
+    case 'overdue_alert': {
+      const instAmt = ctx.installment_total ?? ctx.emi_amount;
+      return {
+        bn: `সতর্কতা: ${name}, কিস্তি #${ctx.installment_number} ৳${instAmt.toLocaleString()} ${ctx.due_date} থেকে বকেয়া। অবিলম্বে পরিশোধ করুন। ${statusBn}`,
+        en: `ALERT: ${ctx.name_en}, installment #${ctx.installment_number} of ৳${instAmt.toLocaleString()} overdue since ${ctx.due_date}. Pay immediately. ${statusEn}`,
+      };
+    }
+    case 'escalation_alert': {
+      return {
+        bn: `জরুরি: ${name}, আপনার ঋণ ${loanRef} এ বকেয়া ৳${totalOutstanding.toLocaleString()}। জরিমানা এড়াতে অবিলম্বে যোগাযোগ করুন। ${statusBn}`,
+        en: `URGENT: ${ctx.name_en}, loan ${loanRef} has ৳${totalOutstanding.toLocaleString()} overdue. Contact us immediately. ${statusEn}`,
+      };
+    }
+    case 'default_alert': {
+      return {
+        bn: `গুরুতর: ${name}, ঋণ ${loanRef} খেলাপি হিসেবে চিহ্নিত হয়েছে। বকেয়া: ৳${totalOutstanding.toLocaleString()}। অবিলম্বে অফিসে যোগাযোগ করুন।`,
+        en: `CRITICAL: ${ctx.name_en}, loan ${loanRef} has been marked as DEFAULT. Outstanding: ৳${totalOutstanding.toLocaleString()}. Contact office immediately.`,
+      };
+    }
+    case 'loan_due_today': {
+      return {
+        bn: `প্রিয় ${name}, আপনার ঋণ কিস্তি ৳${ctx.emi_amount.toLocaleString()} আজ পরিশোধযোগ্য। ${modelDetailBn} | ${statusBn}`,
+        en: `Dear ${ctx.name_en}, your loan payment of ৳${ctx.emi_amount.toLocaleString()} is due today. ${modelDetailEn} | ${statusEn}`,
+      };
+    }
+    default:
+      return {
+        bn: `প্রিয় ${name}, আপনার ঋণ ${loanRef} সম্পর্কে বিজ্ঞপ্তি। ${statusBn}`,
+        en: `Dear ${ctx.name_en}, notification regarding loan ${loanRef}. ${statusEn}`,
+      };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Main Cron Handler
+// ═══════════════════════════════════════════════════════════
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,7 +110,7 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split("T")[0];
     const results: Record<string, unknown> = {};
 
-    // 1. Auto-flag overdue loans
+    // ═══ 1. Auto-flag overdue loans on clients ═══
     const { data: overdueClients, error: overdueErr } = await supabase
       .from("clients")
       .update({ status: "overdue" })
@@ -31,156 +123,332 @@ Deno.serve(async (req) => {
     results.overdue_flagged = overdueClients?.length ?? 0;
     if (overdueErr) results.overdue_error = overdueErr.message;
 
-    // 2. Find due loans (today)
-    const { data: dueLoans } = await supabase
-      .from("clients")
-      .select("id, name_en, name_bn, phone, loan_amount, next_payment_date")
-      .eq("next_payment_date", today)
-      .in("status", ["active", "pending"])
-      .is("deleted_at", null)
-      .gt("loan_amount", 0);
+    // ═══ 2. Sync loan_schedules overdue status ═══
+    const { data: scheduleSync, error: scheduleSyncErr } = await supabase.rpc("sync_overdue_schedules" as any);
+    results.schedule_overdue_sync = scheduleSync ?? {};
+    if (scheduleSyncErr) results.schedule_sync_error = scheduleSyncErr.message;
 
-    // 3. Create notifications for due loans
-    if (dueLoans && dueLoans.length > 0) {
-      const loanNotifs = dueLoans.map((c) => ({
-        event: "loan_due" as const,
-        channel: "sms" as const,
-        template_en: `Dear ${c.name_en}, your loan payment of ৳${c.loan_amount} is due today.`,
-        template_bn: `প্রিয় ${c.name_bn || c.name_en}, আপনার ঋণ কিস্তি ৳${c.loan_amount} আজ পরিশোধযোগ্য।`,
-        recipient_phone: c.phone,
-        recipient_name: c.name_en,
-      }));
-      await supabase.from("notifications").insert(loanNotifs);
-      results.loan_due_notifications = loanNotifs.length;
+    // ═══ 3. Run overdue penalty check (2% monthly) ═══
+    const { data: penaltyResult, error: penaltyErr } = await supabase.rpc("check_and_apply_overdue_penalty", { _penalty_percent: 2 });
+    results.overdue_penalties = penaltyResult ?? {};
+    if (penaltyErr) results.penalty_error = penaltyErr.message;
+
+    // ═══ 4. Auto-default loans (90+ days overdue) & auto-close zero-balance ═══
+    const { data: defaultResult, error: defaultErr } = await supabase.rpc("auto_default_loans" as any);
+    results.auto_default_loans = defaultResult ?? {};
+    if (defaultErr) results.auto_default_error = defaultErr.message;
+
+    // ═══ 5. Savings reconciliation ═══
+    const { data: reconResult, error: reconErr } = await supabase.rpc("reconcile_savings_balances" as any);
+    results.savings_reconciliation = reconResult ?? {};
+    if (reconErr) results.reconciliation_error = reconErr.message;
+
+    // ═══════════════════════════════════════════════════════
+    // Phase 7: SMART NOTIFICATION ENGINE
+    // ═══════════════════════════════════════════════════════
+
+    // Helper: get schedule stats for a loan
+    async function getScheduleStats(loanId: string) {
+      const { data } = await supabase
+        .from("loan_schedules")
+        .select("status")
+        .eq("loan_id", loanId);
+      const total = data?.length ?? 0;
+      const paid = data?.filter((s: any) => s.status === "paid").length ?? 0;
+      return { total, paid, remaining: total - paid };
     }
 
-    // 4. Create notifications for overdue
-    if (overdueClients && overdueClients.length > 0) {
-      const overdueNotifs = overdueClients.map((c) => ({
-        event: "overdue_alert" as const,
-        channel: "sms" as const,
-        template_en: `ALERT: ${c.name_en}'s loan payment is overdue since ${c.next_payment_date}.`,
-        template_bn: `সতর্কতা: ${c.name_bn || c.name_en} এর ঋণ কিস্তি ${c.next_payment_date} থেকে বকেয়া।`,
-        recipient_phone: c.phone,
-        recipient_name: c.name_en,
-      }));
-      await supabase.from("notifications").insert(overdueNotifs);
-      results.overdue_notifications = overdueNotifs.length;
+    // Helper: insert notification with dedup (ON CONFLICT DO NOTHING)
+    async function insertNotification(params: {
+      loan_id: string;
+      client_id: string;
+      event_type: string;
+      installment_number: number | null;
+      channel: string;
+      message_bn: string;
+      message_en: string;
+      recipient_phone: string | null;
+      recipient_name: string;
+    }) {
+      // Use upsert with onConflict for deduplication
+      const { error } = await supabase
+        .from("notification_logs")
+        .insert({
+          ...params,
+          event_date: today,
+          delivery_status: 'queued',
+        });
+      // Ignore unique constraint violations (duplicates)
+      if (error && !error.message?.includes('duplicate')) {
+        console.error('Notification insert error:', error.message);
+      }
+      return !error || error.message?.includes('duplicate');
     }
 
-    // 5. ★ NEW: Upcoming installment reminders (3 days ahead)
+    // ── 7a. Upcoming installment reminders (3 days ahead) ──
     const threeDaysLater = new Date();
     threeDaysLater.setDate(threeDaysLater.getDate() + 3);
     const upcomingDate = threeDaysLater.toISOString().split("T")[0];
 
     const { data: upcomingSchedules } = await supabase
       .from("loan_schedules")
-      .select("id, client_id, due_date, principal_due, interest_due, penalty_due, installment_number, clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)")
+      .select(`
+        id, client_id, due_date, principal_due, interest_due, penalty_due, 
+        installment_number, loan_id,
+        clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)
+      `)
       .eq("due_date", upcomingDate)
       .eq("status", "pending");
 
+    let upcomingCount = 0;
     if (upcomingSchedules && upcomingSchedules.length > 0) {
-      const upcomingNotifs = upcomingSchedules
-        .filter((s: any) => s.clients?.phone)
-        .map((s: any) => {
-          const totalDue = Number(s.principal_due) + Number(s.interest_due) + Number(s.penalty_due);
-          return {
-            event: "deposit_reminder" as const,
-            channel: "sms" as const,
-            template_en: `Reminder: ${s.clients.name_en}, installment #${s.installment_number} of ৳${totalDue} is due on ${s.due_date}. Principal: ৳${s.principal_due}, Interest: ৳${s.interest_due}.`,
-            template_bn: `স্মারক: ${s.clients.name_bn || s.clients.name_en}, কিস্তি #${s.installment_number} ৳${totalDue} ${s.due_date} তারিখে পরিশোধযোগ্য। আসল: ৳${s.principal_due}, সুদ: ৳${s.interest_due}।`,
-            recipient_phone: s.clients.phone,
-            recipient_name: s.clients.name_en,
-          };
+      for (const s of upcomingSchedules as any[]) {
+        if (!s.clients?.phone) continue;
+        
+        // Get loan details for smart message
+        const { data: loan } = await supabase
+          .from("loans")
+          .select("loan_id, loan_model, total_principal, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, next_due_date, installment_day")
+          .eq("id", s.loan_id)
+          .single();
+        
+        if (!loan) continue;
+        const stats = await getScheduleStats(s.loan_id);
+        const instTotal = Number(s.principal_due) + Number(s.interest_due) + Number(s.penalty_due);
+
+        const ctx: LoanContext = {
+          name_en: s.clients.name_en,
+          name_bn: s.clients.name_bn,
+          phone: s.clients.phone,
+          loan_id: loan.loan_id,
+          loan_model: loan.loan_model,
+          total_principal: Number(loan.total_principal),
+          outstanding_principal: Number(loan.outstanding_principal),
+          outstanding_interest: Number(loan.outstanding_interest),
+          penalty_amount: Number(loan.penalty_amount),
+          emi_amount: Number(loan.emi_amount),
+          next_due_date: loan.next_due_date,
+          installment_day: loan.installment_day,
+          paid_count: stats.paid,
+          remaining_count: stats.remaining,
+          total_count: stats.total,
+          installment_number: s.installment_number,
+          installment_total: instTotal,
+          due_date: s.due_date,
+        };
+
+        const msg = buildSmartMessage(ctx, 'upcoming_reminder');
+        await insertNotification({
+          loan_id: s.loan_id,
+          client_id: s.client_id,
+          event_type: 'upcoming_reminder',
+          installment_number: s.installment_number,
+          channel: 'sms',
+          message_bn: msg.bn,
+          message_en: msg.en,
+          recipient_phone: s.clients.phone,
+          recipient_name: s.clients.name_en,
         });
-      if (upcomingNotifs.length > 0) {
-        await supabase.from("notifications").insert(upcomingNotifs);
+        upcomingCount++;
       }
-      results.upcoming_reminders = upcomingNotifs.length;
     }
+    results.upcoming_reminders = upcomingCount;
 
-    // 6. ★ NEW: Overdue escalation (weekly re-alert for schedules overdue > 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const escalationDate = sevenDaysAgo.toISOString().split("T")[0];
-
-    const { data: escalationSchedules } = await supabase
+    // ── 7b. Due today notifications ──
+    const { data: dueToday } = await supabase
       .from("loan_schedules")
-      .select("id, client_id, due_date, principal_due, interest_due, penalty_due, installment_number, clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)")
-      .eq("status", "overdue")
-      .lte("due_date", escalationDate);
+      .select(`
+        id, client_id, due_date, principal_due, interest_due, penalty_due,
+        installment_number, loan_id,
+        clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)
+      `)
+      .eq("due_date", today)
+      .in("status", ["pending", "overdue"]);
 
-    if (escalationSchedules && escalationSchedules.length > 0) {
-      // Only send escalation once per week — check day of week (Sunday = 0)
-      const dayOfWeek = new Date().getDay();
-      if (dayOfWeek === 0) { // Weekly escalation on Sundays
-        const escalationNotifs = escalationSchedules
-          .filter((s: any) => s.clients?.phone)
-          .map((s: any) => {
-            const totalDue = Number(s.principal_due) + Number(s.interest_due) + Number(s.penalty_due);
-            return {
-              event: "overdue_alert" as const,
-              channel: "sms" as const,
-              template_en: `URGENT: ${s.clients.name_en}, installment #${s.installment_number} of ৳${totalDue} has been overdue since ${s.due_date}. Please pay immediately to avoid further penalties.`,
-              template_bn: `জরুরি: ${s.clients.name_bn || s.clients.name_en}, কিস্তি #${s.installment_number} ৳${totalDue} ${s.due_date} থেকে বকেয়া। জরিমানা এড়াতে অবিলম্বে পরিশোধ করুন।`,
-              recipient_phone: s.clients.phone,
-              recipient_name: s.clients.name_en,
-            };
+    let dueTodayCount = 0;
+    if (dueToday && dueToday.length > 0) {
+      for (const s of dueToday as any[]) {
+        if (!s.clients?.phone) continue;
+        const { data: loan } = await supabase
+          .from("loans")
+          .select("loan_id, loan_model, total_principal, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, next_due_date, installment_day")
+          .eq("id", s.loan_id)
+          .single();
+        if (!loan) continue;
+        const stats = await getScheduleStats(s.loan_id);
+        const instTotal = Number(s.principal_due) + Number(s.interest_due) + Number(s.penalty_due);
+
+        const ctx: LoanContext = {
+          name_en: s.clients.name_en, name_bn: s.clients.name_bn, phone: s.clients.phone,
+          loan_id: loan.loan_id, loan_model: loan.loan_model,
+          total_principal: Number(loan.total_principal), outstanding_principal: Number(loan.outstanding_principal),
+          outstanding_interest: Number(loan.outstanding_interest), penalty_amount: Number(loan.penalty_amount),
+          emi_amount: Number(loan.emi_amount), next_due_date: loan.next_due_date, installment_day: loan.installment_day,
+          paid_count: stats.paid, remaining_count: stats.remaining, total_count: stats.total,
+          installment_number: s.installment_number, installment_total: instTotal, due_date: s.due_date,
+        };
+
+        const msg = buildSmartMessage(ctx, 'loan_due_today');
+        await insertNotification({
+          loan_id: s.loan_id, client_id: s.client_id,
+          event_type: 'loan_due_today', installment_number: s.installment_number,
+          channel: 'sms', message_bn: msg.bn, message_en: msg.en,
+          recipient_phone: s.clients.phone, recipient_name: s.clients.name_en,
+        });
+        dueTodayCount++;
+      }
+    }
+    results.due_today_notifications = dueTodayCount;
+
+    // ── 7c. Overdue alerts (schedules past due) ──
+    const { data: overdueSchedules } = await supabase
+      .from("loan_schedules")
+      .select(`
+        id, client_id, due_date, principal_due, interest_due, penalty_due,
+        installment_number, loan_id,
+        clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)
+      `)
+      .eq("status", "overdue")
+      .gt("due_date", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0])
+      .lt("due_date", today);
+
+    let overdueAlertCount = 0;
+    if (overdueSchedules && overdueSchedules.length > 0) {
+      for (const s of overdueSchedules as any[]) {
+        if (!s.clients?.phone) continue;
+        const { data: loan } = await supabase
+          .from("loans")
+          .select("loan_id, loan_model, total_principal, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, next_due_date, installment_day")
+          .eq("id", s.loan_id)
+          .single();
+        if (!loan) continue;
+        const stats = await getScheduleStats(s.loan_id);
+        const instTotal = Number(s.principal_due) + Number(s.interest_due) + Number(s.penalty_due);
+
+        const ctx: LoanContext = {
+          name_en: s.clients.name_en, name_bn: s.clients.name_bn, phone: s.clients.phone,
+          loan_id: loan.loan_id, loan_model: loan.loan_model,
+          total_principal: Number(loan.total_principal), outstanding_principal: Number(loan.outstanding_principal),
+          outstanding_interest: Number(loan.outstanding_interest), penalty_amount: Number(loan.penalty_amount),
+          emi_amount: Number(loan.emi_amount), next_due_date: loan.next_due_date, installment_day: loan.installment_day,
+          paid_count: stats.paid, remaining_count: stats.remaining, total_count: stats.total,
+          installment_number: s.installment_number, installment_total: instTotal, due_date: s.due_date,
+        };
+
+        const msg = buildSmartMessage(ctx, 'overdue_alert');
+        await insertNotification({
+          loan_id: s.loan_id, client_id: s.client_id,
+          event_type: 'overdue_alert', installment_number: s.installment_number,
+          channel: 'sms', message_bn: msg.bn, message_en: msg.en,
+          recipient_phone: s.clients.phone, recipient_name: s.clients.name_en,
+        });
+        overdueAlertCount++;
+      }
+    }
+    results.overdue_alerts = overdueAlertCount;
+
+    // ── 7d. Weekly escalation (Sundays, > 7 days overdue) ──
+    const dayOfWeek = new Date().getDay();
+    if (dayOfWeek === 0) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const { data: escalationSchedules } = await supabase
+        .from("loan_schedules")
+        .select(`
+          id, client_id, due_date, principal_due, interest_due, penalty_due,
+          installment_number, loan_id,
+          clients!loan_schedules_client_id_fkey(name_en, name_bn, phone)
+        `)
+        .eq("status", "overdue")
+        .lte("due_date", sevenDaysAgo);
+
+      let escalationCount = 0;
+      if (escalationSchedules && escalationSchedules.length > 0) {
+        for (const s of escalationSchedules as any[]) {
+          if (!s.clients?.phone) continue;
+          const { data: loan } = await supabase
+            .from("loans")
+            .select("loan_id, loan_model, total_principal, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, next_due_date, installment_day")
+            .eq("id", s.loan_id)
+            .single();
+          if (!loan) continue;
+          const stats = await getScheduleStats(s.loan_id);
+
+          const ctx: LoanContext = {
+            name_en: s.clients.name_en, name_bn: s.clients.name_bn, phone: s.clients.phone,
+            loan_id: loan.loan_id, loan_model: loan.loan_model,
+            total_principal: Number(loan.total_principal), outstanding_principal: Number(loan.outstanding_principal),
+            outstanding_interest: Number(loan.outstanding_interest), penalty_amount: Number(loan.penalty_amount),
+            emi_amount: Number(loan.emi_amount), next_due_date: loan.next_due_date, installment_day: loan.installment_day,
+            paid_count: stats.paid, remaining_count: stats.remaining, total_count: stats.total,
+            installment_number: s.installment_number, due_date: s.due_date,
+          };
+
+          const msg = buildSmartMessage(ctx, 'escalation_alert');
+          await insertNotification({
+            loan_id: s.loan_id, client_id: s.client_id,
+            event_type: 'escalation_alert', installment_number: s.installment_number,
+            channel: 'sms', message_bn: msg.bn, message_en: msg.en,
+            recipient_phone: s.clients.phone, recipient_name: s.clients.name_en,
           });
-        if (escalationNotifs.length > 0) {
-          await supabase.from("notifications").insert(escalationNotifs);
+          escalationCount++;
         }
-        results.escalation_alerts = escalationNotifs.length;
+      }
+      results.escalation_alerts = escalationCount;
+    }
+
+    // ── 7e. Default status notifications ──
+    const defaultedLoans = (defaultResult as any)?.defaulted ?? 0;
+    if (defaultedLoans > 0) {
+      const { data: defaultLoans } = await supabase
+        .from("loans")
+        .select(`
+          id, loan_id, loan_model, total_principal, outstanding_principal, outstanding_interest, 
+          penalty_amount, emi_amount, next_due_date, installment_day, client_id,
+          clients!loans_client_id_fkey(name_en, name_bn, phone)
+        `)
+        .eq("status", "default")
+        .is("deleted_at", null);
+
+      if (defaultLoans) {
+        for (const l of defaultLoans as any[]) {
+          if (!l.clients?.phone) continue;
+          const stats = await getScheduleStats(l.id);
+          const ctx: LoanContext = {
+            name_en: l.clients.name_en, name_bn: l.clients.name_bn, phone: l.clients.phone,
+            loan_id: l.loan_id, loan_model: l.loan_model,
+            total_principal: Number(l.total_principal), outstanding_principal: Number(l.outstanding_principal),
+            outstanding_interest: Number(l.outstanding_interest), penalty_amount: Number(l.penalty_amount),
+            emi_amount: Number(l.emi_amount), next_due_date: l.next_due_date, installment_day: l.installment_day,
+            paid_count: stats.paid, remaining_count: stats.remaining, total_count: stats.total,
+          };
+          const msg = buildSmartMessage(ctx, 'default_alert');
+          await insertNotification({
+            loan_id: l.id, client_id: l.client_id,
+            event_type: 'default_alert', installment_number: 0,
+            channel: 'sms', message_bn: msg.bn, message_en: msg.en,
+            recipient_phone: l.clients.phone, recipient_name: l.clients.name_en,
+          });
+        }
       }
     }
 
-    // 7. Run overdue penalty check (2% monthly penalty on overdue loans)
-    const { data: penaltyResult, error: penaltyErr } = await supabase.rpc(
-      "check_and_apply_overdue_penalty",
-      { _penalty_percent: 2 }
-    );
-    results.overdue_penalties = penaltyResult ?? {};
-    if (penaltyErr) results.penalty_error = penaltyErr.message;
-
-    // 8. Sync loan_schedules overdue status
-    const { data: scheduleSync, error: scheduleSyncErr } = await supabase.rpc(
-      "sync_overdue_schedules" as any
-    );
-    results.schedule_overdue_sync = scheduleSync ?? {};
-    if (scheduleSyncErr) results.schedule_sync_error = scheduleSyncErr.message;
-
-    // 8b. ★ Phase 3: Auto-default loans (90+ days overdue) & auto-close zero-balance
-    const { data: defaultResult, error: defaultErr } = await supabase.rpc(
-      "auto_default_loans" as any
-    );
-    results.auto_default_loans = defaultResult ?? {};
-    if (defaultErr) results.auto_default_error = defaultErr.message;
-
-    // 8c. ★ Phase 4: Savings reconciliation check
-    const { data: reconResult, error: reconErr } = await supabase.rpc(
-      "reconcile_savings_balances" as any
-    );
-    results.savings_reconciliation = reconResult ?? {};
-    if (reconErr) results.reconciliation_error = reconErr.message;
-
-    // 9. Log all notification activity to sms_logs for audit
-    const totalNotifCount = (results.loan_due_notifications as number ?? 0)
-      + (results.overdue_notifications as number ?? 0)
-      + (results.upcoming_reminders as number ?? 0)
+    // ═══ Summary & Audit ═══
+    const totalNotifCount = (results.upcoming_reminders as number ?? 0)
+      + (results.due_today_notifications as number ?? 0)
+      + (results.overdue_alerts as number ?? 0)
       + (results.escalation_alerts as number ?? 0);
 
     if (totalNotifCount > 0) {
       await supabase.from("sms_logs").insert({
         recipient_phone: "system",
         recipient_name: "daily-cron",
-        message_text: `Daily cron: ${totalNotifCount} notifications queued`,
+        message_text: `Smart Cron: ${totalNotifCount} personalized notifications queued`,
         message_type: "cron_summary",
         status: "sent",
         sent_at: new Date().toISOString(),
       });
     }
 
-    // 10. Audit log
     await supabase.from("audit_logs").insert({
       action_type: "daily_cron",
       entity_type: "system",

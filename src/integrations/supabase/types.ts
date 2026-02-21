@@ -733,6 +733,82 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          channel: string
+          client_id: string | null
+          created_at: string
+          delivery_status: string
+          error_message: string | null
+          event_date: string
+          event_type: string
+          id: string
+          installment_number: number | null
+          loan_id: string | null
+          message_bn: string
+          message_en: string
+          recipient_name: string | null
+          recipient_phone: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          installment_number?: number | null
+          loan_id?: string | null
+          message_bn?: string
+          message_en?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          installment_number?: number | null
+          loan_id?: string | null
+          message_bn?: string
+          message_en?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "notification_logs_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           channel: Database["public"]["Enums"]["notification_channel"]
