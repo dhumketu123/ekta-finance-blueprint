@@ -959,6 +959,7 @@ export type Database = {
           created_at: string
           id: string
           loan_id: string | null
+          metadata: Json | null
           notes: string | null
           reference_id: string
           review_reason: string | null
@@ -976,6 +977,7 @@ export type Database = {
           created_at?: string
           id?: string
           loan_id?: string | null
+          metadata?: Json | null
           notes?: string | null
           reference_id: string
           review_reason?: string | null
@@ -993,6 +995,7 @@ export type Database = {
           created_at?: string
           id?: string
           loan_id?: string | null
+          metadata?: Json | null
           notes?: string | null
           reference_id?: string
           review_reason?: string | null
