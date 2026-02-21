@@ -749,6 +749,7 @@ export type Database = {
           message_en: string
           recipient_name: string | null
           recipient_phone: string | null
+          retry_count: number
           sent_at: string | null
         }
         Insert: {
@@ -766,6 +767,7 @@ export type Database = {
           message_en?: string
           recipient_name?: string | null
           recipient_phone?: string | null
+          retry_count?: number
           sent_at?: string | null
         }
         Update: {
@@ -783,6 +785,7 @@ export type Database = {
           message_en?: string
           recipient_name?: string | null
           recipient_phone?: string | null
+          retry_count?: number
           sent_at?: string | null
         }
         Relationships: [
