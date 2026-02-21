@@ -851,6 +851,107 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_profit_distributions: {
+        Row: {
+          created_at: string
+          distributed_at: string | null
+          distributed_by: string | null
+          distribution_status: string
+          gross_revenue: number
+          id: string
+          investor_profit_paid: number
+          net_profit: number
+          notes: string | null
+          operational_expenses: number
+          period_month: string
+          provision_for_loss: number
+          total_deductions: number
+          total_fee_income: number
+          total_interest_collected: number
+          total_penalty_collected: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          distribution_status?: string
+          gross_revenue?: number
+          id?: string
+          investor_profit_paid?: number
+          net_profit?: number
+          notes?: string | null
+          operational_expenses?: number
+          period_month: string
+          provision_for_loss?: number
+          total_deductions?: number
+          total_fee_income?: number
+          total_interest_collected?: number
+          total_penalty_collected?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          distribution_status?: string
+          gross_revenue?: number
+          id?: string
+          investor_profit_paid?: number
+          net_profit?: number
+          notes?: string | null
+          operational_expenses?: number
+          period_month?: string
+          provision_for_loss?: number
+          total_deductions?: number
+          total_fee_income?: number
+          total_interest_collected?: number
+          total_penalty_collected?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      owner_profit_shares: {
+        Row: {
+          created_at: string
+          distribution_id: string
+          id: string
+          owner_id: string
+          paid_at: string | null
+          payment_status: string
+          share_amount: number
+          share_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          distribution_id: string
+          id?: string
+          owner_id: string
+          paid_at?: string | null
+          payment_status?: string
+          share_amount?: number
+          share_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          distribution_id?: string
+          id?: string
+          owner_id?: string
+          paid_at?: string | null
+          payment_status?: string
+          share_amount?: number
+          share_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_profit_shares_distribution_id_fkey"
+            columns: ["distribution_id"]
+            isOneToOne: false
+            referencedRelation: "owner_profit_distributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_transactions: {
         Row: {
           amount: number
@@ -1283,6 +1384,10 @@ export type Database = {
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
+      }
+      calculate_owner_profit: {
+        Args: { _created_by?: string; _period_month: string }
+        Returns: Json
       }
       check_and_apply_overdue_penalty: {
         Args: { _penalty_percent?: number }
