@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, Landmark, UserCog, Wallet, PiggyBank,
-  Bell, Settings, Shield, TrendingUp, ArrowLeft, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown,
+  Bell, Settings, Shield, TrendingUp, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
@@ -125,12 +125,6 @@ export const AppSidebar = () => {
             </button>
           </div>
         </div>
-
-        {/* Back */}
-        <button onClick={() => { navigate(-1); close(); }} className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-[13px] font-medium">{t("back")}</span>
-        </button>
 
         {/* Search */}
         <div className="px-3 pt-3 pb-1">
