@@ -10,8 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoanProducts, useClients } from "@/hooks/useSupabaseData";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp } from "lucide-react";
+import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp, ShieldCheck, Send } from "lucide-react";
 
 const schema = z.object({
   client_id:         z.string().uuid("গ্রাহক নির্বাচন করুন"),
@@ -47,6 +48,7 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
   const qc = useQueryClient();
   const { data: clients = [] } = useClients();
   const { data: loanProducts = [] } = useLoanProducts();
+  const { isAdmin } = usePermissions();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -61,8 +63,8 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
   const [errors, setErrors]   = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [result, setResult]   = useState<DisburseResult | null>(null);
+  const [submitted, setSubmitted] = useState(false); // for Maker-Checker success
 
-  // selected product for preview
   const selectedProduct = loanProducts.find((p: any) => p.id === form.loan_product_id) as any;
   const principal = Number(form.principal_amount) || 0;
 
@@ -86,7 +88,6 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
       const emi = Math.round(principal * mr * Math.pow(1+mr,t) / (Math.pow(1+mr,t)-1) * 100) / 100;
       return { interest: Math.round((emi*t - principal)*100)/100, emi, label: lang === "bn" ? "হ্রাসমান ব্যালেন্স EMI" : "Reducing Balance EMI" };
     }
-    // flat
     const interest = Math.round(principal * r / 100 * 100) / 100;
     const emi      = Math.round((principal + interest) / t * 100) / 100;
     return { interest, emi, label: lang === "bn" ? "সমান মাসিক কিস্তি (Flat)" : "Equal Installment (Flat)" };
@@ -105,21 +106,47 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
 
     try {
       const user = (await supabase.auth.getUser()).data.user;
-      const { data, error } = await supabase.rpc("disburse_loan" as any, {
-        _client_id:         parsed.data.client_id,
-        _loan_product_id:   parsed.data.loan_product_id,
-        _principal_amount:  parsed.data.principal_amount,
-        _disbursement_date: parsed.data.disbursement_date,
-        _assigned_officer:  user?.id ?? null,
-        _notes:             parsed.data.notes || null,
-        _loan_model:        parsed.data.loan_model,
-      });
-      if (error) throw error;
-      setResult(data as unknown as DisburseResult);
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["loans"] });
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success(lang === "bn" ? "ঋণ সফলভাবে বিতরণ হয়েছে" : "Loan disbursed successfully");
+
+      if (isAdmin) {
+        // Admin: Direct disbursement (no approval needed)
+        const { data, error } = await supabase.rpc("disburse_loan" as any, {
+          _client_id:         parsed.data.client_id,
+          _loan_product_id:   parsed.data.loan_product_id,
+          _principal_amount:  parsed.data.principal_amount,
+          _disbursement_date: parsed.data.disbursement_date,
+          _assigned_officer:  user?.id ?? null,
+          _notes:             parsed.data.notes || null,
+          _loan_model:        parsed.data.loan_model,
+        });
+        if (error) throw error;
+        setResult(data as unknown as DisburseResult);
+        qc.invalidateQueries({ queryKey: ["clients"] });
+        qc.invalidateQueries({ queryKey: ["loans"] });
+        qc.invalidateQueries({ queryKey: ["transactions"] });
+        toast.success(lang === "bn" ? "ঋণ সফলভাবে বিতরণ হয়েছে" : "Loan disbursed successfully");
+      } else {
+        // Non-admin: Submit for approval (Maker-Checker)
+        const refId = `DISB_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const { error } = await supabase.from("pending_transactions").insert([{
+          type: "loan_disbursement" as any,
+          reference_id: refId,
+          amount: parsed.data.principal_amount,
+          client_id: parsed.data.client_id,
+          submitted_by: user?.id,
+          notes: parsed.data.notes || null,
+          metadata: {
+            loan_product_id: parsed.data.loan_product_id,
+            principal_amount: parsed.data.principal_amount,
+            disbursement_date: parsed.data.disbursement_date,
+            loan_model: parsed.data.loan_model,
+            product_name: selectedProduct?.product_name_en || "",
+          },
+        }]);
+        if (error) throw error;
+        setSubmitted(true);
+        qc.invalidateQueries({ queryKey: ["pending_transactions"] });
+        toast.success(lang === "bn" ? "ঋণ বিতরণ অনুমোদনের জন্য জমা দেওয়া হয়েছে" : "Disbursement submitted for approval");
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -129,6 +156,7 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
 
   const resetAndClose = () => {
     setResult(null);
+    setSubmitted(false);
     setForm({ client_id: prefilledClientId ?? "", loan_product_id: "", principal_amount: "", disbursement_date: today, loan_model: "flat", notes: "" });
     setErrors({});
     onClose();
@@ -145,72 +173,109 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
     return map[pt] ?? pt;
   };
 
+  const bn = lang === "bn";
+
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm font-bold flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
-            {lang === "bn" ? "ঋণ বিতরণ" : "Loan Disbursement"}
+            {bn ? "ঋণ বিতরণ" : "Loan Disbursement"}
+            {!isAdmin && (
+              <span className="ml-auto text-[10px] font-normal bg-warning/10 text-warning px-2 py-0.5 rounded-full flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                {bn ? "অনুমোদন প্রয়োজন" : "Requires Approval"}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        {result ? (
-          /* ── SUCCESS SCREEN ── */
+        {/* Maker-Checker submission success */}
+        {submitted ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-primary">
+              <Send className="w-5 h-5" />
+              <span className="text-sm font-bold">
+                {bn ? "অনুমোদনের জন্য জমা দেওয়া হয়েছে!" : "Submitted for Approval!"}
+              </span>
+            </div>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs space-y-2">
+              <p className="text-muted-foreground">
+                {bn
+                  ? "আপনার ঋণ বিতরণ অনুরোধ Admin/Treasurer অনুমোদনের জন্য অপেক্ষমান। অনুমোদিত হলে ঋণ স্বয়ংক্রিয়ভাবে বিতরণ হবে।"
+                  : "Your disbursement request is pending Admin/Treasurer approval. Once approved, the loan will be automatically disbursed."}
+              </p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{bn ? "পরিমাণ" : "Amount"}</span>
+                <span className="font-bold">৳{principal.toLocaleString()}</span>
+              </div>
+              {selectedProduct && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bn ? "পণ্য" : "Product"}</span>
+                  <span className="font-bold">{bn ? selectedProduct.product_name_bn : selectedProduct.product_name_en}</span>
+                </div>
+              )}
+            </div>
+            <Button onClick={resetAndClose} className="w-full text-xs">
+              {bn ? "বন্ধ করুন" : "Close"}
+            </Button>
+          </div>
+        ) : result ? (
+          /* ── DIRECT DISBURSEMENT SUCCESS (Admin) ── */
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-success">
               <CheckCircle2 className="w-5 h-5" />
               <span className="text-sm font-bold">
-                {lang === "bn" ? "ঋণ সফলভাবে বিতরণ হয়েছে!" : "Loan Disbursed Successfully!"}
+                {bn ? "ঋণ সফলভাবে বিতরণ হয়েছে!" : "Loan Disbursed Successfully!"}
               </span>
             </div>
             <div className="rounded-lg border p-3 bg-muted/40 space-y-2 text-xs font-mono">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "ঋণ নং" : "Loan Ref"}</span>
+                <span className="text-muted-foreground">{bn ? "ঋণ নং" : "Loan Ref"}</span>
                 <span className="font-bold text-primary">{result.loan_ref}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "আসল" : "Principal"}</span>
+                <span className="text-muted-foreground">{bn ? "আসল" : "Principal"}</span>
                 <span className="font-bold">৳{Number(result.principal).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "মোট সুদ" : "Total Interest"}</span>
+                <span className="text-muted-foreground">{bn ? "মোট সুদ" : "Total Interest"}</span>
                 <span className="font-bold text-warning">৳{Number(result.total_interest).toLocaleString()}</span>
               </div>
               <div className="flex justify-between border-t pt-2">
-                <span className="text-muted-foreground">{lang === "bn" ? "মোট দেনা" : "Total Owed"}</span>
+                <span className="text-muted-foreground">{bn ? "মোট দেনা" : "Total Owed"}</span>
                 <span className="font-bold text-destructive">৳{Number(result.total_owed).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "কিস্তি" : "Installment"}</span>
+                <span className="text-muted-foreground">{bn ? "কিস্তি" : "Installment"}</span>
                 <span className="font-bold">৳{Number(result.emi_amount).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "মেয়াদোত্তীর্ণ তারিখ" : "Maturity"}</span>
+                <span className="text-muted-foreground">{bn ? "মেয়াদোত্তীর্ণ তারিখ" : "Maturity"}</span>
                 <span className="font-bold">{result.maturity_date}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{lang === "bn" ? "পরিশোধ ধরন" : "Payment Type"}</span>
+                <span className="text-muted-foreground">{bn ? "পরিশোধ ধরন" : "Payment Type"}</span>
                 <span className="font-bold capitalize">{paymentTypeLabel(result.payment_type)}</span>
               </div>
             </div>
             <Button onClick={resetAndClose} className="w-full text-xs">
-              {lang === "bn" ? "বন্ধ করুন" : "Close"}
+              {bn ? "বন্ধ করুন" : "Close"}
             </Button>
           </div>
         ) : (
           /* ── FORM ── */
           <div className="space-y-3">
-            {/* Client */}
             {!prefilledClientId && (
               <div>
-                <Label className="text-xs">{lang === "bn" ? "গ্রাহক *" : "Client *"}</Label>
+                <Label className="text-xs">{bn ? "গ্রাহক *" : "Client *"}</Label>
                 <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
-                  <SelectTrigger className="text-xs h-9"><SelectValue placeholder={lang === "bn" ? "গ্রাহক নির্বাচন করুন" : "Select client"} /></SelectTrigger>
+                  <SelectTrigger className="text-xs h-9"><SelectValue placeholder={bn ? "গ্রাহক নির্বাচন করুন" : "Select client"} /></SelectTrigger>
                   <SelectContent>
                     {(clients as any[]).map((c) => (
                       <SelectItem key={c.id} value={c.id} className="text-xs">
-                        {lang === "bn" ? (c.name_bn || c.name_en) : c.name_en}
+                        {bn ? (c.name_bn || c.name_en) : c.name_en}
                         {c.member_id && <span className="ml-2 text-muted-foreground font-mono">({c.member_id})</span>}
                       </SelectItem>
                     ))}
@@ -220,15 +285,14 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               </div>
             )}
 
-            {/* Loan Product */}
             <div>
-              <Label className="text-xs">{lang === "bn" ? "ঋণ পণ্য *" : "Loan Product *"}</Label>
+              <Label className="text-xs">{bn ? "ঋণ পণ্য *" : "Loan Product *"}</Label>
               <Select value={form.loan_product_id} onValueChange={(v) => setForm({ ...form, loan_product_id: v })}>
-                <SelectTrigger className="text-xs h-9"><SelectValue placeholder={lang === "bn" ? "পণ্য নির্বাচন করুন" : "Select product"} /></SelectTrigger>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder={bn ? "পণ্য নির্বাচন করুন" : "Select product"} /></SelectTrigger>
                 <SelectContent>
                   {(loanProducts as any[]).map((p) => (
                     <SelectItem key={p.id} value={p.id} className="text-xs">
-                      {lang === "bn" ? (p.product_name_bn || p.product_name_en) : p.product_name_en}
+                      {bn ? (p.product_name_bn || p.product_name_en) : p.product_name_en}
                       <span className="ml-2 text-muted-foreground">({p.interest_rate}% · {p.tenure_months}m)</span>
                     </SelectItem>
                   ))}
@@ -237,28 +301,26 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               {errors.loan_product_id && <p className="text-xs text-destructive mt-1">{errors.loan_product_id}</p>}
             </div>
 
-            {/* Selected product summary */}
             {selectedProduct && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs grid grid-cols-3 gap-2">
                 <div className="text-center">
-                  <p className="text-muted-foreground">{lang === "bn" ? "সুদের হার" : "Rate"}</p>
+                  <p className="text-muted-foreground">{bn ? "সুদের হার" : "Rate"}</p>
                   <p className="font-bold text-primary">{selectedProduct.interest_rate}%</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-muted-foreground">{lang === "bn" ? "মেয়াদ" : "Tenure"}</p>
+                  <p className="text-muted-foreground">{bn ? "মেয়াদ" : "Tenure"}</p>
                   <p className="font-bold">{selectedProduct.tenure_months}m</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-muted-foreground">{lang === "bn" ? "ধরন" : "Type"}</p>
+                  <p className="text-muted-foreground">{bn ? "ধরন" : "Type"}</p>
                   <p className="font-bold capitalize">{paymentTypeLabel(selectedProduct.payment_type)}</p>
                 </div>
               </div>
             )}
 
-            {/* Principal + Model */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">{lang === "bn" ? "আসল পরিমাণ ৳ *" : "Principal ৳ *"}</Label>
+                <Label className="text-xs">{bn ? "আসল পরিমাণ ৳ *" : "Principal ৳ *"}</Label>
                 <Input
                   type="number"
                   value={form.principal_amount}
@@ -269,47 +331,45 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
                 {errors.principal_amount && <p className="text-xs text-destructive mt-1">{errors.principal_amount}</p>}
               </div>
               <div>
-                <Label className="text-xs">{lang === "bn" ? "সুদ পদ্ধতি" : "Interest Method"}</Label>
+                <Label className="text-xs">{bn ? "সুদ পদ্ধতি" : "Interest Method"}</Label>
                 <Select value={form.loan_model} onValueChange={(v: any) => setForm({ ...form, loan_model: v })}>
                   <SelectTrigger className="text-xs h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="flat" className="text-xs">{lang === "bn" ? "সমান (Flat)" : "Flat Rate"}</SelectItem>
-                    <SelectItem value="reducing" className="text-xs">{lang === "bn" ? "হ্রাসমান (Reducing)" : "Reducing Balance"}</SelectItem>
+                    <SelectItem value="flat" className="text-xs">{bn ? "সমান (Flat)" : "Flat Rate"}</SelectItem>
+                    <SelectItem value="reducing" className="text-xs">{bn ? "হ্রাসমান (Reducing)" : "Reducing Balance"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Live Preview */}
             {preview && principal > 0 && (
               <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-warning">
                   <Calculator className="w-3.5 h-3.5" />
-                  <span className="text-xs font-bold">{lang === "bn" ? "হিসাবের পূর্বরূপ" : "Calculation Preview"}</span>
+                  <span className="text-xs font-bold">{bn ? "হিসাবের পূর্বরূপ" : "Calculation Preview"}</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground">{preview.label}</p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
-                    <p className="text-muted-foreground">{lang === "bn" ? "মোট সুদ" : "Interest"}</p>
+                    <p className="text-muted-foreground">{bn ? "মোট সুদ" : "Interest"}</p>
                     <p className="font-bold text-warning">৳{preview.interest.toLocaleString()}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground">{lang === "bn" ? "কিস্তি" : "Installment"}</p>
+                    <p className="text-muted-foreground">{bn ? "কিস্তি" : "Installment"}</p>
                     <p className="font-bold text-primary">৳{preview.emi.toLocaleString()}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground">{lang === "bn" ? "মোট দেনা" : "Total"}</p>
+                    <p className="text-muted-foreground">{bn ? "মোট দেনা" : "Total"}</p>
                     <p className="font-bold text-destructive">৳{(principal + preview.interest).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Disbursement Date */}
             <div>
               <Label className="text-xs flex items-center gap-1.5">
                 <CalendarDays className="w-3 h-3" />
-                {lang === "bn" ? "বিতরণের তারিখ *" : "Disbursement Date *"}
+                {bn ? "বিতরণের তারিখ *" : "Disbursement Date *"}
               </Label>
               <Input
                 type="date"
@@ -320,30 +380,32 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               {errors.disbursement_date && <p className="text-xs text-destructive mt-1">{errors.disbursement_date}</p>}
             </div>
 
-            {/* Notes */}
             <div>
-              <Label className="text-xs">{lang === "bn" ? "নোট (ঐচ্ছিক)" : "Notes (Optional)"}</Label>
+              <Label className="text-xs">{bn ? "নোট (ঐচ্ছিক)" : "Notes (Optional)"}</Label>
               <Textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 className="text-sm"
                 rows={2}
-                placeholder={lang === "bn" ? "কোনো বিশেষ তথ্য..." : "Any special notes..."}
+                placeholder={bn ? "কোনো বিশেষ তথ্য..." : "Any special notes..."}
               />
             </div>
 
-            {/* Warning */}
             <div className="flex items-start gap-2 p-2 rounded bg-muted text-xs text-muted-foreground">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-warning" />
               <span>
-                {lang === "bn"
-                  ? "ঋণ বিতরণ একটি অপরিবর্তনীয় আর্থিক লেনদেন। নিশ্চিত হয়ে এগিয়ে যান।"
-                  : "Loan disbursement is an irreversible financial transaction. Confirm before proceeding."}
+                {isAdmin
+                  ? (bn ? "Admin হিসেবে সরাসরি ঋণ বিতরণ হবে। এটি অপরিবর্তনীয়।" : "As Admin, this will disburse directly. This is irreversible.")
+                  : (bn ? "অনুমোদনের জন্য জমা হবে। Admin/Treasurer অনুমোদন করলে ঋণ বিতরণ হবে।" : "Will be submitted for approval. Loan will be disbursed once Admin/Treasurer approves.")}
               </span>
             </div>
 
             <Button onClick={handleSubmit} disabled={loading} className="w-full text-xs font-bold h-9 bg-primary text-primary-foreground hover:bg-primary/90">
-              {loading ? (lang === "bn" ? "প্রক্রিয়া চলছে..." : "Processing...") : (lang === "bn" ? "ঋণ বিতরণ নিশ্চিত করুন" : "Confirm Disbursement")}
+              {loading
+                ? (bn ? "প্রক্রিয়া চলছে..." : "Processing...")
+                : isAdmin
+                  ? (bn ? "ঋণ বিতরণ নিশ্চিত করুন" : "Confirm Disbursement")
+                  : (bn ? "অনুমোদনের জন্য জমা দিন" : "Submit for Approval")}
             </Button>
           </div>
         )}

@@ -12,15 +12,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TablePagination from "@/components/TablePagination";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, XCircle, Clock, Loader2, Plus } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Plus, Users } from "lucide-react";
 import { format } from "date-fns";
 import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
+import BulkCollectionForm from "@/components/forms/BulkCollectionForm";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const typeLabels: Record<string, string> = {
   loan_repayment: "ঋণ পরিশোধ",
+  loan_disbursement: "ঋণ বিতরণ",
   loan_principal: "মূলধন",
   loan_interest: "সুদ",
   loan_penalty: "জরিমানা",
@@ -79,6 +81,7 @@ const Approvals = () => {
   const [reviewAction, setReviewAction] = useState<"approve" | "reject">("approve");
   const [reason, setReason] = useState("");
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const handleTabChange = (v: string) => {
     setTab(v);
@@ -102,10 +105,16 @@ const Approvals = () => {
       <div className="flex items-center justify-between mb-2">
         <PageHeader title={bn ? "অনুমোদন সারি" : "Approval Queue"} description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"} />
         {canRecordPayments && (
-          <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            {bn ? "সংগ্রহ জমা দিন" : "Submit Collection"}
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              {bn ? "সংগ্রহ" : "Collection"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} className="text-xs">
+              <Users className="w-3.5 h-3.5 mr-1" />
+              {bn ? "বাল্ক সংগ্রহ" : "Bulk Collection"}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -210,6 +219,7 @@ const Approvals = () => {
 
       {/* Field Officer Collection Form */}
       <FieldOfficerCollectionForm open={collectionOpen} onClose={() => setCollectionOpen(false)} />
+      <BulkCollectionForm open={bulkOpen} onClose={() => setBulkOpen(false)} />
     </AppLayout>
   );
 };

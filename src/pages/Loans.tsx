@@ -59,7 +59,7 @@ const Loans = () => {
                 <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
               </Button>
             )}
-            {isAdmin && (
+            {(isAdmin || canEditLoans) && (
               <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg border-primary/40 text-primary hover:bg-primary/10" onClick={() => setDisburseOpen(true)}>
                 <TrendingUp className="w-3.5 h-3.5" /> {lang === "bn" ? "ঋণ বিতরণ" : "Disburse Loan"}
               </Button>
