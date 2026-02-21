@@ -14,12 +14,16 @@ const PageHeader = ({ title, description, actions }: PageHeaderProps) => {
   const isHome = location.pathname === "/";
 
   const handleBack = useCallback(() => {
-    if (window.history.length > 2) {
+    // For nested routes like /reports/trial-balance, go to parent /reports
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments.length > 1) {
+      navigate("/" + segments.slice(0, -1).join("/"));
+    } else if (window.history.length > 2) {
       navigate(-1);
     } else {
       navigate("/");
     }
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
