@@ -432,6 +432,48 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ═══ Savings Reminders (weekly frequency clients) ═══
+    let savingsReminderCount = 0;
+    if (dayOfWeek === 6) { // Saturdays
+      const { data: savingsClients } = await supabase
+        .from("savings_accounts")
+        .select(`
+          id, client_id, balance,
+          clients!savings_accounts_client_id_fkey(name_en, name_bn, phone),
+          savings_products!savings_accounts_savings_product_id_fkey(product_name_en, min_amount, frequency)
+        `)
+        .eq("status", "active")
+        .is("deleted_at", null);
+
+      if (savingsClients) {
+        for (const sa of savingsClients as any[]) {
+          if (!sa.clients?.phone) continue;
+          const name = sa.clients.name_bn || sa.clients.name_en;
+          const prodName = sa.savings_products?.product_name_en || "Savings";
+          const minAmt = Number(sa.savings_products?.min_amount || 0);
+
+          const msgBn = `স্মারক: ${name}, আপনার ${prodName} সঞ্চয় জমা দিন। ন্যূনতম: ৳${minAmt.toLocaleString()}। বর্তমান ব্যালেন্স: ৳${Number(sa.balance).toLocaleString()}।`;
+          const msgEn = `Reminder: ${sa.clients.name_en}, please deposit to your ${prodName} savings. Min: ৳${minAmt.toLocaleString()}. Balance: ৳${Number(sa.balance).toLocaleString()}.`;
+
+          const { error: insertErr } = await supabase.from("notification_logs").insert({
+            client_id: sa.client_id,
+            loan_id: null,
+            event_type: "savings_reminder",
+            installment_number: null,
+            channel: "sms",
+            message_bn: msgBn,
+            message_en: msgEn,
+            recipient_phone: sa.clients.phone,
+            recipient_name: sa.clients.name_en,
+            event_date: today,
+            delivery_status: "queued",
+          });
+          if (!insertErr || insertErr.message?.includes("duplicate")) savingsReminderCount++;
+        }
+      }
+    }
+    results.savings_reminders = savingsReminderCount;
+
     // ═══ Phase 9: AI-PREDICTIVE RISK SCORING ═══
     const { data: riskResult, error: riskErr } = await supabase.rpc("predict_loan_risk" as any);
     if (riskErr) {
@@ -477,7 +519,8 @@ Deno.serve(async (req) => {
       + (results.due_today_notifications as number ?? 0)
       + (results.overdue_alerts as number ?? 0)
       + (results.escalation_alerts as number ?? 0)
-      + (results.risk_notifications as number ?? 0);
+      + (results.risk_notifications as number ?? 0)
+      + (results.savings_reminders as number ?? 0);
 
     if (totalNotifCount > 0) {
       await supabase.from("sms_logs").insert({

@@ -33,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
   sent: "bg-success/10 text-success border-success/20",
   failed: "bg-destructive/10 text-destructive border-destructive/20",
   delivered: "bg-success/10 text-success border-success/20",
+  native_pending: "bg-blue-500/10 text-blue-600 border-blue-500/20",
 };
 
 const ALERT_LABELS: Record<string, { en: string; bn: string }> = {
@@ -184,6 +185,7 @@ const Notifications = () => {
             <SelectItem value="queued">{bn ? "অপেক্ষমান" : "Queued"}</SelectItem>
             <SelectItem value="sent">{bn ? "প্রেরিত" : "Sent"}</SelectItem>
             <SelectItem value="failed">{bn ? "ব্যর্থ" : "Failed"}</SelectItem>
+            <SelectItem value="native_pending">{bn ? "ফোনে পেন্ডিং" : "Native Pending"}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={eventFilter} onValueChange={setEventFilter}>
@@ -201,6 +203,8 @@ const Notifications = () => {
             <SelectItem value="all">{bn ? "সব চ্যানেল" : "All Channels"}</SelectItem>
             <SelectItem value="sms">SMS</SelectItem>
             <SelectItem value="whatsapp">WhatsApp</SelectItem>
+            <SelectItem value="webhook">Webhook</SelectItem>
+            <SelectItem value="native_pending">Native</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="secondary" className="text-[10px]">
