@@ -9,10 +9,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MetricCardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
-import { Bell, Send, CheckCircle, XCircle, Clock, RefreshCw, Search, Filter, MessageSquare } from "lucide-react";
+import { Bell, Send, CheckCircle, XCircle, Clock, RefreshCw, Search, Filter, MessageSquare, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const handleResend = async (logId: string, refetch: () => void) => {
+  // Reset to queued with incremented retry_count
+  const { error } = await supabase
+    .from("notification_logs")
+    .update({ delivery_status: "queued", error_message: null } as any)
+    .eq("id", logId);
+  if (error) {
+    toast.error("Resend failed");
+  } else {
+    toast.success("Re-queued for delivery");
+    refetch();
+  }
+};
 
 const STATUS_COLORS: Record<string, string> = {
   queued: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
@@ -193,11 +207,12 @@ const Notifications = () => {
                 <TableHeader className="table-header-premium">
                   <TableRow>
                     <TableHead>{lang === "bn" ? "প্রাপক" : "Recipient"}</TableHead>
-                    <TableHead>{lang === "bn" ? "ধরন" : "Type"}</TableHead>
-                    <TableHead>{lang === "bn" ? "চ্যানেল" : "Channel"}</TableHead>
-                    <TableHead>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
-                    <TableHead>{lang === "bn" ? "বার্তা" : "Message"}</TableHead>
-                    <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                     <TableHead>{lang === "bn" ? "ধরন" : "Type"}</TableHead>
+                     <TableHead>{lang === "bn" ? "চ্যানেল" : "Channel"}</TableHead>
+                     <TableHead>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                     <TableHead>{lang === "bn" ? "বার্তা" : "Message"}</TableHead>
+                     <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -237,6 +252,13 @@ const Notifications = () => {
                         <p className="text-[9px] text-muted-foreground/70">
                           {new Date(log.created_at).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-US", { hour: "2-digit", minute: "2-digit" })}
                         </p>
+                      </TableCell>
+                      <TableCell>
+                        {log.delivery_status === "failed" && (
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleResend(log.id, refetch)} title={lang === "bn" ? "পুনরায় পাঠান" : "Resend"}>
+                            <RotateCcw className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

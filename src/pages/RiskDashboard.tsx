@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -81,6 +82,7 @@ const RiskDashboard = () => {
   const navigate = useNavigate();
   const { data: riskData, isLoading, refetch, isFetching } = useRiskPredictions();
   const [sortBy, setSortBy] = useState<"risk" | "overdue" | "amount">("risk");
+  const [alertFilter, setAlertFilter] = useState<string>("all");
 
   const predictions: RiskPrediction[] = riskData?.predictions ?? [];
   const totalScored = riskData?.total_scored ?? 0;
@@ -98,14 +100,25 @@ const RiskDashboard = () => {
   const expectedLoss = predictions.reduce((s, p) => s + (p.outstanding_principal + p.outstanding_interest) * (p.risk_score / 100), 0);
   const expectedRecovery = totalOutstanding - expectedLoss;
 
-  // Sort
-  const sorted = [...predictions].sort((a, b) => {
+  // Filter + Sort
+  const filtered = alertFilter === "all" ? predictions : predictions.filter(p => p.alert_type === alertFilter);
+  const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "risk") return b.risk_score - a.risk_score;
     if (sortBy === "overdue") return b.overdue_days - a.overdue_days;
     return (b.outstanding_principal + b.outstanding_interest) - (a.outstanding_principal + a.outstanding_interest);
   });
 
   const top10 = sorted.slice(0, 10);
+
+  const alertTypes = [
+    { key: "all", label: lang === "bn" ? "সব" : "All" },
+    { key: "default_alert", label: lang === "bn" ? "গুরুতর" : "Critical" },
+    { key: "escalation_alert", label: lang === "bn" ? "এস্কেলেশন" : "Escalation" },
+    { key: "overdue_alert", label: lang === "bn" ? "বকেয়া" : "Overdue" },
+    { key: "loan_due_today", label: lang === "bn" ? "আজ বকেয়া" : "Due Today" },
+    { key: "upcoming_reminder", label: lang === "bn" ? "রিমাইন্ডার" : "Reminder" },
+    { key: "low_risk", label: lang === "bn" ? "নিম্ন ঝুঁকি" : "Low Risk" },
+  ];
 
   if (isLoading) {
     return (
@@ -183,8 +196,8 @@ const RiskDashboard = () => {
         </div>
       )}
 
-      {/* Sort Controls */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Sort & Filter Controls */}
+      <div className="flex gap-2 flex-wrap items-center">
         {([
           { key: "risk", label: lang === "bn" ? "ঝুঁকি স্কোর" : "Risk Score" },
           { key: "overdue", label: lang === "bn" ? "বকেয়া দিন" : "Overdue Days" },
@@ -200,6 +213,16 @@ const RiskDashboard = () => {
             {s.label}
           </Button>
         ))}
+        <Select value={alertFilter} onValueChange={setAlertFilter}>
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue placeholder={lang === "bn" ? "সতর্কতা ফিল্টার" : "Alert Filter"} />
+          </SelectTrigger>
+          <SelectContent>
+            {alertTypes.map(at => (
+              <SelectItem key={at.key} value={at.key}>{at.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Top 10 Risky Clients */}
