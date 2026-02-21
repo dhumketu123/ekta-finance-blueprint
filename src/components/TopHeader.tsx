@@ -1,4 +1,4 @@
-import { Bell, Globe, Wifi, WifiOff, MoreVertical, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
+import { Bell, Globe, Wifi, WifiOff, Menu, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
 import ProfileAvatarUpload from "@/components/ProfileAvatarUpload";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ const TopHeader = () => {
   const { toggle } = useSidebarState();
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
-  const [isOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [scrolled, setScrolled] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,6 +63,17 @@ const TopHeader = () => {
   }, []);
 
   useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -79,10 +90,10 @@ const TopHeader = () => {
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={(e) => { e.stopPropagation(); toggle(); }}
-          className="p-2 rounded-lg text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
+          className="p-2 rounded-xl text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground active:scale-95 transition-all duration-200"
           aria-label="Toggle menu"
         >
-          <MoreVertical className="w-5 h-5" />
+          <Menu className="w-5 h-5" />
         </button>
         <p className="text-xs font-medium text-primary-foreground/80 truncate hidden sm:block">
           {t("header.tagline")}
@@ -92,13 +103,13 @@ const TopHeader = () => {
       {/* Right: Controls */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* Online/Offline */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary-foreground/10">
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors duration-300 ${isOnline ? "bg-green-500/15" : "bg-destructive/15"}`}>
           {isOnline ? (
-            <Wifi className="w-3.5 h-3.5 text-accent" />
+            <Wifi className="w-3.5 h-3.5 text-green-400 animate-pulse" />
           ) : (
-            <WifiOff className="w-3.5 h-3.5 text-destructive" />
+            <WifiOff className="w-3.5 h-3.5 text-destructive animate-pulse" />
           )}
-          <span className="text-[10px] font-medium text-primary-foreground hidden sm:inline">
+          <span className={`text-[10px] font-semibold hidden sm:inline ${isOnline ? "text-green-300" : "text-destructive"}`}>
             {isOnline ? t("header.online") : t("header.offline")}
           </span>
         </div>
