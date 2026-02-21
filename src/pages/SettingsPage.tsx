@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Save, User } from "lucide-react";
+import { Loader2, Save, User, MessageSquare } from "lucide-react";
 import { z } from "zod";
+import SmsGatewayConfig from "@/components/settings/SmsGatewayConfig";
 
 const profileSchema = z.object({
   name_en: z.string().trim().min(1, "Name is required").max(100),
@@ -182,6 +183,19 @@ const SettingsPage = () => {
                 </Button>
               </>
             )}
+          </div>
+        </div>
+
+        {/* SMS Gateway Configuration */}
+        <div className="card-elevated overflow-hidden">
+          <div className="p-4 border-b border-border bg-primary/5 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-primary">
+              {bn ? "SMS গেটওয়ে কনফিগারেশন" : "SMS Gateway Configuration"}
+            </h2>
+          </div>
+          <div className="p-5">
+            <SmsGatewayConfig />
           </div>
         </div>
 
