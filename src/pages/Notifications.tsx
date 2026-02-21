@@ -1,68 +1,277 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
+import MetricCard from "@/components/MetricCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MetricCardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
+import { Bell, Send, CheckCircle, XCircle, Clock, RefreshCw, Search, Filter, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-const templates = [
-  { id: "NT001", event: "Loan Due", eventBn: "ঋণ পরিশোধের তারিখ", channel: "SMS", templateBn: "প্রিয় {নাম}, আপনার ৳{পরিমাণ} ঋণ পরিশোধের তারিখ {তারিখ}।", templateEn: "Dear {name}, your loan payment of ৳{amount} is due on {date}." },
-  { id: "NT002", event: "Savings Due", eventBn: "সঞ্চয় জমার তারিখ", channel: "SMS", templateBn: "প্রিয় {নাম}, আপনার সঞ্চয় জমার তারিখ {তারিখ}। পরিমাণ: ৳{পরিমাণ}।", templateEn: "Dear {name}, your savings deposit of ৳{amount} is due on {date}." },
-  { id: "NT003", event: "Investor Profit", eventBn: "বিনিয়োগকারী মুনাফা", channel: "WhatsApp", templateBn: "প্রিয় {নাম}, আপনার মাসিক মুনাফা ৳{পরিমাণ} প্রদান করা হয়েছে।", templateEn: "Dear {name}, your monthly profit of ৳{amount} has been disbursed." },
-  { id: "NT004", event: "Owner Deposit", eventBn: "মালিক জমা", channel: "SMS", templateBn: "প্রিয় {নাম}, আপনার সাপ্তাহিক জমা ৳{পরিমাণ} বাকি আছে।", templateEn: "Dear {name}, your weekly deposit of ৳{amount} is pending." },
-];
+const STATUS_COLORS: Record<string, string> = {
+  queued: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+  sent: "bg-success/10 text-success border-success/20",
+  failed: "bg-destructive/10 text-destructive border-destructive/20",
+  delivered: "bg-success/10 text-success border-success/20",
+};
+
+const ALERT_LABELS: Record<string, { en: string; bn: string }> = {
+  default_alert: { en: "Default Alert", bn: "ডিফল্ট সতর্কতা" },
+  escalation_alert: { en: "Escalation", bn: "এস্কেলেশন" },
+  overdue_alert: { en: "Overdue", bn: "বকেয়া" },
+  loan_due_today: { en: "Due Today", bn: "আজ বকেয়া" },
+  upcoming_reminder: { en: "Reminder", bn: "রিমাইন্ডার" },
+  savings_reminder: { en: "Savings", bn: "সঞ্চয়" },
+  low_risk: { en: "Low Risk", bn: "নিম্ন ঝুঁকি" },
+};
+
+const useNotificationLogs = () =>
+  useQuery({
+    queryKey: ["notification_logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notification_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30_000,
+  });
 
 const Notifications = () => {
-  const { t, lang } = useLanguage();
+  const { lang } = useLanguage();
+  const { data: logs, isLoading, refetch, isFetching } = useNotificationLogs();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [channelFilter, setChannelFilter] = useState<string>("all");
+
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    return logs.filter((log) => {
+      if (statusFilter !== "all" && log.delivery_status !== statusFilter) return false;
+      if (eventFilter !== "all" && log.event_type !== eventFilter) return false;
+      if (channelFilter !== "all" && log.channel !== channelFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const name = (log.recipient_name || "").toLowerCase();
+        const phone = (log.recipient_phone || "").toLowerCase();
+        const msg = (log.message_en || "").toLowerCase() + (log.message_bn || "").toLowerCase();
+        if (!name.includes(q) && !phone.includes(q) && !msg.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [logs, statusFilter, eventFilter, channelFilter, searchQuery]);
+
+  // KPIs
+  const total = logs?.length ?? 0;
+  const sentCount = logs?.filter((l) => l.delivery_status === "sent" || l.delivery_status === "delivered").length ?? 0;
+  const failedCount = logs?.filter((l) => l.delivery_status === "failed").length ?? 0;
+  const queuedCount = logs?.filter((l) => l.delivery_status === "queued").length ?? 0;
+
+  // Unique event types
+  const eventTypes = useMemo(() => {
+    if (!logs) return [];
+    return [...new Set(logs.map((l) => l.event_type))].sort();
+  }, [logs]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "sent":
+      case "delivered":
+        return <CheckCircle className="w-3.5 h-3.5 text-success" />;
+      case "failed":
+        return <XCircle className="w-3.5 h-3.5 text-destructive" />;
+      default:
+        return <Clock className="w-3.5 h-3.5 text-yellow-500" />;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <PageHeader title={lang === "bn" ? "বিজ্ঞপ্তি লগ" : "Notification Logs"} description={lang === "bn" ? "সকল বিজ্ঞপ্তি ও ডেলিভারি স্ট্যাটাস" : "All notifications & delivery status"} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+        </div>
+        <TableSkeleton rows={8} cols={6} />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <PageHeader title={t("notifications.title")} description={t("notifications.description")} />
-      
-      <div className="card-elevated overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-bold text-primary">{t("notifications.channels")}</h2>
-        </div>
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-          <div className="p-4 rounded-xl bg-muted/50 border border-border">
-            <p className="text-xs font-semibold text-foreground">SMS (Night SIM / API)</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{t("notifications.sms")}</p>
-          </div>
-          <div className="p-4 rounded-xl bg-muted/50 border border-border">
-            <p className="text-xs font-semibold text-foreground">WhatsApp (Button Fallback)</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{t("notifications.whatsapp")}</p>
-          </div>
-        </div>
+      <PageHeader
+        title={lang === "bn" ? "বিজ্ঞপ্তি লগ" : "Notification Logs"}
+        description={lang === "bn" ? "সকল বিজ্ঞপ্তি, ডেলিভারি স্ট্যাটাস ও রিট্রাই" : "All notifications, delivery status & retry"}
+        actions={
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
+            {lang === "bn" ? "রিফ্রেশ" : "Refresh"}
+          </Button>
+        }
+      />
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <MetricCard title={lang === "bn" ? "মোট বিজ্ঞপ্তি" : "Total"} value={total} icon={<Bell className="w-5 h-5" />} />
+        <MetricCard title={lang === "bn" ? "প্রেরিত" : "Sent"} value={sentCount} icon={<Send className="w-5 h-5" />} variant="success" />
+        <MetricCard title={lang === "bn" ? "ব্যর্থ" : "Failed"} value={failedCount} icon={<XCircle className="w-5 h-5" />} variant="destructive" />
+        <MetricCard title={lang === "bn" ? "অপেক্ষমান" : "Queued"} value={queuedCount} icon={<Clock className="w-5 h-5" />} variant="warning" />
       </div>
 
-      <div className="card-elevated overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-bold text-primary">{t("notifications.templates")}</h2>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={lang === "bn" ? "নাম, ফোন বা মেসেজ খুঁজুন..." : "Search name, phone or message..."}
+            className="pl-9 h-9 text-xs"
+          />
         </div>
-        <Table className="table-premium">
-          <TableHeader className="table-header-premium">
-            <TableRow>
-              <TableHead>{t("table.id")}</TableHead>
-              <TableHead>{t("table.event")}</TableHead>
-              <TableHead>{t("table.channel")}</TableHead>
-              <TableHead>{t("table.templateBn")}</TableHead>
-              <TableHead>{t("table.templateEn")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {templates.map((tpl) => (
-              <TableRow key={tpl.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{tpl.id}</TableCell>
-                <TableCell>
-                  <p className="text-xs font-medium">{lang === "bn" ? tpl.eventBn : tpl.event}</p>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="text-[10px] rounded-full">{tpl.channel}</Badge>
-                </TableCell>
-                <TableCell className="text-[11px] max-w-[200px]">{tpl.templateBn}</TableCell>
-                <TableCell className="text-[11px] max-w-[200px]">{tpl.templateEn}</TableCell>
-              </TableRow>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[120px] h-9 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{lang === "bn" ? "সব স্ট্যাটাস" : "All Status"}</SelectItem>
+            <SelectItem value="queued">{lang === "bn" ? "অপেক্ষমান" : "Queued"}</SelectItem>
+            <SelectItem value="sent">{lang === "bn" ? "প্রেরিত" : "Sent"}</SelectItem>
+            <SelectItem value="failed">{lang === "bn" ? "ব্যর্থ" : "Failed"}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={eventFilter} onValueChange={setEventFilter}>
+          <SelectTrigger className="w-[150px] h-9 text-xs">
+            <SelectValue placeholder="Event Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{lang === "bn" ? "সব ধরন" : "All Types"}</SelectItem>
+            {eventTypes.map((et) => (
+              <SelectItem key={et} value={et}>
+                {ALERT_LABELS[et]?.[lang] ?? et}
+              </SelectItem>
             ))}
-          </TableBody>
-        </Table>
+          </SelectContent>
+        </Select>
+        <Select value={channelFilter} onValueChange={setChannelFilter}>
+          <SelectTrigger className="w-[120px] h-9 text-xs">
+            <SelectValue placeholder="Channel" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{lang === "bn" ? "সব চ্যানেল" : "All Channels"}</SelectItem>
+            <SelectItem value="sms">SMS</SelectItem>
+            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+          </SelectContent>
+        </Select>
+        <Badge variant="secondary" className="text-[10px]">
+          {filteredLogs.length} {lang === "bn" ? "ফলাফল" : "results"}
+        </Badge>
+      </div>
+
+      {/* Table - Desktop */}
+      <div className="card-elevated overflow-hidden">
+        {filteredLogs.length === 0 ? (
+          <div className="p-8 text-center">
+            <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">{lang === "bn" ? "কোনো বিজ্ঞপ্তি পাওয়া যায়নি" : "No notifications found"}</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <div className="hidden sm:block">
+              <Table className="table-premium">
+                <TableHeader className="table-header-premium">
+                  <TableRow>
+                    <TableHead>{lang === "bn" ? "প্রাপক" : "Recipient"}</TableHead>
+                    <TableHead>{lang === "bn" ? "ধরন" : "Type"}</TableHead>
+                    <TableHead>{lang === "bn" ? "চ্যানেল" : "Channel"}</TableHead>
+                    <TableHead>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                    <TableHead>{lang === "bn" ? "বার্তা" : "Message"}</TableHead>
+                    <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.slice(0, 50).map((log) => (
+                    <TableRow key={log.id} className="hover:bg-accent/50 transition-colors">
+                      <TableCell>
+                        <div>
+                          <p className="text-xs font-medium">{log.recipient_name || "—"}</p>
+                          <p className="text-[10px] text-muted-foreground">{log.recipient_phone || "—"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">
+                          {ALERT_LABELS[log.event_type]?.[lang] ?? log.event_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-[10px] uppercase">{log.channel}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {getStatusIcon(log.delivery_status)}
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${STATUS_COLORS[log.delivery_status] ?? "bg-muted text-muted-foreground"}`}>
+                            {log.delivery_status}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[250px]">
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {lang === "bn" ? (log.message_bn || log.message_en) : (log.message_en || log.message_bn)}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(log.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", { day: "numeric", month: "short", year: "2-digit" })}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground/70">
+                          {new Date(log.created_at).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="sm:hidden divide-y divide-border">
+              {filteredLogs.slice(0, 30).map((log) => (
+                <div key={log.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(log.delivery_status)}
+                      <p className="text-sm font-medium">{log.recipient_name || "—"}</p>
+                    </div>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[log.delivery_status] ?? ""}`}>
+                      {log.delivery_status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-[10px]">{ALERT_LABELS[log.event_type]?.[lang] ?? log.event_type}</Badge>
+                    <Badge variant="secondary" className="text-[10px] uppercase">{log.channel}</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground line-clamp-2">
+                    {lang === "bn" ? (log.message_bn || log.message_en) : (log.message_en || log.message_bn)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70">
+                    {new Date(log.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-US")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );

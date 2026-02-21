@@ -94,6 +94,10 @@ const RiskDashboard = () => {
   const atRiskAmount = predictions.filter(p => p.risk_score >= 40).reduce((s, p) => s + p.outstanding_principal, 0);
   const portfolioAtRisk = totalOutstanding > 0 ? ((atRiskAmount / totalOutstanding) * 100).toFixed(1) : "0";
 
+  // Expected Loss & Recovery
+  const expectedLoss = predictions.reduce((s, p) => s + (p.outstanding_principal + p.outstanding_interest) * (p.risk_score / 100), 0);
+  const expectedRecovery = totalOutstanding - expectedLoss;
+
   // Sort
   const sorted = [...predictions].sort((a, b) => {
     if (sortBy === "risk") return b.risk_score - a.risk_score;
@@ -158,6 +162,26 @@ const RiskDashboard = () => {
           variant={sevenDayRiskCount > 0 ? "warning" : "success"}
         />
       </div>
+
+      {/* Portfolio Impact Cards */}
+      {predictions.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          <div className="card-elevated p-4">
+            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "মোট বকেয়া" : "Total Outstanding"}</p>
+            <p className="text-xl font-bold text-foreground mt-1">৳{totalOutstanding.toLocaleString()}</p>
+          </div>
+          <div className="card-elevated p-4">
+            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "প্রত্যাশিত ক্ষতি" : "Expected Loss"}</p>
+            <p className="text-xl font-bold text-destructive mt-1">৳{Math.round(expectedLoss).toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{lang === "bn" ? "ঝুঁকি স্কোর ভিত্তিক" : "Based on risk scores"}</p>
+          </div>
+          <div className="card-elevated p-4">
+            <p className="text-[11px] text-muted-foreground font-medium">{lang === "bn" ? "প্রত্যাশিত রিকভারি" : "Expected Recovery"}</p>
+            <p className="text-xl font-bold text-success mt-1">৳{Math.round(expectedRecovery).toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{totalOutstanding > 0 ? `${((expectedRecovery / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "আদায়যোগ্য" : "recoverable"}</p>
+          </div>
+        </div>
+      )}
 
       {/* Sort Controls */}
       <div className="flex gap-2 flex-wrap">
