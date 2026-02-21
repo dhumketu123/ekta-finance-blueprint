@@ -46,8 +46,8 @@ const STATUS_COLOR: Record<ApprovalStatus, string> = {
 
 const FinancialTransactionsPage = () => {
   const { lang } = useLanguage();
-  const { isAdmin, isOwner, role } = usePermissions();
-  const canApprove = isAdmin || role === "treasurer";
+  const { canApproveTransactions } = usePermissions();
+  const canApprove = canApproveTransactions;
 
   const [tab, setTab] = useState<string>("all");
   const [search, setSearch] = useState("");

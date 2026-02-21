@@ -24,6 +24,7 @@ interface PermissionMatrix {
   canViewOwnWallet: boolean;
   isAdmin: boolean;
   isOwner: boolean;
+  isTreasurer: boolean;
   isFieldOfficer: boolean;
   isInvestor: boolean;
 }
@@ -38,7 +39,7 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewNotifications: true, canViewSettings: true, canViewReports: true,
     canApproveTransactions: true, canRecordPayments: true, canDeleteMasterData: true,
     canViewOwnWallet: false,
-    isAdmin: true, isOwner: false, isFieldOfficer: false, isInvestor: false,
+    isAdmin: true, isOwner: false, isTreasurer: false, isFieldOfficer: false, isInvestor: false,
   },
   owner: {
     canViewClients: true, canEditClients: false, canDeleteClients: false,
@@ -47,9 +48,9 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewSavings: true, canEditSavings: false,
     canViewOwners: true, canViewOfficers: true, canEditOfficers: false,
     canViewNotifications: true, canViewSettings: true, canViewReports: true,
-    canApproveTransactions: true, canRecordPayments: false, canDeleteMasterData: false,
+    canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
     canViewOwnWallet: false,
-    isAdmin: false, isOwner: true, isFieldOfficer: false, isInvestor: false,
+    isAdmin: false, isOwner: true, isTreasurer: false, isFieldOfficer: false, isInvestor: false,
   },
   field_officer: {
     canViewClients: true, canEditClients: false, canDeleteClients: false,
@@ -60,7 +61,7 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewNotifications: false, canViewSettings: false, canViewReports: false,
     canApproveTransactions: false, canRecordPayments: true, canDeleteMasterData: false,
     canViewOwnWallet: false,
-    isAdmin: false, isOwner: false, isFieldOfficer: true, isInvestor: false,
+    isAdmin: false, isOwner: false, isTreasurer: false, isFieldOfficer: true, isInvestor: false,
   },
   investor: {
     canViewClients: false, canEditClients: false, canDeleteClients: false,
@@ -71,7 +72,7 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewNotifications: false, canViewSettings: false, canViewReports: false,
     canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
     canViewOwnWallet: true,
-    isAdmin: false, isOwner: false, isFieldOfficer: false, isInvestor: true,
+    isAdmin: false, isOwner: false, isTreasurer: false, isFieldOfficer: false, isInvestor: true,
   },
   treasurer: {
     canViewClients: false, canEditClients: false, canDeleteClients: false,
@@ -82,7 +83,7 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewNotifications: false, canViewSettings: false, canViewReports: true,
     canApproveTransactions: true, canRecordPayments: false, canDeleteMasterData: false,
     canViewOwnWallet: false,
-    isAdmin: false, isOwner: false, isFieldOfficer: false, isInvestor: false,
+    isAdmin: false, isOwner: false, isTreasurer: true, isFieldOfficer: false, isInvestor: false,
   },
 };
 
