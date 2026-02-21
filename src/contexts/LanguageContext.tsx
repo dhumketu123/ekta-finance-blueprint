@@ -23,6 +23,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.notifications": { bn: "বিজ্ঞপ্তি", en: "Notifications" },
   "nav.riskDashboard": { bn: "ঝুঁকি বিশ্লেষণ", en: "Risk Dashboard" },
   "nav.monitoring": { bn: "মনিটরিং", en: "Monitoring" },
+  "nav.ownerProfit": { bn: "মালিক মুনাফা", en: "Owner Profit" },
   "nav.settings": { bn: "সেটিংস", en: "Settings" },
   "nav.wallet": { bn: "আমার ওয়ালেট", en: "My Wallet" },
 
