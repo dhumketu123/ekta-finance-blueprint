@@ -1339,6 +1339,7 @@ export type Database = {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
       }
+      predict_loan_risk: { Args: never; Returns: Json }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
