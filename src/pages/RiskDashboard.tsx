@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import MetricCard from "@/components/MetricCard";
-import StatusBadge from "@/components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetricCardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Shield, TrendingDown, Activity, RefreshCw, Users, Eye } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertTriangle, Shield, TrendingDown, Activity, RefreshCw, Eye, Phone, MessageSquare, ArrowRight, Zap, Target } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -47,16 +47,16 @@ const useRiskPredictions = () =>
 
 const getRiskColor = (score: number) => {
   if (score >= 80) return "text-destructive";
-  if (score >= 70) return "text-warning";
+  if (score >= 70) return "text-orange-500";
   if (score >= 40) return "text-yellow-500";
   return "text-success";
 };
 
 const getRiskBg = (score: number) => {
-  if (score >= 80) return "bg-destructive/10";
-  if (score >= 70) return "bg-warning/10";
-  if (score >= 40) return "bg-yellow-500/10";
-  return "bg-success/10";
+  if (score >= 80) return "bg-destructive/15 border-destructive/30";
+  if (score >= 70) return "bg-orange-500/15 border-orange-500/30";
+  if (score >= 40) return "bg-yellow-500/15 border-yellow-500/30";
+  return "bg-success/15 border-success/30";
 };
 
 const getRiskLabel = (score: number, lang: string) => {
@@ -75,6 +75,49 @@ const getAlertIcon = (alertType: string) => {
     case "upcoming_reminder": return "🔔";
     default: return "✅";
   }
+};
+
+/** Phase 3: Predictive prompt — suggest next action based on risk profile */
+const getActionPrompt = (p: RiskPrediction, lang: string): { text: string; icon: React.ReactNode; urgency: "critical" | "warn" | "info" } => {
+  if (p.risk_score >= 80) {
+    return {
+      text: lang === "bn" ? "জরুরি ফলোআপ প্রয়োজন" : "Urgent follow-up needed",
+      icon: <Zap className="w-3.5 h-3.5" />,
+      urgency: "critical",
+    };
+  }
+  if (p.overdue_days > 30) {
+    return {
+      text: lang === "bn" ? "এস্কেলেশন করুন" : "Escalate to management",
+      icon: <ArrowRight className="w-3.5 h-3.5" />,
+      urgency: "critical",
+    };
+  }
+  if (p.overdue_days > 0) {
+    return {
+      text: lang === "bn" ? "ফোনে যোগাযোগ করুন" : "Call the client",
+      icon: <Phone className="w-3.5 h-3.5" />,
+      urgency: "warn",
+    };
+  }
+  if (p.predicted_7day_overdue) {
+    return {
+      text: lang === "bn" ? "রিমাইন্ডার পাঠান" : "Send reminder",
+      icon: <MessageSquare className="w-3.5 h-3.5" />,
+      urgency: "warn",
+    };
+  }
+  return {
+    text: lang === "bn" ? "মনিটর করুন" : "Monitor",
+    icon: <Target className="w-3.5 h-3.5" />,
+    urgency: "info",
+  };
+};
+
+const urgencyStyles = {
+  critical: "bg-destructive/15 text-destructive border-destructive/30",
+  warn: "bg-orange-500/15 text-orange-600 border-orange-500/30",
+  info: "bg-muted text-muted-foreground border-border",
 };
 
 const RiskDashboard = () => {
@@ -96,19 +139,28 @@ const RiskDashboard = () => {
   const atRiskAmount = predictions.filter(p => p.risk_score >= 40).reduce((s, p) => s + p.outstanding_principal, 0);
   const portfolioAtRisk = totalOutstanding > 0 ? ((atRiskAmount / totalOutstanding) * 100).toFixed(1) : "0";
 
-  // Expected Loss & Recovery
   const expectedLoss = predictions.reduce((s, p) => s + (p.outstanding_principal + p.outstanding_interest) * (p.risk_score / 100), 0);
   const expectedRecovery = totalOutstanding - expectedLoss;
 
-  // Filter + Sort
+  // Filter + Sort (high-risk always on top for behavioral nudge)
   const filtered = alertFilter === "all" ? predictions : predictions.filter(p => p.alert_type === alertFilter);
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "risk") return b.risk_score - a.risk_score;
-    if (sortBy === "overdue") return b.overdue_days - a.overdue_days;
-    return (b.outstanding_principal + b.outstanding_interest) - (a.outstanding_principal + a.outstanding_interest);
-  });
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "risk") return b.risk_score - a.risk_score;
+      if (sortBy === "overdue") return b.overdue_days - a.overdue_days;
+      return (b.outstanding_principal + b.outstanding_interest) - (a.outstanding_principal + a.outstanding_interest);
+    });
+  }, [filtered, sortBy]);
 
   const top10 = sorted.slice(0, 10);
+
+  // Risk Distribution counts
+  const riskBuckets = useMemo(() => [
+    { label: lang === "bn" ? "নিম্ন (0-39)" : "Low (0-39)", count: predictions.filter(p => p.risk_score < 40).length, color: "bg-success/15 text-success border-success/30", emoji: "✅" },
+    { label: lang === "bn" ? "মাঝারি (40-69)" : "Medium (40-69)", count: predictions.filter(p => p.risk_score >= 40 && p.risk_score < 70).length, color: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30", emoji: "⚠️" },
+    { label: lang === "bn" ? "উচ্চ (70-79)" : "High (70-79)", count: predictions.filter(p => p.risk_score >= 70 && p.risk_score < 80).length, color: "bg-orange-500/15 text-orange-600 border-orange-500/30", emoji: "🟠" },
+    { label: lang === "bn" ? "গুরুতর (80+)" : "Critical (80+)", count: criticalCount, color: "bg-destructive/15 text-destructive border-destructive/30", emoji: "🔴" },
+  ], [predictions, criticalCount, lang]);
 
   const alertTypes = [
     { key: "all", label: lang === "bn" ? "সব" : "All" },
@@ -147,51 +199,31 @@ const RiskDashboard = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-        <MetricCard
-          title={lang === "bn" ? "মোট স্কোরকৃত" : "Total Scored"}
-          value={totalScored}
-          subtitle={`${overdueCount} ${lang === "bn" ? "বকেয়া" : "overdue"}`}
-          icon={<Activity className="w-5 h-5" />}
-        />
-        <MetricCard
-          title={lang === "bn" ? "উচ্চ ঝুঁকি" : "High Risk"}
-          value={highRiskCount}
-          subtitle={`${criticalCount} ${lang === "bn" ? "গুরুতর" : "critical"}`}
-          icon={<AlertTriangle className="w-5 h-5" />}
-          variant="destructive"
-        />
-        <MetricCard
-          title={lang === "bn" ? "পোর্টফোলিও ঝুঁকি" : "Portfolio at Risk"}
-          value={`${portfolioAtRisk}%`}
-          subtitle={`৳${(atRiskAmount / 1000).toFixed(0)}K ${lang === "bn" ? "ঝুঁকিতে" : "at risk"}`}
-          icon={<TrendingDown className="w-5 h-5" />}
-          variant="warning"
-        />
-        <MetricCard
-          title={lang === "bn" ? "৭-দিনের পূর্বাভাস" : "7-Day Forecast"}
-          value={sevenDayRiskCount}
-          subtitle={lang === "bn" ? "সম্ভাব্য বকেয়া" : "predicted overdue"}
-          icon={<Shield className="w-5 h-5" />}
-          variant={sevenDayRiskCount > 0 ? "warning" : "success"}
-        />
+        <MetricCard title={lang === "bn" ? "মোট স্কোরকৃত" : "Total Scored"} value={totalScored} subtitle={`${overdueCount} ${lang === "bn" ? "বকেয়া" : "overdue"}`} icon={<Activity className="w-5 h-5" />} />
+        <MetricCard title={lang === "bn" ? "উচ্চ ঝুঁকি" : "High Risk"} value={highRiskCount} subtitle={`${criticalCount} ${lang === "bn" ? "গুরুতর" : "critical"}`} icon={<AlertTriangle className="w-5 h-5" />} variant="destructive" />
+        <MetricCard title={lang === "bn" ? "পোর্টফোলিও ঝুঁকি" : "Portfolio at Risk"} value={`${portfolioAtRisk}%`} subtitle={`৳${(atRiskAmount / 1000).toFixed(0)}K ${lang === "bn" ? "ঝুঁকিতে" : "at risk"}`} icon={<TrendingDown className="w-5 h-5" />} variant="warning" />
+        <MetricCard title={lang === "bn" ? "৭-দিনের পূর্বাভাস" : "7-Day Forecast"} value={sevenDayRiskCount} subtitle={lang === "bn" ? "সম্ভাব্য বকেয়া" : "predicted overdue"} icon={<Shield className="w-5 h-5" />} variant={sevenDayRiskCount > 0 ? "warning" : "success"} />
       </div>
 
-      {/* Portfolio Impact Cards */}
+      {/* Portfolio Impact + Storytelling */}
       {predictions.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
           <div className="card-elevated p-5">
             <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "মোট বকেয়া" : "Total Outstanding"}</p>
             <p className="text-2xl font-extrabold text-foreground mt-1.5">৳{totalOutstanding.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">{predictions.length} {lang === "bn" ? "টি সক্রিয় ঋণ" : "active loans"}</p>
           </div>
-          <div className="card-elevated p-5">
+          <div className="card-elevated p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-bl-full" />
             <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "প্রত্যাশিত ক্ষতি" : "Expected Loss"}</p>
             <p className="text-2xl font-extrabold text-destructive mt-1.5">৳{Math.round(expectedLoss).toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{lang === "bn" ? "ঝুঁকি স্কোর ভিত্তিক" : "Based on risk scores"}</p>
+            <p className="text-xs text-destructive/70 mt-1 font-medium">{totalOutstanding > 0 ? `${((expectedLoss / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "ঝুঁকি-ভারিত" : "risk-weighted"}</p>
           </div>
-          <div className="card-elevated p-5">
+          <div className="card-elevated p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-success/5 rounded-bl-full" />
             <p className="text-sm text-muted-foreground font-semibold tracking-wide">{lang === "bn" ? "প্রত্যাশিত রিকভারি" : "Expected Recovery"}</p>
             <p className="text-2xl font-extrabold text-success mt-1.5">৳{Math.round(expectedRecovery).toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{totalOutstanding > 0 ? `${((expectedRecovery / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "আদায়যোগ্য" : "recoverable"}</p>
+            <p className="text-xs text-success/70 mt-1 font-medium">{totalOutstanding > 0 ? `${((expectedRecovery / totalOutstanding) * 100).toFixed(1)}%` : "0%"} {lang === "bn" ? "আদায়যোগ্য" : "recoverable"}</p>
           </div>
         </div>
       )}
@@ -201,15 +233,9 @@ const RiskDashboard = () => {
         {([
           { key: "risk", label: lang === "bn" ? "ঝুঁকি স্কোর" : "Risk Score" },
           { key: "overdue", label: lang === "bn" ? "বকেয়া দিন" : "Overdue Days" },
-          { key: "amount", label: lang === "bn" ? "বকেয়া পরিমাণ" : "Outstanding Amount" },
+          { key: "amount", label: lang === "bn" ? "বকেয়া পরিমাণ" : "Outstanding" },
         ] as const).map(s => (
-          <Button
-            key={s.key}
-            size="sm"
-            variant={sortBy === s.key ? "default" : "outline"}
-            className="text-sm font-medium"
-            onClick={() => setSortBy(s.key)}
-          >
+          <Button key={s.key} size="sm" variant={sortBy === s.key ? "default" : "outline"} className="text-sm font-medium" onClick={() => setSortBy(s.key)}>
             {s.label}
           </Button>
         ))}
@@ -223,9 +249,12 @@ const RiskDashboard = () => {
             ))}
           </SelectContent>
         </Select>
+        <Badge variant="secondary" className="text-xs font-medium ml-auto">
+          {filtered.length} {lang === "bn" ? "ফলাফল" : "results"}
+        </Badge>
       </div>
 
-      {/* Top 10 Risky Clients */}
+      {/* Top 10 Risky Clients with Action Prompts */}
       <div className="card-elevated overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-base font-bold text-card-foreground flex items-center gap-2">
@@ -246,6 +275,7 @@ const RiskDashboard = () => {
           </div>
         ) : (
           <>
+            {/* Desktop Table */}
             <div className="hidden sm:block">
               <Table className="table-premium">
                 <TableHeader className="table-header-premium">
@@ -255,115 +285,128 @@ const RiskDashboard = () => {
                     <TableHead>{lang === "bn" ? "সতর্কতা" : "Alert"}</TableHead>
                     <TableHead>{lang === "bn" ? "বকেয়া দিন" : "Overdue"}</TableHead>
                     <TableHead>{lang === "bn" ? "বকেয়া পরিমাণ" : "Outstanding"}</TableHead>
-                    <TableHead>{lang === "bn" ? "কিস্তি" : "Installments"}</TableHead>
+                    <TableHead>{lang === "bn" ? "পরবর্তী পদক্ষেপ" : "Next Action"}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {top10.map((p) => (
-                    <TableRow key={p.loan_id} className="hover:bg-accent/50 transition-colors">
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{p.next_due_date ? `📅 ${p.next_due_date}` : "—"}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-20">
-                            <Progress value={p.risk_score} className="h-2.5" />
+                  {top10.map((p) => {
+                    const action = getActionPrompt(p, lang);
+                    return (
+                      <TableRow key={p.loan_id} className="hover:bg-accent/50 transition-colors">
+                        <TableCell>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {p.phone ? `📞 ${p.phone}` : "—"} · {p.paid_installments}/{p.total_installments} {lang === "bn" ? "কিস্তি" : "inst."}
+                            </p>
                           </div>
-                          <span className={`text-sm font-bold ${getRiskColor(p.risk_score)}`}>
-                            {p.risk_score}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-20">
+                              <Progress value={p.risk_score} className="h-2.5" />
+                            </div>
+                            <span className={`text-sm font-bold ${getRiskColor(p.risk_score)}`}>{p.risk_score}</span>
+                          </div>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block border ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
+                            {getRiskLabel(p.risk_score, lang)}
                           </span>
-                        </div>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
-                          {getRiskLabel(p.risk_score, lang)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-base">{getAlertIcon(p.alert_type)}</span>
-                        {p.predicted_7day_overdue && (
-                          <Badge variant="destructive" className="text-[10px] ml-1.5">7d</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-sm font-bold ${p.overdue_days > 30 ? "text-destructive" : p.overdue_days > 0 ? "text-warning" : "text-muted-foreground"}`}>
-                          {p.overdue_days > 0 ? `${p.overdue_days}d` : "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-bold text-foreground">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</p>
-                          {p.penalty_amount > 0 && (
-                            <p className="text-xs text-destructive font-medium mt-0.5">+৳{p.penalty_amount.toLocaleString()} {lang === "bn" ? "জরিমানা" : "penalty"}</p>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-base">{getAlertIcon(p.alert_type)}</span>
+                          {p.predicted_7day_overdue && (
+                            <Badge variant="destructive" className="text-[10px] ml-1.5">7d</Badge>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium text-foreground">
-                          {p.paid_installments}/{p.total_installments}
-                          {p.overdue_installments > 0 && (
-                            <span className="text-destructive font-bold ml-1">({p.overdue_installments} ⚠️)</span>
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => navigate(`/clients/${p.client_id}`)}>
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-sm font-bold ${p.overdue_days > 30 ? "text-destructive" : p.overdue_days > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+                            {p.overdue_days > 0 ? `${p.overdue_days}d` : "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm font-bold text-foreground">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</p>
+                            {p.penalty_amount > 0 && (
+                              <p className="text-xs text-destructive font-medium mt-0.5">+৳{p.penalty_amount.toLocaleString()} {lang === "bn" ? "জরিমানা" : "penalty"}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        {/* Phase 3: Predictive Action Prompt */}
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border cursor-default ${urgencyStyles[action.urgency]}`}>
+                                {action.icon}
+                                {action.text}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">{lang === "bn" ? "ঝুঁকি স্কোর ও বকেয়া ভিত্তিক সুপারিশ" : "Recommendation based on risk score & overdue"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => navigate(`/clients/${p.client_id}`)}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
 
-            {/* Mobile view */}
+            {/* Mobile Cards with Action Prompts */}
             <div className="sm:hidden divide-y divide-border">
-              {top10.map((p) => (
-                <div
-                  key={p.loan_id}
-                  className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => navigate(`/clients/${p.client_id}`)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span>{getAlertIcon(p.alert_type)}</span>
-                    <p className="text-base font-bold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
+              {top10.map((p) => {
+                const action = getActionPrompt(p, lang);
+                return (
+                  <div key={p.loan_id} className="p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${p.client_id}`)}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span>{getAlertIcon(p.alert_type)}</span>
+                        <p className="text-base font-bold text-foreground">{lang === "bn" ? p.client_name_bn : p.client_name_en}</p>
+                      </div>
+                      <span className={`text-sm font-bold px-2.5 py-1 rounded-full border ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
+                        {p.risk_score}/100
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                      <span className="text-foreground font-semibold">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</span>
+                      {p.overdue_days > 0 && <span className="text-destructive font-bold">{p.overdue_days}d</span>}
+                      <span>{p.paid_installments}/{p.total_installments}</span>
+                    </div>
+                    {/* Mobile Action Prompt */}
+                    <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md border mt-2 ${urgencyStyles[action.urgency]}`}>
+                      {action.icon}
+                      {action.text}
+                    </div>
+                    <Progress value={p.risk_score} className="h-1.5 mt-2" />
                   </div>
-                  <span className={`text-sm font-bold px-2.5 py-1 rounded-full ${getRiskBg(p.risk_score)} ${getRiskColor(p.risk_score)}`}>
-                    {p.risk_score}/100
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
-                  <span className="text-foreground font-semibold">৳{(p.outstanding_principal + p.outstanding_interest).toLocaleString()}</span>
-                  {p.overdue_days > 0 && <span className="text-destructive font-bold">{p.overdue_days}d overdue</span>}
-                  <span>{p.paid_installments}/{p.total_installments} inst.</span>
-                </div>
-                  <Progress value={p.risk_score} className="h-1.5 mt-2" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
       </div>
 
-      {/* All Loans Risk Distribution */}
+      {/* Risk Distribution */}
       {predictions.length > 0 && (
         <div className="card-elevated p-5">
           <h3 className="text-base font-bold text-card-foreground mb-4">
             {lang === "bn" ? "ঝুঁকি বিতরণ" : "Risk Distribution"}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: lang === "bn" ? "নিম্ন (0-39)" : "Low (0-39)", count: predictions.filter(p => p.risk_score < 40).length, color: "bg-success/10 text-success border-success/20" },
-              { label: lang === "bn" ? "মাঝারি (40-69)" : "Medium (40-69)", count: predictions.filter(p => p.risk_score >= 40 && p.risk_score < 70).length, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-              { label: lang === "bn" ? "উচ্চ (70-79)" : "High (70-79)", count: predictions.filter(p => p.risk_score >= 70 && p.risk_score < 80).length, color: "bg-warning/10 text-warning border-warning/20" },
-              { label: lang === "bn" ? "গুরুতর (80+)" : "Critical (80+)", count: criticalCount, color: "bg-destructive/10 text-destructive border-destructive/20" },
-            ].map(bucket => (
-              <div key={bucket.label} className={`p-4 rounded-xl border ${bucket.color}`}>
-                <p className="text-3xl font-extrabold">{bucket.count}</p>
+            {riskBuckets.map(bucket => (
+              <div key={bucket.label} className={`p-4 rounded-xl border ${bucket.color} cursor-pointer hover:scale-[1.02] transition-transform`}
+                onClick={() => setAlertFilter(bucket.emoji === "🔴" ? "default_alert" : bucket.emoji === "🟠" ? "escalation_alert" : bucket.emoji === "⚠️" ? "overdue_alert" : "low_risk")}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-3xl font-extrabold">{bucket.count}</p>
+                  <span className="text-2xl">{bucket.emoji}</span>
+                </div>
                 <p className="text-sm font-semibold mt-1.5">{bucket.label}</p>
               </div>
             ))}
