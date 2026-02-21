@@ -601,10 +601,13 @@ export type Database = {
           disbursement_date: string | null
           emi_amount: number
           id: string
+          installment_anchor_date: string | null
+          installment_day: number | null
           loan_id: string | null
           loan_model: Database["public"]["Enums"]["loan_model"]
           loan_product_id: string | null
           maturity_date: string | null
+          next_due_date: string | null
           notes: string | null
           outstanding_interest: number
           outstanding_principal: number
@@ -623,10 +626,13 @@ export type Database = {
           disbursement_date?: string | null
           emi_amount?: number
           id?: string
+          installment_anchor_date?: string | null
+          installment_day?: number | null
           loan_id?: string | null
           loan_model?: Database["public"]["Enums"]["loan_model"]
           loan_product_id?: string | null
           maturity_date?: string | null
+          next_due_date?: string | null
           notes?: string | null
           outstanding_interest?: number
           outstanding_principal?: number
@@ -645,10 +651,13 @@ export type Database = {
           disbursement_date?: string | null
           emi_amount?: number
           id?: string
+          installment_anchor_date?: string | null
+          installment_day?: number | null
           loan_id?: string | null
           loan_model?: Database["public"]["Enums"]["loan_model"]
           loan_product_id?: string | null
           maturity_date?: string | null
+          next_due_date?: string | null
           notes?: string | null
           outstanding_interest?: number
           outstanding_principal?: number
@@ -1174,20 +1183,15 @@ export type Database = {
       }
     }
     Functions: {
-      apply_loan_payment:
-        | {
-            Args: { _amount: number; _loan_id: string; _performed_by?: string }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _amount: number
-              _loan_id: string
-              _performed_by?: string
-              _reference_id?: string
-            }
-            Returns: Json
-          }
+      apply_loan_payment: {
+        Args: {
+          _amount: number
+          _loan_id: string
+          _performed_by?: string
+          _reference_id?: string
+        }
+        Returns: Json
+      }
       approve_financial_transaction: {
         Args: { _approver_id: string; _reason?: string; _tx_id: string }
         Returns: Json
@@ -1196,6 +1200,7 @@ export type Database = {
         Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
         Returns: Json
       }
+      auto_default_loans: { Args: never; Returns: Json }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
@@ -1262,6 +1267,7 @@ export type Database = {
         Args: { _investor_id: string }
         Returns: undefined
       }
+      reconcile_savings_balances: { Args: never; Returns: Json }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
         Returns: undefined

@@ -149,6 +149,20 @@ Deno.serve(async (req) => {
     results.schedule_overdue_sync = scheduleSync ?? {};
     if (scheduleSyncErr) results.schedule_sync_error = scheduleSyncErr.message;
 
+    // 8b. ★ Phase 3: Auto-default loans (90+ days overdue) & auto-close zero-balance
+    const { data: defaultResult, error: defaultErr } = await supabase.rpc(
+      "auto_default_loans" as any
+    );
+    results.auto_default_loans = defaultResult ?? {};
+    if (defaultErr) results.auto_default_error = defaultErr.message;
+
+    // 8c. ★ Phase 4: Savings reconciliation check
+    const { data: reconResult, error: reconErr } = await supabase.rpc(
+      "reconcile_savings_balances" as any
+    );
+    results.savings_reconciliation = reconResult ?? {};
+    if (reconErr) results.reconciliation_error = reconErr.message;
+
     // 9. Log all notification activity to sms_logs for audit
     const totalNotifCount = (results.loan_due_notifications as number ?? 0)
       + (results.overdue_notifications as number ?? 0)

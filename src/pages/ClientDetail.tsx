@@ -29,13 +29,47 @@ const ClientDetail = () => {
   const [paymentOpen, setPaymentOpen]   = useState(false);
   const [activeTab, setActiveTab]       = useState<"info" | "schedule">("info");
 
-  // active loan for this client
+  // active loan for this client (include next_due_date, installment_day)
   const { data: activeLoan } = useQuery({
     queryKey: ["loans", "client", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loans")
-        .select("id, loan_id, status, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, maturity_date, disbursement_date, loan_model")
+        .select("id, loan_id, status, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, maturity_date, disbursement_date, loan_model, total_principal, total_interest, next_due_date, installment_day")
+        .eq("client_id", id!)
+        .in("status", ["active", "default"])
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Schedule stats for dashboard
+  const { data: scheduleStats } = useQuery({
+    queryKey: ["schedule-stats", activeLoan?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loan_schedules")
+        .select("status")
+        .eq("loan_id", activeLoan!.id);
+      if (error) throw error;
+      const total = data?.length ?? 0;
+      const paid = data?.filter((s: any) => s.status === "paid").length ?? 0;
+      const remaining = total - paid;
+      return { total, paid, remaining };
+    },
+    enabled: !!activeLoan?.id,
+  });
+
+  // Savings summary
+  const { data: savingsAccount } = useQuery({
+    queryKey: ["savings-account", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("savings_accounts")
+        .select("id, balance, status")
         .eq("client_id", id!)
         .eq("status", "active")
         .is("deleted_at", null)
@@ -44,6 +78,26 @@ const ClientDetail = () => {
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: savingsStats } = useQuery({
+    queryKey: ["savings-stats", savingsAccount?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, transaction_date")
+        .eq("savings_id", savingsAccount!.id)
+        .eq("type", "savings_deposit")
+        .eq("status", "paid")
+        .is("deleted_at", null)
+        .order("transaction_date", { ascending: false });
+      if (error) throw error;
+      return {
+        totalDeposits: data?.length ?? 0,
+        lastDeposit: data?.[0]?.transaction_date ?? null,
+      };
+    },
+    enabled: !!savingsAccount?.id,
   });
 
   if (isLoading) {
@@ -156,7 +210,7 @@ const ClientDetail = () => {
         )}
       </div>
 
-      {/* ── Active Loan Summary ── */}
+      {/* ── Active Loan Summary (Phase 6 Dashboard Intelligence) ── */}
       {hasActiveLoan && (
         <div className="card-elevated p-5 border-l-4 border-l-warning animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <div className="flex items-center justify-between mb-3">
@@ -166,14 +220,21 @@ const ClientDetail = () => {
                 {lang === "bn" ? "সক্রিয় ঋণ" : "Active Loan"}
               </h3>
             </div>
-            {activeLoan.loan_id && (
-              <span className="text-xs font-mono font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-md border border-warning/20">
-                {activeLoan.loan_id}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {activeLoan.loan_id && (
+                <span className="text-xs font-mono font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-md border border-warning/20">
+                  {activeLoan.loan_id}
+                </span>
+              )}
+              <StatusBadge status={activeLoan.status as any} />
+            </div>
           </div>
-          <RepaymentProgress totalAmount={totalOwed} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={nextPaymentDate} />
+          <RepaymentProgress totalAmount={totalOwed} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={(activeLoan as any).next_due_date ?? nextPaymentDate} />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "ঋণের পরিমাণ" : "Loan Amount"}</p>
+              <p className="text-sm font-bold text-foreground">৳{Number(activeLoan.total_principal).toLocaleString()}</p>
+            </div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া আসল" : "Outstanding"}</p>
               <p className="text-sm font-bold text-destructive">৳{Number(activeLoan.outstanding_principal).toLocaleString()}</p>
@@ -186,9 +247,49 @@ const ClientDetail = () => {
               <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "EMI"}</p>
               <p className="text-sm font-bold text-primary">৳{Number(activeLoan.emi_amount).toLocaleString()}</p>
             </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরবর্তী কিস্তি" : "Next Due"}</p>
+              <p className="text-sm font-bold text-primary">{(activeLoan as any).next_due_date ?? "—"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid"}</p>
+              <p className="text-sm font-bold text-success">{scheduleStats?.paid ?? "—"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট কিস্তি" : "Remaining"}</p>
+              <p className="text-sm font-bold text-destructive">{scheduleStats?.remaining ?? "—"}</p>
+            </div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরিপক্কতা" : "Maturity"}</p>
               <p className="text-sm font-bold">{activeLoan.maturity_date ?? "—"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Savings Summary ── */}
+      {savingsAccount && (
+        <div className="card-elevated p-5 border-l-4 border-l-success animate-slide-up" style={{ animationDelay: "0.12s" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <PiggyBank className="w-4 h-4 text-success" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-success">
+              {lang === "bn" ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
+            </h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বর্তমান ব্যালেন্স" : "Current Balance"}</p>
+              <p className="text-sm font-bold text-success">৳{Number(savingsAccount.balance).toLocaleString()}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট জমা" : "Total Deposits"}</p>
+              <p className="text-sm font-bold">{savingsStats?.totalDeposits ?? "—"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "শেষ জমা" : "Last Deposit"}</p>
+              <p className="text-sm font-bold">{savingsStats?.lastDeposit ?? "—"}</p>
             </div>
           </div>
         </div>
