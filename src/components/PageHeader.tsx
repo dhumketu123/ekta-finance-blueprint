@@ -39,8 +39,8 @@ const PageHeader = ({ title, description, actions }: PageHeaderProps) => {
           </button>
         )}
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-card-foreground tracking-tight truncate">{title}</h1>
-          {description && <p className="mt-1 text-xs sm:text-sm text-muted-foreground font-medium">{description}</p>}
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-card-foreground tracking-tight truncate">{title}</h1>
+          {description && <p className="mt-1 text-sm sm:text-base text-muted-foreground font-medium">{description}</p>}
         </div>
       </div>
       {actions && <div className="flex gap-2 flex-shrink-0 flex-wrap">{actions}</div>}
