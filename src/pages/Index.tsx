@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import RecoveryMatrix from "@/components/RecoveryMatrix";
+import CashflowOracleWidget from "@/components/CashflowOracleWidget";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -196,7 +197,11 @@ const Dashboard = () => {
       </div>
 
       {/* Recovery Matrix */}
-      <RecoveryMatrix />
+      {/* AI Cashflow Oracle + Recovery Matrix */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <CashflowOracleWidget />
+        <RecoveryMatrix />
+      </div>
 
       {/* Recent Clients */}
       <div className="card-elevated overflow-hidden">

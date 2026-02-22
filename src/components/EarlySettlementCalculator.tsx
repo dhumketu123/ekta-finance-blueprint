@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, TrendingDown } from "lucide-react";
+import { Calculator, TrendingDown, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuantumConfig } from "@/hooks/useQuantumConfig";
 
 interface Props {
   open: boolean;
@@ -17,9 +18,9 @@ interface Props {
 export default function EarlySettlementCalculator({ open, onClose }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
+  const { config, isLoading: configLoading } = useQuantumConfig();
 
   const [loanId, setLoanId] = useState("");
-  const [graceDays, setGraceDays] = useState("0");
 
   const { data: activeLoans } = useQuery({
     queryKey: ["active_loans_settlement"],
@@ -36,29 +37,35 @@ export default function EarlySettlementCalculator({ open, onClose }: Props) {
 
   const selectedLoan = activeLoans?.find((l: any) => l.id === loanId) as any;
 
-  // Calculate early settlement
+  // Config-driven calculation (no hardcoded values)
   const calculateSettlement = () => {
-    if (!selectedLoan) return null;
+    if (!selectedLoan || configLoading) return null;
 
     const outstandingPrincipal = selectedLoan.outstanding_principal || 0;
     const outstandingInterest = selectedLoan.outstanding_interest || 0;
     const penalty = selectedLoan.penalty_amount || 0;
     const totalInterest = selectedLoan.total_interest || 0;
 
-    // Interest rebate calculation
-    // If settling early, remaining unpaid interest gets a discount
-    const paidInterest = totalInterest - outstandingInterest;
-    const interestRebate = selectedLoan.loan_model === "reducing"
-      ? Math.round(outstandingInterest * 0.5) // 50% rebate on reducing balance
-      : Math.round(outstandingInterest * 0.3); // 30% rebate on flat
+    // Fetch rebate percentages from config
+    const rebateFlat = config.loan_rebate_flat ?? 30;
+    const rebateReducing = config.loan_rebate_reducing ?? 50;
+    const processingFeePercent = config.processing_fee_percent ?? 1;
+    const gracePeriodDays = config.grace_period_days ?? 5;
+    const minimumNoticeDays = config.minimum_notice_days ?? 7;
 
-    // Grace period adjustment
-    const grace = Number(graceDays) || 0;
-    const penaltyWaiver = grace > 0 ? Math.min(penalty, penalty * (grace / 30)) : 0;
+    const paidInterest = totalInterest - outstandingInterest;
+    const rebatePercent = selectedLoan.loan_model === "reducing" ? rebateReducing : rebateFlat;
+    const interestRebate = Math.round(outstandingInterest * (rebatePercent / 100));
+
+    // Grace period adjustment for penalty
+    const penaltyWaiver = gracePeriodDays > 0 ? Math.min(penalty, penalty * (gracePeriodDays / 30)) : 0;
+
+    // Processing fee
+    const processingFee = Math.round(outstandingPrincipal * (processingFeePercent / 100));
 
     const adjustedInterest = outstandingInterest - interestRebate;
     const adjustedPenalty = penalty - penaltyWaiver;
-    const settlementAmount = outstandingPrincipal + adjustedInterest + adjustedPenalty;
+    const settlementAmount = outstandingPrincipal + adjustedInterest + adjustedPenalty + processingFee;
     const totalSavings = interestRebate + penaltyWaiver;
 
     return {
@@ -69,9 +76,14 @@ export default function EarlySettlementCalculator({ open, onClose }: Props) {
       penaltyWaiver,
       adjustedInterest,
       adjustedPenalty,
+      processingFee,
       settlementAmount,
       totalSavings,
       paidInterest,
+      rebatePercent,
+      gracePeriodDays,
+      minimumNoticeDays,
+      processingFeePercent,
     };
   };
 
@@ -87,68 +99,85 @@ export default function EarlySettlementCalculator({ open, onClose }: Props) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Loan Selection */}
-          <div>
-            <Label className="text-xs">{bn ? "ঋণ নির্বাচন" : "Select Loan"} *</Label>
-            <Select value={loanId} onValueChange={setLoanId}>
-              <SelectTrigger className="text-xs">
-                <SelectValue placeholder={bn ? "ঋণ নির্বাচন করুন" : "Select a loan"} />
-              </SelectTrigger>
-              <SelectContent>
-                {(activeLoans ?? []).map((l: any) => (
-                  <SelectItem key={l.id} value={l.id} className="text-xs">
-                    {l.loan_id || l.id.slice(0, 8)} — {bn ? l.clients?.name_bn : l.clients?.name_en} — ৳{l.outstanding_principal?.toLocaleString()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Grace Period */}
-          <div>
-            <Label className="text-xs">{bn ? "গ্রেস পিরিয়ড (দিন)" : "Grace Period (days)"}</Label>
-            <Input type="number" value={graceDays} onChange={(e) => setGraceDays(e.target.value)} className="text-sm" placeholder="0" />
-          </div>
-
-          {/* Results */}
-          {result && (
-            <div className="space-y-3 mt-4">
-              <div className="p-3 rounded-xl bg-muted/50 space-y-2">
-                <Row label={bn ? "বকেয়া মূলধন" : "Outstanding Principal"} value={result.outstandingPrincipal} />
-                <Row label={bn ? "বকেয়া সুদ" : "Outstanding Interest"} value={result.outstandingInterest} />
-                <Row label={bn ? "জরিমানা" : "Penalty"} value={result.penalty} />
-              </div>
-
-              {result.totalSavings > 0 && (
-                <div className="p-3 rounded-xl bg-success/10 border border-success/30 space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingDown className="w-3.5 h-3.5 text-success" />
-                    <span className="text-xs font-bold text-success">{bn ? "ছাড় / সঞ্চয়" : "Rebate / Savings"}</span>
-                  </div>
-                  {result.interestRebate > 0 && (
-                    <Row label={bn ? "সুদ ছাড়" : "Interest Rebate"} value={-result.interestRebate} isDiscount />
-                  )}
-                  {result.penaltyWaiver > 0 && (
-                    <Row label={bn ? "জরিমানা মওকুফ" : "Penalty Waiver"} value={-result.penaltyWaiver} isDiscount />
-                  )}
-                </div>
-              )}
-
-              <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{bn ? "মোট পরিশোধযোগ্য" : "Settlement Amount"}</span>
-                  <span className="text-xl font-bold text-primary">৳{result.settlementAmount.toLocaleString()}</span>
-                </div>
-                {result.totalSavings > 0 && (
-                  <p className="text-xs text-success mt-1">
-                    {bn ? `আপনি ৳${result.totalSavings.toLocaleString()} সাশ্রয় করবেন` : `You save ৳${result.totalSavings.toLocaleString()}`}
-                  </p>
-                )}
-              </div>
+        {configLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <div className="space-y-4">
+            {/* Loan Selection */}
+            <div>
+              <Label className="text-xs">{bn ? "ঋণ নির্বাচন" : "Select Loan"} *</Label>
+              <Select value={loanId} onValueChange={setLoanId}>
+                <SelectTrigger className="text-xs">
+                  <SelectValue placeholder={bn ? "ঋণ নির্বাচন করুন" : "Select a loan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(activeLoans ?? []).map((l: any) => (
+                    <SelectItem key={l.id} value={l.id} className="text-xs">
+                      {l.loan_id || l.id.slice(0, 8)} — {bn ? l.clients?.name_bn : l.clients?.name_en} — ৳{l.outstanding_principal?.toLocaleString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </div>
+
+            {/* Config info */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {bn ? `ছাড়: ${result?.rebatePercent ?? 0}%` : `Rebate: ${result?.rebatePercent ?? 0}%`}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {bn ? `গ্রেস: ${config.grace_period_days ?? 5} দিন` : `Grace: ${config.grace_period_days ?? 5} days`}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {bn ? `প্রসেসিং: ${config.processing_fee_percent ?? 1}%` : `Processing: ${config.processing_fee_percent ?? 1}%`}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {bn ? `নোটিস: ${config.minimum_notice_days ?? 7} দিন` : `Notice: ${config.minimum_notice_days ?? 7} days`}
+              </span>
+            </div>
+
+            {/* Results */}
+            {result && (
+              <div className="space-y-3 mt-4">
+                <div className="p-3 rounded-xl bg-muted/50 space-y-2">
+                  <Row label={bn ? "বকেয়া মূলধন" : "Outstanding Principal"} value={result.outstandingPrincipal} />
+                  <Row label={bn ? "বকেয়া সুদ" : "Outstanding Interest"} value={result.outstandingInterest} />
+                  <Row label={bn ? "জরিমানা" : "Penalty"} value={result.penalty} />
+                  {result.processingFee > 0 && (
+                    <Row label={bn ? "প্রসেসিং ফি" : "Processing Fee"} value={result.processingFee} />
+                  )}
+                </div>
+
+                {result.totalSavings > 0 && (
+                  <div className="p-3 rounded-xl bg-success/10 border border-success/30 space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingDown className="w-3.5 h-3.5 text-success" />
+                      <span className="text-xs font-bold text-success">{bn ? "ছাড় / সঞ্চয়" : "Rebate / Savings"}</span>
+                    </div>
+                    {result.interestRebate > 0 && (
+                      <Row label={bn ? `সুদ ছাড় (${result.rebatePercent}%)` : `Interest Rebate (${result.rebatePercent}%)`} value={-result.interestRebate} isDiscount />
+                    )}
+                    {result.penaltyWaiver > 0 && (
+                      <Row label={bn ? "জরিমানা মওকুফ" : "Penalty Waiver"} value={-result.penaltyWaiver} isDiscount />
+                    )}
+                  </div>
+                )}
+
+                <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">{bn ? "মোট পরিশোধযোগ্য" : "Settlement Amount"}</span>
+                    <span className="text-xl font-bold text-primary">৳{result.settlementAmount.toLocaleString()}</span>
+                  </div>
+                  {result.totalSavings > 0 && (
+                    <p className="text-xs text-success mt-1">
+                      {bn ? `আপনি ৳${result.totalSavings.toLocaleString()} সাশ্রয় করবেন` : `You save ৳${result.totalSavings.toLocaleString()}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

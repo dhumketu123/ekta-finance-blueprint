@@ -24,7 +24,6 @@ export default function RecoveryMatrix() {
   const { data: overdueData, isLoading } = useQuery({
     queryKey: ["recovery_matrix"],
     queryFn: async () => {
-      // Get all loans with overdue schedules
       const { data: schedules, error } = await supabase
         .from("loan_schedules")
         .select(`
@@ -38,7 +37,7 @@ export default function RecoveryMatrix() {
 
       if (error) throw error;
 
-      // Group by loan
+      // Group by loan — FIXED: include penalty_paid in overdue calculation
       const loanMap = new Map<string, OverdueClient>();
       (schedules ?? []).forEach((s: any) => {
         const loan = s.loans;
@@ -46,12 +45,14 @@ export default function RecoveryMatrix() {
         if (!loan || !client) return;
 
         const overdueDays = Math.max(0, Math.floor((Date.now() - new Date(s.due_date).getTime()) / 86400000));
-        const overdueAmt = (s.principal_due + s.interest_due + s.penalty_due) - (s.principal_paid + s.interest_paid);
+        // Corrected formula: (principal_due + interest_due + penalty_due) - (principal_paid + interest_paid + penalty_paid)
+        const penaltyPaid = s.penalty_paid ?? 0;
+        const overdueAmt = (s.principal_due + s.interest_due + s.penalty_due) - (s.principal_paid + s.interest_paid + penaltyPaid);
 
         const existing = loanMap.get(loan.id);
         if (existing) {
           existing.overdue_days = Math.max(existing.overdue_days, overdueDays);
-          existing.overdue_amount += overdueAmt;
+          existing.overdue_amount += Math.max(0, overdueAmt);
         } else {
           loanMap.set(loan.id, {
             loan_id: loan.id,
@@ -60,7 +61,7 @@ export default function RecoveryMatrix() {
             loan_ref: loan.loan_id || loan.id.slice(0, 8),
             outstanding: loan.outstanding_principal + loan.outstanding_interest + loan.penalty_amount,
             overdue_days: overdueDays,
-            overdue_amount: overdueAmt,
+            overdue_amount: Math.max(0, overdueAmt),
             risk_level: overdueDays > 7 ? "red" : overdueDays > 3 ? "yellow" : "green",
           });
         }
@@ -92,7 +93,6 @@ export default function RecoveryMatrix() {
 
   return (
     <div className="card-elevated overflow-hidden">
-      {/* Header with summary */}
       <div className="p-4 border-b border-border flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -111,7 +111,6 @@ export default function RecoveryMatrix() {
         </div>
       </div>
 
-      {/* List */}
       {!overdueData?.length ? (
         <div className="p-6 text-center text-sm text-muted-foreground">
           {bn ? "কোনো বকেয়া নেই 🎉" : "No overdue payments 🎉"}

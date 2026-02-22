@@ -2,15 +2,17 @@ import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
-import { Clock, Shield, Zap, Link2, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Clock, Shield, Zap, Link2, RefreshCw, ShieldCheck, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdvanceBufferEntries, useCreditScores, useCalculateCreditScore, useEventSourcing } from "@/hooks/useAdvanceBuffer";
 import { useClients } from "@/hooks/useSupabaseData";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const QuantumLedger = () => {
   const { lang } = useLanguage();
@@ -23,6 +25,23 @@ const QuantumLedger = () => {
   const { data: creditScores } = useCreditScores();
   const { data: clients } = useClients();
   const calcScore = useCalculateCreditScore();
+
+  // Integrity verification
+  const verifyIntegrity = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("verify_event_chain_integrity" as any);
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (data: any) => {
+      if (data?.integrity === "valid") {
+        toast.success(bn ? "✅ চেইন অখণ্ডতা যাচাই সফল" : "✅ Chain integrity verified");
+      } else {
+        toast.error(bn ? `⚠️ ${data?.broken_links} টি ভাঙা লিংক পাওয়া গেছে` : `⚠️ ${data?.broken_links} broken links found`);
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   // Filter events by time slider
   const cutoffDate = new Date();
@@ -55,6 +74,9 @@ const QuantumLedger = () => {
           </TabsTrigger>
           <TabsTrigger value="credit_scores" className="text-xs gap-1.5">
             <Shield className="w-3 h-3" /> {bn ? "ক্রেডিট স্কোর" : "Credit Scores"}
+          </TabsTrigger>
+          <TabsTrigger value="integrity" className="text-xs gap-1.5">
+            <ShieldCheck className="w-3 h-3" /> {bn ? "অখণ্ডতা" : "Integrity"}
           </TabsTrigger>
         </TabsList>
 
@@ -258,6 +280,46 @@ const QuantumLedger = () => {
                 )}
               </TableBody>
             </Table>
+          </div>
+        </TabsContent>
+
+        {/* ── Integrity Verification ── */}
+        <TabsContent value="integrity" className="mt-0">
+          <div className="card-elevated p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="text-sm font-bold">{bn ? "ক্রিপ্টোগ্রাফিক চেইন যাচাই" : "Cryptographic Chain Verification"}</h3>
+                <p className="text-[10px] text-muted-foreground">{bn ? "ইভেন্ট সোর্সিং হ্যাশ চেইন অখণ্ডতা পরীক্ষা" : "Verify event sourcing hash chain integrity"}</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => verifyIntegrity.mutate()}
+              disabled={verifyIntegrity.isPending}
+              className="gap-1.5 text-xs"
+            >
+              {verifyIntegrity.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+              {bn ? "অখণ্ডতা যাচাই করুন" : "Verify Integrity"}
+            </Button>
+            {verifyIntegrity.data && (
+              <div className={`p-4 rounded-xl border-2 ${
+                (verifyIntegrity.data as any).integrity === "valid"
+                  ? "bg-success/10 border-success/30"
+                  : "bg-destructive/10 border-destructive/30"
+              }`}>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div><span className="text-muted-foreground">{bn ? "মোট ইভেন্ট" : "Total Events"}:</span> <span className="font-bold">{(verifyIntegrity.data as any).total_events}</span></div>
+                  <div><span className="text-muted-foreground">{bn ? "ভাঙা লিংক" : "Broken Links"}:</span> <span className="font-bold">{(verifyIntegrity.data as any).broken_links}</span></div>
+                  <div className="col-span-2">
+                    <Badge variant="outline" className={`text-[10px] ${
+                      (verifyIntegrity.data as any).integrity === "valid" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                    }`}>
+                      {(verifyIntegrity.data as any).integrity === "valid" ? (bn ? "✅ অখণ্ড" : "✅ Valid") : (bn ? "⚠️ ক্ষতিগ্রস্ত" : "⚠️ Compromised")}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
