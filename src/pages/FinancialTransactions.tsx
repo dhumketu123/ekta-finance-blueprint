@@ -13,8 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Search, Plus, CheckCircle2, XCircle, Clock, Receipt, MessageSquare,
-  AlertTriangle, FileText, Share2, Copy,
+  AlertTriangle, FileText, Share2, Copy, Calculator, ArrowDownCircle,
 } from "lucide-react";
+import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
+import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -52,6 +54,8 @@ const FinancialTransactionsPage = () => {
   const [tab, setTab] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [smartOpen, setSmartOpen] = useState(false);
+  const [settlementOpen, setSettlementOpen] = useState(false);
   const [receiptView, setReceiptView] = useState<FinancialTransaction | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -99,9 +103,17 @@ const FinancialTransactionsPage = () => {
         title={lang === "bn" ? "আর্থিক লেনদেন" : "Financial Transactions"}
         description={lang === "bn" ? "সকল আর্থিক লেনদেন, রিসিপ্ট ও এসএমএস লগ পরিচালনা" : "Manage all financial transactions, receipts & SMS logs"}
         actions={
-          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন লেনদেন" : "New Transaction"}
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" className="gap-1.5 text-xs" onClick={() => setSmartOpen(true)}>
+              <ArrowDownCircle className="w-3.5 h-3.5" /> {lang === "bn" ? "স্মার্ট লেনদেন" : "Smart Entry"}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setSettlementOpen(true)}>
+              <Calculator className="w-3.5 h-3.5" /> {lang === "bn" ? "তাড়াতাড়ি পরিশোধ" : "Early Settlement"}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "ক্লাসিক এন্ট্রি" : "Classic Entry"}
+            </Button>
+          </div>
         }
       />
 
@@ -306,6 +318,12 @@ const FinancialTransactionsPage = () => {
 
       {/* Create Transaction Dialog */}
       {createOpen && <CreateTransactionDialog open={createOpen} onClose={() => setCreateOpen(false)} lang={lang} />}
+      
+      {/* Smart Transaction Form */}
+      <SmartTransactionForm open={smartOpen} onClose={() => setSmartOpen(false)} />
+      
+      {/* Early Settlement Calculator */}
+      <EarlySettlementCalculator open={settlementOpen} onClose={() => setSettlementOpen(false)} />
     </AppLayout>
   );
 };

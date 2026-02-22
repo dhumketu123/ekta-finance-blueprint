@@ -24,6 +24,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.riskDashboard": { bn: "ঝুঁকি বিশ্লেষণ", en: "Risk Dashboard" },
   "nav.monitoring": { bn: "মনিটরিং", en: "Monitoring" },
   "nav.ownerProfit": { bn: "মালিক মুনাফা", en: "Owner Profit" },
+  "nav.quantumLedger": { bn: "কোয়ান্টাম লেজার", en: "Quantum Ledger" },
   "nav.settings": { bn: "সেটিংস", en: "Settings" },
   "nav.wallet": { bn: "আমার ওয়ালেট", en: "My Wallet" },
 
