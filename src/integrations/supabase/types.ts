@@ -68,6 +68,93 @@ export type Database = {
           },
         ]
       }
+      advance_buffer: {
+        Row: {
+          amount: number
+          buffer_type: string
+          client_id: string
+          created_at: string
+          id: string
+          loan_id: string | null
+          notes: string | null
+          post_date: string
+          posted_at: string | null
+          posted_by: string | null
+          savings_id: string | null
+          source_transaction_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buffer_type?: string
+          client_id: string
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          notes?: string | null
+          post_date: string
+          posted_at?: string | null
+          posted_by?: string | null
+          savings_id?: string | null
+          source_transaction_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buffer_type?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          notes?: string | null
+          post_date?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          savings_id?: string | null
+          source_transaction_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advance_buffer_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advance_buffer_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "advance_buffer_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advance_buffer_savings_id_fkey"
+            columns: ["savings_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advance_buffer_source_transaction_id_fkey"
+            columns: ["source_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -261,6 +348,104 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      credit_scores: {
+        Row: {
+          avg_days_late: number | null
+          client_id: string
+          created_at: string
+          factors: Json | null
+          id: string
+          last_calculated_at: string
+          overdue_frequency: number | null
+          payment_regularity: number | null
+          risk_level: string
+          score: number
+          total_late_payments: number | null
+          total_on_time_payments: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_days_late?: number | null
+          client_id: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          last_calculated_at?: string
+          overdue_frequency?: number | null
+          payment_regularity?: number | null
+          risk_level?: string
+          score?: number
+          total_late_payments?: number | null
+          total_on_time_payments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_days_late?: number | null
+          client_id?: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          last_calculated_at?: string
+          overdue_frequency?: number | null
+          payment_regularity?: number | null
+          risk_level?: string
+          score?: number
+          total_late_payments?: number | null
+          total_on_time_payments?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_scores_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_sourcing: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          hash_prev: string | null
+          hash_self: string | null
+          id: string
+          payload: Json
+          performed_by: string | null
+          snapshot_after: Json | null
+          snapshot_before: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          hash_prev?: string | null
+          hash_self?: string | null
+          id?: string
+          payload?: Json
+          performed_by?: string | null
+          snapshot_after?: Json | null
+          snapshot_before?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          hash_prev?: string | null
+          hash_self?: string | null
+          id?: string
+          payload?: Json
+          performed_by?: string | null
+          snapshot_after?: Json | null
+          snapshot_before?: Json | null
+        }
+        Relationships: []
       }
       financial_transactions: {
         Row: {
@@ -1411,6 +1596,7 @@ export type Database = {
         Returns: Json
       }
       auto_default_loans: { Args: never; Returns: Json }
+      calculate_credit_score: { Args: { _client_id: string }; Returns: Json }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
@@ -1477,6 +1663,7 @@ export type Database = {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
       }
+      post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
       process_investor_reinvest: {
         Args: { _investor_id: string }

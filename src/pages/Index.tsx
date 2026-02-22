@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import RecoveryMatrix from "@/components/RecoveryMatrix";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -193,6 +194,9 @@ const Dashboard = () => {
           </Button>
         ))}
       </div>
+
+      {/* Recovery Matrix */}
+      <RecoveryMatrix />
 
       {/* Recent Clients */}
       <div className="card-elevated overflow-hidden">
