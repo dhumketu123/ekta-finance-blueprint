@@ -21,8 +21,8 @@ const StatusBadge = ({ status, labelBn }: StatusBadgeProps) => {
   const c = config[status] || config.none;
   const isOverdue = status === "overdue";
   return (
-    <Badge variant="outline" className={`${c.className} border-0 text-[11px] rounded-full px-2.5 py-0.5 transition-all duration-300 ${isOverdue ? "badge-pulse" : ""}`}>
-      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${isOverdue ? "bg-destructive" : status === "active" || status === "paid" ? "bg-success" : status === "pending" ? "bg-warning" : "bg-muted-foreground"}`} />
+    <Badge variant="outline" className={`${c.className} border-0 text-xs rounded-full px-3 py-1 transition-all duration-300 ${isOverdue ? "badge-pulse" : ""}`}>
+      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${isOverdue ? "bg-destructive" : status === "active" || status === "paid" ? "bg-success" : status === "pending" ? "bg-warning" : "bg-muted-foreground"}`} />
       {c.label} {labelBn && <span className="ml-1 font-bangla opacity-70">({labelBn})</span>}
     </Badge>
   );

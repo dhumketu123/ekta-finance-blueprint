@@ -78,13 +78,13 @@ const MetricCard = ({ title, value, subtitle, icon, trend, variant = "default" }
 
       <div className="relative flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] md:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">{title}</p>
-          <p className="mt-1.5 md:mt-2 text-xl md:text-2xl font-extrabold text-card-foreground tracking-tight">
+          <p className="text-[11px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest truncate">{title}</p>
+          <p className="mt-1.5 md:mt-2 text-2xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
             <AnimatedNumber value={value} />
           </p>
-          {subtitle && <p className="mt-0.5 md:mt-1 text-[11px] md:text-xs text-muted-foreground font-medium truncate">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground font-medium truncate">{subtitle}</p>}
           {trend && (
-            <div className={`mt-1.5 md:mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${trend.positive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+            <div className={`mt-1.5 md:mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-bold ${trend.positive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
               {trend.positive ? "↑" : "↓"} {Math.abs(trend.value)}%
             </div>
           )}
