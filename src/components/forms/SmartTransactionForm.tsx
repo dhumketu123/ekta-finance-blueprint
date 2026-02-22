@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,9 @@ interface Props {
   onClose: () => void;
 }
 
+// Duplicate submission guard — 3 second cooldown
+let lastSubmitTime = 0;
+
 export default function SmartTransactionForm({ open, onClose }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
@@ -50,9 +53,11 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
   const [memberId, setMemberId] = useState("");
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
+  const [lateFee, setLateFee] = useState("");
   const [notes, setNotes] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceText, setVoiceText] = useState("");
+  const recognitionRef = useRef<any>(null);
 
   // Load clients
   const { data: clients } = useQuery({
@@ -103,10 +108,10 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
   const accounts = isLoanType ? clientLoans : clientSavings;
 
   // Reset downstream when direction changes
-  useEffect(() => { setTxType(""); setMemberId(""); setAccountId(""); setAmount(""); }, [direction]);
+  useEffect(() => { setTxType(""); setMemberId(""); setAccountId(""); setAmount(""); setLateFee(""); }, [direction]);
   useEffect(() => { setAccountId(""); }, [memberId, txType]);
 
-  // ── Voice Ledger (Web Speech API) ──────────────────
+  // ── Voice Ledger (Web Speech API) — Enhanced multi-amount parsing ──
   const startVoice = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -117,6 +122,7 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
     recognition.lang = "bn-BD";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
 
     recognition.onstart = () => setListening(true);
     recognition.onend = () => setListening(false);
@@ -131,14 +137,61 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
     recognition.start();
   };
 
-  const parseVoiceInput = (text: string) => {
-    // Extract amount (numbers)
-    const amountMatch = text.match(/(\d+)/);
-    if (amountMatch) setAmount(amountMatch[1]);
+  const stopVoice = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setListening(false);
+  };
 
-    // Try to match client name
+  const parseVoiceInput = (text: string) => {
+    const lowerText = text.toLowerCase();
+
+    // ── Global match for all numbers ──
+    const numbers = text.match(/\d+/g);
+
+    // ── Detect transaction type with priority order ──
+    const loanKeywords = ["কিস্তি", "installment", "পরিশোধ", "repayment", "ঋণ", "loan"];
+    const savingsKeywords = ["জমা", "deposit", "সঞ্চয়", "savings"];
+    const lateFeeKeywords = ["জরিমানা", "late", "fee", "ফি", "বিলম্ব", "লেট"];
+    const cashOutKeywords = ["বিতরণ", "disbursement", "উত্তোলন", "withdrawal", "খরচ", "expense"];
+
+    const isLoan = loanKeywords.some(k => lowerText.includes(k));
+    const isSavings = savingsKeywords.some(k => lowerText.includes(k));
+    const isLateFee = lateFeeKeywords.some(k => lowerText.includes(k));
+    const isCashOut = cashOutKeywords.some(k => lowerText.includes(k));
+
+    // Priority: 1) loan_repayment 2) savings_deposit 3) late_fee 4) fallback cash_in
+    if (isLoan) {
+      setDirection("cash_in");
+      setTxType("loan_repayment");
+    } else if (isSavings) {
+      setDirection("cash_in");
+      setTxType("savings_deposit");
+    } else if (isCashOut) {
+      setDirection("cash_out");
+    } else {
+      setDirection("cash_in");
+    }
+
+    // ── Parse amounts: if late fee detected, split amounts ──
+    if (numbers && numbers.length > 0) {
+      if (isLateFee && numbers.length >= 2) {
+        // First number = installment, second = late fee
+        setAmount(numbers[0]);
+        setLateFee(numbers[1]);
+      } else if (isLateFee && numbers.length === 1) {
+        setLateFee(numbers[0]);
+      } else {
+        setAmount(numbers[0]);
+        if (numbers.length >= 2 && isLoan) {
+          setLateFee(numbers[1]); // second number as late fee
+        }
+      }
+    }
+
+    // ── Match client name ──
     if (clients) {
-      const lowerText = text.toLowerCase();
       const matched = clients.find(
         (c) =>
           lowerText.includes(c.name_en.toLowerCase()) ||
@@ -147,36 +200,39 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
       if (matched) setMemberId(matched.id);
     }
 
-    // Detect direction
-    const cashInKeywords = ["জমা", "deposit", "installment", "কিস্তি", "পরিশোধ", "repayment", "ফি", "fee"];
-    const cashOutKeywords = ["বিতরণ", "disbursement", "উত্তোলন", "withdrawal", "খরচ", "expense"];
-    
-    if (cashInKeywords.some((k) => text.toLowerCase().includes(k))) {
-      setDirection("cash_in");
-      if (text.toLowerCase().includes("কিস্তি") || text.toLowerCase().includes("installment") || text.toLowerCase().includes("পরিশোধ")) {
-        setTxType("loan_repayment");
-      } else if (text.toLowerCase().includes("জমা") || text.toLowerCase().includes("deposit")) {
-        setTxType("savings_deposit");
-      }
-    } else if (cashOutKeywords.some((k) => text.toLowerCase().includes(k))) {
-      setDirection("cash_out");
-    }
-
     setNotes(text);
   };
 
   const handleSubmit = () => {
+    // Rate limit: prevent duplicate within 3 seconds
+    const now = Date.now();
+    if (now - lastSubmitTime < 3000) {
+      toast.error(bn ? "অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন" : "Please wait before submitting again");
+      return;
+    }
+
     if (!txType || !amount || Number(amount) <= 0) {
       toast.error(bn ? "ধরন ও পরিমাণ আবশ্যক" : "Type and amount required");
       return;
     }
+
+    // Account validation: block submit if account required but missing
+    if (needsAccount && !accountId) {
+      toast.error(bn ? "অ্যাকাউন্ট নির্বাচন আবশ্যক" : "Account selection required");
+      return;
+    }
+
+    lastSubmitTime = now;
+
+    const totalAmount = Number(amount) + (Number(lateFee) || 0);
+
     submitMut.mutate(
       {
         transaction_type: txType as FinTransactionType,
-        amount: Number(amount),
+        amount: totalAmount,
         member_id: memberId || undefined,
         account_id: accountId || undefined,
-        notes: notes || undefined,
+        notes: lateFee ? `${notes || ""} [Late Fee: ৳${lateFee}]`.trim() : notes || undefined,
       },
       {
         onSuccess: () => {
@@ -186,6 +242,7 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
           setMemberId("");
           setAccountId("");
           setAmount("");
+          setLateFee("");
           setNotes("");
           setVoiceText("");
         },
@@ -203,7 +260,7 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
               size="sm"
               variant={listening ? "destructive" : "outline"}
               className="ml-auto h-8 text-xs gap-1.5"
-              onClick={listening ? () => setListening(false) : startVoice}
+              onClick={listening ? stopVoice : startVoice}
             >
               {listening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
               {listening ? (bn ? "বন্ধ করুন" : "Stop") : (bn ? "ভয়েস ইনপুট" : "Voice Input")}
@@ -284,7 +341,7 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
           {/* Step 3: Member */}
           {txType && (
             <div>
-              <Label className="text-xs">{bn ? "সদস্য" : "Member"}</Label>
+              <Label className="text-xs">{bn ? "সদস্য" : "Member"} {needsAccount ? "*" : ""}</Label>
               <Select value={memberId} onValueChange={setMemberId}>
                 <SelectTrigger className="text-xs">
                   <SelectValue placeholder={bn ? "সদস্য নির্বাচন" : "Select member"} />
@@ -327,17 +384,39 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
             </div>
           )}
 
-          {/* Step 5: Amount */}
+          {/* Step 5: Amount + Late Fee */}
           {txType && (
-            <div>
-              <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
-                className="text-base font-bold"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  className="text-base font-bold"
+                />
+              </div>
+              {(txType === "loan_repayment") && (
+                <div>
+                  <Label className="text-xs">{bn ? "জরিমানা ৳" : "Late Fee ৳"}</Label>
+                  <Input
+                    type="number"
+                    value={lateFee}
+                    onChange={(e) => setLateFee(e.target.value)}
+                    placeholder="0"
+                    className="text-sm"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Total display when late fee present */}
+          {txType && lateFee && Number(lateFee) > 0 && (
+            <div className="flex justify-between items-center p-2 rounded-lg bg-primary/5 text-xs">
+              <span className="text-muted-foreground">{bn ? "মোট" : "Total"}</span>
+              <span className="font-bold text-primary">৳{(Number(amount || 0) + Number(lateFee)).toLocaleString()}</span>
             </div>
           )}
 

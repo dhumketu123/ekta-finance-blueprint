@@ -1692,6 +1692,7 @@ export type Database = {
         Args: { _txn_group_id: string }
         Returns: boolean
       }
+      verify_event_chain_integrity: { Args: never; Returns: Json }
     }
     Enums: {
       account_code:
