@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRef, useCallback } from "react";
 import { toast } from "sonner";
 
 export interface Commitment {
@@ -17,26 +18,91 @@ export interface Commitment {
   clients?: { name_bn: string; name_en: string; phone: string | null };
 }
 
-// ─── Analytics Helper ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Batched Telemetry Engine — zero UX impact
+// ═══════════════════════════════════════════════════════════
+interface AnalyticsEvent {
+  user_id: string;
+  commitment_id: string | null;
+  action_type: string;
+  action_metadata: Record<string, unknown>;
+  device_info: string | null;
+}
+
+const BATCH_SIZE = 5;
+const FLUSH_INTERVAL_MS = 10_000; // 10 seconds
+let analyticsQueue: AnalyticsEvent[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let cachedUserId: string | null = null;
+
+const flushAnalyticsQueue = async () => {
+  if (analyticsQueue.length === 0) return;
+  const batch = analyticsQueue.splice(0);
+  try {
+    await (supabase.from("commitment_analytics") as any).insert(batch);
+  } catch {
+    // Silent fail — telemetry never blocks UX
+  }
+};
+
+const scheduleFlush = () => {
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    // Use requestIdleCallback for zero main-thread impact
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(() => flushAnalyticsQueue());
+    } else {
+      setTimeout(flushAnalyticsQueue, 0);
+    }
+  }, FLUSH_INTERVAL_MS);
+};
+
 const logCommitmentAnalytics = async (
   actionType: string,
   commitmentId?: string,
   metadata?: Record<string, unknown>
 ) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await (supabase.from("commitment_analytics") as any).insert({
-      user_id: user.id,
+    if (!cachedUserId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      cachedUserId = user.id;
+    }
+
+    analyticsQueue.push({
+      user_id: cachedUserId,
       commitment_id: commitmentId || null,
       action_type: actionType,
       action_metadata: metadata || {},
       device_info: navigator.userAgent?.slice(0, 200) || null,
     });
+
+    // Flush immediately when batch is full, otherwise schedule
+    if (analyticsQueue.length >= BATCH_SIZE) {
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(() => flushAnalyticsQueue());
+      } else {
+        setTimeout(flushAnalyticsQueue, 0);
+      }
+    } else {
+      scheduleFlush();
+    }
   } catch {
-    // Silent fail — telemetry should never block UX
+    // Silent fail
   }
 };
+
+// Flush remaining events on page unload
+if (typeof window !== "undefined") {
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushAnalyticsQueue();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Hooks
+// ═══════════════════════════════════════════════════════════
 
 export const useCommitments = (filters?: { status?: string; officer_id?: string }) =>
   useQuery({
@@ -70,7 +136,6 @@ export const useFulfillCommitment = () => {
         .select()
         .single();
       if (error) throw error;
-      // ─── Telemetry: swipe fulfill ──────────────────
       logCommitmentAnalytics("swipe_fulfill", commitmentId);
       return data;
     },
@@ -78,7 +143,13 @@ export const useFulfillCommitment = () => {
       qc.invalidateQueries({ queryKey: ["commitments"] });
       toast.success("প্রতিশ্রুতি পূরণ হয়েছে ✅");
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error, commitmentId: string) => {
+      // ─── Failure Telemetry ─────────────────────────
+      logCommitmentAnalytics("swipe_fulfill_failed", commitmentId, {
+        error_message: err.message?.slice(0, 300),
+      });
+      toast.error(err.message);
+    },
   });
 };
 
@@ -96,7 +167,6 @@ export const useRescheduleCommitmentSwipe = () => {
       );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      // ─── Telemetry: reschedule confirm ─────────────
       logCommitmentAnalytics("reschedule_confirm", payload.commitment_id, {
         new_date: payload.reschedule_date,
         reason_length: payload.reschedule_reason.length,
@@ -107,7 +177,14 @@ export const useRescheduleCommitmentSwipe = () => {
       qc.invalidateQueries({ queryKey: ["commitments"] });
       toast.success("সফলভাবে রিশিডিউল হয়েছে ✅");
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error, payload) => {
+      // ─── Failure Telemetry ─────────────────────────
+      logCommitmentAnalytics("reschedule_failed", payload.commitment_id, {
+        error_message: err.message?.slice(0, 300),
+        attempted_date: payload.reschedule_date,
+      });
+      toast.error(err.message);
+    },
   });
 };
 
@@ -119,6 +196,17 @@ export const useLogAIChipSelect = () => {
       chip_date: chipDate,
     });
   };
+};
+
+// ─── Swipe Debounce Hook (500ms) ─────────────────────────
+export const useSwipeDebounce = (delayMs = 500) => {
+  const lastSwipeRef = useRef(0);
+  return useCallback(() => {
+    const now = Date.now();
+    if (now - lastSwipeRef.current < delayMs) return false;
+    lastSwipeRef.current = now;
+    return true;
+  }, [delayMs]);
 };
 
 export const useFeatureFlag = (flagName: string) =>
