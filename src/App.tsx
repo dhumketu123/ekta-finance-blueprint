@@ -37,6 +37,7 @@ import MonitoringDashboard from "./pages/MonitoringDashboard";
 import OwnerProfitDistribution from "./pages/OwnerProfitDistribution";
 import QuantumLedger from "./pages/QuantumLedger";
 import Commitments from "./pages/Commitments";
+import CommitmentAnalytics from "./pages/CommitmentAnalytics";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/wallet" element={<ProtectedRoute allowedRoles={["investor"]}><InvestorWallet /></ProtectedRoute>} />
               <Route path="/quantum-ledger" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><QuantumLedger /></ProtectedRoute>} />
               <Route path="/commitments" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><Commitments /></ProtectedRoute>} />
+              <Route path="/commitment-analytics" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><CommitmentAnalytics /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
