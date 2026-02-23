@@ -376,11 +376,13 @@ const InvestorDetail = () => {
       {hasDb && (
         <div className="flex flex-wrap gap-3">
           <Button
-            onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setPayDividendOpen(true); }}
+            onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setDividendPayAmount(String(totalPayable)); setDividendNotes(""); setPayDividendOpen(true); }}
             className="gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-md"
           >
             <Banknote className="w-4 h-4" />
             {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
+            {dueDividend > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold">Due</span>}
+          </Button>
           </Button>
           <Button
             onClick={() => setAddCapitalOpen(true)}
