@@ -18,9 +18,10 @@ interface Props {
   onClose: () => void;
   prefillClientId?: string;
   prefillSavingsId?: string;
+  prefillType?: "savings_deposit" | "savings_withdrawal";
 }
 
-export default function SavingsTransactionModal({ open, onClose, prefillClientId, prefillSavingsId }: Props) {
+export default function SavingsTransactionModal({ open, onClose, prefillClientId, prefillSavingsId, prefillType }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const { data: clients, isLoading: clientsLoading } = useClients();
@@ -28,7 +29,7 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
 
   const [clientId, setClientId] = useState(prefillClientId || "");
   const [savingsId, setSavingsId] = useState(prefillSavingsId || "");
-  const [txType, setTxType] = useState<"savings_deposit" | "savings_withdrawal">("savings_deposit");
+  const [txType, setTxType] = useState<"savings_deposit" | "savings_withdrawal">(prefillType || "savings_deposit");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -95,7 +96,7 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
   const resetAndClose = () => {
     setClientId(prefillClientId || "");
     setSavingsId(prefillSavingsId || "");
-    setTxType("savings_deposit");
+    setTxType(prefillType || "savings_deposit");
     setAmount("");
     setNotes("");
     setErrors({});
