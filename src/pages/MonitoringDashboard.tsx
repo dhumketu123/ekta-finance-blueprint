@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AnomalyIntelligencePanel from "@/components/analytics/AnomalyIntelligencePanel";
+import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
 
 const useNotificationStats = () =>
   useQuery({
@@ -149,6 +150,10 @@ const MonitoringDashboard = () => {
             <ShieldAlert className="w-3.5 h-3.5" />
             {lang === "bn" ? "অ্যানোমালি" : "Anomaly Intel"}
           </TabsTrigger>
+          <TabsTrigger value="integrity" className="gap-1.5">
+            <Activity className="w-3.5 h-3.5" />
+            {lang === "bn" ? "ইন্টেগ্রিটি" : "Ledger Integrity"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -280,6 +285,10 @@ const MonitoringDashboard = () => {
 
         <TabsContent value="anomaly">
           <AnomalyIntelligencePanel />
+        </TabsContent>
+
+        <TabsContent value="integrity">
+          <LedgerIntegrityPanel />
         </TabsContent>
       </Tabs>
     </AppLayout>
