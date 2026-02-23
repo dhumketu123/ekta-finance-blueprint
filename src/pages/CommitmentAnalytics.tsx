@@ -10,6 +10,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Activity, AlertTriangle, CheckCircle, TrendingUp, Shield, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import PredictiveRiskWidget from "@/components/analytics/PredictiveRiskWidget";
+import BurnoutDetectionWidget from "@/components/analytics/BurnoutDetectionWidget";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -262,6 +264,10 @@ const CommitmentAnalytics = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Phase 2.8: Predictive Intelligence */}
+      <BurnoutDetectionWidget />
+      <PredictiveRiskWidget />
 
       {/* Latest Report Summary */}
       {latestReport && (
