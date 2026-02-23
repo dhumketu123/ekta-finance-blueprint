@@ -11,6 +11,7 @@ import {
   useCommitments,
   useFulfillCommitment,
   useRescheduleCommitmentSwipe,
+  useSwipeDebounce,
   useFeatureFlag,
   type Commitment,
 } from "@/hooks/useCommitments";
@@ -35,18 +36,22 @@ const Commitments = () => {
 
   const fulfillMutation = useFulfillCommitment();
   const rescheduleMutation = useRescheduleCommitmentSwipe();
+  const canSwipe = useSwipeDebounce(500);
 
   const pending = commitments?.filter((c) => c.status === "pending") ?? [];
   const fulfilled = commitments?.filter((c) => c.status === "fulfilled") ?? [];
   const rescheduled = commitments?.filter((c) => c.status === "rescheduled") ?? [];
 
   const handleFulfill = (id: string) => {
+    if (!canSwipe()) return; // 500ms debounce
     fulfillMutation.mutate(id);
   };
 
   const handleRescheduleOpen = (commitment: Commitment) => {
+    if (!canSwipe()) return; // 500ms debounce
     setRescheduleTarget(commitment);
   };
+
 
   const handleRescheduleConfirm = (commitmentId: string, date: string, reason: string) => {
     rescheduleMutation.mutate(
