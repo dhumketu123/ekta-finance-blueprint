@@ -586,6 +586,36 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_reports: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          period_end: string
+          period_start: string
+          report_data: Json
+          report_type: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          report_data?: Json
+          report_type?: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          report_data?: Json
+          report_type?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1211,6 +1241,51 @@ export type Database = {
           sent_at?: string | null
           template_bn?: string
           template_en?: string
+        }
+        Relationships: []
+      }
+      officer_metrics: {
+        Row: {
+          alert_frequency: number
+          calculated_at: string
+          created_at: string
+          failure_rate: number
+          fulfilled_commitments: number
+          id: string
+          officer_id: string
+          reschedule_rate: number
+          risk_level: string
+          risk_score: number
+          total_commitments: number
+          updated_at: string
+        }
+        Insert: {
+          alert_frequency?: number
+          calculated_at?: string
+          created_at?: string
+          failure_rate?: number
+          fulfilled_commitments?: number
+          id?: string
+          officer_id: string
+          reschedule_rate?: number
+          risk_level?: string
+          risk_score?: number
+          total_commitments?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_frequency?: number
+          calculated_at?: string
+          created_at?: string
+          failure_rate?: number
+          fulfilled_commitments?: number
+          id?: string
+          officer_id?: string
+          reschedule_rate?: number
+          risk_level?: string
+          risk_score?: number
+          total_commitments?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1887,6 +1962,10 @@ export type Database = {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
       }
+      calculate_officer_risk_score: {
+        Args: { _officer_id?: string }
+        Returns: Json
+      }
       calculate_owner_profit: {
         Args: { _created_by?: string; _period_month: string }
         Returns: Json
@@ -1932,6 +2011,7 @@ export type Database = {
         Returns: undefined
       }
       generate_receipt_number: { Args: never; Returns: string }
+      generate_weekly_intelligence_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
       has_role: {
         Args: {
