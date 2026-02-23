@@ -842,6 +842,7 @@ export type Database = {
           capital: number
           created_at: string
           deleted_at: string | null
+          due_dividend: number
           id: string
           investment_model: Database["public"]["Enums"]["investment_model"]
           investor_id: string | null
@@ -871,6 +872,7 @@ export type Database = {
           capital?: number
           created_at?: string
           deleted_at?: string | null
+          due_dividend?: number
           id?: string
           investment_model?: Database["public"]["Enums"]["investment_model"]
           investor_id?: string | null
@@ -900,6 +902,7 @@ export type Database = {
           capital?: number
           created_at?: string
           deleted_at?: string | null
+          due_dividend?: number
           id?: string
           investment_model?: Database["public"]["Enums"]["investment_model"]
           investor_id?: string | null
