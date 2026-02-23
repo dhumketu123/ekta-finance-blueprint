@@ -6,13 +6,100 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
-import { Clock, Shield, Zap, Link2, RefreshCw, ShieldCheck, Loader2 } from "lucide-react";
+import { Clock, Shield, Zap, Link2, RefreshCw, ShieldCheck, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdvanceBufferEntries, useCreditScores, useCalculateCreditScore, useEventSourcing } from "@/hooks/useAdvanceBuffer";
 import { useClients } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+// ── Integrity Result Display ──
+const IntegrityResult = ({ data, bn }: { data: { integrity: string; total_events?: number; broken_links?: number; total_entries?: number }; bn: boolean }) => (
+  <div className={`p-4 rounded-xl border-2 ${
+    data.integrity === "valid" ? "bg-success/10 border-success/30" : "bg-destructive/10 border-destructive/30"
+  }`}>
+    <div className="grid grid-cols-2 gap-3 text-xs">
+      <div><span className="text-muted-foreground">{bn ? "মোট এন্ট্রি" : "Total Entries"}:</span> <span className="font-bold">{data.total_events ?? data.total_entries ?? 0}</span></div>
+      <div><span className="text-muted-foreground">{bn ? "ভাঙা লিংক" : "Broken Links"}:</span> <span className="font-bold">{data.broken_links ?? 0}</span></div>
+      <div className="col-span-2 flex items-center gap-2">
+        {data.integrity === "valid"
+          ? <><CheckCircle2 className="w-4 h-4 text-success" /><span className="text-success font-semibold text-xs">{bn ? "অখণ্ড — কোনো পরিবর্তন সনাক্ত হয়নি" : "Intact — No tampering detected"}</span></>
+          : <><AlertTriangle className="w-4 h-4 text-destructive" /><span className="text-destructive font-semibold text-xs">{bn ? "⚠️ চেইন ক্ষতিগ্রস্ত!" : "⚠️ Chain compromised!"}</span></>
+        }
+      </div>
+    </div>
+  </div>
+);
+
+// ── Ledger Entries Integrity Panel ──
+const LedgerIntegrityPanel = ({ bn }: { bn: boolean }) => {
+  const verifyLedger = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("verify_all_branches_integrity" as any);
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (data: any) => {
+      if (data?.overall_integrity === "valid") {
+        toast.success(bn ? "✅ সকল শাখার লেজার অখণ্ড" : "✅ All branch ledgers verified intact");
+      } else {
+        toast.error(bn ? "⚠️ লেজার অখণ্ডতায় সমস্যা পাওয়া গেছে" : "⚠️ Ledger integrity issues detected");
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const branchResults = (verifyLedger.data as any)?.branches ?? [];
+
+  return (
+    <div className="card-elevated p-6 space-y-4">
+      <div className="flex items-center gap-3">
+        <ShieldCheck className="w-5 h-5 text-primary" />
+        <div>
+          <h3 className="text-sm font-bold">{bn ? "লেজার হ্যাশ চেইন যাচাই" : "Ledger Hash Chain Verification"}</h3>
+          <p className="text-[10px] text-muted-foreground">{bn ? "প্রতিটি শাখার ডাবল-এন্ট্রি লেজার চেইন পরীক্ষা" : "Verify double-entry ledger chain per branch"}</p>
+        </div>
+      </div>
+      <Button
+        onClick={() => verifyLedger.mutate()}
+        disabled={verifyLedger.isPending}
+        className="gap-1.5 text-xs"
+      >
+        {verifyLedger.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+        {bn ? "সকল শাখা যাচাই করুন" : "Verify All Branches"}
+      </Button>
+
+      {verifyLedger.data && (
+        <div className="space-y-3">
+          <IntegrityResult
+            data={{ integrity: (verifyLedger.data as any).overall_integrity, total_entries: branchResults.reduce((s: number, b: any) => s + (b.total_entries ?? 0), 0), broken_links: branchResults.reduce((s: number, b: any) => s + (b.broken_links ?? 0), 0) }}
+            bn={bn}
+          />
+          {branchResults.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{bn ? "শাখা বিবরণ" : "Branch Details"}</p>
+              {branchResults.map((b: any, i: number) => (
+                <div key={i} className={`flex items-center justify-between p-3 rounded-lg border text-xs ${
+                  b.integrity === "valid" ? "bg-success/5 border-success/20" : "bg-destructive/5 border-destructive/20"
+                }`}>
+                  <span className="font-medium">{b.branch_name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">{b.total_entries} {bn ? "এন্ট্রি" : "entries"}</span>
+                    {b.integrity === "valid"
+                      ? <CheckCircle2 className="w-4 h-4 text-success" />
+                      : <AlertTriangle className="w-4 h-4 text-destructive" />
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const QuantumLedger = () => {
   const { lang } = useLanguage();
@@ -284,12 +371,13 @@ const QuantumLedger = () => {
         </TabsContent>
 
         {/* ── Integrity Verification ── */}
-        <TabsContent value="integrity" className="mt-0">
+        <TabsContent value="integrity" className="mt-0 space-y-4">
+          {/* Event Sourcing Chain */}
           <div className="card-elevated p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-primary" />
+              <Link2 className="w-5 h-5 text-primary" />
               <div>
-                <h3 className="text-sm font-bold">{bn ? "ক্রিপ্টোগ্রাফিক চেইন যাচাই" : "Cryptographic Chain Verification"}</h3>
+                <h3 className="text-sm font-bold">{bn ? "ইভেন্ট সোর্সিং চেইন যাচাই" : "Event Sourcing Chain Verification"}</h3>
                 <p className="text-[10px] text-muted-foreground">{bn ? "ইভেন্ট সোর্সিং হ্যাশ চেইন অখণ্ডতা পরীক্ষা" : "Verify event sourcing hash chain integrity"}</p>
               </div>
             </div>
@@ -297,30 +385,18 @@ const QuantumLedger = () => {
               onClick={() => verifyIntegrity.mutate()}
               disabled={verifyIntegrity.isPending}
               className="gap-1.5 text-xs"
+              variant="outline"
             >
               {verifyIntegrity.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-              {bn ? "অখণ্ডতা যাচাই করুন" : "Verify Integrity"}
+              {bn ? "ইভেন্ট চেইন যাচাই" : "Verify Event Chain"}
             </Button>
             {verifyIntegrity.data && (
-              <div className={`p-4 rounded-xl border-2 ${
-                (verifyIntegrity.data as any).integrity === "valid"
-                  ? "bg-success/10 border-success/30"
-                  : "bg-destructive/10 border-destructive/30"
-              }`}>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div><span className="text-muted-foreground">{bn ? "মোট ইভেন্ট" : "Total Events"}:</span> <span className="font-bold">{(verifyIntegrity.data as any).total_events}</span></div>
-                  <div><span className="text-muted-foreground">{bn ? "ভাঙা লিংক" : "Broken Links"}:</span> <span className="font-bold">{(verifyIntegrity.data as any).broken_links}</span></div>
-                  <div className="col-span-2">
-                    <Badge variant="outline" className={`text-[10px] ${
-                      (verifyIntegrity.data as any).integrity === "valid" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                    }`}>
-                      {(verifyIntegrity.data as any).integrity === "valid" ? (bn ? "✅ অখণ্ড" : "✅ Valid") : (bn ? "⚠️ ক্ষতিগ্রস্ত" : "⚠️ Compromised")}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <IntegrityResult data={verifyIntegrity.data as any} bn={bn} />
             )}
           </div>
+
+          {/* Ledger Entries Hash Chain */}
+          <LedgerIntegrityPanel bn={bn} />
         </TabsContent>
       </Tabs>
     </AppLayout>
