@@ -123,6 +123,8 @@ const InvestorDetail = () => {
   const profitPct = Number(hasDb ? inv.monthly_profit_percent : inv.monthlyProfitPercent);
   const reinvest = inv.reinvest;
   const monthlyProfit = Math.round(capital * profitPct / 100);
+  const dueDividend = Number(hasDb ? inv.due_dividend ?? 0 : 0);
+  const totalPayable = monthlyProfit + dueDividend;
   const lastProfitDate = hasDb ? inv.last_profit_date : null;
   const maturityDate = hasDb ? inv.maturity_date : null;
 
