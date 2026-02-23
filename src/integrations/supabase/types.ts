@@ -241,6 +241,59 @@ export type Database = {
         }
         Relationships: []
       }
+      client_risk: {
+        Row: {
+          client_id: string
+          created_at: string
+          flagged_at: string
+          id: string
+          notes: string | null
+          overdue_frequency: number
+          probability_score: number
+          reschedule_count_30d: number
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_level: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          flagged_at?: string
+          id?: string
+          notes?: string | null
+          overdue_frequency?: number
+          probability_score?: number
+          reschedule_count_30d?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          flagged_at?: string
+          id?: string
+          notes?: string | null
+          overdue_frequency?: number
+          probability_score?: number
+          reschedule_count_30d?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_risk_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           area: string | null
@@ -396,6 +449,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commitments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commitment_analytics_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "view_reschedule_prediction_input"
+            referencedColumns: ["commitment_id"]
           },
         ]
       }
@@ -1247,6 +1307,8 @@ export type Database = {
       officer_metrics: {
         Row: {
           alert_frequency: number
+          burnout_flagged_at: string | null
+          burnout_risk: boolean
           calculated_at: string
           created_at: string
           failure_rate: number
@@ -1258,9 +1320,12 @@ export type Database = {
           risk_score: number
           total_commitments: number
           updated_at: string
+          weekly_commitment_count: number
         }
         Insert: {
           alert_frequency?: number
+          burnout_flagged_at?: string | null
+          burnout_risk?: boolean
           calculated_at?: string
           created_at?: string
           failure_rate?: number
@@ -1272,9 +1337,12 @@ export type Database = {
           risk_score?: number
           total_commitments?: number
           updated_at?: string
+          weekly_commitment_count?: number
         }
         Update: {
           alert_frequency?: number
+          burnout_flagged_at?: string | null
+          burnout_risk?: boolean
           calculated_at?: string
           created_at?: string
           failure_rate?: number
@@ -1286,6 +1354,7 @@ export type Database = {
           risk_score?: number
           total_commitments?: number
           updated_at?: string
+          weekly_commitment_count?: number
         }
         Relationships: []
       }
@@ -1918,6 +1987,28 @@ export type Database = {
         }
         Relationships: []
       }
+      view_reschedule_prediction_input: {
+        Row: {
+          client_id: string | null
+          client_reschedule_count: number | null
+          client_unfulfilled_count: number | null
+          commitment_date: string | null
+          commitment_id: string | null
+          officer_id: string | null
+          officer_reschedule_pct: number | null
+          probability_score: number | null
+          weekday_reschedule_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_reschedule_rate: {
         Row: {
           fulfill_count: number | null
@@ -1985,6 +2076,11 @@ export type Database = {
         }
         Returns: Json
       }
+      detect_high_risk_clients: { Args: never; Returns: Json }
+      detect_officer_burnout: {
+        Args: { _failure_threshold?: number; _weekly_threshold?: number }
+        Returns: Json
+      }
       disburse_loan: {
         Args: {
           _assigned_officer?: string
@@ -2010,6 +2106,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_preventive_recommendations: { Args: never; Returns: Json }
       generate_receipt_number: { Args: never; Returns: string }
       generate_weekly_intelligence_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
