@@ -361,6 +361,50 @@ export type Database = {
           },
         ]
       }
+      commitments: {
+        Row: {
+          audit_hash_signature: string | null
+          client_id: string
+          commitment_date: string
+          created_at: string
+          id: string
+          officer_id: string
+          reschedule_reason: string | null
+          status: Database["public"]["Enums"]["commitment_status"]
+          updated_at: string
+        }
+        Insert: {
+          audit_hash_signature?: string | null
+          client_id: string
+          commitment_date: string
+          created_at?: string
+          id?: string
+          officer_id: string
+          reschedule_reason?: string | null
+          status?: Database["public"]["Enums"]["commitment_status"]
+          updated_at?: string
+        }
+        Update: {
+          audit_hash_signature?: string | null
+          client_id?: string
+          commitment_date?: string
+          created_at?: string
+          id?: string
+          officer_id?: string
+          reschedule_reason?: string | null
+          status?: Database["public"]["Enums"]["commitment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_scores: {
         Row: {
           avg_days_late: number | null
@@ -1840,6 +1884,7 @@ export type Database = {
       app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
+      commitment_status: "pending" | "fulfilled" | "rescheduled"
       deposit_frequency: "daily" | "weekly" | "monthly"
       entry_type: "debit" | "credit"
       fin_transaction_type:
@@ -2021,6 +2066,7 @@ export const Constants = {
       app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
+      commitment_status: ["pending", "fulfilled", "rescheduled"],
       deposit_frequency: ["daily", "weekly", "monthly"],
       entry_type: ["debit", "credit"],
       fin_transaction_type: [
