@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, Landmark, UserCog, Wallet, PiggyBank,
-  Bell, Settings, Shield, TrendingUp, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown, Atom, Handshake, Activity,
+  Bell, Settings, Shield, TrendingUp, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown, Atom, Handshake, Activity, Flame,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
@@ -30,6 +30,7 @@ const navItems: NavItem[] = [
   { path: "/approvals", icon: ClipboardCheck, labelKey: "nav.approvals", roles: ["admin", "owner", "treasurer", "field_officer"] },
   { path: "/reports", icon: BarChart3, labelKey: "nav.reports", roles: ["admin", "owner", "treasurer"] },
   { path: "/risk-dashboard", icon: ShieldAlert, labelKey: "nav.riskDashboard", roles: ["admin", "owner", "treasurer"] },
+  { path: "/risk-heatmap", icon: Flame, labelKey: "nav.riskHeatmap", roles: ["admin", "owner", "field_officer", "treasurer"] },
   { path: "/owner-profit", icon: Crown, labelKey: "nav.ownerProfit", roles: ["admin", "owner"] },
   { path: "/quantum-ledger", icon: Atom, labelKey: "nav.quantumLedger", roles: ["admin", "owner", "treasurer"] },
   { path: "/notifications", icon: Bell, labelKey: "nav.notifications", roles: ["admin", "owner"] },

@@ -23,6 +23,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.reports": { bn: "রিপোর্ট", en: "Reports" },
   "nav.notifications": { bn: "বিজ্ঞপ্তি", en: "Notifications" },
   "nav.riskDashboard": { bn: "ঝুঁকি বিশ্লেষণ", en: "Risk Dashboard" },
+  "nav.riskHeatmap": { bn: "ঝুঁকি হিটম্যাপ", en: "Risk Heatmap" },
   "nav.monitoring": { bn: "মনিটরিং", en: "Monitoring" },
   "nav.ownerProfit": { bn: "মালিক মুনাফা", en: "Owner Profit" },
   "nav.quantumLedger": { bn: "কোয়ান্টাম লেজার", en: "Quantum Ledger" },
