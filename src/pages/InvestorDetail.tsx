@@ -369,7 +369,7 @@ const InvestorDetail = () => {
             title={bn ? "বকেয়া লভ্যাংশ" : "Due Dividend"}
             value={`৳${dueDividend.toLocaleString()}`}
             icon={<Calendar className="w-5 h-5" />}
-            variant="danger"
+            variant="destructive"
           />
         )}
         <MetricCard
