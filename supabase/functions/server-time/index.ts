@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Server Time Authority — anon-safe, no service_role key
+// Returns server timestamp as single source of truth for all financial operations
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,16 +12,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Direct server time — no DB needed, no service_role key exposed
+    const now = new Date();
+    const dhaka = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).formatToParts(now);
 
-    const { data, error } = await supabase.rpc("get_server_time");
-    if (error) throw error;
+    const parts: Record<string, string> = {};
+    for (const p of dhaka) {
+      if (p.type !== "literal") parts[p.type] = p.value;
+    }
 
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const serverTime = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+06:00`;
+
+    return new Response(
+      JSON.stringify({
+        server_time: serverTime,
+        timezone: "Asia/Dhaka",
+        utc: now.toISOString(),
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
