@@ -514,6 +514,16 @@ Deno.serve(async (req) => {
       results.risk_notifications = riskNotifCount;
     }
 
+    // ═══ DAILY FINANCIAL SUMMARY AGGREGATION ═══
+    const { data: summaryResult, error: summaryErr } = await supabase.rpc("populate_daily_summary", {
+      _target_date: today,
+    });
+    if (summaryErr) {
+      results.daily_summary_error = summaryErr.message;
+    } else {
+      results.daily_summary = summaryResult;
+    }
+
     // ═══ Summary & Audit ═══
     const totalNotifCount = (results.upcoming_reminders as number ?? 0)
       + (results.due_today_notifications as number ?? 0)

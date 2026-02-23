@@ -161,9 +161,13 @@ export type Database = {
           branch_id: string | null
           created_at: string
           details: Json | null
+          device_id: string | null
           entity_id: string | null
           entity_type: string
           id: string
+          ip_address: string | null
+          new_value: Json | null
+          previous_value: Json | null
           user_id: string | null
         }
         Insert: {
@@ -171,9 +175,13 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           details?: Json | null
+          device_id?: string | null
           entity_id?: string | null
           entity_type: string
           id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          previous_value?: Json | null
           user_id?: string | null
         }
         Update: {
@@ -181,9 +189,13 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           details?: Json | null
+          device_id?: string | null
           entity_id?: string | null
           entity_type?: string
           id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          previous_value?: Json | null
           user_id?: string | null
         }
         Relationships: [
@@ -405,6 +417,48 @@ export type Database = {
           },
         ]
       }
+      daily_financial_summary: {
+        Row: {
+          created_at: string
+          id: string
+          summary_date: string
+          total_collection: number
+          total_disbursement: number
+          total_interest_collected: number
+          total_penalty: number
+          total_savings_deposit: number
+          total_savings_withdrawal: number
+          total_transactions: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          summary_date: string
+          total_collection?: number
+          total_disbursement?: number
+          total_interest_collected?: number
+          total_penalty?: number
+          total_savings_deposit?: number
+          total_savings_withdrawal?: number
+          total_transactions?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          summary_date?: string
+          total_collection?: number
+          total_disbursement?: number
+          total_interest_collected?: number
+          total_penalty?: number
+          total_savings_deposit?: number
+          total_savings_withdrawal?: number
+          total_transactions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_sourcing: {
         Row: {
           action: string
@@ -444,6 +498,36 @@ export type Database = {
           performed_by?: string | null
           snapshot_after?: Json | null
           snapshot_before?: Json | null
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_for_role: string
+          feature_name: string
+          id: string
+          is_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_for_role?: string
+          feature_name: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_for_role?: string
+          feature_name?: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -595,8 +679,11 @@ export type Database = {
           branch_id: string
           created_at: string
           created_by: string
+          device_id: string | null
           entry_type: Database["public"]["Enums"]["entry_type"]
+          hash_signature: string | null
           id: string
+          ip_address: string | null
           is_reversal: boolean
           narration: string | null
           original_group_id: string | null
@@ -611,8 +698,11 @@ export type Database = {
           branch_id: string
           created_at?: string
           created_by: string
+          device_id?: string | null
           entry_type: Database["public"]["Enums"]["entry_type"]
+          hash_signature?: string | null
           id?: string
+          ip_address?: string | null
           is_reversal?: boolean
           narration?: string | null
           original_group_id?: string | null
@@ -627,8 +717,11 @@ export type Database = {
           branch_id?: string
           created_at?: string
           created_by?: string
+          device_id?: string | null
           entry_type?: Database["public"]["Enums"]["entry_type"]
+          hash_signature?: string | null
           id?: string
+          ip_address?: string | null
           is_reversal?: boolean
           narration?: string | null
           original_group_id?: string | null
@@ -1531,6 +1624,36 @@ export type Database = {
           },
         ]
       }
+      user_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          id: string
+          is_active: boolean
+          last_login: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_login?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_login?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1645,6 +1768,7 @@ export type Database = {
         Returns: undefined
       }
       generate_receipt_number: { Args: never; Returns: string }
+      get_server_time: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1655,6 +1779,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_owner: { Args: never; Returns: boolean }
       is_assigned_to_client: { Args: { _client_id: string }; Returns: boolean }
+      is_feature_enabled: {
+        Args: { _feature_name: string; _user_role?: string }
+        Returns: boolean
+      }
       is_field_officer: { Args: never; Returns: boolean }
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
@@ -1663,6 +1791,7 @@ export type Database = {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
       }
+      populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
       process_investor_reinvest: {
