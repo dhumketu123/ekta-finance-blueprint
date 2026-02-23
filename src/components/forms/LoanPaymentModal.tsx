@@ -17,10 +17,20 @@ const schema = z.object({
   notes: z.string().trim().max(500).optional(),
 });
 
+interface LoanInfo {
+  id: string;
+  loan_id: string | null;
+  outstanding_principal: number;
+  outstanding_interest: number;
+  penalty_amount: number;
+  emi_amount: number;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
   prefilledLoanId?: string;
+  loanInfo?: LoanInfo;
 }
 
 interface PaymentResult {
@@ -33,8 +43,10 @@ interface PaymentResult {
   loan_closed: boolean;
 }
 
-export default function LoanPaymentModal({ open, onClose, prefilledLoanId }: Props) {
+export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanInfo }: Props) {
   const { lang } = useLanguage();
+  const bn = lang === "bn";
+  const suggestedAmount = loanInfo ? Number(loanInfo.penalty_amount) + Number(loanInfo.outstanding_interest) + Number(loanInfo.emi_amount) : 0;
   const [form, setForm] = useState({
     loan_id: prefilledLoanId ?? "",
     amount: "",
@@ -165,14 +177,47 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId }: Pro
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Loan context info */}
+            {loanInfo && (
+              <div className="p-3 rounded-xl bg-muted/50 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bn ? "ঋণ" : "Loan"}</span>
+                  <span className="font-mono font-semibold">{loanInfo.loan_id || loanInfo.id.slice(0, 8)}</span>
+                </div>
+                {Number(loanInfo.penalty_amount) > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>{bn ? "জরিমানা বকেয়া" : "Penalty Due"}</span>
+                    <span className="font-bold">৳{Number(loanInfo.penalty_amount).toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bn ? "বকেয়া সুদ" : "Interest Due"}</span>
+                  <span className="font-bold text-warning">৳{Number(loanInfo.outstanding_interest).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bn ? "বকেয়া আসল" : "Principal Due"}</span>
+                  <span className="font-bold">৳{Number(loanInfo.outstanding_principal).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
+                  <span className="font-semibold">{bn ? "কিস্তির পরিমাণ (EMI)" : "EMI Amount"}</span>
+                  <span className="font-bold text-primary">৳{Number(loanInfo.emi_amount).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+
             <div>
               <Label className="text-xs">Loan ID *</Label>
-              <Input value={form.loan_id} onChange={(e) => setForm({ ...form, loan_id: e.target.value })} className="text-sm font-mono" placeholder="UUID" />
+              <Input value={form.loan_id} onChange={(e) => setForm({ ...form, loan_id: e.target.value })} className="text-sm font-mono" placeholder="UUID" readOnly={!!prefilledLoanId} />
               {errors.loan_id && <p className="text-xs text-destructive mt-1">{errors.loan_id}</p>}
             </div>
             <div>
-              <Label className="text-xs">{lang === "bn" ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
-              <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="text-sm" />
+              <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
+              <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="text-sm" placeholder={suggestedAmount > 0 ? `${bn ? "প্রস্তাবিত" : "Suggested"}: ৳${suggestedAmount.toLocaleString()}` : ""} />
+              {suggestedAmount > 0 && !form.amount && (
+                <button type="button" className="text-[10px] text-primary mt-1 hover:underline" onClick={() => setForm({ ...form, amount: String(suggestedAmount) })}>
+                  {bn ? `৳${suggestedAmount.toLocaleString()} প্রস্তাবিত পূরণ করুন` : `Fill suggested ৳${suggestedAmount.toLocaleString()}`}
+                </button>
+              )}
               {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
             </div>
             <div>
