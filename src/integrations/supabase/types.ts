@@ -1592,6 +1592,42 @@ export type Database = {
           },
         ]
       }
+      system_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          is_resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -1784,6 +1820,48 @@ export type Database = {
           },
         ]
       }
+      view_ai_chip_usage: {
+        Row: {
+          chip_date: string | null
+          chip_label: string | null
+          unique_users: number | null
+          usage_count: number | null
+        }
+        Relationships: []
+      }
+      view_officer_performance_summary: {
+        Row: {
+          avg_reason_length: number | null
+          fulfillment_rate_pct: number | null
+          officer_id: string | null
+          officer_name_bn: string | null
+          officer_name_en: string | null
+          total_actions: number | null
+          total_failures: number | null
+          total_fulfilled: number | null
+          total_rescheduled: number | null
+        }
+        Relationships: []
+      }
+      view_reschedule_rate: {
+        Row: {
+          fulfill_count: number | null
+          report_date: string | null
+          reschedule_count: number | null
+          reschedule_rate_pct: number | null
+        }
+        Relationships: []
+      }
+      view_swipe_success_rate: {
+        Row: {
+          report_date: string | null
+          success_rate_pct: number | null
+          total_actions: number | null
+          total_failed: number | null
+          total_success: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       apply_loan_payment: {
@@ -1817,6 +1895,7 @@ export type Database = {
         Args: { _penalty_percent?: number }
         Returns: Json
       }
+      check_commitment_alert_thresholds: { Args: never; Returns: Json }
       create_ledger_entry: {
         Args: {
           _branch_id: string
