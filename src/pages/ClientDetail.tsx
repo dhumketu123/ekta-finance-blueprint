@@ -35,7 +35,7 @@ const ClientDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
   const bn = lang === "bn";
-  const { canEditClients, isAdmin } = usePermissions();
+  const { canEditClients, isAdmin, isTreasurer, isOwner } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
 
@@ -94,6 +94,17 @@ const ClientDetail = () => {
     },
     enabled: !!activeLoans?.length,
   });
+
+  // Mask sensitive fields
+  const maskPhone = (phone: string | null) => {
+    if (!phone || phone.length <= 5) return phone || "—";
+    return phone.slice(0, 3) + "••••" + phone.slice(-2);
+  };
+  const maskNid = (nid: string | null) => {
+    if (!nid || nid.length <= 4) return nid || "—";
+    return nid.slice(0, 2) + "••••••" + nid.slice(-2);
+  };
+  const canExport = isAdmin || isTreasurer || isOwner;
 
   // Savings summary
   const { data: savingsAccounts } = useQuery({
@@ -255,10 +266,12 @@ const ClientDetail = () => {
                 <Receipt className="w-3.5 h-3.5" />
                 {bn ? "ফি/অন্যান্য" : "Fee/Other"}
               </Button>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setExportOpen(true)}>
-                <Download className="w-3.5 h-3.5" />
-                {bn ? "এক্সপোর্ট" : "Export"}
-              </Button>
+              {canExport && (
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setExportOpen(true)}>
+                  <Download className="w-3.5 h-3.5" />
+                  {bn ? "এক্সপোর্ট" : "Export"}
+                </Button>
+              )}
             </div>
           ) : null
         }
