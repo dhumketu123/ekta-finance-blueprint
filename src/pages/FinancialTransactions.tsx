@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Search, Plus, CheckCircle2, XCircle, Clock, Receipt, MessageSquare,
   AlertTriangle, FileText, Share2, Copy, Calculator, ArrowDownCircle,
+  Filter,
 } from "lucide-react";
 import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
@@ -55,6 +56,7 @@ const FinancialTransactionsPage = () => {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [smartOpen, setSmartOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [receiptView, setReceiptView] = useState<FinancialTransaction | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
@@ -66,6 +68,9 @@ const FinancialTransactionsPage = () => {
   const rejectMut = useRejectFinancialTransaction();
 
   const filtered = (transactions ?? []).filter((tx) => {
+    // Type filter
+    if (typeFilter !== "all" && tx.transaction_type !== typeFilter) return false;
+    // Search
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -129,6 +134,76 @@ const FinancialTransactionsPage = () => {
             <TabsTrigger value="approved" className="text-xs">{lang === "bn" ? "অনুমোদিত" : "Approved"}</TabsTrigger>
             <TabsTrigger value="rejected" className="text-xs">{lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}</TabsTrigger>
           </TabsList>
+
+          {/* Premium Categorized Type Filter */}
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[220px] text-xs h-9 gap-1.5 border-primary/20 bg-card">
+              <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+              <SelectValue placeholder={lang === "bn" ? "ধরন ফিল্টার" : "Filter Type"} />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-popover">
+              <SelectItem value="all" className="text-xs font-semibold">
+                {lang === "bn" ? "📋 সব লেনদেন" : "📋 All Transactions"}
+              </SelectItem>
+              <SelectSeparator />
+
+              {/* Cash In Group */}
+              <SelectGroup>
+                <SelectLabel className="text-[10px] uppercase tracking-wider text-emerald-500 font-bold flex items-center gap-1.5 pl-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                  {lang === "bn" ? "ক্যাশ ইন (আদায়)" : "Cash In (Receipts)"}
+                </SelectLabel>
+                <SelectItem value="loan_repayment" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "কিস্তি আদায়" : "Installment Collection"}</span>
+                </SelectItem>
+                <SelectItem value="savings_deposit" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "সঞ্চয় জমা" : "Savings Deposit"}</span>
+                </SelectItem>
+                <SelectItem value="admission_fee" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "জরিমানা ও ফি আদায়" : "Penalty & Processing Fee"}</span>
+                </SelectItem>
+                <SelectItem value="share_capital_deposit" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "শেয়ার ও ঝুঁকি তহবিল" : "Share & Risk Fund"}</span>
+                </SelectItem>
+                <SelectItem value="insurance_premium" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "বীমা প্রিমিয়াম" : "Insurance Premium"}</span>
+                </SelectItem>
+              </SelectGroup>
+
+              <SelectSeparator />
+
+              {/* Cash Out Group */}
+              <SelectGroup>
+                <SelectLabel className="text-[10px] uppercase tracking-wider text-red-500 font-bold flex items-center gap-1.5 pl-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                  {lang === "bn" ? "ক্যাশ আউট (প্রদান)" : "Cash Out (Payments)"}
+                </SelectLabel>
+                <SelectItem value="loan_disbursement" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {lang === "bn" ? "ঋণ বিতরণ" : "Loan Disbursement"}</span>
+                </SelectItem>
+                <SelectItem value="savings_withdrawal" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {lang === "bn" ? "সঞ্চয় উত্তোলন" : "Savings Withdrawal"}</span>
+                </SelectItem>
+                <SelectItem value="insurance_claim_payout" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {lang === "bn" ? "মুনাফা/লভ্যাংশ প্রদান" : "Profit/Dividend Payout"}</span>
+                </SelectItem>
+              </SelectGroup>
+
+              <SelectSeparator />
+
+              {/* Internal & Adjustment Group */}
+              <SelectGroup>
+                <SelectLabel className="text-[10px] uppercase tracking-wider text-blue-500 font-bold flex items-center gap-1.5 pl-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                  {lang === "bn" ? "ইন্টারনাল ও সমন্বয়" : "Internal & Adjustment"}
+                </SelectLabel>
+                <SelectItem value="adjustment_entry" className="text-xs pl-6">
+                  <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> {lang === "bn" ? "অ্যাকাউন্ট সমন্বয়" : "Account Adjustment"}</span>
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
           <div className="relative max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)}
