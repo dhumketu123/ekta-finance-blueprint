@@ -1361,6 +1361,59 @@ export type Database = {
         }
         Relationships: []
       }
+      officer_risk_profile: {
+        Row: {
+          adjustment_frequency: number
+          created_at: string
+          fine_override_rate: number
+          id: string
+          late_collection_pct: number
+          late_collections: number
+          officer_id: string
+          period_month: string
+          risk_level: string
+          risk_score: number
+          total_collections: number
+          updated_at: string
+        }
+        Insert: {
+          adjustment_frequency?: number
+          created_at?: string
+          fine_override_rate?: number
+          id?: string
+          late_collection_pct?: number
+          late_collections?: number
+          officer_id: string
+          period_month: string
+          risk_level?: string
+          risk_score?: number
+          total_collections?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustment_frequency?: number
+          created_at?: string
+          fine_override_rate?: number
+          id?: string
+          late_collection_pct?: number
+          late_collections?: number
+          officer_id?: string
+          period_month?: string
+          risk_level?: string
+          risk_score?: number
+          total_collections?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "officer_risk_profile_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_profit_distributions: {
         Row: {
           created_at: string
@@ -1591,6 +1644,80 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_events: {
+        Row: {
+          branch_id: string | null
+          client_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          officer_id: string | null
+          reason: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_score: number
+        }
+        Insert: {
+          branch_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          officer_id?: string | null
+          reason?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number
+        }
+        Update: {
+          branch_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          officer_id?: string | null
+          reason?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_events_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_events_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_events_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2067,6 +2194,10 @@ export type Database = {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
         Returns: number
       }
+      calculate_monthly_officer_risk: {
+        Args: { p_month?: string }
+        Returns: Json
+      }
       calculate_officer_risk_score: {
         Args: { _officer_id?: string }
         Returns: Json
@@ -2124,6 +2255,8 @@ export type Database = {
       generate_preventive_recommendations: { Args: never; Returns: Json }
       generate_receipt_number: { Args: never; Returns: string }
       generate_weekly_intelligence_summary: { Args: never; Returns: Json }
+      get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
+      get_branch_risk_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
       has_role: {
         Args: {
@@ -2164,6 +2297,7 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      resolve_anomaly_alert: { Args: { p_event_id: string }; Returns: boolean }
       reverse_ledger_transaction: {
         Args: {
           _reason: string
