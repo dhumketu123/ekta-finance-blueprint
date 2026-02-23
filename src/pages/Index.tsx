@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import RecoveryMatrix from "@/components/RecoveryMatrix";
 import CashflowOracleWidget from "@/components/CashflowOracleWidget";
+import SmartCollectionAssistant from "@/components/SmartCollectionAssistant";
 import AppLayout from "@/components/AppLayout";
 import MetricCard from "@/components/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -202,6 +203,9 @@ const Dashboard = () => {
         <CashflowOracleWidget />
         <RecoveryMatrix />
       </div>
+
+      {/* Smart Collection Assistant */}
+      <SmartCollectionAssistant maxItems={6} />
 
       {/* Recent Clients */}
       <div className="card-elevated overflow-hidden">
