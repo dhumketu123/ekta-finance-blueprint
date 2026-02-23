@@ -838,6 +838,7 @@ export type Database = {
       investors: {
         Row: {
           accumulated_profit: number
+          address: string | null
           capital: number
           created_at: string
           deleted_at: string | null
@@ -849,16 +850,24 @@ export type Database = {
           monthly_profit_percent: number
           name_bn: string
           name_en: string
+          nid_number: string | null
+          nominee_name: string | null
+          nominee_nid: string | null
+          nominee_phone: string | null
+          nominee_relation: string | null
           phone: string | null
           principal_amount: number
           reinvest: boolean
           serial_number: number | null
+          source_of_fund: string | null
           status: Database["public"]["Enums"]["investor_status"]
+          tenure_years: number | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           accumulated_profit?: number
+          address?: string | null
           capital?: number
           created_at?: string
           deleted_at?: string | null
@@ -870,16 +879,24 @@ export type Database = {
           monthly_profit_percent?: number
           name_bn?: string
           name_en: string
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_phone?: string | null
+          nominee_relation?: string | null
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
           serial_number?: number | null
+          source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
+          tenure_years?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           accumulated_profit?: number
+          address?: string | null
           capital?: number
           created_at?: string
           deleted_at?: string | null
@@ -891,11 +908,18 @@ export type Database = {
           monthly_profit_percent?: number
           name_bn?: string
           name_en?: string
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_phone?: string | null
+          nominee_relation?: string | null
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
           serial_number?: number | null
+          source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
+          tenure_years?: number | null
           updated_at?: string
           user_id?: string | null
         }
