@@ -38,19 +38,20 @@ const CASH_OUT_TYPES: { type: FinTransactionType; icon: string }[] = [
 interface Props {
   open: boolean;
   onClose: () => void;
+  prefillClientId?: string;
 }
 
 // Duplicate submission guard — 3 second cooldown
 let lastSubmitTime = 0;
 
-export default function SmartTransactionForm({ open, onClose }: Props) {
+export default function SmartTransactionForm({ open, onClose, prefillClientId }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const submitMut = useSubmitFinancialTransaction();
 
   const [direction, setDirection] = useState<CashDirection | "">("");
   const [txType, setTxType] = useState<FinTransactionType | "">("");
-  const [memberId, setMemberId] = useState("");
+  const [memberId, setMemberId] = useState(prefillClientId || "");
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [lateFee, setLateFee] = useState("");
@@ -108,7 +109,7 @@ export default function SmartTransactionForm({ open, onClose }: Props) {
   const accounts = isLoanType ? clientLoans : clientSavings;
 
   // Reset downstream when direction changes
-  useEffect(() => { setTxType(""); setMemberId(""); setAccountId(""); setAmount(""); setLateFee(""); }, [direction]);
+  useEffect(() => { setTxType(""); setMemberId(prefillClientId || ""); setAccountId(""); setAmount(""); setLateFee(""); }, [direction, prefillClientId]);
   useEffect(() => { setAccountId(""); }, [memberId, txType]);
 
   // ── Voice Ledger (Web Speech API) — Enhanced multi-amount parsing ──

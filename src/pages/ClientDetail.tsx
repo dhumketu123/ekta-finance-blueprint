@@ -12,6 +12,7 @@ import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
 import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
 import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
+import TablePagination from "@/components/TablePagination";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClient, useTransactions } from "@/hooks/useSupabaseData";
@@ -41,10 +42,13 @@ const ClientDetail = () => {
   const [paymentLoanId, setPaymentLoanId] = useState<string | undefined>();
   const [smartTxOpen, setSmartTxOpen] = useState(false);
   const [savingsTxOpen, setSavingsTxOpen] = useState(false);
+  const [savingsTxType, setSavingsTxType] = useState<"savings_deposit" | "savings_withdrawal">("savings_deposit");
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [scheduleLoanId, setScheduleLoanId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history">("info");
   const [historyFilter, setHistoryFilter] = useState<string>("all");
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 20;
 
   // ALL active loans for this client (multi-loan support)
   const { data: activeLoans } = useQuery({
@@ -175,6 +179,9 @@ const ClientDetail = () => {
     return tx.transaction_type === historyFilter;
   }) ?? [];
 
+  const historyTotalPages = Math.ceil(filteredTxns.length / HISTORY_PER_PAGE);
+  const paginatedTxns = filteredTxns.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE);
+
   const openPayment = (loanId: string) => {
     setPaymentLoanId(loanId);
     setPaymentOpen(true);
@@ -205,7 +212,7 @@ const ClientDetail = () => {
                   {bn ? "পেমেন্ট" : "Payment"}
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setSavingsTxOpen(true)}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
                 <PiggyBank className="w-3.5 h-3.5" />
                 {bn ? "সঞ্চয়" : "Savings"}
               </Button>
@@ -387,11 +394,11 @@ const ClientDetail = () => {
             </div>
             {(isAdmin || canEditClients) && (
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => setSavingsTxOpen(true)}>
+                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
                   <ArrowDownCircle className="w-3 h-3" />
                   {bn ? "জমা" : "Deposit"}
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => setSavingsTxOpen(true)}>
+                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_withdrawal"); setSavingsTxOpen(true); }}>
                   <ArrowUpCircle className="w-3 h-3" />
                   {bn ? "উত্তোলন" : "Withdraw"}
                 </Button>
@@ -568,7 +575,7 @@ const ClientDetail = () => {
               <Filter className="w-3.5 h-3.5" />
               {bn ? "ফিল্টার:" : "Filter:"}
             </div>
-            <Select value={historyFilter} onValueChange={setHistoryFilter}>
+            <Select value={historyFilter} onValueChange={(v) => { setHistoryFilter(v); setHistoryPage(1); }}>
               <SelectTrigger className="w-48 text-xs h-8">
                 <SelectValue />
               </SelectTrigger>
@@ -612,7 +619,7 @@ const ClientDetail = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredTxns.map((tx: any) => {
+                    paginatedTxns.map((tx: any) => {
                       const typeLabel = TX_TYPE_LABELS[tx.transaction_type as FinTransactionType];
                       const statusColor = tx.approval_status === "approved"
                         ? "bg-success/10 text-success border-success/30"
@@ -650,6 +657,7 @@ const ClientDetail = () => {
                 </tbody>
               </table>
             </div>
+            <TablePagination page={historyPage} totalPages={historyTotalPages} totalCount={filteredTxns.length} onPageChange={setHistoryPage} />
           </div>
         </div>
       )}
@@ -662,10 +670,10 @@ const ClientDetail = () => {
         <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} prefilledLoanId={paymentLoanId} />
       )}
       {smartTxOpen && (
-        <SmartTransactionForm open={smartTxOpen} onClose={() => setSmartTxOpen(false)} />
+        <SmartTransactionForm open={smartTxOpen} onClose={() => setSmartTxOpen(false)} prefillClientId={id} />
       )}
       {savingsTxOpen && (
-        <SavingsTransactionModal open={savingsTxOpen} onClose={() => setSavingsTxOpen(false)} prefillClientId={id} />
+        <SavingsTransactionModal open={savingsTxOpen} onClose={() => setSavingsTxOpen(false)} prefillClientId={id} prefillType={savingsTxType} />
       )}
       {settlementOpen && (
         <EarlySettlementCalculator open={settlementOpen} onClose={() => setSettlementOpen(false)} />
