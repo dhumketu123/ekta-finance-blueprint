@@ -10,28 +10,45 @@ import ClientPhotoUpload from "@/components/ClientPhotoUpload";
 import LoanScheduleTable from "@/components/LoanScheduleTable";
 import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
+import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
+import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
+import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClient, useTransactions } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays, AlertTriangle, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
+  AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
+  History, FileText, Filter
+} from "lucide-react";
+import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
+  const bn = lang === "bn";
   const { canEditClients, isAdmin } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
 
   const [disburseOpen, setDisburseOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen]   = useState(false);
-  const [activeTab, setActiveTab]       = useState<"info" | "schedule">("info");
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentLoanId, setPaymentLoanId] = useState<string | undefined>();
+  const [smartTxOpen, setSmartTxOpen] = useState(false);
+  const [savingsTxOpen, setSavingsTxOpen] = useState(false);
+  const [settlementOpen, setSettlementOpen] = useState(false);
+  const [scheduleLoanId, setScheduleLoanId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history">("info");
+  const [historyFilter, setHistoryFilter] = useState<string>("all");
 
-  // active loan for this client (include next_due_date, installment_day)
-  const { data: activeLoan } = useQuery({
-    queryKey: ["loans", "client", id],
+  // ALL active loans for this client (multi-loan support)
+  const { data: activeLoans } = useQuery({
+    queryKey: ["loans", "client_all", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loans")
@@ -39,65 +56,66 @@ const ClientDetail = () => {
         .eq("client_id", id!)
         .in("status", ["active", "default"])
         .is("deleted_at", null)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: !!id,
   });
 
-  // Schedule stats for dashboard
-  const { data: scheduleStats } = useQuery({
-    queryKey: ["schedule-stats", activeLoan?.id],
+  // Schedule stats per loan
+  const { data: allScheduleStats } = useQuery({
+    queryKey: ["schedule-stats-all", activeLoans?.map(l => l.id).join(",")],
     queryFn: async () => {
+      if (!activeLoans?.length) return {};
+      const ids = activeLoans.map(l => l.id);
       const { data, error } = await supabase
         .from("loan_schedules")
-        .select("status")
-        .eq("loan_id", activeLoan!.id);
+        .select("loan_id, status")
+        .in("loan_id", ids);
       if (error) throw error;
-      const total = data?.length ?? 0;
-      const paid = data?.filter((s: any) => s.status === "paid").length ?? 0;
-      const remaining = total - paid;
-      return { total, paid, remaining };
+      const stats: Record<string, { total: number; paid: number; remaining: number }> = {};
+      for (const row of data ?? []) {
+        if (!stats[row.loan_id]) stats[row.loan_id] = { total: 0, paid: 0, remaining: 0 };
+        stats[row.loan_id].total++;
+        if (row.status === "paid") stats[row.loan_id].paid++;
+        else stats[row.loan_id].remaining++;
+      }
+      return stats;
     },
-    enabled: !!activeLoan?.id,
+    enabled: !!activeLoans?.length,
   });
 
   // Savings summary
-  const { data: savingsAccount } = useQuery({
-    queryKey: ["savings-account", id],
+  const { data: savingsAccounts } = useQuery({
+    queryKey: ["savings-accounts-all", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("savings_accounts")
-        .select("id, balance, status")
+        .select("id, balance, status, savings_product_id, savings_products(product_name_en, product_name_bn)")
         .eq("client_id", id!)
         .eq("status", "active")
-        .is("deleted_at", null)
-        .maybeSingle();
+        .is("deleted_at", null);
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: !!id,
   });
 
-  const { data: savingsStats } = useQuery({
-    queryKey: ["savings-stats", savingsAccount?.id],
+  // Transaction history for this client
+  const { data: clientTransactions } = useQuery({
+    queryKey: ["client_financial_txns", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("transactions")
-        .select("amount, transaction_date")
-        .eq("savings_id", savingsAccount!.id)
-        .eq("type", "savings_deposit")
-        .eq("status", "paid")
-        .is("deleted_at", null)
-        .order("transaction_date", { ascending: false });
+        .from("financial_transactions" as any)
+        .select("*")
+        .eq("member_id", id!)
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (error) throw error;
-      return {
-        totalDeposits: data?.length ?? 0,
-        lastDeposit: data?.[0]?.transaction_date ?? null,
-      };
+      return data as any[];
     },
-    enabled: !!savingsAccount?.id,
+    enabled: !!id && activeTab === "history",
   });
 
   if (isLoading) {
@@ -123,34 +141,49 @@ const ClientDetail = () => {
   }
 
   const c = client as any;
-  const name = lang === "bn" ? (c.name_bn || c.name_en) : c.name_en;
+  const name = bn ? (c.name_bn || c.name_en) : c.name_en;
   const loanAmount = c.loan_amount ?? 0;
   const nextPaymentDate = c.next_payment_date;
+  const hasActiveLoans = !!activeLoans?.length;
 
   const totalRepaid = txns
-    ?.filter((tx: any) => ["loan_repayment","loan_principal","loan_interest"].includes(tx.type) && tx.status === "paid")
+    ?.filter((tx: any) => ["loan_repayment", "loan_principal", "loan_interest"].includes(tx.type) && tx.status === "paid")
     .reduce((s: number, tx: any) => s + tx.amount, 0) ?? 0;
 
-  const loanProduct  = c.loan_products;
+  const loanProduct = c.loan_products;
   const interestRate = loanProduct?.interest_rate;
-  const tenure       = loanProduct?.tenure_months;
-  const paymentType  = loanProduct?.payment_type;
-  const totalOwed    = loanAmount > 0 && interestRate
-    ? loanAmount + (loanAmount * interestRate / 100)
-    : loanAmount;
+  const tenure = loanProduct?.tenure_months;
+  const paymentType = loanProduct?.payment_type;
+  const totalOwed = loanAmount > 0 && interestRate ? loanAmount + (loanAmount * interestRate / 100) : loanAmount;
 
   const savingsProduct = c.savings_products;
-  const savingsType    = savingsProduct?.product_name_en ?? "—";
-  const frequency      = savingsProduct?.frequency ?? "—";
+  const savingsType = savingsProduct?.product_name_en ?? "—";
+  const frequency = savingsProduct?.frequency ?? "—";
 
   const maritalMap: Record<string, string> = {
-    unmarried: lang === "bn" ? "অবিবাহিত" : "Unmarried",
-    married:   lang === "bn" ? "বিবাহিত" : "Married",
-    widowed:   lang === "bn" ? "বিধবা/বিপত্নীক" : "Widowed",
-    divorced:  lang === "bn" ? "তালাকপ্রাপ্ত" : "Divorced",
+    unmarried: bn ? "অবিবাহিত" : "Unmarried",
+    married: bn ? "বিবাহিত" : "Married",
+    widowed: bn ? "বিধবা/বিপত্নীক" : "Widowed",
+    divorced: bn ? "তালাকপ্রাপ্ত" : "Divorced",
   };
 
-  const hasActiveLoan = !!activeLoan;
+  const totalSavingsBalance = savingsAccounts?.reduce((s, a) => s + Number(a.balance), 0) ?? 0;
+
+  // Filtered transactions for history tab
+  const filteredTxns = clientTransactions?.filter((tx: any) => {
+    if (historyFilter === "all") return true;
+    return tx.transaction_type === historyFilter;
+  }) ?? [];
+
+  const openPayment = (loanId: string) => {
+    setPaymentLoanId(loanId);
+    setPaymentOpen(true);
+  };
+
+  const openSchedule = (loanId: string) => {
+    setScheduleLoanId(loanId);
+    setActiveTab("schedule");
+  };
 
   return (
     <AppLayout>
@@ -159,19 +192,27 @@ const ClientDetail = () => {
         description={`${t("detail.client")} — ${c.member_id ?? client.id.slice(0, 8)}`}
         actions={
           isAdmin || canEditClients ? (
-            <div className="flex gap-2">
-              {!hasActiveLoan && (
+            <div className="flex gap-2 flex-wrap">
+              {!hasActiveLoans && (
                 <Button size="sm" className="gap-1.5 text-xs rounded-lg bg-primary text-primary-foreground" onClick={() => setDisburseOpen(true)}>
                   <TrendingUp className="w-3.5 h-3.5" />
-                  {lang === "bn" ? "ঋণ বিতরণ" : "Disburse Loan"}
+                  {bn ? "ঋণ বিতরণ" : "Disburse Loan"}
                 </Button>
               )}
-              {hasActiveLoan && (
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setPaymentOpen(true)}>
+              {hasActiveLoans && (
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => openPayment(activeLoans![0].id)}>
                   <Banknote className="w-3.5 h-3.5" />
-                  {lang === "bn" ? "পেমেন্ট" : "Payment"}
+                  {bn ? "পেমেন্ট" : "Payment"}
                 </Button>
               )}
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setSavingsTxOpen(true)}>
+                <PiggyBank className="w-3.5 h-3.5" />
+                {bn ? "সঞ্চয়" : "Savings"}
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setSmartTxOpen(true)}>
+                <Receipt className="w-3.5 h-3.5" />
+                {bn ? "ফি/অন্যান্য" : "Fee/Other"}
+              </Button>
             </div>
           ) : null
         }
@@ -198,160 +239,200 @@ const ClientDetail = () => {
             </div>
             {c.occupation && (
               <p className="text-xs text-muted-foreground mt-1">
-                {lang === "bn" ? "পেশা:" : "Occupation:"} <span className="text-foreground font-medium">{c.occupation}</span>
+                {bn ? "পেশা:" : "Occupation:"} <span className="text-foreground font-medium">{c.occupation}</span>
               </p>
             )}
           </div>
         </div>
         {canEditClients && (
           <p className="text-[10px] text-muted-foreground mt-3 italic">
-            {lang === "bn" ? "ছবির উপর হোভার করুন প্রোফাইল ছবি পরিবর্তন করতে" : "Hover over photo to update profile picture"}
+            {bn ? "ছবির উপর হোভার করুন প্রোফাইল ছবি পরিবর্তন করতে" : "Hover over photo to update profile picture"}
           </p>
         )}
       </div>
 
-      {/* ── Active Loan Summary (Phase 6+8 Dashboard Intelligence + Forecasting) ── */}
-      {hasActiveLoan && (() => {
-        const daysUntilDue = activeLoan.next_due_date
-          ? Math.ceil((new Date(activeLoan.next_due_date).getTime() - Date.now()) / 86400000)
+      {/* ── All Active Loans (Multi-Loan Support) ── */}
+      {hasActiveLoans && activeLoans!.map((loan, idx) => {
+        const daysUntilDue = loan.next_due_date
+          ? Math.ceil((new Date(loan.next_due_date).getTime() - Date.now()) / 86400000)
           : null;
-        const totalOutstanding = Number(activeLoan.outstanding_principal) + Number(activeLoan.outstanding_interest) + Number(activeLoan.penalty_amount);
-        const isOverdue90 = activeLoan.status === 'default';
+        const totalOutstanding = Number(loan.outstanding_principal) + Number(loan.outstanding_interest) + Number(loan.penalty_amount);
+        const isOverdue90 = loan.status === "default";
         const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
         const isDueSoon = daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 3;
+        const stats = allScheduleStats?.[loan.id];
 
         return (
-          <div className={`card-elevated p-5 border-l-4 animate-slide-up ${isOverdue90 ? 'border-l-destructive' : isOverdue ? 'border-l-destructive' : isDueSoon ? 'border-l-warning' : 'border-l-primary'}`} style={{ animationDelay: "0.1s" }}>
+          <div
+            key={loan.id}
+            className={`card-elevated p-5 border-l-4 animate-slide-up ${isOverdue90 ? "border-l-destructive" : isOverdue ? "border-l-destructive" : isDueSoon ? "border-l-warning" : "border-l-primary"}`}
+            style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Wallet className={`w-4 h-4 ${isOverdue90 ? 'text-destructive' : 'text-warning'}`} />
-                <h3 className={`text-xs font-bold uppercase tracking-wider ${isOverdue90 ? 'text-destructive' : 'text-warning'}`}>
-                  {lang === "bn" ? "সক্রিয় ঋণ" : "Active Loan"}
+                <Wallet className={`w-4 h-4 ${isOverdue90 ? "text-destructive" : "text-warning"}`} />
+                <h3 className={`text-xs font-bold uppercase tracking-wider ${isOverdue90 ? "text-destructive" : "text-warning"}`}>
+                  {bn ? "সক্রিয় ঋণ" : "Active Loan"} {activeLoans!.length > 1 ? `#${idx + 1}` : ""}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                {activeLoan.loan_id && (
+                {loan.loan_id && (
                   <span className="text-xs font-mono font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-md border border-warning/20">
-                    {activeLoan.loan_id}
+                    {loan.loan_id}
                   </span>
                 )}
-                <StatusBadge status={activeLoan.status as any} />
+                <StatusBadge status={loan.status as any} />
               </div>
             </div>
 
             {/* Risk Indicator */}
             {(isOverdue90 || isOverdue || isDueSoon) && (
               <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold ${
-                isOverdue90 ? 'bg-destructive/10 text-destructive border border-destructive/20' :
-                isOverdue ? 'bg-destructive/10 text-destructive border border-destructive/20' :
-                'bg-warning/10 text-warning border border-warning/20'
+                isOverdue90 || isOverdue ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-warning/10 text-warning border border-warning/20"
               }`}>
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 {isOverdue90
-                  ? (lang === "bn" ? "⚠️ এই ঋণ খেলাপি (৯০+ দিন বকেয়া)" : "⚠️ This loan is in DEFAULT (90+ days overdue)")
+                  ? (bn ? "⚠️ এই ঋণ খেলাপি (৯০+ দিন বকেয়া)" : "⚠️ This loan is in DEFAULT (90+ days overdue)")
                   : isOverdue
-                  ? (lang === "bn" ? `⚠️ কিস্তি ${Math.abs(daysUntilDue!)} দিন বকেয়া` : `⚠️ Payment ${Math.abs(daysUntilDue!)} days overdue`)
-                  : (lang === "bn" ? `📅 পরবর্তী কিস্তি ${daysUntilDue} দিনে` : `📅 Next payment in ${daysUntilDue} days`)}
+                  ? (bn ? `⚠️ কিস্তি ${Math.abs(daysUntilDue!)} দিন বকেয়া` : `⚠️ Payment ${Math.abs(daysUntilDue!)} days overdue`)
+                  : (bn ? `📅 পরবর্তী কিস্তি ${daysUntilDue} দিনে` : `📅 Next payment in ${daysUntilDue} days`)}
               </div>
             )}
 
             {totalOutstanding <= 0 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold bg-success/10 text-success border border-success/20">
                 <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                {lang === "bn" ? "✅ সম্পূর্ণ পরিশোধিত — বন্ধ হওয়ার অপেক্ষায়" : "✅ Fully repaid — pending closure"}
+                {bn ? "✅ সম্পূর্ণ পরিশোধিত — বন্ধ হওয়ার অপেক্ষায়" : "✅ Fully repaid — pending closure"}
               </div>
             )}
 
-            <RepaymentProgress totalAmount={totalOwed} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={(activeLoan as any).next_due_date ?? nextPaymentDate} />
+            <RepaymentProgress totalAmount={Number(loan.total_principal) + Number(loan.total_interest)} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={loan.next_due_date ?? nextPaymentDate} />
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "ঋণের পরিমাণ" : "Loan Amount"}</p>
-                <p className="text-sm font-bold text-foreground">৳{Number(activeLoan.total_principal).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "ঋণের পরিমাণ" : "Loan Amount"}</p>
+                <p className="text-sm font-bold text-foreground">৳{Number(loan.total_principal).toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া আসল" : "Outstanding"}</p>
-                <p className="text-sm font-bold text-destructive">৳{Number(activeLoan.outstanding_principal).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "বকেয়া আসল" : "Outstanding"}</p>
+                <p className="text-sm font-bold text-destructive">৳{Number(loan.outstanding_principal).toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বকেয়া সুদ" : "Interest Due"}</p>
-                <p className="text-sm font-bold text-warning">৳{Number(activeLoan.outstanding_interest).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "বকেয়া সুদ" : "Interest Due"}</p>
+                <p className="text-sm font-bold text-warning">৳{Number(loan.outstanding_interest).toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "EMI"}</p>
-                <p className="text-sm font-bold text-primary">৳{Number(activeLoan.emi_amount).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "কিস্তির পরিমাণ" : "EMI"}</p>
+                <p className="text-sm font-bold text-primary">৳{Number(loan.emi_amount).toLocaleString()}</p>
               </div>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরবর্তী কিস্তি" : "Next Due"}</p>
-                <p className={`text-sm font-bold ${isOverdue ? 'text-destructive' : isDueSoon ? 'text-warning' : 'text-primary'}`}>{(activeLoan as any).next_due_date ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরবর্তী কিস্তি" : "Next Due"}</p>
+                <p className={`text-sm font-bold ${isOverdue ? "text-destructive" : isDueSoon ? "text-warning" : "text-primary"}`}>{loan.next_due_date ?? "—"}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিশোধিত কিস্তি" : "Paid"}</p>
-                <p className="text-sm font-bold text-success">{scheduleStats?.paid ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "পরিশোধিত" : "Paid"}</p>
+                <p className="text-sm font-bold text-success">{stats?.paid ?? "—"}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট কিস্তি" : "Remaining"}</p>
-                <p className="text-sm font-bold text-destructive">{scheduleStats?.remaining ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "অবশিষ্ট" : "Remaining"}</p>
+                <p className="text-sm font-bold text-destructive">{stats?.remaining ?? "—"}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{lang === "bn" ? "পরিপক্কতা" : "Maturity"}</p>
-                <p className="text-sm font-bold">{activeLoan.maturity_date ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরিপক্কতা" : "Maturity"}</p>
+                <p className="text-sm font-bold">{loan.maturity_date ?? "—"}</p>
               </div>
             </div>
-            {/* Installment Day indicator */}
-            {(activeLoan as any).installment_day && (
+
+            {loan.installment_day && (
               <div className="mt-2 pt-2 border-t border-border text-center">
                 <p className="text-[10px] text-muted-foreground">
-                  {lang === "bn" ? `📌 নির্ধারিত কিস্তির তারিখ: প্রতি মাসের ${(activeLoan as any).installment_day} তারিখ` : `📌 Fixed installment day: ${(activeLoan as any).installment_day}th of every month`}
+                  {bn ? `📌 নির্ধারিত কিস্তির তারিখ: প্রতি মাসের ${loan.installment_day} তারিখ` : `📌 Fixed installment day: ${loan.installment_day}th of every month`}
                 </p>
+              </div>
+            )}
+
+            {/* Per-loan action buttons */}
+            {(isAdmin || canEditClients) && (
+              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => openPayment(loan.id)}>
+                  <Banknote className="w-3.5 h-3.5" />
+                  {bn ? "পেমেন্ট" : "Pay"}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => openSchedule(loan.id)}>
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  {bn ? "সময়সূচি" : "Schedule"}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => setSettlementOpen(true)}>
+                  <Calculator className="w-3.5 h-3.5" />
+                  {bn ? "নিষ্পত্তি" : "Settle"}
+                </Button>
               </div>
             )}
           </div>
         );
-      })()}
+      })}
 
-      {/* ── Savings Summary ── */}
-      {savingsAccount && (
+      {/* ── Savings Summary (with action buttons) ── */}
+      {savingsAccounts && savingsAccounts.length > 0 && (
         <div className="card-elevated p-5 border-l-4 border-l-success animate-slide-up" style={{ animationDelay: "0.12s" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <PiggyBank className="w-4 h-4 text-success" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-success">
-              {lang === "bn" ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
-            </h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <PiggyBank className="w-4 h-4 text-success" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-success">
+                {bn ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
+              </h3>
+            </div>
+            {(isAdmin || canEditClients) && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => setSavingsTxOpen(true)}>
+                  <ArrowDownCircle className="w-3 h-3" />
+                  {bn ? "জমা" : "Deposit"}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => setSavingsTxOpen(true)}>
+                  <ArrowUpCircle className="w-3 h-3" />
+                  {bn ? "উত্তোলন" : "Withdraw"}
+                </Button>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "বর্তমান ব্যালেন্স" : "Current Balance"}</p>
-              <p className="text-sm font-bold text-success">৳{Number(savingsAccount.balance).toLocaleString()}</p>
+          {savingsAccounts.map((sa: any) => (
+            <div key={sa.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div>
+                <p className="text-xs font-medium">{sa.savings_products?.[bn ? "product_name_bn" : "product_name_en"] || sa.id.slice(0, 8)}</p>
+              </div>
+              <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
             </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট জমা" : "Total Deposits"}</p>
-              <p className="text-sm font-bold">{savingsStats?.totalDeposits ?? "—"}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">{lang === "bn" ? "শেষ জমা" : "Last Deposit"}</p>
-              <p className="text-sm font-bold">{savingsStats?.lastDeposit ?? "—"}</p>
-            </div>
+          ))}
+          <div className="flex justify-between mt-3 pt-2 border-t border-border">
+            <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
+            <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
           </div>
         </div>
       )}
 
-      {/* ── Tabs: Info | Schedule ── */}
+      {/* ── Tabs: Info | Schedule | History ── */}
       <div className="flex gap-1 border-b border-border">
-        {(["info", "schedule"] as const).map((tab) => (
+        {(["info", "schedule", "history"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === tab
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
+            {tab === "info" && <User className="w-3 h-3" />}
+            {tab === "schedule" && <CalendarDays className="w-3 h-3" />}
+            {tab === "history" && <History className="w-3 h-3" />}
             {tab === "info"
-              ? (lang === "bn" ? "তথ্য" : "Info")
-              : (lang === "bn" ? "কিস্তির সময়সূচি" : "Installment Schedule")}
+              ? (bn ? "তথ্য" : "Info")
+              : tab === "schedule"
+              ? (bn ? "সময়সূচি" : "Schedule")
+              : (bn ? "লেনদেন ইতিহাস" : "Transactions")}
           </button>
         ))}
       </div>
@@ -367,13 +448,13 @@ const ClientDetail = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <DetailField label={t("table.name")} value={name} />
-              <DetailField label={lang === "bn" ? "ফোন" : "Phone"} value={c.phone || "—"} />
-              <DetailField label={lang === "bn" ? "পিতা/স্বামী" : "Father / Husband"} value={c.father_or_husband_name || "—"} />
-              <DetailField label={lang === "bn" ? "মাতার নাম" : "Mother Name"} value={c.mother_name || "—"} />
-              <DetailField label={lang === "bn" ? "NID নম্বর" : "NID Number"} value={c.nid_number || "—"} />
-              <DetailField label={lang === "bn" ? "জন্ম তারিখ" : "Date of Birth"} value={c.date_of_birth || "—"} />
-              <DetailField label={lang === "bn" ? "বৈবাহিক অবস্থা" : "Marital Status"} value={maritalMap[c.marital_status] || "—"} />
-              <DetailField label={lang === "bn" ? "পেশা" : "Occupation"} value={c.occupation || "—"} />
+              <DetailField label={bn ? "ফোন" : "Phone"} value={c.phone || "—"} />
+              <DetailField label={bn ? "পিতা/স্বামী" : "Father / Husband"} value={c.father_or_husband_name || "—"} />
+              <DetailField label={bn ? "মাতার নাম" : "Mother Name"} value={c.mother_name || "—"} />
+              <DetailField label={bn ? "NID নম্বর" : "NID Number"} value={c.nid_number || "—"} />
+              <DetailField label={bn ? "জন্ম তারিখ" : "Date of Birth"} value={c.date_of_birth || "—"} />
+              <DetailField label={bn ? "বৈবাহিক অবস্থা" : "Marital Status"} value={maritalMap[c.marital_status] || "—"} />
+              <DetailField label={bn ? "পেশা" : "Occupation"} value={c.occupation || "—"} />
             </div>
           </div>
 
@@ -395,15 +476,15 @@ const ClientDetail = () => {
           <div className="card-elevated p-5 space-y-4 animate-slide-up" style={{ animationDelay: "0.22s" }}>
             <div className="flex items-center gap-2 text-primary">
               <MapPin className="w-4 h-4" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ঠিকানা" : "Address"}</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "ঠিকানা" : "Address"}</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <DetailField label={lang === "bn" ? "গ্রাম" : "Village"} value={c.village || "—"} />
-              <DetailField label={lang === "bn" ? "ডাকঘর" : "Post Office"} value={c.post_office || "—"} />
-              <DetailField label={lang === "bn" ? "ইউনিয়ন" : "Union"} value={c.union_name || "—"} />
-              <DetailField label={lang === "bn" ? "উপজেলা" : "Upazila"} value={c.upazila || "—"} />
-              <DetailField label={lang === "bn" ? "জেলা" : "District"} value={c.district || "—"} />
-              <DetailField label={lang === "bn" ? "এলাকা" : "Area"} value={c.area || "—"} />
+              <DetailField label={bn ? "গ্রাম" : "Village"} value={c.village || "—"} />
+              <DetailField label={bn ? "ডাকঘর" : "Post Office"} value={c.post_office || "—"} />
+              <DetailField label={bn ? "ইউনিয়ন" : "Union"} value={c.union_name || "—"} />
+              <DetailField label={bn ? "উপজেলা" : "Upazila"} value={c.upazila || "—"} />
+              <DetailField label={bn ? "জেলা" : "District"} value={c.district || "—"} />
+              <DetailField label={bn ? "এলাকা" : "Area"} value={c.area || "—"} />
             </div>
           </div>
 
@@ -411,17 +492,17 @@ const ClientDetail = () => {
           <div className="card-elevated p-5 space-y-4 animate-slide-up" style={{ animationDelay: "0.25s" }}>
             <div className="flex items-center gap-2 text-primary">
               <Shield className="w-4 h-4" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "নমিনি" : "Nominee"}</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "নমিনি" : "Nominee"}</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <DetailField label={lang === "bn" ? "নমিনির নাম" : "Nominee Name"} value={c.nominee_name || "—"} />
-              <DetailField label={lang === "bn" ? "সম্পর্ক" : "Relation"} value={c.nominee_relation || "—"} />
-              <DetailField label={lang === "bn" ? "নমিনির ফোন" : "Nominee Phone"} value={c.nominee_phone || "—"} />
-              <DetailField label={lang === "bn" ? "নমিনির NID" : "Nominee NID"} value={c.nominee_nid || "—"} />
+              <DetailField label={bn ? "নমিনির নাম" : "Nominee Name"} value={c.nominee_name || "—"} />
+              <DetailField label={bn ? "সম্পর্ক" : "Relation"} value={c.nominee_relation || "—"} />
+              <DetailField label={bn ? "নমিনির ফোন" : "Nominee Phone"} value={c.nominee_phone || "—"} />
+              <DetailField label={bn ? "নমিনির NID" : "Nominee NID"} value={c.nominee_nid || "—"} />
             </div>
           </div>
 
-          {/* Savings */}
+          {/* Savings Info */}
           <div className="card-elevated p-5 space-y-4 md:col-span-2 animate-slide-up" style={{ animationDelay: "0.28s" }}>
             <div className="flex items-center gap-2 text-primary">
               <PiggyBank className="w-4 h-4" />
@@ -439,21 +520,38 @@ const ClientDetail = () => {
       {/* ── SCHEDULE TAB ── */}
       {activeTab === "schedule" && (
         <div className="animate-slide-up">
-          {hasActiveLoan ? (
-            <LoanScheduleTable loanId={activeLoan.id} />
+          {hasActiveLoans ? (
+            <div className="space-y-4">
+              {activeLoans!.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {activeLoans!.map((l, i) => (
+                    <Button
+                      key={l.id}
+                      size="sm"
+                      variant={scheduleLoanId === l.id ? "default" : "outline"}
+                      className="text-xs"
+                      onClick={() => setScheduleLoanId(l.id)}
+                    >
+                      {l.loan_id || `Loan #${i + 1}`}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              <LoanScheduleTable loanId={scheduleLoanId || activeLoans![0].id} />
+            </div>
           ) : (
             <div className="card-elevated p-10 text-center space-y-3">
               <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto" />
               <p className="text-sm font-semibold text-foreground">
-                {lang === "bn" ? "কোনো সক্রিয় ঋণ নেই" : "No Active Loan"}
+                {bn ? "কোনো সক্রিয় ঋণ নেই" : "No Active Loan"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {lang === "bn" ? "ঋণ বিতরণ করুন তারপর কিস্তির সময়সূচি দেখা যাবে" : "Disburse a loan to view the installment schedule"}
+                {bn ? "ঋণ বিতরণ করুন তারপর কিস্তির সময়সূচি দেখা যাবে" : "Disburse a loan to view the installment schedule"}
               </p>
               {(isAdmin || canEditClients) && (
                 <Button size="sm" className="gap-1.5 text-xs mt-2" onClick={() => setDisburseOpen(true)}>
                   <TrendingUp className="w-3.5 h-3.5" />
-                  {lang === "bn" ? "ঋণ বিতরণ করুন" : "Disburse Loan"}
+                  {bn ? "ঋণ বিতরণ করুন" : "Disburse Loan"}
                 </Button>
               )}
             </div>
@@ -461,12 +559,116 @@ const ClientDetail = () => {
         </div>
       )}
 
+      {/* ── HISTORY TAB ── */}
+      {activeTab === "history" && (
+        <div className="space-y-4 animate-slide-up">
+          {/* Filter bar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Filter className="w-3.5 h-3.5" />
+              {bn ? "ফিল্টার:" : "Filter:"}
+            </div>
+            <Select value={historyFilter} onValueChange={setHistoryFilter}>
+              <SelectTrigger className="w-48 text-xs h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">{bn ? "সব লেনদেন" : "All Transactions"}</SelectItem>
+                <SelectItem value="loan_repayment" className="text-xs">{bn ? "ঋণ পরিশোধ" : "Loan Repayment"}</SelectItem>
+                <SelectItem value="loan_disbursement" className="text-xs">{bn ? "ঋণ বিতরণ" : "Loan Disbursement"}</SelectItem>
+                <SelectItem value="savings_deposit" className="text-xs">{bn ? "সঞ্চয় জমা" : "Savings Deposit"}</SelectItem>
+                <SelectItem value="savings_withdrawal" className="text-xs">{bn ? "সঞ্চয় উত্তোলন" : "Savings Withdrawal"}</SelectItem>
+                <SelectItem value="admission_fee" className="text-xs">{bn ? "ভর্তি ফি" : "Admission Fee"}</SelectItem>
+                <SelectItem value="share_capital_deposit" className="text-xs">{bn ? "শেয়ার মূলধন" : "Share Capital"}</SelectItem>
+                <SelectItem value="insurance_premium" className="text-xs">{bn ? "বীমা প্রিমিয়াম" : "Insurance Premium"}</SelectItem>
+                <SelectItem value="adjustment_entry" className="text-xs">{bn ? "সমন্বয়" : "Adjustment"}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge variant="secondary" className="text-xs">
+              {filteredTxns.length} {bn ? "টি" : "records"}
+            </Badge>
+          </div>
+
+          {/* Transaction table */}
+          <div className="card-elevated overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left p-3 font-semibold">{bn ? "তারিখ" : "Date"}</th>
+                    <th className="text-left p-3 font-semibold">{bn ? "ধরন" : "Type"}</th>
+                    <th className="text-right p-3 font-semibold">{bn ? "পরিমাণ" : "Amount"}</th>
+                    <th className="text-center p-3 font-semibold">{bn ? "অবস্থা" : "Status"}</th>
+                    <th className="text-left p-3 font-semibold">{bn ? "রেফারেন্স" : "Reference"}</th>
+                    <th className="text-left p-3 font-semibold">{bn ? "রিসিপ্ট" : "Receipt"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTxns.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                        <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        {bn ? "কোনো লেনদেন পাওয়া যায়নি" : "No transactions found"}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTxns.map((tx: any) => {
+                      const typeLabel = TX_TYPE_LABELS[tx.transaction_type as FinTransactionType];
+                      const statusColor = tx.approval_status === "approved"
+                        ? "bg-success/10 text-success border-success/30"
+                        : tx.approval_status === "rejected"
+                        ? "bg-destructive/10 text-destructive border-destructive/30"
+                        : "bg-warning/10 text-warning border-warning/30";
+                      return (
+                        <tr key={tx.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                          <td className="p-3 text-muted-foreground">
+                            {new Date(tx.created_at).toLocaleDateString(bn ? "bn-BD" : "en-US", { day: "2-digit", month: "short", year: "2-digit" })}
+                          </td>
+                          <td className="p-3">
+                            <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
+                          </td>
+                          <td className="p-3 text-right font-bold">৳{Number(tx.amount).toLocaleString()}</td>
+                          <td className="p-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusColor}`}>
+                              {tx.approval_status === "approved" ? (bn ? "অনুমোদিত" : "Approved")
+                                : tx.approval_status === "rejected" ? (bn ? "প্রত্যাখ্যাত" : "Rejected")
+                                : (bn ? "অপেক্ষমাণ" : "Pending")}
+                            </span>
+                          </td>
+                          <td className="p-3 text-muted-foreground font-mono text-[10px]">
+                            {tx.receipt_number || tx.reference_id?.slice(0, 12) || "—"}
+                          </td>
+                          <td className="p-3">
+                            {tx.receipt_number && (
+                              <span className="text-primary text-[10px] font-semibold">📄 {tx.receipt_number}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Modals ── */}
       {disburseOpen && (
         <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} prefilledClientId={id} />
       )}
-      {paymentOpen && activeLoan && (
-        <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} prefilledLoanId={activeLoan.id} />
+      {paymentOpen && (
+        <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} prefilledLoanId={paymentLoanId} />
+      )}
+      {smartTxOpen && (
+        <SmartTransactionForm open={smartTxOpen} onClose={() => setSmartTxOpen(false)} />
+      )}
+      {savingsTxOpen && (
+        <SavingsTransactionModal open={savingsTxOpen} onClose={() => setSavingsTxOpen(false)} prefillClientId={id} />
+      )}
+      {settlementOpen && (
+        <EarlySettlementCalculator open={settlementOpen} onClose={() => setSettlementOpen(false)} />
       )}
     </AppLayout>
   );
