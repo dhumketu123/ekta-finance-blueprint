@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { Commitment } from "@/hooks/useCommitments";
+import { useLogAIChipSelect, type Commitment } from "@/hooks/useCommitments";
 
 interface AIChipsRescheduleModalProps {
   commitment: Commitment | null;
@@ -19,6 +19,7 @@ interface AIChipsRescheduleModalProps {
 
 const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPending }: AIChipsRescheduleModalProps) => {
   const { lang } = useLanguage();
+  const logChipSelect = useLogAIChipSelect();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [customDate, setCustomDate] = useState("");
   const [reason, setReason] = useState("");
@@ -36,9 +37,10 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
     { label: lang === "bn" ? "৭ দিন পর" : "In 7 Days", date: format(nextWeek, "yyyy-MM-dd"), icon: "📆" },
   ];
 
-  const handleChipSelect = (date: string) => {
+  const handleChipSelect = (label: string, date: string) => {
     setSelectedDate(date);
     setCustomDate("");
+    logChipSelect(label, date, commitment?.id);
   };
 
   const handleCustomDateChange = (val: string) => {
@@ -96,7 +98,7 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
             {aiChips.map((chip) => (
               <button
                 key={chip.date}
-                onClick={() => handleChipSelect(chip.date)}
+                onClick={() => handleChipSelect(chip.label, chip.date)}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all duration-200 text-sm
                   ${selectedDate === chip.date
                     ? "border-accent bg-accent/15 shadow-sm ring-1 ring-accent/30"
