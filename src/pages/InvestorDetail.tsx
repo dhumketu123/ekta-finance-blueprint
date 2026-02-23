@@ -69,6 +69,8 @@ const InvestorDetail = () => {
   const [capitalAmount, setCapitalAmount] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [dividendPayAmount, setDividendPayAmount] = useState("");
+  const [dividendNotes, setDividendNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const sampleInv = sampleInvestors.find((i) => i.id === id);
