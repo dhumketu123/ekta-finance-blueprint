@@ -862,6 +862,7 @@ export type Database = {
           is_reversal: boolean
           narration: string | null
           original_group_id: string | null
+          previous_hash: string | null
           reference_id: string | null
           reference_type: string
           transaction_group_id: string
@@ -881,6 +882,7 @@ export type Database = {
           is_reversal?: boolean
           narration?: string | null
           original_group_id?: string | null
+          previous_hash?: string | null
           reference_id?: string | null
           reference_type: string
           transaction_group_id: string
@@ -900,6 +902,7 @@ export type Database = {
           is_reversal?: boolean
           narration?: string | null
           original_group_id?: string | null
+          previous_hash?: string | null
           reference_id?: string | null
           reference_type?: string
           transaction_group_id?: string
@@ -2175,7 +2178,9 @@ export type Database = {
         Args: { _txn_group_id: string }
         Returns: boolean
       }
+      verify_all_branches_integrity: { Args: never; Returns: Json }
       verify_event_chain_integrity: { Args: never; Returns: Json }
+      verify_ledger_integrity: { Args: { p_branch_id: string }; Returns: Json }
     }
     Enums: {
       account_code:
