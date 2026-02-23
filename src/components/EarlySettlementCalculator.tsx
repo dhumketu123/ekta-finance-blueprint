@@ -13,14 +13,15 @@ import { useQuantumConfig } from "@/hooks/useQuantumConfig";
 interface Props {
   open: boolean;
   onClose: () => void;
+  preselectedLoanId?: string;
 }
 
-export default function EarlySettlementCalculator({ open, onClose }: Props) {
+export default function EarlySettlementCalculator({ open, onClose, preselectedLoanId }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const { config, isLoading: configLoading } = useQuantumConfig();
 
-  const [loanId, setLoanId] = useState("");
+  const [loanId, setLoanId] = useState(preselectedLoanId ?? "");
 
   const { data: activeLoans } = useQuery({
     queryKey: ["active_loans_settlement"],

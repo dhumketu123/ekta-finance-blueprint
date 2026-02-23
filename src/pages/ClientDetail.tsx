@@ -44,6 +44,7 @@ const ClientDetail = () => {
   const [savingsTxOpen, setSavingsTxOpen] = useState(false);
   const [savingsTxType, setSavingsTxType] = useState<"savings_deposit" | "savings_withdrawal">("savings_deposit");
   const [settlementOpen, setSettlementOpen] = useState(false);
+  const [settlementLoanId, setSettlementLoanId] = useState<string | undefined>();
   const [scheduleLoanId, setScheduleLoanId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history">("info");
   const [historyFilter, setHistoryFilter] = useState<string>("all");
@@ -306,6 +307,14 @@ const ClientDetail = () => {
               </div>
             )}
 
+            {/* Penalty badge */}
+            {Number(loan.penalty_amount) > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                {bn ? `💸 জরিমানা বকেয়া: ৳${Number(loan.penalty_amount).toLocaleString()}` : `💸 Pending Penalty: ৳${Number(loan.penalty_amount).toLocaleString()}`}
+              </div>
+            )}
+
             {totalOutstanding <= 0 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold bg-success/10 text-success border border-success/20">
                 <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -313,7 +322,23 @@ const ClientDetail = () => {
               </div>
             )}
 
-            <RepaymentProgress totalAmount={Number(loan.total_principal) + Number(loan.total_interest)} paidAmount={totalRepaid} tenure={tenure} nextPaymentDate={loan.next_due_date ?? nextPaymentDate} />
+            {/* Waterfall info tooltip */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg mb-2 text-[10px] text-muted-foreground bg-muted/50">
+              <span>⚡ {bn ? "পেমেন্ট অগ্রাধিকার:" : "Payment Priority:"}</span>
+              <span className="font-semibold text-destructive">{bn ? "জরিমানা" : "Penalty"}</span>
+              <span>→</span>
+              <span className="font-semibold text-warning">{bn ? "সুদ" : "Interest"}</span>
+              <span>→</span>
+              <span className="font-semibold text-success">{bn ? "আসল" : "Principal"}</span>
+            </div>
+
+            <RepaymentProgress
+              totalAmount={Number(loan.total_principal) + Number(loan.total_interest)}
+              paidAmount={(Number(loan.total_principal) + Number(loan.total_interest)) - totalOutstanding}
+              tenure={stats?.total}
+              paidInstallments={stats?.paid}
+              nextPaymentDate={loan.next_due_date ?? nextPaymentDate}
+            />
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
               <div className="text-center">
@@ -372,7 +397,7 @@ const ClientDetail = () => {
                   <CalendarDays className="w-3.5 h-3.5" />
                   {bn ? "সময়সূচি" : "Schedule"}
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => setSettlementOpen(true)}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => { setSettlementLoanId(loan.id); setSettlementOpen(true); }}>
                   <Calculator className="w-3.5 h-3.5" />
                   {bn ? "নিষ্পত্তি" : "Settle"}
                 </Button>
@@ -667,7 +692,19 @@ const ClientDetail = () => {
         <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} prefilledClientId={id} />
       )}
       {paymentOpen && (
-        <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} prefilledLoanId={paymentLoanId} />
+        <LoanPaymentModal
+          open={paymentOpen}
+          onClose={() => setPaymentOpen(false)}
+          prefilledLoanId={paymentLoanId}
+          loanInfo={activeLoans?.find(l => l.id === paymentLoanId) ? {
+            id: paymentLoanId!,
+            loan_id: activeLoans!.find(l => l.id === paymentLoanId)!.loan_id,
+            outstanding_principal: Number(activeLoans!.find(l => l.id === paymentLoanId)!.outstanding_principal),
+            outstanding_interest: Number(activeLoans!.find(l => l.id === paymentLoanId)!.outstanding_interest),
+            penalty_amount: Number(activeLoans!.find(l => l.id === paymentLoanId)!.penalty_amount),
+            emi_amount: Number(activeLoans!.find(l => l.id === paymentLoanId)!.emi_amount),
+          } : undefined}
+        />
       )}
       {smartTxOpen && (
         <SmartTransactionForm open={smartTxOpen} onClose={() => setSmartTxOpen(false)} prefillClientId={id} />
@@ -676,7 +713,7 @@ const ClientDetail = () => {
         <SavingsTransactionModal open={savingsTxOpen} onClose={() => setSavingsTxOpen(false)} prefillClientId={id} prefillType={savingsTxType} />
       )}
       {settlementOpen && (
-        <EarlySettlementCalculator open={settlementOpen} onClose={() => setSettlementOpen(false)} />
+        <EarlySettlementCalculator open={settlementOpen} onClose={() => { setSettlementOpen(false); setSettlementLoanId(undefined); }} preselectedLoanId={settlementLoanId} />
       )}
     </AppLayout>
   );
