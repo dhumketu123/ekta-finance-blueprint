@@ -29,6 +29,8 @@ import {
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
   History, FileText, Filter, Download, BarChart3, Archive
 } from "lucide-react";
+import CommunicationHub from "@/components/CommunicationHub";
+import SnoozePanel from "@/components/SnoozePanel";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {
@@ -91,6 +93,27 @@ const ClientDetail = () => {
         else stats[row.loan_id].remaining++;
       }
       return stats;
+    },
+    enabled: !!activeLoans?.length,
+  });
+
+  // Snooze-eligible schedules per loan (next unpaid installment)
+  const { data: snoozeSchedules } = useQuery({
+    queryKey: ["snooze-schedules", activeLoans?.map(l => l.id).join(",")],
+    queryFn: async () => {
+      if (!activeLoans?.length) return {};
+      const ids = activeLoans.map(l => l.id);
+      const { data, error } = await (supabase.from("loan_schedules") as any)
+        .select("id, loan_id, due_date, status, promised_date, snooze_count, promised_status, is_penalty_frozen")
+        .in("loan_id", ids)
+        .in("status", ["pending", "overdue"])
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      const map: Record<string, any> = {};
+      for (const row of data ?? []) {
+        if (!map[row.loan_id]) map[row.loan_id] = row;
+      }
+      return map;
     },
     enabled: !!activeLoans?.length,
   });
@@ -295,6 +318,12 @@ const ClientDetail = () => {
                 <span className="text-xs text-muted-foreground font-mono">{client.id.slice(0, 8)}</span>
               )}
               <StatusBadge status={c.status as any} />
+              <CommunicationHub
+                clientId={client.id}
+                clientPhone={c.phone}
+                clientName={name}
+                loanId={activeLoans?.[0]?.id}
+              />
             </div>
             {c.occupation && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -370,6 +399,13 @@ const ClientDetail = () => {
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-semibold bg-success/10 text-success border border-success/20">
                 <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 {bn ? "✅ সম্পূর্ণ পরিশোধিত — বন্ধ হওয়ার অপেক্ষায়" : "✅ Fully repaid — pending closure"}
+              </div>
+            )}
+
+            {/* Smart Snooze Panel */}
+            {snoozeSchedules?.[loan.id] && (
+              <div className="mb-3">
+                <SnoozePanel schedule={snoozeSchedules[loan.id]} />
               </div>
             )}
 

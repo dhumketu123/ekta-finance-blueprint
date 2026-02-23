@@ -506,6 +506,61 @@ export type Database = {
           },
         ]
       }
+      communication_logs: {
+        Row: {
+          client_id: string
+          comm_type: string
+          created_at: string
+          id: string
+          loan_id: string | null
+          message_text: string | null
+          template_used: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          comm_type: string
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          message_text?: string | null
+          template_used?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          comm_type?: string
+          created_at?: string
+          id?: string
+          loan_id?: string | null
+          message_text?: string | null
+          template_used?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_financial_summary"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_scores: {
         Row: {
           avg_days_late: number | null
@@ -978,12 +1033,16 @@ export type Database = {
           installment_number: number
           interest_due: number
           interest_paid: number
+          is_penalty_frozen: boolean
           loan_id: string
           notes: string | null
           paid_date: string | null
           penalty_due: number
           principal_due: number
           principal_paid: number
+          promised_date: string | null
+          promised_status: string
+          snooze_count: number
           status: string
           total_due: number | null
           updated_at: string
@@ -996,12 +1055,16 @@ export type Database = {
           installment_number: number
           interest_due?: number
           interest_paid?: number
+          is_penalty_frozen?: boolean
           loan_id: string
           notes?: string | null
           paid_date?: string | null
           penalty_due?: number
           principal_due?: number
           principal_paid?: number
+          promised_date?: string | null
+          promised_status?: string
+          snooze_count?: number
           status?: string
           total_due?: number | null
           updated_at?: string
@@ -1014,12 +1077,16 @@ export type Database = {
           installment_number?: number
           interest_due?: number
           interest_paid?: number
+          is_penalty_frozen?: boolean
           loan_id?: string
           notes?: string | null
           paid_date?: string | null
           penalty_due?: number
           principal_due?: number
           principal_paid?: number
+          promised_date?: string | null
+          promised_status?: string
+          snooze_count?: number
           status?: string
           total_due?: number | null
           updated_at?: string
@@ -2284,6 +2351,7 @@ export type Database = {
       populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
+      process_ghost_penalties: { Args: never; Returns: Json }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
@@ -2304,6 +2372,10 @@ export type Database = {
           _reversed_by?: string
           _transaction_group_id: string
         }
+        Returns: Json
+      }
+      snooze_installment: {
+        Args: { p_promised_date: string; p_schedule_id: string }
         Returns: Json
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
