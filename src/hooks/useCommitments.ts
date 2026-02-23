@@ -17,6 +17,27 @@ export interface Commitment {
   clients?: { name_bn: string; name_en: string; phone: string | null };
 }
 
+// ─── Analytics Helper ────────────────────────────────────
+const logCommitmentAnalytics = async (
+  actionType: string,
+  commitmentId?: string,
+  metadata?: Record<string, unknown>
+) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await (supabase.from("commitment_analytics") as any).insert({
+      user_id: user.id,
+      commitment_id: commitmentId || null,
+      action_type: actionType,
+      action_metadata: metadata || {},
+      device_info: navigator.userAgent?.slice(0, 200) || null,
+    });
+  } catch {
+    // Silent fail — telemetry should never block UX
+  }
+};
+
 export const useCommitments = (filters?: { status?: string; officer_id?: string }) =>
   useQuery({
     queryKey: ["commitments", filters],
@@ -49,6 +70,8 @@ export const useFulfillCommitment = () => {
         .select()
         .single();
       if (error) throw error;
+      // ─── Telemetry: swipe fulfill ──────────────────
+      logCommitmentAnalytics("swipe_fulfill", commitmentId);
       return data;
     },
     onSuccess: () => {
@@ -73,6 +96,11 @@ export const useRescheduleCommitmentSwipe = () => {
       );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      // ─── Telemetry: reschedule confirm ─────────────
+      logCommitmentAnalytics("reschedule_confirm", payload.commitment_id, {
+        new_date: payload.reschedule_date,
+        reason_length: payload.reschedule_reason.length,
+      });
       return data;
     },
     onSuccess: () => {
@@ -81,6 +109,16 @@ export const useRescheduleCommitmentSwipe = () => {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+};
+
+// ─── AI Chip Selection Telemetry ─────────────────────────
+export const useLogAIChipSelect = () => {
+  return (chipLabel: string, chipDate: string, commitmentId?: string) => {
+    logCommitmentAnalytics("ai_chip_select", commitmentId, {
+      chip_label: chipLabel,
+      chip_date: chipDate,
+    });
+  };
 };
 
 export const useFeatureFlag = (flagName: string) =>

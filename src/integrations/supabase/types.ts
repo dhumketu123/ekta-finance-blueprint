@@ -361,6 +361,44 @@ export type Database = {
           },
         ]
       }
+      commitment_analytics: {
+        Row: {
+          action_metadata: Json | null
+          action_type: string
+          commitment_id: string | null
+          created_at: string
+          device_info: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_metadata?: Json | null
+          action_type: string
+          commitment_id?: string | null
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_metadata?: Json | null
+          action_type?: string
+          commitment_id?: string | null
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitment_analytics_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "commitments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commitments: {
         Row: {
           audit_hash_signature: string | null
