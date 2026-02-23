@@ -369,6 +369,7 @@ export type Database = {
           created_at: string
           id: string
           officer_id: string
+          penalty_suspended: boolean
           reschedule_reason: string | null
           status: Database["public"]["Enums"]["commitment_status"]
           updated_at: string
@@ -380,6 +381,7 @@ export type Database = {
           created_at?: string
           id?: string
           officer_id: string
+          penalty_suspended?: boolean
           reschedule_reason?: string | null
           status?: Database["public"]["Enums"]["commitment_status"]
           updated_at?: string
@@ -391,6 +393,7 @@ export type Database = {
           created_at?: string
           id?: string
           officer_id?: string
+          penalty_suspended?: boolean
           reschedule_reason?: string | null
           status?: Database["public"]["Enums"]["commitment_status"]
           updated_at?: string
@@ -1830,6 +1833,7 @@ export type Database = {
       is_field_officer: { Args: never; Returns: boolean }
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_penalty_suspended: { Args: { _client_id: string }; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
       mark_schedule_payment: {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
