@@ -18,6 +18,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.loans": { bn: "ঋণ", en: "Loans" },
   "nav.savings": { bn: "সঞ্চয়", en: "Savings" },
   "nav.transactions": { bn: "আর্থিক লেনদেন", en: "Transactions" },
+  "nav.commitments": { bn: "প্রতিশ্রুতি", en: "Commitments" },
   "nav.approvals": { bn: "অনুমোদন", en: "Approvals" },
   "nav.reports": { bn: "রিপোর্ট", en: "Reports" },
   "nav.notifications": { bn: "বিজ্ঞপ্তি", en: "Notifications" },

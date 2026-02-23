@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, Landmark, UserCog, Wallet, PiggyBank,
-  Bell, Settings, Shield, TrendingUp, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown, Atom,
+  Bell, Settings, Shield, TrendingUp, Search, X, LogOut, FlaskConical, ClipboardCheck, BarChart3, ShieldAlert, Monitor, Crown, Atom, Handshake,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSidebarState } from "@/contexts/SidebarContext";
@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { path: "/field-officers", icon: UserCog, labelKey: "nav.fieldOfficers", roles: ["admin", "owner"] },
   { path: "/loans", icon: Wallet, labelKey: "nav.loans", roles: ["admin", "owner", "field_officer"] },
   { path: "/savings", icon: PiggyBank, labelKey: "nav.savings", roles: ["admin", "owner", "field_officer", "treasurer"] },
+  { path: "/commitments", icon: Handshake, labelKey: "nav.commitments", roles: ["admin", "owner", "field_officer"] },
   { path: "/transactions", icon: Landmark, labelKey: "nav.transactions", roles: ["admin", "owner", "treasurer", "field_officer"] },
   { path: "/approvals", icon: ClipboardCheck, labelKey: "nav.approvals", roles: ["admin", "owner", "treasurer", "field_officer"] },
   { path: "/reports", icon: BarChart3, labelKey: "nav.reports", roles: ["admin", "owner", "treasurer"] },
