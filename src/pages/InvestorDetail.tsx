@@ -147,34 +147,40 @@ const InvestorDetail = () => {
   // Handlers
   const handlePayDividend = async () => {
     if (!hasDb || !user) return;
+    const payAmt = Number(dividendPayAmount);
+    if (!payAmt || payAmt <= 0 || payAmt > totalPayable) {
+      toast.error(bn ? "সঠিক পরিমাণ দিন" : "Enter a valid amount");
+      return;
+    }
     setSubmitting(true);
     try {
+      const newDueDividend = totalPayable - payAmt;
+      const updatePayload: Record<string, any> = {
+        due_dividend: newDueDividend,
+        last_profit_date: format(new Date(), "yyyy-MM-dd"),
+      };
       if (payoutMode === "reinvest") {
-        // Add profit to capital
-        const { error: updErr } = await supabase
-          .from("investors")
-          .update({
-            capital: capital + monthlyProfit,
-            accumulated_profit: (inv.accumulated_profit || 0) + monthlyProfit,
-            last_profit_date: format(new Date(), "yyyy-MM-dd"),
-          })
-          .eq("id", inv.id);
-        if (updErr) throw updErr;
-      } else {
-        const { error: updErr } = await supabase
-          .from("investors")
-          .update({ last_profit_date: format(new Date(), "yyyy-MM-dd") })
-          .eq("id", inv.id);
-        if (updErr) throw updErr;
+        updatePayload.capital = capital + payAmt;
+        updatePayload.accumulated_profit = (inv.accumulated_profit || 0) + payAmt;
       }
-      // Log transaction
+      const { error: updErr } = await supabase
+        .from("investors")
+        .update(updatePayload)
+        .eq("id", inv.id);
+      if (updErr) throw updErr;
+      // Log transaction with exact paid amount + notes
+      const txNote = [
+        payoutMode === "reinvest" ? "Reinvested to capital" : "Cash payout",
+        newDueDividend > 0 ? `(Partial: ৳${newDueDividend} remaining due)` : "(Full payment)",
+        dividendNotes ? `— ${dividendNotes}` : "",
+      ].filter(Boolean).join(" ");
       const { error: txErr } = await supabase.from("transactions").insert({
         investor_id: inv.id,
         type: "investor_profit" as any,
-        amount: monthlyProfit,
+        amount: payAmt,
         status: "paid" as any,
         transaction_date: format(new Date(), "yyyy-MM-dd"),
-        notes: payoutMode === "reinvest" ? "Auto-reinvested to capital" : "Cash payout",
+        notes: txNote,
         performed_by: user.id,
       });
       if (txErr) throw txErr;
@@ -182,6 +188,8 @@ const InvestorDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["investors", id] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setPayDividendOpen(false);
+      setDividendPayAmount("");
+      setDividendNotes("");
     } catch (err: any) {
       toast.error(err.message || "Error");
     } finally {
