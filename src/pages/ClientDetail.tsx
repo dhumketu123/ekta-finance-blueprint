@@ -14,6 +14,7 @@ import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
 import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
 import TablePagination from "@/components/TablePagination";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
+import ClientStatementExport from "@/components/ClientStatementExport";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClient, useTransactions } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -25,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
-  History, FileText, Filter
+  History, FileText, Filter, Download, BarChart3, Archive
 } from "lucide-react";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
@@ -46,9 +47,11 @@ const ClientDetail = () => {
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [settlementLoanId, setSettlementLoanId] = useState<string | undefined>();
   const [scheduleLoanId, setScheduleLoanId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history" | "hub">("info");
   const [historyFilter, setHistoryFilter] = useState<string>("all");
   const [historyPage, setHistoryPage] = useState(1);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [showSettled, setShowSettled] = useState(false);
   const HISTORY_PER_PAGE = 20;
 
   // ALL active loans for this client (multi-loan support)
@@ -107,7 +110,24 @@ const ClientDetail = () => {
     enabled: !!id,
   });
 
-  // Transaction history for this client
+  // Settled/closed loans
+  const { data: settledLoans } = useQuery({
+    queryKey: ["loans", "client_settled", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loans")
+        .select("id, loan_id, status, outstanding_principal, outstanding_interest, penalty_amount, emi_amount, maturity_date, disbursement_date, loan_model, total_principal, total_interest, next_due_date")
+        .eq("client_id", id!)
+        .in("status", ["settled", "closed"] as any[])
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!id && showSettled,
+  });
+
+  // Transaction history for this client (also used for export)
   const { data: clientTransactions } = useQuery({
     queryKey: ["client_financial_txns", id],
     queryFn: async () => {
@@ -116,11 +136,11 @@ const ClientDetail = () => {
         .select("*")
         .eq("member_id", id!)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!id && activeTab === "history",
+    enabled: !!id && (activeTab === "history" || activeTab === "hub" || exportOpen),
   });
 
   if (isLoading) {
@@ -174,6 +194,12 @@ const ClientDetail = () => {
 
   const totalSavingsBalance = savingsAccounts?.reduce((s, a) => s + Number(a.balance), 0) ?? 0;
 
+  // Aggregate loan metrics
+  const allLoansForStats = [...(activeLoans ?? []), ...(settledLoans ?? [])];
+  const aggTotalOutstanding = (activeLoans ?? []).reduce((s, l) => s + Number(l.outstanding_principal) + Number(l.outstanding_interest) + Number(l.penalty_amount), 0);
+  const aggTotalPaid = (activeLoans ?? []).reduce((s, l) => s + (Number(l.total_principal) + Number(l.total_interest)) - (Number(l.outstanding_principal) + Number(l.outstanding_interest)), 0);
+  const aggTotalPenalty = (activeLoans ?? []).reduce((s, l) => s + Number(l.penalty_amount), 0);
+
   // Filtered transactions for history tab
   const filteredTxns = clientTransactions?.filter((tx: any) => {
     if (historyFilter === "all") return true;
@@ -220,6 +246,10 @@ const ClientDetail = () => {
               <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setSmartTxOpen(true)}>
                 <Receipt className="w-3.5 h-3.5" />
                 {bn ? "ফি/অন্যান্য" : "Fee/Other"}
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setExportOpen(true)}>
+                <Download className="w-3.5 h-3.5" />
+                {bn ? "এক্সপোর্ট" : "Export"}
               </Button>
             </div>
           ) : null
@@ -445,13 +475,71 @@ const ClientDetail = () => {
         </div>
       )}
 
-      {/* ── Tabs: Info | Schedule | History ── */}
-      <div className="flex gap-1 border-b border-border">
-        {(["info", "schedule", "history"] as const).map((tab) => (
+      {/* ── Aggregate Summary Card ── */}
+      {hasActiveLoans && (
+        <div className="card-elevated p-5 animate-slide-up" style={{ animationDelay: "0.14s" }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
+                {bn ? "সামগ্রিক সারসংক্ষেপ" : "Aggregate Summary"}
+              </h3>
+            </div>
+            <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" onClick={() => { setShowSettled(!showSettled); }}>
+              <Archive className="w-3 h-3" />
+              {showSettled ? (bn ? "বন্ধ ঋণ লুকান" : "Hide Settled") : (bn ? "বন্ধ ঋণ দেখান" : "Show Settled")}
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
+              <p className="text-[10px] text-muted-foreground">{bn ? "সক্রিয় ঋণ" : "Active Loans"}</p>
+              <p className="text-lg font-bold text-primary">{activeLoans?.length ?? 0}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-success/5 border border-success/10 text-center">
+              <p className="text-[10px] text-muted-foreground">{bn ? "মোট পরিশোধিত" : "Total Paid"}</p>
+              <p className="text-lg font-bold text-success">৳{Math.max(aggTotalPaid, 0).toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10 text-center">
+              <p className="text-[10px] text-muted-foreground">{bn ? "মোট বকেয়া" : "Total Outstanding"}</p>
+              <p className="text-lg font-bold text-destructive">৳{aggTotalOutstanding.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-warning/5 border border-warning/10 text-center">
+              <p className="text-[10px] text-muted-foreground">{bn ? "মোট জরিমানা" : "Total Penalty"}</p>
+              <p className="text-lg font-bold text-warning">৳{aggTotalPenalty.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Settled loans list */}
+          {showSettled && settledLoans && settledLoans.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">{bn ? "বন্ধ/নিষ্পত্তি ঋণ" : "Settled / Closed Loans"}</p>
+              {settledLoans.map((sl: any) => (
+                <div key={sl.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-xs">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-3.5 h-3.5 text-success" />
+                    <span className="font-mono font-semibold">{sl.loan_id || sl.id.slice(0, 8)}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">৳{Number(sl.total_principal).toLocaleString()}</span>
+                    <StatusBadge status={sl.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {showSettled && (!settledLoans || settledLoans.length === 0) && (
+            <p className="mt-3 text-xs text-muted-foreground text-center">{bn ? "কোনো বন্ধ ঋণ নেই" : "No settled loans"}</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Tabs: Info | Schedule | History | Hub ── */}
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
+        {(["info", "schedule", "history", "hub"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === tab
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -460,11 +548,14 @@ const ClientDetail = () => {
             {tab === "info" && <User className="w-3 h-3" />}
             {tab === "schedule" && <CalendarDays className="w-3 h-3" />}
             {tab === "history" && <History className="w-3 h-3" />}
+            {tab === "hub" && <BarChart3 className="w-3 h-3" />}
             {tab === "info"
               ? (bn ? "তথ্য" : "Info")
               : tab === "schedule"
               ? (bn ? "সময়সূচি" : "Schedule")
-              : (bn ? "লেনদেন ইতিহাস" : "Transactions")}
+              : tab === "history"
+              ? (bn ? "লেনদেন ইতিহাস" : "Transactions")
+              : (bn ? "পেমেন্ট হাব" : "Payment Hub")}
           </button>
         ))}
       </div>
@@ -687,6 +778,126 @@ const ClientDetail = () => {
         </div>
       )}
 
+      {/* ── PAYMENT HUB TAB ── */}
+      {activeTab === "hub" && (
+        <div className="space-y-4 animate-slide-up">
+          <div className="card-elevated p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{bn ? "পেমেন্ট হাব" : "Payment Hub"}</h3>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => setExportOpen(true)}>
+                <Download className="w-3 h-3" />
+                {bn ? "এক্সপোর্ট" : "Export"}
+              </Button>
+            </div>
+
+            {/* Quick action grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {hasActiveLoans && (
+                <button
+                  onClick={() => openPayment(activeLoans![0].id)}
+                  className="p-4 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-center"
+                >
+                  <Banknote className="w-5 h-5 text-primary mx-auto mb-1" />
+                  <p className="text-xs font-semibold">{bn ? "কিস্তি প্রদান" : "Pay EMI"}</p>
+                </button>
+              )}
+              <button
+                onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}
+                className="p-4 rounded-xl bg-success/5 border border-success/20 hover:bg-success/10 transition-colors text-center"
+              >
+                <PiggyBank className="w-5 h-5 text-success mx-auto mb-1" />
+                <p className="text-xs font-semibold">{bn ? "সঞ্চয় জমা" : "Deposit"}</p>
+              </button>
+              <button
+                onClick={() => setSmartTxOpen(true)}
+                className="p-4 rounded-xl bg-warning/5 border border-warning/20 hover:bg-warning/10 transition-colors text-center"
+              >
+                <Receipt className="w-5 h-5 text-warning mx-auto mb-1" />
+                <p className="text-xs font-semibold">{bn ? "ফি পেমেন্ট" : "Fee Payment"}</p>
+              </button>
+              {!hasActiveLoans && (
+                <button
+                  onClick={() => setDisburseOpen(true)}
+                  className="p-4 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-center"
+                >
+                  <TrendingUp className="w-5 h-5 text-primary mx-auto mb-1" />
+                  <p className="text-xs font-semibold">{bn ? "ঋণ বিতরণ" : "Disburse"}</p>
+                </button>
+              )}
+              {hasActiveLoans && (
+                <button
+                  onClick={() => { setSettlementLoanId(activeLoans![0].id); setSettlementOpen(true); }}
+                  className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 hover:bg-destructive/10 transition-colors text-center"
+                >
+                  <Calculator className="w-5 h-5 text-destructive mx-auto mb-1" />
+                  <p className="text-xs font-semibold">{bn ? "নিষ্পত্তি" : "Settle"}</p>
+                </button>
+              )}
+            </div>
+
+            {/* Per-loan comparison */}
+            {hasActiveLoans && activeLoans!.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground">{bn ? "ঋণ তুলনা" : "Loan Comparison"}</p>
+                {activeLoans!.map((loan) => {
+                  const total = Number(loan.total_principal) + Number(loan.total_interest);
+                  const outstanding = Number(loan.outstanding_principal) + Number(loan.outstanding_interest) + Number(loan.penalty_amount);
+                  const paidPct = total > 0 ? Math.round(((total - outstanding) / total) * 100) : 0;
+                  return (
+                    <div key={loan.id} className="p-3 rounded-xl bg-muted/30 border border-border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-mono font-semibold">{loan.loan_id || loan.id.slice(0, 8)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-primary">{paidPct}%</span>
+                          <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => openPayment(loan.id)}>
+                            <Banknote className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${paidPct >= 75 ? "bg-success" : paidPct >= 40 ? "bg-primary" : "bg-warning"}`}
+                          style={{ width: `${paidPct}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground">
+                        <span>{bn ? "বকেয়া:" : "Due:"} ৳{outstanding.toLocaleString()}</span>
+                        <span>EMI: ৳{Number(loan.emi_amount).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Recent transactions preview */}
+            {clientTransactions && clientTransactions.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-border">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">{bn ? "সাম্প্রতিক লেনদেন" : "Recent Transactions"}</p>
+                {clientTransactions.slice(0, 5).map((tx: any) => {
+                  const typeLabel = TX_TYPE_LABELS[tx.transaction_type as FinTransactionType];
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between py-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{new Date(tx.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short" })}</span>
+                        <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
+                      </div>
+                      <span className="font-bold">৳{Number(tx.amount).toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+                <Button variant="ghost" size="sm" className="w-full text-xs mt-2" onClick={() => setActiveTab("history")}>
+                  {bn ? "সব দেখুন →" : "View All →"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Modals ── */}
       {disburseOpen && (
         <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} prefilledClientId={id} />
@@ -714,6 +925,17 @@ const ClientDetail = () => {
       )}
       {settlementOpen && (
         <EarlySettlementCalculator open={settlementOpen} onClose={() => { setSettlementOpen(false); setSettlementLoanId(undefined); }} preselectedLoanId={settlementLoanId} />
+      )}
+      {exportOpen && (
+        <ClientStatementExport
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          clientName={name}
+          memberId={c.member_id || client.id.slice(0, 8)}
+          loans={(activeLoans ?? []) as any[]}
+          transactions={(clientTransactions ?? []) as any[]}
+          savingsBalance={totalSavingsBalance}
+        />
       )}
     </AppLayout>
   );
