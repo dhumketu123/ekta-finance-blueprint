@@ -345,7 +345,7 @@ const InvestorDetail = () => {
       </div>
 
       {/* ═══ Wealth Tracker Metric Cards ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${dueDividend > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
         <MetricCard
           title={bn ? "মোট মূলধন" : "Total Capital"}
           value={`৳${capital.toLocaleString()}`}
@@ -364,6 +364,14 @@ const InvestorDetail = () => {
           icon={<Banknote className="w-5 h-5" />}
           variant="warning"
         />
+        {dueDividend > 0 && (
+          <MetricCard
+            title={bn ? "বকেয়া লভ্যাংশ" : "Due Dividend"}
+            value={`৳${dueDividend.toLocaleString()}`}
+            icon={<Calendar className="w-5 h-5" />}
+            variant="danger"
+          />
+        )}
         <MetricCard
           title={bn ? "লভ্যাংশ কাউন্টডাউন" : "Dividend Countdown"}
           value={countdown}
