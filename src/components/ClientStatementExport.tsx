@@ -27,6 +27,14 @@ interface TxData {
   notes?: string;
 }
 
+interface AnalyticsSnapshot {
+  punctualityPct: number;
+  totalRepaid: number;
+  riskLevel: string;
+  highRiskCount: number;
+  overdueCount: number;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -35,9 +43,10 @@ interface Props {
   loans: LoanData[];
   transactions: TxData[];
   savingsBalance: number;
+  analytics?: AnalyticsSnapshot;
 }
 
-export default function ClientStatementExport({ open, onClose, clientName, memberId, loans, transactions, savingsBalance }: Props) {
+export default function ClientStatementExport({ open, onClose, clientName, memberId, loans, transactions, savingsBalance, analytics }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const [exporting, setExporting] = useState<string | null>(null);
@@ -55,8 +64,30 @@ export default function ClientStatementExport({ open, onClose, clientName, membe
         tx.reference_id || "",
         tx.notes || "",
       ]);
-      
-      const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
+
+      // Add summary metrics at bottom
+      const summaryRows = [
+        [],
+        ["--- Summary ---"],
+        ["Total Loans", loans.length.toString()],
+        ["Total Outstanding", loans.reduce((s, l) => s + Number(l.outstanding_principal) + Number(l.outstanding_interest) + Number(l.penalty_amount), 0).toString()],
+        ["Savings Balance", savingsBalance.toString()],
+      ];
+      if (analytics) {
+        summaryRows.push(
+          ["Punctuality %", `${analytics.punctualityPct}%`],
+          ["Risk Level", analytics.riskLevel],
+          ["Total Repaid", analytics.totalRepaid.toString()],
+          ["High Risk Loans", analytics.highRiskCount.toString()],
+          ["Overdue Loans", analytics.overdueCount.toString()],
+        );
+      }
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(r => r.map(c => `"${c}"`).join(",")),
+        ...summaryRows.map(r => r.map(c => `"${c}"`).join(",")),
+      ].join("\n");
       const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -134,6 +165,30 @@ export default function ClientStatementExport({ open, onClose, clientName, membe
     </div>
   </div>
 </div>
+
+${analytics ? `
+<div class="section">
+  <h2>${bn ? "বিশ্লেষণ স্ন্যাপশট" : "Analytics Snapshot"}</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">${bn ? "সময়মতো পরিশোধ" : "Punctuality"}</div>
+      <div class="value ${analytics.punctualityPct >= 75 ? "success" : analytics.punctualityPct >= 50 ? "warning" : "danger"}">${analytics.punctualityPct}%</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${bn ? "ঝুঁকি মাত্রা" : "Risk Level"}</div>
+      <div class="value ${analytics.riskLevel === "low" ? "success" : analytics.riskLevel === "critical" ? "danger" : "warning"}">${analytics.riskLevel.toUpperCase()}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${bn ? "উচ্চ ঝুঁকি ঋণ" : "High Risk Loans"}</div>
+      <div class="value ${analytics.highRiskCount > 0 ? "danger" : "success"}">${analytics.highRiskCount}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${bn ? "বকেয়া ঋণ" : "Overdue Loans"}</div>
+      <div class="value ${analytics.overdueCount > 0 ? "danger" : "success"}">${analytics.overdueCount}</div>
+    </div>
+  </div>
+</div>
+` : ""}
 
 <div class="section">
   <h2>${bn ? "ঋণের বিবরণ" : "Loan Details"}</h2>

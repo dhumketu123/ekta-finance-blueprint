@@ -15,6 +15,7 @@ import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal"
 import TablePagination from "@/components/TablePagination";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import ClientStatementExport from "@/components/ClientStatementExport";
+import ClientAnalyticsPanel from "@/components/ClientAnalyticsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClient, useTransactions } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -140,7 +141,7 @@ const ClientDetail = () => {
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!id && (activeTab === "history" || activeTab === "hub" || exportOpen),
+    enabled: !!id,
   });
 
   if (isLoading) {
@@ -185,6 +186,13 @@ const ClientDetail = () => {
   const savingsType = savingsProduct?.product_name_en ?? "—";
   const frequency = savingsProduct?.frequency ?? "—";
 
+  // Mask member_id for privacy: show first 4 + last 2 chars
+  const maskMemberId = (mid: string | null) => {
+    if (!mid || mid.length <= 6) return mid || "—";
+    return mid.slice(0, 4) + "••••" + mid.slice(-2);
+  };
+  const maskedMemberId = maskMemberId(c.member_id);
+
   const maritalMap: Record<string, string> = {
     unmarried: bn ? "অবিবাহিত" : "Unmarried",
     married: bn ? "বিবাহিত" : "Married",
@@ -223,7 +231,7 @@ const ClientDetail = () => {
     <AppLayout>
       <PageHeader
         title={name}
-        description={`${t("detail.client")} — ${c.member_id ?? client.id.slice(0, 8)}`}
+        description={`${t("detail.client")} — ${maskedMemberId}`}
         actions={
           isAdmin || canEditClients ? (
             <div className="flex gap-2 flex-wrap">
@@ -267,8 +275,8 @@ const ClientDetail = () => {
             <p className="text-xs text-muted-foreground mt-0.5">{c.name_bn || ""}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               {c.member_id ? (
-                <span className="text-xs font-mono font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 tracking-wider">
-                  {c.member_id}
+                <span className="text-xs font-mono font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 tracking-wider" title={c.member_id}>
+                  {maskedMemberId}
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground font-mono">{client.id.slice(0, 8)}</span>
@@ -472,6 +480,12 @@ const ClientDetail = () => {
             <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
             <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
           </div>
+          {totalSavingsBalance < 1000 && (
+            <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+              {bn ? `⚠️ সঞ্চয় ব্যালেন্স কম (<৳১,০০০)` : `⚠️ Low savings balance (<৳1,000)`}
+            </div>
+          )}
         </div>
       )}
 
@@ -529,7 +543,30 @@ const ClientDetail = () => {
           )}
           {showSettled && (!settledLoans || settledLoans.length === 0) && (
             <p className="mt-3 text-xs text-muted-foreground text-center">{bn ? "কোনো বন্ধ ঋণ নেই" : "No settled loans"}</p>
-          )}
+      )}
+
+      {/* ── Client Analytics Panel ── */}
+      {hasActiveLoans && (
+        <ClientAnalyticsPanel
+          loans={(activeLoans ?? []).map(l => ({
+            ...l,
+            outstanding_principal: Number(l.outstanding_principal),
+            outstanding_interest: Number(l.outstanding_interest),
+            penalty_amount: Number(l.penalty_amount),
+            emi_amount: Number(l.emi_amount),
+            total_principal: Number(l.total_principal),
+            total_interest: Number(l.total_interest),
+          }))}
+          scheduleStats={allScheduleStats ?? {}}
+          transactions={(clientTransactions ?? []).map((tx: any) => ({
+            created_at: tx.created_at,
+            transaction_type: tx.transaction_type,
+            amount: Number(tx.amount),
+            approval_status: tx.approval_status,
+          }))}
+          savingsBalance={totalSavingsBalance}
+        />
+      )}
         </div>
       )}
 
@@ -926,17 +963,36 @@ const ClientDetail = () => {
       {settlementOpen && (
         <EarlySettlementCalculator open={settlementOpen} onClose={() => { setSettlementOpen(false); setSettlementLoanId(undefined); }} preselectedLoanId={settlementLoanId} />
       )}
-      {exportOpen && (
-        <ClientStatementExport
-          open={exportOpen}
-          onClose={() => setExportOpen(false)}
-          clientName={name}
-          memberId={c.member_id || client.id.slice(0, 8)}
-          loans={(activeLoans ?? []) as any[]}
-          transactions={(clientTransactions ?? []) as any[]}
-          savingsBalance={totalSavingsBalance}
-        />
-      )}
+      {exportOpen && (() => {
+        // Compute analytics snapshot for export
+        const stats = allScheduleStats ?? {};
+        const totalInst = Object.values(stats).reduce((s: number, v: any) => s + v.total, 0);
+        const paidInst = Object.values(stats).reduce((s: number, v: any) => s + v.paid, 0);
+        const punctualityPct = totalInst > 0 ? Math.round((paidInst / totalInst) * 100) : 0;
+        const repaidTotal = (clientTransactions ?? [])
+          .filter((tx: any) => tx.transaction_type === "loan_repayment" && tx.approval_status === "approved")
+          .reduce((s: number, tx: any) => s + Number(tx.amount), 0);
+        const now = Date.now();
+        const overdueCount = (activeLoans ?? []).filter(l => l.next_due_date && Math.ceil((new Date(l.next_due_date).getTime() - now) / 86400000) < -7).length;
+        const highRiskCount = (activeLoans ?? []).filter(l => {
+          const st = stats[l.id];
+          if (!st || st.total === 0) return false;
+          return st.remaining / st.total > 0.2 || (Number(l.total_principal) > 0 && Number(l.penalty_amount) / Number(l.total_principal) > 0.1);
+        }).length;
+
+        return (
+          <ClientStatementExport
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+            clientName={name}
+            memberId={c.member_id || client.id.slice(0, 8)}
+            loans={(activeLoans ?? []) as any[]}
+            transactions={(clientTransactions ?? []) as any[]}
+            savingsBalance={totalSavingsBalance}
+            analytics={{ punctualityPct, totalRepaid: repaidTotal, riskLevel: overdueCount > 0 || highRiskCount > 0 ? "high" : "low", highRiskCount, overdueCount }}
+          />
+        );
+      })()}
     </AppLayout>
   );
 };
