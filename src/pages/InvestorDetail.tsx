@@ -383,7 +383,6 @@ const InvestorDetail = () => {
             {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
             {dueDividend > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold">Due</span>}
           </Button>
-          </Button>
           <Button
             onClick={() => setAddCapitalOpen(true)}
             variant="outline"
