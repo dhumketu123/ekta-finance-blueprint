@@ -91,7 +91,7 @@ const Clients = () => {
                        <p className="text-xs font-medium">{lang === "bn" ? c.name_bn : c.name_en}</p>
                        {c.member_id && <p className="text-[10px] font-mono text-primary/70 mt-0.5">{c.member_id}</p>}
                      </TableCell>
-                    <TableCell className="text-xs">{c.phone || "—"}</TableCell>
+                    <TableCell className="text-xs">{c.phone ? (c.phone.slice(0, 3) + "••••" + c.phone.slice(-2)) : "—"}</TableCell>
                     <TableCell className="text-xs">{c.area || "—"}</TableCell>
                     <TableCell className="text-xs font-semibold">{c.loan_amount ? `৳${Number(c.loan_amount).toLocaleString()}` : "—"}</TableCell>
                     <TableCell><StatusBadge status={c.status === "overdue" ? "overdue" : c.status === "pending" ? "pending" : c.status === "active" ? "active" : "inactive"} /></TableCell>

@@ -1548,6 +1548,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          branch_id: string | null
           created_at: string
           id: string
           name_bn: string
@@ -1559,6 +1560,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          branch_id?: string | null
           created_at?: string
           id: string
           name_bn?: string
@@ -1570,6 +1572,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          branch_id?: string | null
           created_at?: string
           id?: string
           name_bn?: string
@@ -1579,7 +1582,15 @@ export type Database = {
           role?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       savings_accounts: {
         Row: {
@@ -2061,6 +2072,7 @@ export type Database = {
         Args: { _created_by?: string; _period_month: string }
         Returns: Json
       }
+      can_export: { Args: never; Returns: boolean }
       check_and_apply_overdue_penalty: {
         Args: { _penalty_percent?: number }
         Returns: Json
