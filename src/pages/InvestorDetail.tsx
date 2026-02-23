@@ -69,6 +69,8 @@ const InvestorDetail = () => {
   const [capitalAmount, setCapitalAmount] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [dividendPayAmount, setDividendPayAmount] = useState("");
+  const [dividendNotes, setDividendNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const sampleInv = sampleInvestors.find((i) => i.id === id);
@@ -121,6 +123,8 @@ const InvestorDetail = () => {
   const profitPct = Number(hasDb ? inv.monthly_profit_percent : inv.monthlyProfitPercent);
   const reinvest = inv.reinvest;
   const monthlyProfit = Math.round(capital * profitPct / 100);
+  const dueDividend = Number(hasDb ? inv.due_dividend ?? 0 : 0);
+  const totalPayable = monthlyProfit + dueDividend;
   const lastProfitDate = hasDb ? inv.last_profit_date : null;
   const maturityDate = hasDb ? inv.maturity_date : null;
 
@@ -143,34 +147,40 @@ const InvestorDetail = () => {
   // Handlers
   const handlePayDividend = async () => {
     if (!hasDb || !user) return;
+    const payAmt = Number(dividendPayAmount);
+    if (!payAmt || payAmt <= 0 || payAmt > totalPayable) {
+      toast.error(bn ? "সঠিক পরিমাণ দিন" : "Enter a valid amount");
+      return;
+    }
     setSubmitting(true);
     try {
+      const newDueDividend = totalPayable - payAmt;
+      const updatePayload: Record<string, any> = {
+        due_dividend: newDueDividend,
+        last_profit_date: format(new Date(), "yyyy-MM-dd"),
+      };
       if (payoutMode === "reinvest") {
-        // Add profit to capital
-        const { error: updErr } = await supabase
-          .from("investors")
-          .update({
-            capital: capital + monthlyProfit,
-            accumulated_profit: (inv.accumulated_profit || 0) + monthlyProfit,
-            last_profit_date: format(new Date(), "yyyy-MM-dd"),
-          })
-          .eq("id", inv.id);
-        if (updErr) throw updErr;
-      } else {
-        const { error: updErr } = await supabase
-          .from("investors")
-          .update({ last_profit_date: format(new Date(), "yyyy-MM-dd") })
-          .eq("id", inv.id);
-        if (updErr) throw updErr;
+        updatePayload.capital = capital + payAmt;
+        updatePayload.accumulated_profit = (inv.accumulated_profit || 0) + payAmt;
       }
-      // Log transaction
+      const { error: updErr } = await supabase
+        .from("investors")
+        .update(updatePayload)
+        .eq("id", inv.id);
+      if (updErr) throw updErr;
+      // Log transaction with exact paid amount + notes
+      const txNote = [
+        payoutMode === "reinvest" ? "Reinvested to capital" : "Cash payout",
+        newDueDividend > 0 ? `(Partial: ৳${newDueDividend} remaining due)` : "(Full payment)",
+        dividendNotes ? `— ${dividendNotes}` : "",
+      ].filter(Boolean).join(" ");
       const { error: txErr } = await supabase.from("transactions").insert({
         investor_id: inv.id,
         type: "investor_profit" as any,
-        amount: monthlyProfit,
+        amount: payAmt,
         status: "paid" as any,
         transaction_date: format(new Date(), "yyyy-MM-dd"),
-        notes: payoutMode === "reinvest" ? "Auto-reinvested to capital" : "Cash payout",
+        notes: txNote,
         performed_by: user.id,
       });
       if (txErr) throw txErr;
@@ -178,6 +188,8 @@ const InvestorDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["investors", id] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setPayDividendOpen(false);
+      setDividendPayAmount("");
+      setDividendNotes("");
     } catch (err: any) {
       toast.error(err.message || "Error");
     } finally {
@@ -333,7 +345,7 @@ const InvestorDetail = () => {
       </div>
 
       {/* ═══ Wealth Tracker Metric Cards ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${dueDividend > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
         <MetricCard
           title={bn ? "মোট মূলধন" : "Total Capital"}
           value={`৳${capital.toLocaleString()}`}
@@ -352,6 +364,14 @@ const InvestorDetail = () => {
           icon={<Banknote className="w-5 h-5" />}
           variant="warning"
         />
+        {dueDividend > 0 && (
+          <MetricCard
+            title={bn ? "বকেয়া লভ্যাংশ" : "Due Dividend"}
+            value={`৳${dueDividend.toLocaleString()}`}
+            icon={<Calendar className="w-5 h-5" />}
+            variant="destructive"
+          />
+        )}
         <MetricCard
           title={bn ? "লভ্যাংশ কাউন্টডাউন" : "Dividend Countdown"}
           value={countdown}
@@ -364,11 +384,12 @@ const InvestorDetail = () => {
       {hasDb && (
         <div className="flex flex-wrap gap-3">
           <Button
-            onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setPayDividendOpen(true); }}
+            onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setDividendPayAmount(String(totalPayable)); setDividendNotes(""); setPayDividendOpen(true); }}
             className="gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-md"
           >
             <Banknote className="w-4 h-4" />
             {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
+            {dueDividend > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold">Due</span>}
           </Button>
           <Button
             onClick={() => setAddCapitalOpen(true)}
@@ -536,9 +557,9 @@ const InvestorDetail = () => {
         </Tabs>
       </div>
 
-      {/* ═══ PHASE 2: Pay Dividend Modal ═══ */}
+      {/* ═══ PHASE 2: Pay Dividend Modal (Upgraded — Partial Payout) ═══ */}
       <Dialog open={payDividendOpen} onOpenChange={setPayDividendOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Banknote className="w-5 h-5 text-success" />
@@ -546,11 +567,69 @@ const InvestorDetail = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-3">
-            <div className="card-elevated p-4 bg-success/5 border-success/20">
-              <p className="text-xs text-muted-foreground">{bn ? "হিসাবকৃত লভ্যাংশ" : "Calculated Dividend"}</p>
-              <p className="text-3xl font-extrabold text-success mt-1">৳{monthlyProfit.toLocaleString()}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{capital.toLocaleString()} × {profitPct}%</p>
+            {/* Breakdown header */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-success/5 border border-success/20">
+                <p className="text-[11px] text-muted-foreground">{bn ? "এই মাসের লভ্যাংশ" : "This Month's Profit"}</p>
+                <p className="text-lg font-bold text-success mt-0.5">৳{monthlyProfit.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{capital.toLocaleString()} × {profitPct}%</p>
+              </div>
+              <div className={`p-3 rounded-xl border ${dueDividend > 0 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"}`}>
+                <p className="text-[11px] text-muted-foreground">{bn ? "পূর্ববর্তী বকেয়া" : "Previous Due"}</p>
+                <p className={`text-lg font-bold mt-0.5 ${dueDividend > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  ৳{dueDividend.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{bn ? "অপরিশোধিত" : "Unpaid balance"}</p>
+              </div>
             </div>
+
+            {/* Total Payable banner */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-success/10 to-success/5 border border-success/30">
+              <p className="text-xs font-bold text-success uppercase tracking-wider">{bn ? "মোট প্রদেয়" : "Total Payable"}</p>
+              <p className="text-3xl font-extrabold text-success mt-1">৳{totalPayable.toLocaleString()}</p>
+            </div>
+
+            {/* Editable pay amount */}
+            <div>
+              <Label className="text-xs font-bold mb-1.5 block">{bn ? "প্রদানের পরিমাণ (৳)" : "Paying Amount (৳)"}</Label>
+              <Input
+                type="number"
+                value={dividendPayAmount}
+                onChange={(e) => setDividendPayAmount(e.target.value)}
+                placeholder={String(totalPayable)}
+                max={totalPayable}
+                min={1}
+                className="text-lg font-bold"
+              />
+            </div>
+
+            {/* Live calculation widget */}
+            {dividendPayAmount && Number(dividendPayAmount) > 0 && (
+              <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{bn ? "মোট প্রদেয়" : "Total Payable"}</span>
+                  <span className="font-semibold">৳{totalPayable.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{bn ? "এখন প্রদান" : "Paying Now"}</span>
+                  <span className="font-bold text-success">৳{Number(dividendPayAmount).toLocaleString()}</span>
+                </div>
+                <div className="border-t border-border/60 pt-2 flex justify-between text-sm">
+                  <span className="font-bold">{bn ? "অবশিষ্ট বকেয়া" : "Remaining Due"}</span>
+                  {(() => {
+                    const remaining = totalPayable - Number(dividendPayAmount);
+                    return (
+                      <span className={`font-extrabold ${remaining > 0 ? "text-destructive" : "text-success"}`}>
+                        ৳{Math.max(0, remaining).toLocaleString()}
+                        {remaining <= 0 && " ✅"}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Payout method */}
             <div>
               <Label className="text-xs font-bold mb-2 block">{bn ? "পরিশোধ পদ্ধতি" : "Payout Method"}</Label>
               <RadioGroup value={payoutMode} onValueChange={(v) => setPayoutMode(v as "cash" | "reinvest")} className="space-y-2">
@@ -568,11 +647,27 @@ const InvestorDetail = () => {
                 </div>
               </RadioGroup>
             </div>
+
+            {/* Notes / Remarks */}
+            <div>
+              <Label className="text-xs font-bold mb-1.5 block">{bn ? "নোটস / মন্তব্য (ঐচ্ছিক)" : "Notes / Remarks (Optional)"}</Label>
+              <textarea
+                value={dividendNotes}
+                onChange={(e) => setDividendNotes(e.target.value)}
+                placeholder={bn ? "আংশিক পরিশোধের কারণ লিখুন..." : "Reason for partial payment..."}
+                rows={2}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayDividendOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
-            <Button onClick={handlePayDividend} disabled={submitting} className="bg-success hover:bg-success/90 text-success-foreground gap-1.5">
-              {submitting ? "..." : bn ? "নিশ্চিত করুন" : "Confirm"}
+            <Button
+              onClick={handlePayDividend}
+              disabled={submitting || !dividendPayAmount || Number(dividendPayAmount) <= 0 || Number(dividendPayAmount) > totalPayable}
+              className="bg-success hover:bg-success/90 text-success-foreground gap-1.5"
+            >
+              {submitting ? "..." : bn ? "নিশ্চিত করুন" : "Confirm Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>

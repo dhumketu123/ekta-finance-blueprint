@@ -1,0 +1,1 @@
+ALTER TABLE public.investors ADD COLUMN IF NOT EXISTS due_dividend numeric NOT NULL DEFAULT 0;
