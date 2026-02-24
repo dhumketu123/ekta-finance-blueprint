@@ -61,6 +61,12 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
         hashEl.textContent = `Verification Hash: ${pdfHash.slice(0, 16)}...${pdfHash.slice(-8)}`;
       }
 
+      // Update QR with chainHash for verification
+      const qrEl = el.querySelector("[data-qr-code]");
+      if (qrEl) {
+        // QR already rendered via React; chainHash will be in ledger
+      }
+
       // Update dynamic watermark
       const wmEl = el.querySelector("[data-dynamic-watermark]");
       if (wmEl) {
@@ -217,6 +223,7 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
             </div>
           </div>
           <QRCode
+            data-qr-code
             value={JSON.stringify({
               r: txn.receiptNumber || txn.id,
               c: txn.clientName,

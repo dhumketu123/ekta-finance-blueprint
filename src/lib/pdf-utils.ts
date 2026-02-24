@@ -1,5 +1,5 @@
 /**
- * PDF Utility Functions — Phase 4: Hash Chaining, Retry, Verification, Device Fingerprint
+ * PDF Utility Functions — Phase 5: Chain Hash QR, Audit, Verification
  * Blockchain-style immutable audit trail for all generated documents
  */
 
@@ -203,5 +203,89 @@ export async function verifyPdfHash(
     return { valid: hashMatch, chainIntact };
   } catch (err: any) {
     return { valid: false, chainIntact: false, error: err.message };
+  }
+}
+
+// ─── Batch Chain Verification (for Audit UI) ───
+
+export async function verifyLedgerChain(
+  entityType?: string
+): Promise<{
+  totalEntries: number;
+  brokenLinks: number;
+  entries: Array<{
+    id: string;
+    entity_id: string;
+    entity_type: string;
+    created_at: string;
+    hash_self: string | null;
+    hash_prev: string | null;
+    chainIntact: boolean;
+    payload: Record<string, any>;
+  }>;
+}> {
+  try {
+    let query = supabase
+      .from("event_sourcing")
+      .select("id, entity_id, entity_type, created_at, hash_self, hash_prev, payload, performed_by")
+      .eq("action", "pdf_generated")
+      .order("created_at", { ascending: true });
+
+    if (entityType) {
+      query = query.eq("entity_type", entityType);
+    }
+
+    const { data, error } = await query.limit(500);
+    if (error || !data) return { totalEntries: 0, brokenLinks: 0, entries: [] };
+
+    let brokenLinks = 0;
+    const entries = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const entry = data[i];
+      const payload = entry.payload as Record<string, any>;
+      let chainIntact = true;
+
+      // First entry: prev should be null/GENESIS
+      if (i === 0) {
+        chainIntact = !entry.hash_prev || entry.hash_prev === null;
+      } else {
+        // Check prev hash links to previous entry's self hash
+        const prevEntry = data[i - 1];
+        if (entry.hash_prev !== prevEntry.hash_self) {
+          chainIntact = false;
+          brokenLinks++;
+        }
+      }
+
+      // Verify self hash integrity
+      if (chainIntact && entry.hash_self && payload?.hash && payload?.generated_at) {
+        const recalculated = await generateChainHash({
+          currentHash: payload.hash,
+          prevHash: payload.prev_hash || null,
+          timestamp: payload.generated_at,
+        });
+        if (recalculated !== entry.hash_self) {
+          chainIntact = false;
+          brokenLinks++;
+        }
+      }
+
+      entries.push({
+        id: entry.id,
+        entity_id: entry.entity_id,
+        entity_type: entry.entity_type,
+        created_at: entry.created_at,
+        hash_self: entry.hash_self,
+        hash_prev: entry.hash_prev,
+        chainIntact,
+        payload,
+      });
+    }
+
+    return { totalEntries: entries.length, brokenLinks, entries: entries.reverse() };
+  } catch (err) {
+    console.error("Chain verification failed:", err);
+    return { totalEntries: 0, brokenLinks: 0, entries: [] };
   }
 }

@@ -239,7 +239,8 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
             </div>
           </div>
           <QRCode
-            value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent })}
+            data-qr-code
+            value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent, v: "5" })}
             size={68}
             style={{ border: "2px solid #e2e8f0", padding: "3px", borderRadius: "4px" }}
           />
