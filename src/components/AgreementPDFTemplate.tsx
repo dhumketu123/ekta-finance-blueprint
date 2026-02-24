@@ -220,24 +220,42 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
           {investor.name_en} • {new Date().toLocaleDateString("en-GB")} • {investor.investor_id || investor.id.slice(0, 8).toUpperCase()}
         </div>
 
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #047857", paddingBottom: "10px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#047857", margin: 0 }}>
-              একতা ফাইন্যান্স গ্রুপ
-            </h1>
-            <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0" }}>Ekta Finance Group</p>
-            <p style={{ fontSize: "10px", color: "#94a3b8", margin: "2px 0" }}>Corporate Office, Dhaka, Bangladesh</p>
-            <div style={{ marginTop: "6px", display: "inline-block", background: "#047857", color: "#fff", padding: "3px 12px", borderRadius: "4px", fontSize: "11px", fontWeight: 600 }}>
-              বিনিয়োগ চুক্তিপত্র / INVESTMENT AGREEMENT
+        {/* Premium Header: Logo | Title | QR */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid rgba(4,120,87,0.2)", paddingBottom: "14px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+          {/* Left: SVG Logo + Brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="ektaGradPdf" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#065f46" />
+                  <stop offset="100%" stopColor="#10b981" />
+                </linearGradient>
+              </defs>
+              <path d="M 10,90 L 45,90 L 75,55 L 50,30 L 10,30 Z" fill="url(#ektaGradPdf)"/>
+              <path d="M 55,25 L 95,25 L 95,45 L 80,60 L 60,40 Z" fill="url(#ektaGradPdf)"/>
+              <path d="M 80,65 L 95,50 L 95,80 L 85,90 L 65,90 Z" fill="url(#ektaGradPdf)"/>
+            </svg>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+              <span style={{ fontSize: "22px", fontWeight: 800, color: "#064e3b", letterSpacing: "-0.02em", fontFamily: "system-ui, sans-serif" }}>EKTA</span>
+              <span style={{ fontSize: "9px", fontWeight: 700, color: "#065f46", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: "3px" }}>FINANCE GROUP</span>
             </div>
           </div>
-          <QRCode
-            data-qr-code
-            value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent, v: "5" })}
-            size={68}
-            style={{ border: "2px solid #e2e8f0", padding: "3px", borderRadius: "4px" }}
-          />
+
+          {/* Center: Agreement Title */}
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: "4px" }}>
+            <h1 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>INVESTMENT AGREEMENT</h1>
+            <h2 style={{ fontSize: "13px", fontWeight: 700, color: "#334155", margin: "4px 0 0 0" }}>(বিনিয়োগ চুক্তিপত্র)</h2>
+            <p style={{ fontSize: "9px", color: "#94a3b8", margin: "4px 0 0 0" }}>Corporate Office, Dhaka, Bangladesh</p>
+          </div>
+
+          {/* Right: QR Code */}
+          <div style={{ padding: "3px", border: "1.5px solid #e2e8f0", borderRadius: "6px", background: "#fff" }}>
+            <QRCode
+              data-qr-code
+              value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent, v: "5" })}
+              size={56}
+            />
+          </div>
         </div>
 
         {/* Date */}
