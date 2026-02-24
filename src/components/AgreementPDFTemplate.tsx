@@ -277,47 +277,69 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
           </div>
         )}
 
-        {/* Terms & Conditions Card */}
+        {/* Terms & Conditions Card — Professional Legal Format */}
         <div style={{ border: "1.5px solid #047857", borderRadius: "6px", overflow: "hidden", marginBottom: "16px", position: "relative", zIndex: 1 }}>
           <div style={{ background: "#047857", color: "#fff", padding: "7px 14px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             {nomineeRows.length > 0 ? "৪" : "৩"}. শর্তাবলী / TERMS & CONDITIONS
           </div>
-          <div style={{ padding: "12px 14px", fontSize: "11.5px", lineHeight: 1.8, color: "#1e293b", background: "rgba(236,253,245,0.4)" }}>
-            <p style={{ margin: "0 0 6px" }}>
-              ক) মেয়াদপূর্তির আগে মূলধন উত্তোলন করলে জরিমানা প্রযোজ্য হবে (Anti-Loss Rule)।
-            </p>
-            <p style={{ margin: "0 0 6px" }}>
-              খ) লভ্যাংশ প্রতি মাসের প্রথম সপ্তাহে প্রদান করা হবে।
-            </p>
-            <p style={{ margin: "0 0 6px" }}>
-              গ) পুনঃবিনিয়োগ সক্রিয় থাকলে লভ্যাংশ স্বয়ংক্রিয়ভাবে মূলধনে যোগ হবে।
-            </p>
-            <p style={{ margin: "0 0 6px" }}>
-              ঘ) উভয় পক্ষের সম্মতিতে এই চুক্তি সংশোধনযোগ্য।
-            </p>
-            <p style={{ margin: 0, fontStyle: "italic", color: "#64748b" }}>
-              a) Pre-mature encashment is subject to penalty (Anti-Loss Rule). b) Dividends are paid in the first week of each month. c) If reinvestment is active, profits are auto-compounded. d) This agreement may be amended with mutual consent.
-            </p>
+          <div style={{ padding: "14px 16px", fontSize: "11.5px", lineHeight: 1.9, color: "#1e293b", background: "rgba(236,253,245,0.4)" }}>
+            <ol style={{ margin: 0, paddingLeft: "18px", listStyleType: "decimal" }}>
+              <li style={{ marginBottom: "6px" }}>
+                <span style={{ fontWeight: 600 }}>ক)</span> মেয়াদপূর্তির আগে মূলধন উত্তোলন করলে জরিমানা প্রযোজ্য হবে (Anti-Loss Rule)।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>Pre-mature encashment is subject to penalty (Anti-Loss Rule).</span>
+              </li>
+              <li style={{ marginBottom: "6px" }}>
+                <span style={{ fontWeight: 600 }}>খ)</span> লভ্যাংশ প্রতি মাসের প্রথম সপ্তাহে প্রদান করা হবে।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>Dividends are paid in the first week of each month.</span>
+              </li>
+              <li style={{ marginBottom: "6px" }}>
+                <span style={{ fontWeight: 600 }}>গ)</span> পুনঃবিনিয়োগ সক্রিয় থাকলে লভ্যাংশ স্বয়ংক্রিয়ভাবে মূলধনে যোগ হবে।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>If reinvestment is active, profits are auto-compounded.</span>
+              </li>
+              <li style={{ marginBottom: "0" }}>
+                <span style={{ fontWeight: 600 }}>ঘ)</span> উভয় পক্ষের সম্মতিতে এই চুক্তি সংশোধনযোগ্য।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>This agreement may be amended with mutual consent.</span>
+              </li>
+            </ol>
           </div>
         </div>
 
-        {/* Digital Seal */}
-        <div style={{ position: "absolute", bottom: "48mm", right: "20mm", transform: "rotate(-8deg)", border: "3px solid #16a34a", borderRadius: "50%", width: "85px", height: "85px", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", color: "#16a34a", fontWeight: 700, fontSize: "10px", lineHeight: 1.2, opacity: 0.7, zIndex: 1 }}>
-          অনুমোদিত<br />APPROVED<br />✓
-        </div>
+        {/* Premium Signature & Digital Stamp Footer */}
+        <div style={{ position: "absolute", bottom: "22mm", left: "16mm", right: "16mm", zIndex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 4px" }}>
 
-        {/* Footer Signatures */}
-        <div style={{ position: "absolute", bottom: "16mm", left: "16mm", right: "16mm", zIndex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #cbd5e1", paddingTop: "12px" }}>
-            <div style={{ textAlign: "center", fontSize: "10px", color: "#64748b" }}>
-              <div style={{ borderTop: "1px solid #1a1a1a", width: "130px", marginBottom: "4px" }} />
-              বিনিয়োগকারীর স্বাক্ষর<br />Investor Signature
+            {/* Left: Investor Signature */}
+            <div style={{ textAlign: "center", width: "160px" }}>
+              <div style={{ borderTop: "1px solid #475569", paddingTop: "8px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Investor</p>
+                <p style={{ fontSize: "10px", color: "#64748b", margin: "2px 0 0 0" }}>(বিনিয়োগকারীর স্বাক্ষর)</p>
+              </div>
             </div>
-            <div style={{ textAlign: "center", fontSize: "10px", color: "#64748b" }}>
-              <div style={{ borderTop: "1px solid #1a1a1a", width: "130px", marginBottom: "4px" }} />
-              অনুমোদিত স্বাক্ষর<br />Authorized Signature
+
+            {/* Center: Digital Stamp */}
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "160px" }}>
+              <div style={{
+                width: "110px", height: "110px",
+                borderRadius: "50%", border: "3.5px solid #10b981",
+                display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+                transform: "rotate(-15deg)", opacity: 0.8,
+                padding: "8px",
+              }}>
+                <span style={{ fontSize: "9px", fontWeight: 700, color: "#10b981", letterSpacing: "2px" }}>DIGITALLY</span>
+                <span style={{ fontSize: "16px", fontWeight: 900, color: "#059669", margin: "3px 0", borderTop: "2px solid #10b981", borderBottom: "2px solid #10b981", padding: "2px 0" }}>SIGNED</span>
+                <span style={{ fontSize: "9px", fontWeight: 700, color: "#10b981", letterSpacing: "1px" }}>& VERIFIED</span>
+              </div>
+            </div>
+
+            {/* Right: Authorized Signatory */}
+            <div style={{ textAlign: "center", width: "160px" }}>
+              <div style={{ borderTop: "1px solid #475569", paddingTop: "8px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Authorized Signatory</p>
+                <p style={{ fontSize: "10px", color: "#64748b", margin: "2px 0 0 0" }}>(একতা ফাইন্যান্স গ্রুপ)</p>
+              </div>
             </div>
           </div>
+
           {/* Cryptographic Hash Footer */}
           <p
             data-hash-footer
@@ -325,14 +347,14 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
               textAlign: "center",
               fontSize: "7px",
               color: "#94a3b8",
-              marginTop: "6px",
+              marginTop: "10px",
               fontFamily: "monospace",
               letterSpacing: "0.05em",
             }}
           >
             Verification Hash: Generating...
           </p>
-          <p style={{ textAlign: "center", fontSize: "8px", color: "#94a3b8", marginTop: "4px" }}>
+          <p style={{ textAlign: "center", fontSize: "7.5px", color: "#94a3b8", marginTop: "3px" }}>
             একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি চুক্তিপত্র | এই ডকুমেন্ট আইনগত উদ্দেশ্যে ব্যবহারযোগ্য | {new Date().toISOString()}
           </p>
         </div>
