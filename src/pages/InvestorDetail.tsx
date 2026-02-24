@@ -559,7 +559,7 @@ const InvestorDetail = () => {
 
       {/* ═══ PHASE 2: Pay Dividend Modal (Upgraded — Partial Payout) ═══ */}
       <Dialog open={payDividendOpen} onOpenChange={setPayDividendOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Banknote className="w-5 h-5 text-success" />
