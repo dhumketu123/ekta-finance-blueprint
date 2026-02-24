@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Wallet, TrendingUp, Menu } from "lucide-react";
 import { useSidebarState } from "@/contexts/SidebarContext";
 
+const navItemClass = "flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95 will-change-transform";
+
 const BottomNav = () => {
   const location = useLocation();
   const { open } = useSidebarState();
@@ -18,9 +20,7 @@ const BottomNav = () => {
         {/* 1. Home */}
         <Link
           to="/"
-          className={`flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 ${
-            isActive("/") ? "text-primary" : "text-muted-foreground"
-          }`}
+          className={`${navItemClass} ${isActive("/") ? "text-primary" : "text-muted-foreground"}`}
         >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-[10px] leading-tight">হোম</span>
@@ -29,30 +29,26 @@ const BottomNav = () => {
         {/* 2. Clients */}
         <Link
           to="/clients"
-          className={`flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 ${
-            isActive("/clients") ? "text-primary" : "text-muted-foreground"
-          }`}
+          className={`${navItemClass} ${isActive("/clients") ? "text-primary" : "text-muted-foreground"}`}
         >
           <Users className="w-5 h-5" />
           <span className="text-[10px] leading-tight">গ্রাহক</span>
         </Link>
 
-        {/* 3. Center FAB — Transactions/Loans */}
+        {/* 3. Center FAB */}
         <div className="flex-1 flex items-center justify-center relative">
           <Link
             to="/loans"
-            className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg"
+            className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg transform-gpu transition-transform duration-200 ease-out active:scale-90 will-change-transform"
           >
             <Wallet className="w-6 h-6" />
           </Link>
         </div>
 
-        {/* 4. Savings/Investors */}
+        {/* 4. Savings */}
         <Link
           to="/savings"
-          className={`flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 ${
-            isActive("/savings") ? "text-primary" : "text-muted-foreground"
-          }`}
+          className={`${navItemClass} ${isActive("/savings") ? "text-primary" : "text-muted-foreground"}`}
         >
           <TrendingUp className="w-5 h-5" />
           <span className="text-[10px] leading-tight">সঞ্চয়</span>
@@ -61,7 +57,7 @@ const BottomNav = () => {
         {/* 5. Menu */}
         <button
           onClick={open}
-          className="flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 text-muted-foreground"
+          className={`${navItemClass} text-muted-foreground`}
         >
           <Menu className="w-5 h-5" />
           <span className="text-[10px] leading-tight">মেনু</span>
