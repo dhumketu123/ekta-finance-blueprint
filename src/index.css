@@ -454,3 +454,21 @@
     outline-offset: 2px;
   }
 }
+
+/* Print styles — hide everything except #printable-area */
+@media print {
+  body * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  #printable-area,
+  #printable-area * {
+    display: block !important;
+    visibility: visible !important;
+  }
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}

@@ -171,6 +171,7 @@ const InvestorWallet = () => {
         clearSearch={txState.clearSearch}
         onPageChange={txState.setPage}
         bn={bn}
+        investorName={investor ? (bn ? investor.name_bn : investor.name_en) : undefined}
       />
     </AppLayout>
   );

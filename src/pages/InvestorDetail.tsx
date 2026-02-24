@@ -6,6 +6,7 @@ import DetailField from "@/components/DetailField";
 import StatusBadge from "@/components/StatusBadge";
 import CommunicationHub from "@/components/CommunicationHub";
 import MetricCard from "@/components/MetricCard";
+import AgreementPDFTemplate from "@/components/AgreementPDFTemplate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvestor, useTransactions } from "@/hooks/useSupabaseData";
@@ -407,6 +408,32 @@ const InvestorDetail = () => {
             <ArrowDownCircle className="w-4 h-4 text-destructive" />
             {bn ? "উত্তোলন" : "Withdrawal"}
           </Button>
+          {/* Agreement PDF Button */}
+          {inv && (
+            <AgreementPDFTemplate
+              investor={hasDb ? inv : {
+                id: inv.id,
+                name_en: inv.nameEn || inv.name_en,
+                name_bn: inv.nameBn || inv.name_bn,
+                phone: inv.phone,
+                nid_number: inv.nid_number || null,
+                address: inv.address || null,
+                investor_id: inv.investor_id || null,
+                capital: capital,
+                monthly_profit_percent: profitPct,
+                tenure_years: inv.tenure_years || null,
+                investment_model: inv.investment_model || "profit_only",
+                maturity_date: inv.maturity_date || null,
+                nominee_name: inv.nominee_name || null,
+                nominee_phone: inv.nominee_phone || null,
+                nominee_nid: inv.nominee_nid || null,
+                nominee_relation: inv.nominee_relation || null,
+                reinvest: reinvest,
+                source_of_fund: inv.source_of_fund || null,
+              }}
+              bn={bn}
+            />
+          )}
         </div>
       )}
 
