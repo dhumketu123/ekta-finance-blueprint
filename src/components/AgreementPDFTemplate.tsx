@@ -162,25 +162,19 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
     { label: "পুনঃবিনিয়োগ / Auto-Reinvest", value: investor.reinvest ? "✅ হ্যাঁ / Yes" : "❌ না / No" },
   ].filter(Boolean) as { label: string; value: string }[];
 
-  const renderTable = (title: string, data: { label: string; value: string }[]) => (
-    <div style={{ marginBottom: "16px" }}>
-      <div style={{ background: "#0ea5e9", color: "#fff", padding: "6px 12px", fontSize: "12px", fontWeight: 700, borderRadius: "4px 4px 0 0", letterSpacing: "0.03em" }}>
+  const renderCard = (title: string, data: { label: string; value: string }[]) => (
+    <div style={{ border: "1.5px solid #047857", borderRadius: "6px", overflow: "hidden", marginBottom: "0" }}>
+      <div style={{ background: "#047857", color: "#fff", padding: "7px 14px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {title}
       </div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #e2e8f0" }}>
-              <td style={{ padding: "8px 10px", fontWeight: 600, color: "#334155", width: "42%", backgroundColor: i % 2 === 0 ? "#f8fafc" : "#fff", borderRight: "1px solid #e2e8f0" }}>
-                {row.label}
-              </td>
-              <td style={{ padding: "8px 10px", backgroundColor: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                {row.value}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ background: "rgba(236,253,245,0.4)", padding: "10px 14px" }}>
+        {data.map((row, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < data.length - 1 ? "1px solid rgba(4,120,87,0.12)" : "none" }}>
+            <span style={{ fontWeight: 700, color: "#1e293b", fontSize: "11.5px", flex: "0 0 48%" }}>{row.label}</span>
+            <span style={{ color: "#334155", fontSize: "11.5px", textAlign: "right", flex: "1" }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -227,14 +221,14 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
         </div>
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0ea5e9", paddingBottom: "10px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #047857", paddingBottom: "10px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
           <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0ea5e9", margin: 0 }}>
+            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#047857", margin: 0 }}>
               একতা ফাইন্যান্স গ্রুপ
             </h1>
             <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0" }}>Ekta Finance Group</p>
             <p style={{ fontSize: "10px", color: "#94a3b8", margin: "2px 0" }}>Corporate Office, Dhaka, Bangladesh</p>
-            <div style={{ marginTop: "6px", display: "inline-block", background: "#0ea5e9", color: "#fff", padding: "3px 12px", borderRadius: "4px", fontSize: "11px", fontWeight: 600 }}>
+            <div style={{ marginTop: "6px", display: "inline-block", background: "#047857", color: "#fff", padding: "3px 12px", borderRadius: "4px", fontSize: "11px", fontWeight: 600 }}>
               বিনিয়োগ চুক্তিপত্র / INVESTMENT AGREEMENT
             </div>
           </div>
@@ -251,21 +245,26 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
           তারিখ / Date: <strong>{today}</strong>
         </div>
 
-        {/* Section 1: Investor Details */}
-        {renderTable("১. বিনিয়োগকারীর তথ্য / Investor Details", rows)}
+        {/* 2-Column Grid: Investor Details + Contract Terms */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+          {renderCard("১. বিনিয়োগকারীর তথ্য / INVESTOR DETAILS", rows)}
+          {renderCard(`${nomineeRows.length > 0 ? "৩" : "২"}. চুক্তির শর্তাবলী / SMART CONTRACT TERMS`, contractRows)}
+        </div>
 
-        {/* Section 2: Nominee */}
-        {nomineeRows.length > 0 && renderTable("২. নমিনি তথ্য / Nominee Details", nomineeRows)}
-
-        {/* Section 3: Contract Terms */}
-        {renderTable(`${nomineeRows.length > 0 ? "৩" : "২"}. চুক্তির শর্তাবলী / Smart Contract Terms`, contractRows)}
-
-        {/* Section 4: Terms & Conditions */}
-        <div style={{ marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          <div style={{ background: "#0ea5e9", color: "#fff", padding: "6px 12px", fontSize: "12px", fontWeight: 700, borderRadius: "4px 4px 0 0" }}>
-            {nomineeRows.length > 0 ? "৪" : "৩"}. শর্তাবলী / Terms & Conditions
+        {/* 2-Column Grid: Additional Info + Nominee */}
+        {nomineeRows.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+            {renderCard("২. নমিনি তথ্য / NOMINEE DETAILS", nomineeRows)}
+            <div /> {/* empty cell for balance */}
           </div>
-          <div style={{ padding: "10px 12px", fontSize: "11px", lineHeight: 1.7, color: "#334155", border: "1px solid #e2e8f0", borderTop: "none" }}>
+        )}
+
+        {/* Terms & Conditions Card */}
+        <div style={{ border: "1.5px solid #047857", borderRadius: "6px", overflow: "hidden", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+          <div style={{ background: "#047857", color: "#fff", padding: "7px 14px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            {nomineeRows.length > 0 ? "৪" : "৩"}. শর্তাবলী / TERMS & CONDITIONS
+          </div>
+          <div style={{ padding: "12px 14px", fontSize: "11.5px", lineHeight: 1.8, color: "#1e293b", background: "rgba(236,253,245,0.4)" }}>
             <p style={{ margin: "0 0 6px" }}>
               ক) মেয়াদপূর্তির আগে মূলধন উত্তোলন করলে জরিমানা প্রযোজ্য হবে (Anti-Loss Rule)।
             </p>
