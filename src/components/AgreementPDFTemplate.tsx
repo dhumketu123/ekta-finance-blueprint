@@ -1,6 +1,6 @@
 /**
- * Phase 3 — Investment Agreement PDF Template
- * Optimized with SHA256 hash, ledger integration, memoization, toast UX
+ * Phase 4 — Investment Agreement PDF Template
+ * Dynamic watermark, blockchain hash chaining, device fingerprint, retry logic
  */
 import { useRef, useState, forwardRef, useImperativeHandle, useCallback, memo } from "react";
 import html2canvas from "html2canvas";
@@ -69,6 +69,13 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
         hashEl.textContent = `Verification Hash: ${pdfHash.slice(0, 16)}...${pdfHash.slice(-8)}`;
       }
 
+      // Update dynamic watermark
+      const wmEl = el.querySelector("[data-dynamic-watermark]");
+      if (wmEl) {
+        const invId = investor.investor_id || investor.id.slice(0, 8).toUpperCase();
+        wmEl.textContent = `${investor.name_en} • ${new Date().toLocaleDateString("en-GB")} • ${invId}`;
+      }
+
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
@@ -84,12 +91,13 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
         title: `Agreement_${investor.name_en}`,
         subject: `Hash:${pdfHash}`,
         creator: "Ekta Finance Group",
+        keywords: `v4|chain|${investor.investor_id || investor.id}`,
       });
 
       pdf.save(`Agreement_${investor.name_en.replace(/\s+/g, "_")}.pdf`);
       el.style.display = origDisplay;
 
-      // Log to ledger
+      // Log to ledger with chain hash + retry
       const ledgerResult = await logPdfToLedger({
         entityId: investor.id,
         entityType: "agreement",
@@ -106,7 +114,7 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
       if (ledgerResult.success) {
         toast.success(bn ? "চুক্তিপত্র তৈরি ও লেজারে রেকর্ড হয়েছে ✅" : "Agreement generated & recorded ✅");
       } else {
-        toast.warning(bn ? "চুক্তিপত্র তৈরি হয়েছে, লেজার এন্ট্রি ব্যর্থ" : "Agreement generated, ledger entry failed");
+        toast.warning(bn ? "চুক্তিপত্র তৈরি হয়েছে, লেজার এন্ট্রি ব্যর্থ ⚠️" : "Agreement generated, ledger entry failed ⚠️");
       }
     } catch (err) {
       console.error("Agreement PDF generation failed:", err);
@@ -193,9 +201,29 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
           overflow: "hidden",
         }}
       >
-        {/* Watermark */}
+        {/* Static Watermark */}
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: "5rem", fontWeight: 800, color: "rgba(0,0,0,0.03)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.15em" }}>
           EKTA FINANCE
+        </div>
+
+        {/* Dynamic Watermark (Name + Date + ID) */}
+        <div
+          data-dynamic-watermark
+          style={{
+            position: "absolute",
+            top: "35%",
+            left: "50%",
+            transform: "translate(-50%, -50%) rotate(-25deg)",
+            fontSize: "1.1rem",
+            fontWeight: 600,
+            color: "rgba(0,0,0,0.02)",
+            pointerEvents: "none",
+            zIndex: 0,
+            whiteSpace: "nowrap",
+            letterSpacing: "0.08em",
+          }}
+        >
+          {investor.name_en} • {new Date().toLocaleDateString("en-GB")} • {investor.investor_id || investor.id.slice(0, 8).toUpperCase()}
         </div>
 
         {/* Header */}

@@ -1,6 +1,6 @@
 /**
- * Phase 3 — TransactionReceiptTemplate
- * Optimized with SHA256 hash, ledger integration, memoization, toast UX
+ * Phase 4 — TransactionReceiptTemplate
+ * Dynamic watermark, blockchain hash chaining, device fingerprint, retry logic
  */
 
 import { useRef, useState, memo, useCallback } from "react";
@@ -47,7 +47,6 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
       const origDisplay = el.style.display;
       el.style.display = "block";
 
-      // Generate SHA256 hash
       const receiptNo = txn.receiptNumber || txn.id.slice(0, 8).toUpperCase();
       const pdfHash = await generateReceiptHash({
         receiptNumber: receiptNo,
@@ -56,10 +55,16 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
         clientName: txn.clientName,
       });
 
-      // Update hash footer in DOM before capture
+      // Update hash footer
       const hashEl = el.querySelector("[data-hash-footer]");
       if (hashEl) {
         hashEl.textContent = `Verification Hash: ${pdfHash.slice(0, 16)}...${pdfHash.slice(-8)}`;
+      }
+
+      // Update dynamic watermark
+      const wmEl = el.querySelector("[data-dynamic-watermark]");
+      if (wmEl) {
+        wmEl.textContent = `${txn.clientName} • ${new Date(txn.date).toLocaleDateString("en-GB")} • ${receiptNo}`;
       }
 
       const canvas = await html2canvas(el, {
@@ -73,17 +78,17 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
       const pdf = new jsPDF("p", "mm", "a4");
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
 
-      // Add hidden metadata
       pdf.setProperties({
         title: `Receipt_${receiptNo}`,
         subject: `Hash:${pdfHash}`,
         creator: "Ekta Finance Group",
+        keywords: `v4|chain|${receiptNo}`,
       });
 
       pdf.save(`Receipt_${receiptNo}.pdf`);
       el.style.display = origDisplay;
 
-      // Log to ledger
+      // Log to ledger with chain hash + retry
       const ledgerResult = await logPdfToLedger({
         entityId: txn.id,
         entityType: "receipt",
@@ -100,7 +105,7 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
       if (ledgerResult.success) {
         toast.success("রিসিপ্ট তৈরি ও লেজারে রেকর্ড হয়েছে ✅");
       } else {
-        toast.warning("রিসিপ্ট তৈরি হয়েছে, কিন্তু লেজার এন্ট্রি ব্যর্থ");
+        toast.warning("রিসিপ্ট তৈরি হয়েছে, কিন্তু লেজার এন্ট্রি ব্যর্থ ⚠️");
       }
     } catch (err) {
       console.error("PDF generation failed:", err);
@@ -135,7 +140,7 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
           overflow: "hidden",
         }}
       >
-        {/* Watermark */}
+        {/* Static Watermark */}
         <div
           style={{
             position: "absolute",
@@ -152,6 +157,26 @@ const TransactionReceiptTemplate = memo(({ txn }: Props) => {
           }}
         >
           EKTA FINANCE
+        </div>
+
+        {/* Dynamic Watermark (Name + Date + Tx ID) */}
+        <div
+          data-dynamic-watermark
+          style={{
+            position: "absolute",
+            top: "35%",
+            left: "50%",
+            transform: "translate(-50%, -50%) rotate(-25deg)",
+            fontSize: "1.1rem",
+            fontWeight: 600,
+            color: "rgba(0,0,0,0.025)",
+            pointerEvents: "none",
+            zIndex: 0,
+            whiteSpace: "nowrap",
+            letterSpacing: "0.08em",
+          }}
+        >
+          {txn.clientName} • {new Date(txn.date).toLocaleDateString("en-GB")} • {txn.receiptNumber || txn.id.slice(0, 8).toUpperCase()}
         </div>
 
         {/* Header */}
