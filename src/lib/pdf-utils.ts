@@ -88,7 +88,7 @@ export async function generateChainHash(params: {
   return generateSHA256(payload);
 }
 
-// ─── Exponential Backoff Retry ───
+// ─── Exponential Backoff Retry with Jitter ───
 
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -102,7 +102,10 @@ async function retryWithBackoff<T>(
     } catch (err) {
       lastError = err;
       if (attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt);
+        // Exponential backoff + random jitter to avoid thundering herd
+        const exponential = baseDelay * Math.pow(2, attempt);
+        const jitter = Math.random() * baseDelay;
+        const delay = exponential + jitter;
         await new Promise((r) => setTimeout(r, delay));
       }
     }
