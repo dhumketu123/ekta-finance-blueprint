@@ -1,14 +1,16 @@
 /**
- * Investment Agreement PDF Template
- * Hidden A4 container for PDF/Print generation
- * Bengali + English, QR, Watermark, Digital Seal
+ * Phase 3 — Investment Agreement PDF Template
+ * Optimized with SHA256 hash, ledger integration, memoization, toast UX
  */
-import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle, useCallback, memo } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { generateAgreementHash, logPdfToLedger } from "@/lib/pdf-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InvestorData {
   id: string;
@@ -40,17 +42,32 @@ export interface AgreementPDFHandle {
   generate: () => Promise<void>;
 }
 
-const AgreementPDFTemplate = forwardRef<AgreementPDFHandle, Props>(({ investor, bn }, ref) => {
+const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ investor, bn }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  const generatePDF = async () => {
+  const generatePDF = useCallback(async () => {
     if (!containerRef.current) return;
     try {
       setLoading(true);
       const el = containerRef.current;
       const origDisplay = el.style.display;
       el.style.display = "block";
+
+      const dateStr = new Date().toISOString();
+      const pdfHash = await generateAgreementHash({
+        investorId: investor.investor_id || investor.id,
+        capital: investor.capital,
+        profitRate: investor.monthly_profit_percent,
+        date: dateStr,
+      });
+
+      // Update hash footer
+      const hashEl = el.querySelector("[data-hash-footer]");
+      if (hashEl) {
+        hashEl.textContent = `Verification Hash: ${pdfHash.slice(0, 16)}...${pdfHash.slice(-8)}`;
+      }
 
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -62,15 +79,42 @@ const AgreementPDFTemplate = forwardRef<AgreementPDFHandle, Props>(({ investor, 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
-      pdf.save(`Agreement_${investor.name_en.replace(/\s+/g, "_")}.pdf`);
 
+      pdf.setProperties({
+        title: `Agreement_${investor.name_en}`,
+        subject: `Hash:${pdfHash}`,
+        creator: "Ekta Finance Group",
+      });
+
+      pdf.save(`Agreement_${investor.name_en.replace(/\s+/g, "_")}.pdf`);
       el.style.display = origDisplay;
+
+      // Log to ledger
+      const ledgerResult = await logPdfToLedger({
+        entityId: investor.id,
+        entityType: "agreement",
+        pdfHash,
+        metadata: {
+          investorId: investor.investor_id || investor.id,
+          investorName: investor.name_en,
+          capital: investor.capital,
+          profitRate: investor.monthly_profit_percent,
+        },
+        userId: user?.id,
+      });
+
+      if (ledgerResult.success) {
+        toast.success(bn ? "চুক্তিপত্র তৈরি ও লেজারে রেকর্ড হয়েছে ✅" : "Agreement generated & recorded ✅");
+      } else {
+        toast.warning(bn ? "চুক্তিপত্র তৈরি হয়েছে, লেজার এন্ট্রি ব্যর্থ" : "Agreement generated, ledger entry failed");
+      }
     } catch (err) {
       console.error("Agreement PDF generation failed:", err);
+      toast.error(bn ? "PDF তৈরি ব্যর্থ" : "PDF generation failed");
     } finally {
       setLoading(false);
     }
-  };
+  }, [investor, bn, user?.id]);
 
   useImperativeHandle(ref, () => ({ generate: generatePDF }));
 
@@ -228,7 +272,21 @@ const AgreementPDFTemplate = forwardRef<AgreementPDFHandle, Props>(({ investor, 
               অনুমোদিত স্বাক্ষর<br />Authorized Signature
             </div>
           </div>
-          <p style={{ textAlign: "center", fontSize: "8px", color: "#94a3b8", marginTop: "10px" }}>
+          {/* Cryptographic Hash Footer */}
+          <p
+            data-hash-footer
+            style={{
+              textAlign: "center",
+              fontSize: "7px",
+              color: "#94a3b8",
+              marginTop: "6px",
+              fontFamily: "monospace",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Verification Hash: Generating...
+          </p>
+          <p style={{ textAlign: "center", fontSize: "8px", color: "#94a3b8", marginTop: "4px" }}>
             একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি চুক্তিপত্র | এই ডকুমেন্ট আইনগত উদ্দেশ্যে ব্যবহারযোগ্য | {new Date().toISOString()}
           </p>
         </div>
@@ -237,11 +295,11 @@ const AgreementPDFTemplate = forwardRef<AgreementPDFHandle, Props>(({ investor, 
       {/* Visible button */}
       <Button onClick={generatePDF} disabled={loading} className="gap-2" size="sm" variant="outline">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-        {loading ? (bn ? "তৈরি হচ্ছে..." : "Generating...") : (bn ? "📄 চুক্তিপত্র (PDF)" : "📄 Agreement PDF")}
+        {loading ? (bn ? "যাচাই ও লেজার এন্ট্রি..." : "Validating & Recording...") : (bn ? "📄 চুক্তিপত্র (PDF)" : "📄 Agreement PDF")}
       </Button>
     </>
   );
-});
+}));
 
 AgreementPDFTemplate.displayName = "AgreementPDFTemplate";
 
