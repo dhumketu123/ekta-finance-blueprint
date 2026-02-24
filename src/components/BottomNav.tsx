@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Wallet, TrendingUp, Menu } from "lucide-react";
 import { useSidebarState } from "@/contexts/SidebarContext";
 
-const navItemClass = "flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95 will-change-transform";
+const navItemClass = "flex flex-col items-center justify-center gap-0.5 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -39,7 +39,7 @@ const BottomNav = () => {
         <div className="flex-1 flex items-center justify-center relative">
           <Link
             to="/loans"
-            className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg transform-gpu transition-transform duration-200 ease-out active:scale-90 will-change-transform"
+            className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg transform-gpu transition-transform duration-200 ease-out active:scale-95"
           >
             <Wallet className="w-6 h-6" />
           </Link>
