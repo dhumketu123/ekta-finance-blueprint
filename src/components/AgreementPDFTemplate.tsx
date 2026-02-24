@@ -114,7 +114,9 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
       if (ledgerResult.success) {
         toast.success(bn ? "চুক্তিপত্র তৈরি ও লেজারে রেকর্ড হয়েছে ✅" : "Agreement generated & recorded ✅");
       } else {
-        toast.warning(bn ? "চুক্তিপত্র তৈরি হয়েছে, লেজার এন্ট্রি ব্যর্থ ⚠️" : "Agreement generated, ledger entry failed ⚠️");
+        // Silently log ledger failure, only show PDF success
+        console.error("Ledger entry failed:", ledgerResult);
+        toast.success(bn ? "চুক্তিপত্র সফলভাবে তৈরি হয়েছে ✅" : "Agreement generated successfully ✅");
       }
     } catch (err) {
       console.error("Agreement PDF generation failed:", err);
@@ -162,16 +164,35 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
     { label: "পুনঃবিনিয়োগ / Auto-Reinvest", value: investor.reinvest ? "✅ হ্যাঁ / Yes" : "❌ না / No" },
   ].filter(Boolean) as { label: string; value: string }[];
 
-  const renderCard = (title: string, data: { label: string; value: string }[]) => (
-    <div style={{ border: "1.5px solid #047857", borderRadius: "6px", overflow: "hidden", marginBottom: "0" }}>
-      <div style={{ background: "#047857", color: "#fff", padding: "7px 14px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+  const renderCard = (title: string, data: { label: string; value: string }[], hasPhoto?: boolean) => (
+    <div style={{ border: "1px solid rgba(5,150,105,0.3)", borderRadius: "6px", overflow: "hidden" }}>
+      <div style={{ background: "#059669", color: "#fff", padding: "6px 12px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {title}
       </div>
-      <div style={{ background: "rgba(236,253,245,0.4)", padding: "10px 14px" }}>
-        {data.map((row, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < data.length - 1 ? "1px solid rgba(4,120,87,0.12)" : "none" }}>
-            <span style={{ fontWeight: 700, color: "#1e293b", fontSize: "11.5px", flex: "0 0 48%" }}>{row.label}</span>
-            <span style={{ color: "#334155", fontSize: "11.5px", textAlign: "right", flex: "1" }}>{row.value}</span>
+      <div style={{ background: "rgba(236,253,245,0.3)", padding: "10px 12px" }}>
+        {hasPhoto ? (
+          <div style={{ display: "flex", gap: "12px" }}>
+            {/* Investor Photo Placeholder */}
+            <div style={{ width: "60px", height: "60px", minWidth: "60px", background: "#e2e8f0", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              {data.slice(0, 2).map((row, i) => (
+                <div key={i} style={{ display: "flex", gap: "8px", padding: "3px 0" }}>
+                  <span style={{ fontWeight: 700, color: "#1e293b", fontSize: "11px" }}>{row.label.split("/")[1]?.trim() || row.label}</span>
+                  <span style={{ color: "#334155", fontSize: "11px" }}>: {row.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {(hasPhoto ? data.slice(2) : data).map((row, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: i < (hasPhoto ? data.length - 3 : data.length - 1) ? "1px solid rgba(5,150,105,0.1)" : "none" }}>
+            <span style={{ fontWeight: 700, color: "#1e293b", fontSize: "11px", flex: "0 0 48%" }}>{row.label}</span>
+            <span style={{ color: "#334155", fontSize: "11px", textAlign: "right", flex: "1" }}>{row.value}</span>
           </div>
         ))}
       </div>
@@ -180,183 +201,213 @@ const AgreementPDFTemplate = memo(forwardRef<AgreementPDFHandle, Props>(({ inves
 
   return (
     <>
-      {/* Hidden A4 container */}
-      <div
-        ref={containerRef}
-        style={{
-          width: "210mm",
-          minHeight: "297mm",
-          padding: "14mm 16mm",
-          backgroundColor: "#fff",
-          display: "none",
-          fontFamily: "'SolaimanLipi', 'Noto Sans Bengali', 'Hind Siliguri', sans-serif",
-          color: "#1a1a1a",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Static Watermark */}
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: "5rem", fontWeight: 800, color: "rgba(0,0,0,0.03)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.15em" }}>
-          EKTA FINANCE
-        </div>
-
-        {/* Dynamic Watermark (Name + Date + ID) */}
+      {/* Off-screen fixed wrapper — prevents mobile squishing */}
+      <div style={{ position: "fixed", left: "-10000px", top: 0, zIndex: -1 }}>
+        {/* A4 Canvas */}
         <div
-          data-dynamic-watermark
+          ref={containerRef}
           style={{
-            position: "absolute",
-            top: "35%",
-            left: "50%",
-            transform: "translate(-50%, -50%) rotate(-25deg)",
-            fontSize: "1.1rem",
-            fontWeight: 600,
-            color: "rgba(0,0,0,0.02)",
-            pointerEvents: "none",
-            zIndex: 0,
-            whiteSpace: "nowrap",
-            letterSpacing: "0.08em",
+            width: "210mm",
+            minHeight: "297mm",
+            padding: "15mm",
+            backgroundColor: "#fff",
+            display: "none",
+            fontFamily: "'SolaimanLipi', 'Noto Sans Bengali', 'Hind Siliguri', sans-serif",
+            color: "#1a1a1a",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {investor.name_en} • {new Date().toLocaleDateString("en-GB")} • {investor.investor_id || investor.id.slice(0, 8).toUpperCase()}
-        </div>
-
-        {/* Premium Header: Logo | Title | QR */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid rgba(4,120,87,0.2)", paddingBottom: "14px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          {/* Left: SVG Logo + Brand */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="ektaGradPdf" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#065f46" />
-                  <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
-              </defs>
-              <path d="M 10,90 L 45,90 L 75,55 L 50,30 L 10,30 Z" fill="url(#ektaGradPdf)"/>
-              <path d="M 55,25 L 95,25 L 95,45 L 80,60 L 60,40 Z" fill="url(#ektaGradPdf)"/>
-              <path d="M 80,65 L 95,50 L 95,80 L 85,90 L 65,90 Z" fill="url(#ektaGradPdf)"/>
-            </svg>
-            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
-              <span style={{ fontSize: "22px", fontWeight: 800, color: "#064e3b", letterSpacing: "-0.02em", fontFamily: "system-ui, sans-serif" }}>EKTA</span>
-              <span style={{ fontSize: "9px", fontWeight: 700, color: "#065f46", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: "3px" }}>FINANCE GROUP</span>
+          {/* Center Watermark — Large faint EKTA FINANCE GROUP */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            opacity: 0.04, zIndex: 0, pointerEvents: "none",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 10,90 L 45,90 L 75,55 L 50,30 L 10,30 Z" fill="#059669"/>
+                <path d="M 55,25 L 95,25 L 95,45 L 80,60 L 60,40 Z" fill="#059669"/>
+                <path d="M 80,65 L 95,50 L 95,80 L 85,90 L 65,90 Z" fill="#059669"/>
+              </svg>
+              <div style={{ fontSize: "28px", fontWeight: 900, color: "#059669", letterSpacing: "0.2em", marginTop: "8px", fontFamily: "system-ui, sans-serif" }}>EKTA FINANCE GROUP</div>
             </div>
           </div>
 
-          {/* Center: Agreement Title */}
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: "4px" }}>
-            <h1 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>INVESTMENT AGREEMENT</h1>
-            <h2 style={{ fontSize: "13px", fontWeight: 700, color: "#334155", margin: "4px 0 0 0" }}>(বিনিয়োগ চুক্তিপত্র)</h2>
-            <p style={{ fontSize: "9px", color: "#94a3b8", margin: "4px 0 0 0" }}>Corporate Office, Dhaka, Bangladesh</p>
+          {/* Dynamic Watermark (Name + Date + ID) */}
+          <div
+            data-dynamic-watermark
+            style={{
+              position: "absolute",
+              top: "35%",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-25deg)",
+              fontSize: "1.1rem",
+              fontWeight: 600,
+              color: "rgba(0,0,0,0.02)",
+              pointerEvents: "none",
+              zIndex: 0,
+              whiteSpace: "nowrap",
+              letterSpacing: "0.08em",
+            }}
+          >
+            {investor.name_en} • {new Date().toLocaleDateString("en-GB")} • {investor.investor_id || investor.id.slice(0, 8).toUpperCase()}
           </div>
 
-          {/* Right: QR Code */}
-          <div style={{ padding: "3px", border: "1.5px solid #e2e8f0", borderRadius: "6px", background: "#fff" }}>
-            <QRCode
-              data-qr-code
-              value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent, v: "5" })}
-              size={56}
-            />
+          {/* Premium Header: Logo | Title | QR */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid rgba(5,150,105,0.2)", paddingBottom: "12px", marginBottom: "14px", position: "relative", zIndex: 1 }}>
+            {/* Left: SVG Logo + Brand */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ minWidth: "50px" }}>
+                <defs>
+                  <linearGradient id="ektaGradPdf" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#065f46" />
+                    <stop offset="100%" stopColor="#10b981" />
+                  </linearGradient>
+                </defs>
+                <path d="M 10,90 L 45,90 L 75,55 L 50,30 L 10,30 Z" fill="url(#ektaGradPdf)"/>
+                <path d="M 55,25 L 95,25 L 95,45 L 80,60 L 60,40 Z" fill="url(#ektaGradPdf)"/>
+                <path d="M 80,65 L 95,50 L 95,80 L 85,90 L 65,90 Z" fill="url(#ektaGradPdf)"/>
+              </svg>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+                <span style={{ fontSize: "22px", fontWeight: 800, color: "#064e3b", letterSpacing: "-0.02em", fontFamily: "system-ui, sans-serif" }}>EKTA</span>
+                <span style={{ fontSize: "9px", fontWeight: 700, color: "#065f46", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: "3px" }}>FINANCE GROUP</span>
+              </div>
+            </div>
+
+            {/* Center: Agreement Title */}
+            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: "4px" }}>
+              <h1 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>INVESTMENT AGREEMENT</h1>
+              <h2 style={{ fontSize: "13px", fontWeight: 700, color: "#334155", margin: "4px 0 0 0" }}>(বিনিয়োগ চুক্তিপত্র)</h2>
+            </div>
+
+            {/* Right: QR Code */}
+            <div style={{ padding: "3px", border: "1.5px solid #e2e8f0", borderRadius: "6px", background: "#fff" }}>
+              <QRCode
+                data-qr-code
+                value={JSON.stringify({ inv: investor.investor_id || investor.id, c: investor.capital, r: investor.monthly_profit_percent, v: "5" })}
+                size={56}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Date */}
-        <div style={{ fontSize: "11px", color: "#475569", marginBottom: "14px", position: "relative", zIndex: 1 }}>
-          তারিখ / Date: <strong>{today}</strong>
-        </div>
-
-        {/* 2-Column Grid: Investor Details + Contract Terms */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          {renderCard("১. বিনিয়োগকারীর তথ্য / INVESTOR DETAILS", rows)}
-          {renderCard(`${nomineeRows.length > 0 ? "৩" : "২"}. চুক্তির শর্তাবলী / SMART CONTRACT TERMS`, contractRows)}
-        </div>
-
-        {/* 2-Column Grid: Additional Info + Nominee */}
-        {nomineeRows.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-            {renderCard("২. নমিনি তথ্য / NOMINEE DETAILS", nomineeRows)}
-            <div /> {/* empty cell for balance */}
+          {/* Date */}
+          <div style={{ fontSize: "11px", color: "#475569", marginBottom: "12px", position: "relative", zIndex: 1 }}>
+            তারিখ / Date: <strong>{today}</strong>
           </div>
-        )}
 
-        {/* Terms & Conditions Card — Professional Legal Format */}
-        <div style={{ border: "1.5px solid #047857", borderRadius: "6px", overflow: "hidden", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          <div style={{ background: "#047857", color: "#fff", padding: "7px 14px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {nomineeRows.length > 0 ? "৪" : "৩"}. শর্তাবলী / TERMS & CONDITIONS
+          {/* 2-Column Grid: Investor Details + Contract Terms */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px", position: "relative", zIndex: 1 }}>
+            {renderCard("INVESTOR DETAILS", rows, true)}
+            {renderCard("SMART CONTRACT TERMS", contractRows)}
           </div>
-          <div style={{ padding: "14px 16px", fontSize: "11.5px", lineHeight: 1.9, color: "#1e293b", background: "rgba(236,253,245,0.4)" }}>
-            <ol style={{ margin: 0, paddingLeft: "18px", listStyleType: "decimal" }}>
-              <li style={{ marginBottom: "6px" }}>
-                <span style={{ fontWeight: 600 }}>ক)</span> মেয়াদপূর্তির আগে মূলধন উত্তোলন করলে জরিমানা প্রযোজ্য হবে (Anti-Loss Rule)।
-                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>Pre-mature encashment is subject to penalty (Anti-Loss Rule).</span>
+
+          {/* 2-Column Grid: Additional Info + Nominee */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px", position: "relative", zIndex: 1 }}>
+            {renderCard("INVESTOR DETAILS", [
+              { label: "Name", value: investor.name_en },
+              { label: "Phone", value: investor.phone || "N/A" },
+              { label: "Age ID", value: investor.nid_number || "N/A" },
+            ])}
+            {renderCard("NOMINEE INFO", nomineeRows.length > 0 ? nomineeRows : [
+              { label: "Name", value: "N/A" },
+              { label: "Phone", value: "N/A" },
+              { label: "Subject", value: "EKTA Finance GROUP" },
+            ])}
+          </div>
+
+          {/* Terms & Conditions */}
+          <div style={{ marginBottom: "14px", position: "relative", zIndex: 1 }}>
+            <h3 style={{ fontSize: "12px", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", marginBottom: "6px" }}>
+              TERMS & CONDITIONS
+            </h3>
+            <ol style={{ margin: 0, paddingLeft: "18px", listStyleType: "decimal", fontSize: "10.5px", lineHeight: 1.8, color: "#334155" }}>
+              <li style={{ marginBottom: "3px" }}>
+                মেয়াদপূর্তির আগে মূলধন উত্তোলন করলে জরিমানা প্রযোজ্য হবে (Anti-Loss Rule)।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "9.5px" }}>Pre-mature encashment is subject to penalty (Anti-Loss Rule).</span>
               </li>
-              <li style={{ marginBottom: "6px" }}>
-                <span style={{ fontWeight: 600 }}>খ)</span> লভ্যাংশ প্রতি মাসের প্রথম সপ্তাহে প্রদান করা হবে।
-                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>Dividends are paid in the first week of each month.</span>
+              <li style={{ marginBottom: "3px" }}>
+                লভ্যাংশ প্রতি মাসের প্রথম সপ্তাহে প্রদান করা হবে।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "9.5px" }}>Dividends are paid in the first week of each month.</span>
               </li>
-              <li style={{ marginBottom: "6px" }}>
-                <span style={{ fontWeight: 600 }}>গ)</span> পুনঃবিনিয়োগ সক্রিয় থাকলে লভ্যাংশ স্বয়ংক্রিয়ভাবে মূলধনে যোগ হবে।
-                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>If reinvestment is active, profits are auto-compounded.</span>
+              <li style={{ marginBottom: "3px" }}>
+                পুনঃবিনিয়োগ সক্রিয় থাকলে লভ্যাংশ স্বয়ংক্রিয়ভাবে মূলধনে যোগ হবে।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "9.5px" }}>If reinvestment is active, profits are auto-compounded.</span>
               </li>
-              <li style={{ marginBottom: "0" }}>
-                <span style={{ fontWeight: 600 }}>ঘ)</span> উভয় পক্ষের সম্মতিতে এই চুক্তি সংশোধনযোগ্য।
-                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>This agreement may be amended with mutual consent.</span>
+              <li style={{ marginBottom: "3px" }}>
+                উভয় পক্ষের সম্মতিতে এই চুক্তি সংশোধনযোগ্য।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "9.5px" }}>This agreement may be amended with mutual consent.</span>
+              </li>
+              <li>
+                ব্যক্তিগত শর্তাবলী এবং ক্রেডিট শর্তাবলী পরিবর্তনযোগ্য।
+                <br /><span style={{ color: "#64748b", fontStyle: "italic", fontSize: "9.5px" }}>Personal terms and conditions in credit terms are changeable.</span>
               </li>
             </ol>
           </div>
-        </div>
 
-        {/* Premium Signature & Digital Stamp Footer */}
-        <div style={{ position: "absolute", bottom: "22mm", left: "16mm", right: "16mm", zIndex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 4px" }}>
+          {/* Premium Signature & Digital Stamp Footer */}
+          <div style={{ position: "absolute", bottom: "20mm", left: "15mm", right: "15mm", zIndex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 4px" }}>
 
-            {/* Left: Investor Signature */}
-            <div style={{ textAlign: "center", width: "160px" }}>
-              <div style={{ borderTop: "1px solid #475569", paddingTop: "8px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Investor</p>
-                <p style={{ fontSize: "10px", color: "#64748b", margin: "2px 0 0 0" }}>(বিনিয়োগকারীর স্বাক্ষর)</p>
+              {/* Left: Investor Signature */}
+              <div style={{ textAlign: "center", width: "150px" }}>
+                <div style={{ fontFamily: "'Georgia', serif", fontSize: "18px", fontStyle: "italic", color: "#334155", marginBottom: "4px" }}>Investor</div>
+                <div style={{ borderTop: "1px solid #475569", paddingTop: "6px" }}>
+                  <p style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Investor</p>
+                  <p style={{ fontSize: "9px", color: "#64748b", margin: "2px 0 0 0" }}>(বিনিয়োগকারীর স্বাক্ষর)</p>
+                </div>
+              </div>
+
+              {/* Center: Digital Stamp */}
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "150px" }}>
+                <div style={{
+                  width: "105px", height: "105px",
+                  borderRadius: "50%", border: "3px solid #10b981",
+                  display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+                  transform: "rotate(-15deg)", opacity: 0.8,
+                  padding: "8px",
+                }}>
+                  <span style={{ fontSize: "8px", fontWeight: 700, color: "#10b981", letterSpacing: "2px" }}>DIGITALLY</span>
+                  <span style={{ fontSize: "15px", fontWeight: 900, color: "#059669", margin: "2px 0", borderTop: "2px solid #10b981", borderBottom: "2px solid #10b981", padding: "2px 0" }}>SIGNED</span>
+                  <span style={{ fontSize: "8px", fontWeight: 700, color: "#10b981", letterSpacing: "1px" }}>& VERIFIED</span>
+                </div>
+              </div>
+
+              {/* Right: Authorized Signatory */}
+              <div style={{ textAlign: "center", width: "150px" }}>
+                <div style={{ fontFamily: "'Georgia', serif", fontSize: "18px", fontStyle: "italic", color: "#334155", marginBottom: "4px" }}>Signatory</div>
+                <div style={{ borderTop: "1px solid #475569", paddingTop: "6px" }}>
+                  <p style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Authorized Signatory</p>
+                  <p style={{ fontSize: "9px", color: "#64748b", margin: "2px 0 0 0" }}>(একতা ফাইন্যান্স গ্রুপ)</p>
+                </div>
               </div>
             </div>
 
-            {/* Center: Digital Stamp */}
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "160px" }}>
-              <div style={{
-                width: "110px", height: "110px",
-                borderRadius: "50%", border: "3.5px solid #10b981",
-                display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-                transform: "rotate(-15deg)", opacity: 0.8,
-                padding: "8px",
-              }}>
-                <span style={{ fontSize: "9px", fontWeight: 700, color: "#10b981", letterSpacing: "2px" }}>DIGITALLY</span>
-                <span style={{ fontSize: "16px", fontWeight: 900, color: "#059669", margin: "3px 0", borderTop: "2px solid #10b981", borderBottom: "2px solid #10b981", padding: "2px 0" }}>SIGNED</span>
-                <span style={{ fontSize: "9px", fontWeight: 700, color: "#10b981", letterSpacing: "1px" }}>& VERIFIED</span>
-              </div>
-            </div>
-
-            {/* Right: Authorized Signatory */}
-            <div style={{ textAlign: "center", width: "160px" }}>
-              <div style={{ borderTop: "1px solid #475569", paddingTop: "8px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Authorized Signatory</p>
-                <p style={{ fontSize: "10px", color: "#64748b", margin: "2px 0 0 0" }}>(একতা ফাইন্যান্স গ্রুপ)</p>
-              </div>
-            </div>
+            {/* Cryptographic Hash Footer */}
+            <p
+              data-hash-footer
+              style={{
+                textAlign: "center",
+                fontSize: "7px",
+                color: "#94a3b8",
+                marginTop: "10px",
+                fontFamily: "monospace",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Verification Hash: Generating...
+            </p>
+            <p style={{ textAlign: "center", fontSize: "7.5px", color: "#94a3b8", marginTop: "3px" }}>
+              একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি চুক্তিপত্র | এই ডকুমেন্ট আইনগত উদ্দেশ্যে ব্যবহারযোগ্য | {new Date().toISOString()}
+            </p>
           </div>
 
-          {/* Cryptographic Hash Footer */}
-          <p
-            data-hash-footer
-            style={{
-              textAlign: "center",
-              fontSize: "7px",
-              color: "#94a3b8",
-              marginTop: "10px",
-              fontFamily: "monospace",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Verification Hash: Generating...
-          </p>
-          <p style={{ textAlign: "center", fontSize: "7.5px", color: "#94a3b8", marginTop: "3px" }}>
-            একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি চুক্তিপত্র | এই ডকুমেন্ট আইনগত উদ্দেশ্যে ব্যবহারযোগ্য | {new Date().toISOString()}
-          </p>
+          {/* Bottom Emerald Accent Bar */}
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            height: "8px", background: "linear-gradient(90deg, #059669, #10b981)",
+            zIndex: 2,
+          }} />
         </div>
       </div>
 

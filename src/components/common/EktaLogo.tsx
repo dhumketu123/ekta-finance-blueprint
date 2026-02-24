@@ -2,7 +2,7 @@ import React from 'react';
 
 const EktaLogo = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center gap-3 ${className}`}>
-    <svg width="56" height="56" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+    <svg width="56" height="56" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0" style={{ minWidth: '56px' }}>
       <defs>
         <linearGradient id="ektaGrad" x1="0%" y1="100%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#065f46" />
