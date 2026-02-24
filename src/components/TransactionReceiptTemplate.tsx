@@ -1,23 +1,17 @@
 /**
- * Phase 1 (Updated with QR Code)
- * TransactionReceiptTemplate with QR Code Integration
- * Author: Giga Factory — Senior UX & Security Guidelines
- *
- * Features:
- * - Pixel-perfect A4 (w-[210mm], min-h-[297mm])
- * - Hidden container during render
- * - Watermark + Digital Seal
- * - Bengali & English rendering
- * - Loading state while PDF is generating
- * - QR Code: Encodes ReceiptNo + ClientName + Amount
+ * Phase 3 — TransactionReceiptTemplate
+ * Optimized with SHA256 hash, ledger integration, memoization, toast UX
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, memo, useCallback } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
 import { Loader2, Printer } from "lucide-react";
+import { toast } from "sonner";
+import { generateReceiptHash, logPdfToLedger } from "@/lib/pdf-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ReceiptTxn {
   id: string;
@@ -40,17 +34,33 @@ interface Props {
   txn: ReceiptTxn;
 }
 
-const TransactionReceiptTemplate = ({ txn }: Props) => {
+const TransactionReceiptTemplate = memo(({ txn }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  const generatePDF = async () => {
+  const generatePDF = useCallback(async () => {
     if (!containerRef.current) return;
     try {
       setLoading(true);
       const el = containerRef.current;
       const origDisplay = el.style.display;
       el.style.display = "block";
+
+      // Generate SHA256 hash
+      const receiptNo = txn.receiptNumber || txn.id.slice(0, 8).toUpperCase();
+      const pdfHash = await generateReceiptHash({
+        receiptNumber: receiptNo,
+        date: txn.date,
+        amount: txn.amount,
+        clientName: txn.clientName,
+      });
+
+      // Update hash footer in DOM before capture
+      const hashEl = el.querySelector("[data-hash-footer]");
+      if (hashEl) {
+        hashEl.textContent = `Verification Hash: ${pdfHash.slice(0, 16)}...${pdfHash.slice(-8)}`;
+      }
 
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -62,15 +72,43 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
-      pdf.save(`Receipt_${txn.receiptNumber || txn.id}.pdf`);
 
+      // Add hidden metadata
+      pdf.setProperties({
+        title: `Receipt_${receiptNo}`,
+        subject: `Hash:${pdfHash}`,
+        creator: "Ekta Finance Group",
+      });
+
+      pdf.save(`Receipt_${receiptNo}.pdf`);
       el.style.display = origDisplay;
+
+      // Log to ledger
+      const ledgerResult = await logPdfToLedger({
+        entityId: txn.id,
+        entityType: "receipt",
+        pdfHash,
+        metadata: {
+          receiptNumber: receiptNo,
+          amount: txn.amount,
+          clientName: txn.clientName,
+          date: txn.date,
+        },
+        userId: user?.id,
+      });
+
+      if (ledgerResult.success) {
+        toast.success("রিসিপ্ট তৈরি ও লেজারে রেকর্ড হয়েছে ✅");
+      } else {
+        toast.warning("রিসিপ্ট তৈরি হয়েছে, কিন্তু লেজার এন্ট্রি ব্যর্থ");
+      }
     } catch (err) {
       console.error("PDF generation failed:", err);
+      toast.error("PDF তৈরি ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
-  };
+  }, [txn, user?.id]);
 
   const formattedDate = txn.date
     ? new Date(txn.date).toLocaleDateString("bn-BD", {
@@ -290,7 +328,21 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
               অনুমোদিত স্বাক্ষর
             </div>
           </div>
-          <p style={{ textAlign: "center", fontSize: "9px", color: "#94a3b8", marginTop: "12px" }}>
+          {/* Cryptographic Hash Footer */}
+          <p
+            data-hash-footer
+            style={{
+              textAlign: "center",
+              fontSize: "7px",
+              color: "#94a3b8",
+              marginTop: "6px",
+              fontFamily: "monospace",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Verification Hash: Generating...
+          </p>
+          <p style={{ textAlign: "center", fontSize: "9px", color: "#94a3b8", marginTop: "4px" }}>
             একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি রিসিপ্ট | এই ডকুমেন্ট শুধুমাত্র তথ্যের জন্য |{" "}
             {new Date().toISOString()}
           </p>
@@ -300,10 +352,12 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
       {/* Visible action button */}
       <Button onClick={generatePDF} disabled={loading} className="gap-2" size="sm">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-        {loading ? "তৈরি হচ্ছে..." : "🖨️ রিসিপ্ট PDF"}
+        {loading ? "যাচাই ও লেজার এন্ট্রি..." : "🖨️ রিসিপ্ট PDF"}
       </Button>
     </>
   );
-};
+});
+
+TransactionReceiptTemplate.displayName = "TransactionReceiptTemplate";
 
 export default TransactionReceiptTemplate;
