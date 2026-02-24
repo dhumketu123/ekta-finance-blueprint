@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,37 @@ interface Props {
   clientId: string;
   loanIds: string[];
 }
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl px-4 py-3 text-xs shadow-2xl border border-white/10"
+      style={{
+        background: "rgba(15, 23, 42, 0.85)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}>
+      <p className="font-semibold text-white/90 mb-1.5">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <div key={i} className="flex items-center gap-2 py-0.5">
+          <span className="w-2 h-2 rounded-full" style={{ background: entry.stroke }} />
+          <span className="text-white/60">{entry.name === "savings" ? "সঞ্চয়" : "বকেয়া ঋণ"}:</span>
+          <span className="font-mono font-semibold text-white">৳{Number(entry.value).toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const GlowDot = ({ cx, cy, fill }: any) => {
+  if (!cx || !cy) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={6} fill={fill} opacity={0.25} />
+      <circle cx={cx} cy={cy} r={3} fill={fill} stroke="white" strokeWidth={1.5} />
+    </g>
+  );
+};
 
 export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
   const { lang } = useLanguage();
@@ -141,20 +172,20 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
         </div>
       </div>
 
-      <div className="h-[220px] w-full">
+      <div className="h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
             <YAxis
               yAxisId="loan"
@@ -168,48 +199,44 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
               tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(v: number) => `৳${(v / 1000).toFixed(0)}k`}
             />
-            <Tooltip
-              contentStyle={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "0.75rem",
-                fontSize: "11px",
-                boxShadow: "var(--shadow-card)",
-              }}
-              formatter={(value: number, name: string) => [
-                `৳${value.toLocaleString()}`,
-                name === "savings" ? (bn ? "সঞ্চয়" : "Savings") : (bn ? "ঋণ ব্যালেন্স" : "Loan Balance"),
-              ]}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Area
               yAxisId="savings"
               type="monotone"
               dataKey="savings"
-              stroke="hsl(var(--success))"
-              strokeWidth={2}
+              name="savings"
+              stroke="#10b981"
+              strokeWidth={2.5}
               fill="url(#savingsGrad)"
+              isAnimationActive={true}
+              animationDuration={1800}
+              animationEasing="ease-out"
+              dot={(props: any) => {
+                const entry = chartData[props.index];
+                if (!entry) return <></>;
+                return <GlowDot cx={props.cx} cy={props.cy} fill="#10b981" />;
+              }}
+              activeDot={{ r: 5, stroke: "#10b981", strokeWidth: 2, fill: "white" }}
             />
             <Area
               yAxisId="loan"
               type="monotone"
               dataKey="loanBalance"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
+              name="loanBalance"
+              stroke="#3b82f6"
+              strokeWidth={2.5}
               fill="url(#loanGrad)"
+              isAnimationActive={true}
+              animationDuration={1800}
+              animationEasing="ease-out"
+              dot={(props: any) => {
+                const entry = chartData[props.index];
+                if (!entry) return <></>;
+                const color = entry.onTime ? "#10b981" : "#ef4444";
+                return <GlowDot cx={props.cx} cy={props.cy} fill={color} />;
+              }}
+              activeDot={{ r: 5, stroke: "#3b82f6", strokeWidth: 2, fill: "white" }}
             />
-            {/* Delayed payment markers */}
-            {delayedDots.map((d, i) => (
-              <ReferenceDot
-                key={i}
-                x={d.label}
-                y={d.loanBalance}
-                yAxisId="loan"
-                r={5}
-                fill="hsl(var(--warning))"
-                stroke="hsl(var(--warning))"
-                strokeWidth={2}
-              />
-            ))}
           </AreaChart>
         </ResponsiveContainer>
       </div>
