@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
@@ -16,6 +16,8 @@ import TablePagination from "@/components/TablePagination";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import ClientStatementExport from "@/components/ClientStatementExport";
 import ClientAnalyticsPanel from "@/components/ClientAnalyticsPanel";
+import FinancialJourneyChart from "@/components/FinancialJourneyChart";
+import PaymentHealthGauge from "@/components/PaymentHealthGauge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClient, useTransactions } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -300,9 +302,11 @@ const ClientDetail = () => {
         }
       />
 
-      {/* ── Hero card ── */}
-      <div className="card-elevated p-6 border-l-4 border-l-primary animate-slide-up">
-        <div className="flex items-center gap-5">
+      {/* ── Hero card (Glass-morphic) ── */}
+      <div className="relative overflow-hidden rounded-xl border border-border/40 p-6 border-l-4 border-l-primary animate-slide-up" style={{ background: "hsl(var(--card) / 0.85)", backdropFilter: "blur(16px) saturate(1.4)", WebkitBackdropFilter: "blur(16px) saturate(1.4)", boxShadow: "0 8px 32px -8px hsl(var(--primary) / 0.12), var(--shadow-card)" }}>
+        {/* Subtle gradient accent */}
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }} />
+        <div className="relative flex items-center gap-5">
           <ProfileCompletionRing client={c} size={112} strokeWidth={5}>
             <ClientPhotoUpload clientId={client.id} currentPhotoUrl={c.photo_url} canEdit={canEditClients} />
           </ProfileCompletionRing>
@@ -538,6 +542,34 @@ const ClientDetail = () => {
         </div>
       )}
 
+      {/* ── Financial Journey Chart & Health Gauge ── */}
+      {hasActiveLoans && (() => {
+        const stats = allScheduleStats ?? {};
+        const totalInst = Object.values(stats).reduce((s: number, v: any) => s + v.total, 0);
+        const paidInst = Object.values(stats).reduce((s: number, v: any) => s + v.paid, 0);
+        const punctPct = totalInst > 0 ? Math.round((paidInst / totalInst) * 100) : 0;
+        const rLvl = (() => {
+          let rs = 0;
+          if (punctPct < 50) rs += 3; else if (punctPct < 75) rs += 1;
+          if ((activeLoans ?? []).some(l => l.next_due_date && Math.ceil((new Date(l.next_due_date).getTime() - Date.now()) / 86400000) < -7)) rs += 2;
+          return rs >= 5 ? "critical" : rs >= 3 ? "high" : rs >= 1 ? "medium" : "low";
+        })();
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <FinancialJourneyChart clientId={id!} loanIds={activeLoans!.map(l => l.id)} />
+            </div>
+            <PaymentHealthGauge
+              punctualityPct={punctPct}
+              riskLevel={rLvl}
+              paidInstallments={paidInst}
+              totalInstallments={totalInst}
+            />
+          </div>
+        );
+      })()}
+
       {/* ── Aggregate Summary Card ── */}
       {hasActiveLoans && (
         <div className="card-elevated p-5 animate-slide-up" style={{ animationDelay: "0.14s" }}>
@@ -553,22 +585,26 @@ const ClientDetail = () => {
               {showSettled ? (bn ? "বন্ধ ঋণ লুকান" : "Hide Settled") : (bn ? "বন্ধ ঋণ দেখান" : "Show Settled")}
             </Button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
-              <p className="text-[10px] text-muted-foreground">{bn ? "সক্রিয় ঋণ" : "Active Loans"}</p>
-              <p className="text-lg font-bold text-primary">{activeLoans?.length ?? 0}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="relative overflow-hidden p-4 rounded-xl border border-primary/15 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.02))", boxShadow: "0 2px 12px -4px hsl(var(--primary) / 0.1)" }}>
+              <Wallet className="w-4 h-4 text-primary mx-auto mb-1.5 opacity-70" />
+              <p className="text-[10px] text-muted-foreground font-medium">{bn ? "সক্রিয় ঋণ" : "Active Loans"}</p>
+              <p className="text-2xl font-extrabold text-primary mt-0.5">{activeLoans?.length ?? 0}</p>
             </div>
-            <div className="p-3 rounded-xl bg-success/5 border border-success/10 text-center">
-              <p className="text-[10px] text-muted-foreground">{bn ? "মোট পরিশোধিত" : "Total Paid"}</p>
-              <p className="text-lg font-bold text-success">৳{Math.max(aggTotalPaid, 0).toLocaleString()}</p>
+            <div className="relative overflow-hidden p-4 rounded-xl border border-success/15 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--success) / 0.06), hsl(var(--success) / 0.02))", boxShadow: "0 2px 12px -4px hsl(var(--success) / 0.1)" }}>
+              <CheckCircle className="w-4 h-4 text-success mx-auto mb-1.5 opacity-70" />
+              <p className="text-[10px] text-muted-foreground font-medium">{bn ? "মোট পরিশোধিত" : "Total Paid"}</p>
+              <p className="text-2xl font-extrabold text-success mt-0.5">৳{Math.max(aggTotalPaid, 0).toLocaleString()}</p>
             </div>
-            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10 text-center">
-              <p className="text-[10px] text-muted-foreground">{bn ? "মোট বকেয়া" : "Total Outstanding"}</p>
-              <p className="text-lg font-bold text-destructive">৳{aggTotalOutstanding.toLocaleString()}</p>
+            <div className="relative overflow-hidden p-4 rounded-xl border border-destructive/15 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--destructive) / 0.06), hsl(var(--destructive) / 0.02))", boxShadow: "0 2px 12px -4px hsl(var(--destructive) / 0.1)" }}>
+              <AlertTriangle className="w-4 h-4 text-destructive mx-auto mb-1.5 opacity-70" />
+              <p className="text-[10px] text-muted-foreground font-medium">{bn ? "মোট বকেয়া" : "Total Outstanding"}</p>
+              <p className="text-2xl font-extrabold text-destructive mt-0.5">৳{aggTotalOutstanding.toLocaleString()}</p>
             </div>
-            <div className="p-3 rounded-xl bg-warning/5 border border-warning/10 text-center">
-              <p className="text-[10px] text-muted-foreground">{bn ? "মোট জরিমানা" : "Total Penalty"}</p>
-              <p className="text-lg font-bold text-warning">৳{aggTotalPenalty.toLocaleString()}</p>
+            <div className="relative overflow-hidden p-4 rounded-xl border border-warning/15 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--warning) / 0.06), hsl(var(--warning) / 0.02))", boxShadow: "0 2px 12px -4px hsl(var(--warning) / 0.1)" }}>
+              <Banknote className="w-4 h-4 text-warning mx-auto mb-1.5 opacity-70" />
+              <p className="text-[10px] text-muted-foreground font-medium">{bn ? "মোট জরিমানা" : "Total Penalty"}</p>
+              <p className="text-2xl font-extrabold text-warning mt-0.5">৳{aggTotalPenalty.toLocaleString()}</p>
             </div>
           </div>
 
