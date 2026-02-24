@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShieldCheck, ShieldAlert, RefreshCw, FileText, Link2, Link2Off } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, ShieldCheck, ShieldAlert, RefreshCw, FileText, Link2, Link2Off, Download, AlertTriangle } from "lucide-react";
 import { verifyLedgerChain } from "@/lib/pdf-utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -60,9 +61,44 @@ export default function LedgerAudit() {
 
   const truncHash = (h: string | null) => h ? `${h.slice(0, 10)}…${h.slice(-6)}` : "—";
 
+  const exportCSV = useCallback(() => {
+    if (entries.length === 0) return;
+    const headers = ["Type", "Date", "Entity ID", "Chain Hash", "Prev Hash", "Status"];
+    const rows = entries.map((e) => [
+      e.entity_type,
+      format(new Date(e.created_at), "yyyy-MM-dd HH:mm:ss"),
+      e.entity_id,
+      e.hash_self || "",
+      e.hash_prev || "",
+      e.chainIntact ? "Intact" : "BROKEN",
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ledger-audit-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(bn ? "CSV এক্সপোর্ট সম্পন্ন" : "CSV exported");
+  }, [entries, bn]);
+
   return (
     <AppLayout>
       <PageHeader title={bn ? "লেজার অডিট" : "Ledger Audit"} description={bn ? "PDF চেইন ভেরিফিকেশন ড্যাশবোর্ড" : "PDF Chain Verification Dashboard"} />
+
+      {/* Persistent Broken Chain Alert Banner */}
+      {!loading && brokenLinks > 0 && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{bn ? "⚠️ চেইন ইন্টেগ্রিটি সতর্কতা" : "⚠️ Chain Integrity Warning"}</AlertTitle>
+          <AlertDescription>
+            {bn
+              ? `${brokenLinks}টি ভাঙা চেইন লিংক সনাক্ত হয়েছে। অবিলম্বে তদন্ত করুন — সম্ভাব্য ডেটা পরিবর্তন বা টেম্পারিং।`
+              : `${brokenLinks} broken chain link(s) detected. Investigate immediately — possible data tampering.`}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -95,6 +131,10 @@ export default function LedgerAudit() {
         <Button variant="outline" size="sm" onClick={runAudit} disabled={loading} className="gap-2">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {bn ? "পুনরায় যাচাই" : "Re-verify"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportCSV} disabled={entries.length === 0} className="gap-2">
+          <Download className="w-4 h-4" />
+          {bn ? "CSV এক্সপোর্ট" : "Export CSV"}
         </Button>
       </div>
 

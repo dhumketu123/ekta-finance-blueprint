@@ -235,8 +235,19 @@ export async function verifyLedgerChain(
       query = query.eq("entity_type", entityType);
     }
 
-    const { data, error } = await query.limit(500);
-    if (error || !data) return { totalEntries: 0, brokenLinks: 0, entries: [] };
+    // Paginate to handle >500 entries gracefully
+    let allData: any[] = [];
+    let page = 0;
+    const PAGE_SIZE = 500;
+    while (true) {
+      const { data: pageData, error: pageError } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      if (pageError || !pageData || pageData.length === 0) break;
+      allData = allData.concat(pageData);
+      if (pageData.length < PAGE_SIZE) break;
+      page++;
+    }
+    if (allData.length === 0) return { totalEntries: 0, brokenLinks: 0, entries: [] };
+    const data = allData;
 
     let brokenLinks = 0;
     const entries = [];
