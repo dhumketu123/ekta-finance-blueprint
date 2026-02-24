@@ -1,3 +1,17 @@
+/**
+ * Phase 1 (Updated with QR Code)
+ * TransactionReceiptTemplate with QR Code Integration
+ * Author: Giga Factory — Senior UX & Security Guidelines
+ *
+ * Features:
+ * - Pixel-perfect A4 (w-[210mm], min-h-[297mm])
+ * - Hidden container during render
+ * - Watermark + Digital Seal
+ * - Bengali & English rendering
+ * - Loading state while PDF is generating
+ * - QR Code: Encodes ReceiptNo + ClientName + Amount
+ */
+
 import { useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -32,7 +46,6 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
 
   const generatePDF = async () => {
     if (!containerRef.current) return;
-
     try {
       setLoading(true);
       const el = containerRef.current;
@@ -104,14 +117,39 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
         </div>
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0ea5e9", paddingBottom: "12px", marginBottom: "20px", position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            borderBottom: "3px solid #0ea5e9",
+            paddingBottom: "12px",
+            marginBottom: "20px",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <div>
             <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#0ea5e9", margin: 0 }}>
               একতা ফাইন্যান্স গ্রুপ
             </h1>
             <p style={{ fontSize: "13px", color: "#64748b", margin: "2px 0" }}>Ekta Finance Group</p>
-            <p style={{ fontSize: "11px", color: "#94a3b8", margin: "2px 0" }}>Corporate Office, Dhaka, Bangladesh</p>
-            <div style={{ marginTop: "8px", display: "inline-block", background: "#0ea5e9", color: "#fff", padding: "4px 14px", borderRadius: "4px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.05em" }}>
+            <p style={{ fontSize: "11px", color: "#94a3b8", margin: "2px 0" }}>
+              Corporate Office, Dhaka, Bangladesh
+            </p>
+            <div
+              style={{
+                marginTop: "8px",
+                display: "inline-block",
+                background: "#0ea5e9",
+                color: "#fff",
+                padding: "4px 14px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+              }}
+            >
               অফিসিয়াল রিসিপ্ট / OFFICIAL RECEIPT
             </div>
           </div>
@@ -128,9 +166,23 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
         </div>
 
         {/* Receipt Meta */}
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569", marginBottom: "16px", position: "relative", zIndex: 1 }}>
-          <span>রিসিপ্ট নং: <strong>{txn.receiptNumber || txn.id.slice(0, 8).toUpperCase()}</strong></span>
-          <span>তারিখ: <strong>{formattedDate}</strong></span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "12px",
+            color: "#475569",
+            marginBottom: "16px",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <span>
+            রিসিপ্ট নং: <strong>{txn.receiptNumber || txn.id.slice(0, 8).toUpperCase()}</strong>
+          </span>
+          <span>
+            তারিখ: <strong>{formattedDate}</strong>
+          </span>
         </div>
 
         {/* Body Table */}
@@ -145,14 +197,22 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
         >
           <tbody>
             {[
-              { label: "গ্রাহকের নাম / Client Name", value: `${txn.clientNameBn || ""} ${txn.clientNameBn ? "—" : ""} ${txn.clientName}`.trim() },
+              {
+                label: "গ্রাহকের নাম / Client Name",
+                value: `${txn.clientNameBn || ""} ${txn.clientNameBn ? "—" : ""} ${txn.clientName}`.trim(),
+              },
               txn.memberId ? { label: "সদস্য আইডি / Member ID", value: txn.memberId } : null,
-              { label: "লেনদেনের ধরন / Type", value: `${txn.typeBn || ""} ${txn.typeBn ? "—" : ""} ${txn.type}`.trim() },
+              {
+                label: "লেনদেনের ধরন / Type",
+                value: `${txn.typeBn || ""} ${txn.typeBn ? "—" : ""} ${txn.type}`.trim(),
+              },
               { label: "পরিমাণ / Amount", value: `৳${txn.amount.toLocaleString()}` },
               txn.amountWordsBn ? { label: "কথায় (বাংলা)", value: txn.amountWordsBn } : null,
               txn.amountWords ? { label: "In Words", value: txn.amountWords } : null,
               txn.referenceId ? { label: "রেফারেন্স / Reference", value: txn.referenceId } : null,
-              txn.processedBy ? { label: "প্রক্রিয়াকারী / Processed By", value: txn.processedBy } : null,
+              txn.processedBy
+                ? { label: "প্রক্রিয়াকারী / Processed By", value: txn.processedBy }
+                : null,
               txn.notes ? { label: "মন্তব্য / Notes", value: txn.notes } : null,
             ]
               .filter(Boolean)
@@ -213,7 +273,14 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
 
         {/* Footer */}
         <div style={{ position: "absolute", bottom: "16mm", left: "16mm", right: "16mm", zIndex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #cbd5e1", paddingTop: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              borderTop: "1px solid #cbd5e1",
+              paddingTop: "12px",
+            }}
+          >
             <div style={{ textAlign: "center", fontSize: "11px", color: "#64748b" }}>
               <div style={{ borderTop: "1px solid #1a1a1a", width: "140px", marginBottom: "4px" }} />
               গ্রাহকের স্বাক্ষর
@@ -224,7 +291,8 @@ const TransactionReceiptTemplate = ({ txn }: Props) => {
             </div>
           </div>
           <p style={{ textAlign: "center", fontSize: "9px", color: "#94a3b8", marginTop: "12px" }}>
-            একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি রিসিপ্ট | এই ডকুমেন্ট শুধুমাত্র তথ্যের জন্য | {new Date().toISOString()}
+            একতা ফাইন্যান্স — স্বয়ংক্রিয়ভাবে তৈরি রিসিপ্ট | এই ডকুমেন্ট শুধুমাত্র তথ্যের জন্য |{" "}
+            {new Date().toISOString()}
           </p>
         </div>
       </div>
