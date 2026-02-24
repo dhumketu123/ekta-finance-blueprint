@@ -1,12 +1,15 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/StatusBadge";
 import TablePagination from "@/components/TablePagination";
-import { ArrowDownRight, ArrowUpRight, Search, X, Loader2 } from "lucide-react";
+import TransactionReceiptTemplate from "@/components/TransactionReceiptTemplate";
+import { ArrowDownRight, ArrowUpRight, Search, X, Loader2, Printer, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const typeLabels: Record<string, { bn: string; en: string }> = {
   investor_profit: { bn: "মাসিক লভ্যাংশ", en: "Monthly Profit" },
@@ -21,6 +24,7 @@ interface Transaction {
   status: string;
   reference_id: string | null;
   transaction_date: string;
+  notes?: string | null;
 }
 
 interface Props {
@@ -35,6 +39,7 @@ interface Props {
   clearSearch: () => void;
   onPageChange: (page: number) => void;
   bn: boolean;
+  investorName?: string;
 }
 
 export default function InvestorTransactionHistory({
@@ -49,14 +54,54 @@ export default function InvestorTransactionHistory({
   clearSearch,
   onPageChange,
   bn,
+  investorName,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
 
   const handlePageChange = (newPage: number) => {
     onPageChange(newPage);
-    // Keep scroll position stable by scrolling to top of table
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const handlePrint = (tx: Transaction) => {
+    // Find the receipt container, show it, print, then hide
+    const el = document.getElementById(`receipt-${tx.id}`);
+    if (!el) return;
+    el.style.display = "block";
+    window.print();
+    el.style.display = "none";
+  };
+
+  const handlePDF = async (tx: Transaction) => {
+    const el = document.getElementById(`receipt-${tx.id}`);
+    if (!el) return;
+    try {
+      setPdfLoadingId(tx.id);
+      el.style.display = "block";
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, logging: false });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+      pdf.save(`Receipt_${tx.id.slice(0, 8)}.pdf`);
+      el.style.display = "none";
+    } catch (err) {
+      console.error("PDF failed:", err);
+    } finally {
+      setPdfLoadingId(null);
+    }
+  };
+
+  const buildReceiptTxn = (tx: Transaction) => ({
+    id: tx.id,
+    clientName: investorName || "Investor",
+    type: typeLabels[tx.type] ? (bn ? typeLabels[tx.type].bn : typeLabels[tx.type].en) : tx.type,
+    amount: tx.amount,
+    date: tx.transaction_date,
+    receiptNumber: tx.id.slice(0, 8).toUpperCase(),
+    notes: tx.notes || undefined,
+  });
 
   return (
     <div className="card-elevated overflow-hidden" ref={scrollRef}>
@@ -89,7 +134,7 @@ export default function InvestorTransactionHistory({
 
       {isLoading ? (
         <div className="p-4">
-          <TableSkeleton rows={5} cols={4} />
+          <TableSkeleton rows={5} cols={5} />
         </div>
       ) : !transactions.length ? (
         <p className="text-center text-muted-foreground py-8 text-sm">
@@ -108,6 +153,7 @@ export default function InvestorTransactionHistory({
                   <TableHead>{bn ? "ধরন" : "Type"}</TableHead>
                   <TableHead className="text-right">{bn ? "পরিমাণ" : "Amount"}</TableHead>
                   <TableHead>{bn ? "স্থিতি" : "Status"}</TableHead>
+                  <TableHead className="text-center">{bn ? "অ্যাকশন" : "Action"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,6 +175,29 @@ export default function InvestorTransactionHistory({
                       <TableCell>
                         <StatusBadge status={tx.status === "paid" ? "active" : tx.status === "pending" ? "pending" : "inactive"} />
                       </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] gap-1"
+                            onClick={() => handlePrint(tx)}
+                          >
+                            <Printer className="w-3 h-3" />
+                            {bn ? "প্রিন্ট" : "Print"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] gap-1"
+                            onClick={() => handlePDF(tx)}
+                            disabled={pdfLoadingId === tx.id}
+                          >
+                            {pdfLoadingId === tx.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                            {pdfLoadingId === tx.id ? "..." : (bn ? "পিডিএফ" : "PDF")}
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -142,16 +211,27 @@ export default function InvestorTransactionHistory({
               const lbl = typeLabels[tx.type];
               const isProfit = tx.type === "investor_profit";
               return (
-                <div key={tx.id} className="p-4 flex items-center gap-3 transition-colors hover:bg-muted/30">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isProfit ? "bg-success/10" : "bg-primary/10"}`}>
-                    {isProfit ? <ArrowDownRight className="w-4 h-4 text-success" /> : <ArrowUpRight className="w-4 h-4 text-primary" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-medium">{lbl ? (bn ? lbl.bn : lbl.en) : tx.type}</p>
-                      <p className={`text-xs font-bold ${isProfit ? "text-success" : "text-primary"}`}>৳{tx.amount.toLocaleString()}</p>
+                <div key={tx.id} className="p-4 transition-colors hover:bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isProfit ? "bg-success/10" : "bg-primary/10"}`}>
+                      {isProfit ? <ArrowDownRight className="w-4 h-4 text-success" /> : <ArrowUpRight className="w-4 h-4 text-primary" />}
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium">{lbl ? (bn ? lbl.bn : lbl.en) : tx.type}</p>
+                        <p className={`text-xs font-bold ${isProfit ? "text-success" : "text-primary"}`}>৳{tx.amount.toLocaleString()}</p>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-2 ml-12">
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] gap-1" onClick={() => handlePrint(tx)}>
+                      <Printer className="w-3 h-3" /> {bn ? "প্রিন্ট" : "Print"}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] gap-1" onClick={() => handlePDF(tx)} disabled={pdfLoadingId === tx.id}>
+                      {pdfLoadingId === tx.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                      {pdfLoadingId === tx.id ? "..." : (bn ? "পিডিএফ" : "PDF")}
+                    </Button>
                   </div>
                 </div>
               );
@@ -166,6 +246,76 @@ export default function InvestorTransactionHistory({
           />
         </>
       )}
+
+      {/* Hidden receipt containers for each transaction */}
+      {transactions.map((tx) => (
+        <div key={`receipt-${tx.id}`} id={`receipt-${tx.id}`} style={{ display: "none" }}>
+          <div
+            id="printable-area"
+            style={{
+              width: "210mm",
+              minHeight: "297mm",
+              padding: "16mm",
+              backgroundColor: "#fff",
+              fontFamily: "'SolaimanLipi', 'Noto Sans Bengali', sans-serif",
+              color: "#1a1a1a",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Watermark */}
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: "5rem", fontWeight: 800, color: "rgba(0,0,0,0.04)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.15em" }}>
+              EKTA FINANCE
+            </div>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0ea5e9", paddingBottom: "12px", marginBottom: "20px", position: "relative", zIndex: 1 }}>
+              <div>
+                <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#0ea5e9", margin: 0 }}>একতা ফাইন্যান্স গ্রুপ</h1>
+                <p style={{ fontSize: "13px", color: "#64748b", margin: "2px 0" }}>Ekta Finance Group</p>
+                <p style={{ fontSize: "11px", color: "#94a3b8", margin: "2px 0" }}>Corporate Office, Dhaka, Bangladesh</p>
+                <div style={{ marginTop: "8px", display: "inline-block", background: "#0ea5e9", color: "#fff", padding: "4px 14px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>
+                  অফিসিয়াল রিসিপ্ট / OFFICIAL RECEIPT
+                </div>
+              </div>
+            </div>
+            {/* Body */}
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", position: "relative", zIndex: 1 }}>
+              <tbody>
+                {[
+                  { label: "Client / গ্রাহক", value: investorName || "Investor" },
+                  { label: "Type / ধরন", value: typeLabels[tx.type] ? (bn ? typeLabels[tx.type].bn : typeLabels[tx.type].en) : tx.type },
+                  { label: "Amount / পরিমাণ", value: `৳${tx.amount.toLocaleString()}` },
+                  { label: "Date / তারিখ", value: format(new Date(tx.transaction_date), "dd MMM yyyy") },
+                  { label: "Status / অবস্থা", value: tx.status },
+                  tx.notes ? { label: "Notes / মন্তব্য", value: tx.notes } : null,
+                ].filter(Boolean).map((row, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600, color: "#334155", width: "40%", backgroundColor: i % 2 === 0 ? "#f8fafc" : "#fff", borderRight: "1px solid #e2e8f0" }}>{row!.label}</td>
+                    <td style={{ padding: "10px 12px", backgroundColor: i % 2 === 0 ? "#f8fafc" : "#fff" }}>{row!.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Seal */}
+            <div style={{ position: "absolute", bottom: "50mm", right: "20mm", transform: "rotate(-8deg)", border: "3px solid #16a34a", borderRadius: "50%", width: "90px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", color: "#16a34a", fontWeight: 700, fontSize: "11px", lineHeight: 1.2, opacity: 0.7 }}>
+              অনুমোদিত<br />APPROVED<br />✓
+            </div>
+            {/* Footer */}
+            <div style={{ position: "absolute", bottom: "16mm", left: "16mm", right: "16mm", zIndex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #cbd5e1", paddingTop: "12px" }}>
+                <div style={{ textAlign: "center", fontSize: "11px", color: "#64748b" }}>
+                  <div style={{ borderTop: "1px solid #1a1a1a", width: "140px", marginBottom: "4px" }} />
+                  গ্রাহকের স্বাক্ষর
+                </div>
+                <div style={{ textAlign: "center", fontSize: "11px", color: "#64748b" }}>
+                  <div style={{ borderTop: "1px solid #1a1a1a", width: "140px", marginBottom: "4px" }} />
+                  অনুমোদিত স্বাক্ষর
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
