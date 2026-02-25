@@ -80,11 +80,15 @@ export default function SmsGatewayConfig() {
   const saveMut = useMutation({
     mutationFn: async () => {
       const newValue: GatewayConfig = { mode, webhook_url: webhookUrl.trim(), active };
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("system_settings" as any)
         .update({ setting_value: newValue as any, updated_at: new Date().toISOString() })
-        .eq("setting_key", "sms_gateway");
+        .eq("setting_key", "sms_gateway")
+        .select() as any;
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(bn ? "সংরক্ষণ ব্যর্থ — আপনার অনুমতি নেই" : "Save failed — insufficient permissions");
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["system_settings"] });
