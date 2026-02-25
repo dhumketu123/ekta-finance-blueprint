@@ -122,10 +122,9 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   // ─── PIN verified callback ───
   const handleAuthorized = useCallback(() => {
     setAuthModalOpen(false);
-    // PHASE 4: Will call executePayment here after Hold-to-Confirm
-    // For now, just log and notify
-    console.log("[PHASE 3] PIN verified. Pending transaction ready:", pendingTransaction);
-    toast.success(bn ? "PIN যাচাই সফল — পরবর্তী ধাপ প্রস্তুত" : "PIN verified — ready for next step");
+    if (!pendingTransaction) return;
+    // PHASE 4: Will call executePayment(pendingTransaction) here after Hold-to-Confirm
+    console.log("[PHASE 3] PIN verified. Pending transaction ready for Phase 4.");
   }, [pendingTransaction, bn]);
 
   // PHASE 4: This function must only run after PIN + Hold verification.
