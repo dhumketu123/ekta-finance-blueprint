@@ -38,30 +38,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import CommunicationHub from "@/components/CommunicationHub";
 import SnoozePanel from "@/components/SnoozePanel";
+import { SectionHeader } from "@/components/SectionHeader";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
-
-const SectionHeader = ({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) => {
-  return (
-    <div className="flex items-start justify-between mb-4">
-      <div>
-        <h2 className="text-base sm:text-lg font-semibold tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {subtitle}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const ClientDetail = () => {
   const { id } = useParams();
