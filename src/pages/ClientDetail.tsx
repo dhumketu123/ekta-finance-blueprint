@@ -13,6 +13,7 @@ import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
 import SmartTransactionForm from "@/components/forms/SmartTransactionForm";
 import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
+import CreateSavingsAccountModal from "@/components/forms/CreateSavingsAccountModal";
 import TablePagination from "@/components/TablePagination";
 import EarlySettlementCalculator from "@/components/EarlySettlementCalculator";
 import ClientStatementExport from "@/components/ClientStatementExport";
@@ -60,6 +61,7 @@ const ClientDetail = () => {
   const [historyFilter, setHistoryFilter] = useState<string>("all");
   const [historyPage, setHistoryPage] = useState(1);
   const [exportOpen, setExportOpen] = useState(false);
+  const [createSavingsOpen, setCreateSavingsOpen] = useState(false);
   const [showSettled, setShowSettled] = useState(false);
   const [chartDateFrom, setChartDateFrom] = useState<Date | undefined>(undefined);
   const [chartDateTo, setChartDateTo] = useState<Date | undefined>(undefined);
@@ -537,48 +539,72 @@ const ClientDetail = () => {
       })}
 
       {/* ── Savings Summary (with action buttons) ── */}
-      {savingsAccounts && savingsAccounts.length > 0 && (
-        <div className="card-elevated p-5 border-l-4 border-l-success animate-slide-up" style={{ animationDelay: "0.12s" }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <PiggyBank className="w-4 h-4 text-success" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-success">
-                {bn ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
-              </h3>
-            </div>
-            {(isAdmin || canEditClients) && (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
-                  <ArrowDownCircle className="w-3 h-3" />
-                  {bn ? "জমা" : "Deposit"}
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_withdrawal"); setSavingsTxOpen(true); }}>
-                  <ArrowUpCircle className="w-3 h-3" />
-                  {bn ? "উত্তোলন" : "Withdraw"}
-                </Button>
-              </div>
-            )}
+      {/* ── Savings Summary (with action buttons) ── */}
+      <div className="card-elevated p-5 border-l-4 border-l-success animate-slide-up" style={{ animationDelay: "0.12s" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <PiggyBank className="w-4 h-4 text-success" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-success">
+              {bn ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
+            </h3>
           </div>
-          {savingsAccounts.map((sa: any) => (
-            <div key={sa.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <div>
-                <p className="text-xs font-medium">{sa.savings_products?.[bn ? "product_name_bn" : "product_name_en"] || sa.id.slice(0, 8)}</p>
-              </div>
-              <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
-            </div>
-          ))}
-          <div className="flex justify-between mt-3 pt-2 border-t border-border">
-            <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
-            <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
-          </div>
-          {totalSavingsBalance < 1000 && (
-            <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
-              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-              {bn ? `⚠️ সঞ্চয় ব্যালেন্স কম (<৳১,০০০)` : `⚠️ Low savings balance (<৳1,000)`}
+          {(isAdmin || canEditClients) && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="gap-1 text-xs h-7 border-success/30 text-success hover:bg-success/10" onClick={() => setCreateSavingsOpen(true)}>
+                <PiggyBank className="w-3 h-3" />
+                {bn ? "অ্যাকাউন্ট খুলুন" : "Open Account"}
+              </Button>
+              {savingsAccounts && savingsAccounts.length > 0 && (
+                <>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
+                    <ArrowDownCircle className="w-3 h-3" />
+                    {bn ? "জমা" : "Deposit"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_withdrawal"); setSavingsTxOpen(true); }}>
+                    <ArrowUpCircle className="w-3 h-3" />
+                    {bn ? "উত্তোলন" : "Withdraw"}
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
-      )}
+        {savingsAccounts && savingsAccounts.length > 0 ? (
+          <>
+            {savingsAccounts.map((sa: any) => (
+              <div key={sa.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div>
+                  <p className="text-xs font-medium">{sa.savings_products?.[bn ? "product_name_bn" : "product_name_en"] || sa.id.slice(0, 8)}</p>
+                </div>
+                <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
+              </div>
+            ))}
+            <div className="flex justify-between mt-3 pt-2 border-t border-border">
+              <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
+              <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
+            </div>
+            {totalSavingsBalance < 1000 && (
+              <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                {bn ? `⚠️ সঞ্চয় ব্যালেন্স কম (<৳১,০০০)` : `⚠️ Low savings balance (<৳1,000)`}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <PiggyBank className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+            <p className="text-xs text-muted-foreground">
+              {bn ? "কোনো সঞ্চয় অ্যাকাউন্ট নেই" : "No savings accounts yet"}
+            </p>
+            {(isAdmin || canEditClients) && (
+              <Button size="sm" variant="outline" className="mt-2 gap-1.5 text-xs border-success/30 text-success" onClick={() => setCreateSavingsOpen(true)}>
+                <PiggyBank className="w-3.5 h-3.5" />
+                {bn ? "প্রথম অ্যাকাউন্ট খুলুন" : "Open First Account"}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* ── Financial Journey Chart & Health Gauge ── */}
       {hasActiveLoans && (() => {
@@ -1082,6 +1108,15 @@ const ClientDetail = () => {
       )}
       {savingsTxOpen && (
         <SavingsTransactionModal open={savingsTxOpen} onClose={() => setSavingsTxOpen(false)} prefillClientId={id} prefillType={savingsTxType} />
+      )}
+      {createSavingsOpen && (
+        <CreateSavingsAccountModal
+          open={createSavingsOpen}
+          onClose={() => setCreateSavingsOpen(false)}
+          clientId={id!}
+          clientName={name}
+          clientPhone={c.phone}
+        />
       )}
       {settlementOpen && (
         <EarlySettlementCalculator open={settlementOpen} onClose={() => { setSettlementOpen(false); setSettlementLoanId(undefined); }} preselectedLoanId={settlementLoanId} />
