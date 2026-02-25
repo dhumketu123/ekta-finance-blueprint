@@ -278,7 +278,7 @@ const ClientDetail = () => {
         description={`${t("detail.client")} — ${maskedMemberId}`}
         actions={
           isAdmin || canEditClients ? (
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               {!hasActiveLoans && (
                 <Button size="sm" className="gap-1.5 text-xs rounded-lg bg-primary text-primary-foreground" onClick={() => setDisburseOpen(true)}>
                   <TrendingUp className="w-3.5 h-3.5" />
@@ -311,10 +311,10 @@ const ClientDetail = () => {
       />
 
       {/* ── Hero card (Glass-morphic) ── */}
-      <div className="relative overflow-hidden rounded-xl border border-border/40 p-6 border-l-4 border-l-primary animate-slide-up" style={{ background: "hsl(var(--card) / 0.85)", backdropFilter: "blur(16px) saturate(1.4)", WebkitBackdropFilter: "blur(16px) saturate(1.4)", boxShadow: "0 8px 32px -8px hsl(var(--primary) / 0.12), var(--shadow-card)" }}>
+      <div className="relative overflow-hidden rounded-xl border border-border/40 p-4 sm:p-6 border-l-4 border-l-primary animate-slide-up" style={{ background: "hsl(var(--card) / 0.85)", backdropFilter: "blur(16px) saturate(1.4)", WebkitBackdropFilter: "blur(16px) saturate(1.4)", boxShadow: "0 8px 32px -8px hsl(var(--primary) / 0.12), var(--shadow-card)" }}>
         {/* Subtle gradient accent */}
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }} />
-        <div className="relative flex items-center gap-5">
+        <div className="relative flex items-center gap-3 sm:gap-5">
           <ProfileCompletionRing client={c} size={112} strokeWidth={5}>
             <ClientPhotoUpload clientId={client.id} currentPhotoUrl={c.photo_url} canEdit={canEditClients} />
           </ProfileCompletionRing>
@@ -352,7 +352,7 @@ const ClientDetail = () => {
       </div>
 
       {/* ── Date Range Filter ── */}
-      <div className="flex items-center gap-2 flex-wrap animate-slide-up" style={{ animationDelay: "0.06s" }}>
+      <div className="flex items-center gap-2 flex-wrap animate-slide-up overflow-hidden" style={{ animationDelay: "0.06s" }}>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateFrom && "text-muted-foreground")}>
@@ -397,7 +397,7 @@ const ClientDetail = () => {
         return (
           <div
             key={loan.id}
-            className={`card-elevated p-5 border-l-4 animate-slide-up ${isOverdue90 ? "border-l-destructive" : isOverdue ? "border-l-destructive" : isDueSoon ? "border-l-warning" : "border-l-primary"}`}
+            className={`card-elevated p-4 sm:p-5 border-l-4 animate-slide-up overflow-hidden ${isOverdue90 ? "border-l-destructive" : isOverdue ? "border-l-destructive" : isDueSoon ? "border-l-warning" : "border-l-primary"}`}
             style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
           >
             <div className="flex items-center justify-between mb-3">
@@ -519,16 +519,16 @@ const ClientDetail = () => {
 
             {/* Per-loan action buttons */}
             {(isAdmin || canEditClients) && (
-              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => openPayment(loan.id)}>
-                  <Banknote className="w-3.5 h-3.5" />
-                  {bn ? "পেমেন্ট" : "Pay"}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-border flex-wrap">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1 min-w-0" onClick={() => openPayment(loan.id)}>
+                  <Banknote className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="truncate">{bn ? "পেমেন্ট" : "Pay"}</span>
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => openSchedule(loan.id)}>
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  {bn ? "সময়সূচি" : "Schedule"}
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1 min-w-0" onClick={() => openSchedule(loan.id)}>
+                  <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="truncate">{bn ? "সময়সূচি" : "Schedule"}</span>
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1" onClick={() => { setSettlementLoanId(loan.id); setSettlementOpen(true); }}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs flex-1 min-w-0" onClick={() => { setSettlementLoanId(loan.id); setSettlementOpen(true); }}>
                   <Calculator className="w-3.5 h-3.5" />
                   {bn ? "নিষ্পত্তি" : "Settle"}
                 </Button>
@@ -540,16 +540,16 @@ const ClientDetail = () => {
 
       {/* ── Savings Summary (with action buttons) ── */}
       {/* ── Savings Summary (with action buttons) ── */}
-      <div className="card-elevated p-5 border-l-4 border-l-success animate-slide-up" style={{ animationDelay: "0.12s" }}>
-        <div className="flex items-center justify-between mb-3">
+      <div className="card-elevated p-4 sm:p-5 border-l-4 border-l-success animate-slide-up overflow-hidden" style={{ animationDelay: "0.12s" }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <PiggyBank className="w-4 h-4 text-success" />
+            <PiggyBank className="w-4 h-4 text-success flex-shrink-0" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-success">
               {bn ? "সঞ্চয় সারসংক্ষেপ" : "Savings Summary"}
             </h3>
           </div>
           {(isAdmin || canEditClients) && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" className="gap-1 text-xs h-7 border-success/30 text-success hover:bg-success/10" onClick={() => setCreateSavingsOpen(true)}>
                 <PiggyBank className="w-3 h-3" />
                 {bn ? "অ্যাকাউন্ট খুলুন" : "Open Account"}
@@ -636,8 +636,8 @@ const ClientDetail = () => {
 
       {/* ── Aggregate Summary Card ── */}
       {hasActiveLoans && (
-        <div className="card-elevated p-5 animate-slide-up" style={{ animationDelay: "0.14s" }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="card-elevated p-4 sm:p-5 animate-slide-up overflow-hidden" style={{ animationDelay: "0.14s" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
@@ -692,6 +692,8 @@ const ClientDetail = () => {
           )}
           {showSettled && (!settledLoans || settledLoans.length === 0) && (
             <p className="mt-3 text-xs text-muted-foreground text-center">{bn ? "কোনো বন্ধ ঋণ নেই" : "No settled loans"}</p>
+          )}
+        </div>
       )}
 
       {/* ── Client Analytics Panel ── */}
@@ -715,8 +717,6 @@ const ClientDetail = () => {
           }))}
           savingsBalance={totalSavingsBalance}
         />
-      )}
-        </div>
       )}
 
       {/* ── Tabs: Info | Schedule | History | Hub ── */}
@@ -748,14 +748,14 @@ const ClientDetail = () => {
 
       {/* ── INFO TAB ── */}
       {activeTab === "info" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
           {/* Personal */}
           <div className="card-elevated p-5 space-y-4 animate-slide-up" style={{ animationDelay: "0.15s" }}>
             <div className="flex items-center gap-2 text-primary">
               <User className="w-4 h-4" />
               <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.personalInfo")}</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <DetailField label={t("table.name")} value={name} />
               <DetailField label={bn ? "ফোন" : "Phone"} value={c.phone || "—"} />
               <DetailField label={bn ? "পিতা/স্বামী" : "Father / Husband"} value={c.father_or_husband_name || "—"} />
@@ -773,7 +773,7 @@ const ClientDetail = () => {
               <Wallet className="w-4 h-4" />
               <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.loanInfo")}</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <DetailField label={t("table.loan")} value={loanAmount ? `৳${loanAmount.toLocaleString()}` : "—"} highlight={!!loanAmount} />
               <DetailField label={t("table.interest")} value={interestRate ? `${interestRate}%` : "—"} />
               <DetailField label={t("table.tenure")} value={tenure ? `${tenure} ${t("table.months")}` : "—"} />
@@ -787,7 +787,7 @@ const ClientDetail = () => {
               <MapPin className="w-4 h-4" />
               <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "ঠিকানা" : "Address"}</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <DetailField label={bn ? "গ্রাম" : "Village"} value={c.village || "—"} />
               <DetailField label={bn ? "ডাকঘর" : "Post Office"} value={c.post_office || "—"} />
               <DetailField label={bn ? "ইউনিয়ন" : "Union"} value={c.union_name || "—"} />
@@ -803,7 +803,7 @@ const ClientDetail = () => {
               <Shield className="w-4 h-4" />
               <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "নমিনি" : "Nominee"}</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <DetailField label={bn ? "নমিনির নাম" : "Nominee Name"} value={c.nominee_name || "—"} />
               <DetailField label={bn ? "সম্পর্ক" : "Relation"} value={c.nominee_relation || "—"} />
               <DetailField label={bn ? "নমিনির ফোন" : "Nominee Phone"} value={c.nominee_phone || "—"} />
