@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       }}>
       <p className="font-semibold text-white/90 mb-1.5">{label}</p>
       {payload.map((entry: any, i: number) => {
-        const color = entry.name === "savings" ? "#22c55e" : entry.name === "loanBalance" ? "#3b82f6" : "#f97316";
+        const color = entry.name === "savings" ? "#22c55e" : "#f97316";
         return (
           <div key={i} className="flex items-center justify-between gap-4 py-0.5">
             <span className="flex items-center gap-2">
@@ -89,29 +89,26 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
   const chartData = useMemo(() => {
     if (!schedules?.length) return [];
 
-    // Build a map of months -> loan balance decline
-    const monthMap = new Map<string, { loanBalance: number; savings: number; onTime: boolean }>();
+    // Build a map of months -> cumulative loan paid (rising line)
+    const monthMap = new Map<string, { loanPaid: number; savings: number; onTime: boolean }>();
 
-    // Calculate running loan balance
-    let totalLoanBalance = schedules.reduce(
-      (s, sch) => s + Number(sch.principal_due) + Number(sch.interest_due), 0
-    );
-    const initialBalance = totalLoanBalance;
+    // Calculate cumulative loan payments (rises over time)
+    let cumulativePaid = 0;
 
     for (const sch of schedules) {
       const monthKey = sch.due_date.slice(0, 7); // YYYY-MM
       const paid = Number(sch.principal_paid) + Number(sch.interest_paid);
-      totalLoanBalance -= paid;
+      cumulativePaid += paid;
 
       const isOnTime = sch.status === "paid" && sch.paid_date
         ? new Date(sch.paid_date) <= new Date(sch.due_date)
         : sch.status === "paid";
 
       if (!monthMap.has(monthKey)) {
-        monthMap.set(monthKey, { loanBalance: Math.max(totalLoanBalance, 0), savings: 0, onTime: isOnTime });
+        monthMap.set(monthKey, { loanPaid: cumulativePaid, savings: 0, onTime: isOnTime });
       } else {
         const existing = monthMap.get(monthKey)!;
-        existing.loanBalance = Math.max(totalLoanBalance, 0);
+        existing.loanPaid = cumulativePaid;
         if (!isOnTime) existing.onTime = false;
       }
     }
@@ -131,19 +128,19 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
     const sorted = Array.from(allMonths).sort();
 
     let lastSavings = 0;
-    let lastLoan = initialBalance;
+    let lastLoan = 0;
 
     return sorted.map(month => {
       const entry = monthMap.get(month);
       const savings = savingsMap.get(month) ?? lastSavings;
-      const loanBalance = entry?.loanBalance ?? lastLoan;
+      const loanPaid = entry?.loanPaid ?? lastLoan;
       lastSavings = savings;
-      lastLoan = loanBalance;
+      lastLoan = loanPaid;
 
       return {
         month,
         label: new Date(month + "-01").toLocaleDateString(bn ? "bn-BD" : "en-US", { month: "short", year: "2-digit" }),
-        loanBalance: Math.round(loanBalance),
+        loanPaid: Math.round(loanPaid),
         savings: Math.round(savings),
         onTime: entry?.onTime ?? true,
       };
@@ -178,8 +175,8 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
                 <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#f97316" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#f97316" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -190,24 +187,13 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
               tickLine={false}
             />
             <YAxis
-              yAxisId="loan"
-              orientation="right"
               tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) => `৳${(v / 1000).toFixed(0)},000`}
-            />
-            <YAxis
-              yAxisId="savings"
-              orientation="left"
-              tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v: number) => `৳${(v / 1000).toFixed(0)},000`}
+              tickFormatter={(v: number) => `৳${v.toLocaleString()}`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
-              yAxisId="savings"
               type="monotone"
               dataKey="savings"
               name="savings"
@@ -225,11 +211,10 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
               activeDot={{ r: 5, stroke: "#22c55e", strokeWidth: 2, fill: "#0f172a" }}
             />
             <Area
-              yAxisId="loan"
               type="monotone"
-              dataKey="loanBalance"
-              name="loanBalance"
-              stroke="#3b82f6"
+              dataKey="loanPaid"
+              name="loanPaid"
+              stroke="#f97316"
               strokeWidth={2.5}
               fill="url(#loanGrad)"
               isAnimationActive={true}
@@ -241,7 +226,7 @@ export default function FinancialJourneyChart({ clientId, loanIds }: Props) {
                 const color = entry.onTime ? "#3b82f6" : "#f97316";
                 return <GlowDot cx={props.cx} cy={props.cy} fill={color} />;
               }}
-              activeDot={{ r: 5, stroke: "#3b82f6", strokeWidth: 2, fill: "#0f172a" }}
+              activeDot={{ r: 5, stroke: "#f97316", strokeWidth: 2, fill: "#0f172a" }}
             />
           </AreaChart>
         </ResponsiveContainer>
