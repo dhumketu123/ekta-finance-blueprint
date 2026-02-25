@@ -16,9 +16,9 @@ export const SectionHeader = React.memo(
         transition={{ duration: 0.3 }}
         className={`mt-6 sm:mt-8 ${className}`}
       >
-        <h2 className="text-lg sm:text-xl font-semibold text-foreground">{title}</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground/90">{title}</h2>
         {subtitle && (
-          <p className="text-sm sm:text-base text-muted mt-1">{subtitle}</p>
+          <p className="text-sm sm:text-base text-foreground/60 mt-1">{subtitle}</p>
         )}
       </motion.div>
     );

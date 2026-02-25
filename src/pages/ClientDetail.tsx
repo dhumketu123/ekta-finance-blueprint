@@ -564,18 +564,18 @@ const ClientDetail = () => {
             </h3>
           </div>
           {(isAdmin || canEditClients) && (
-            <div className="flex gap-2 overflow-x-auto pb-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-2 md:overflow-visible md:flex-wrap md:pr-0 md:pb-0">
-              <Button size="sm" variant="outline" className="shrink-0 gap-1 text-xs h-7 border-success/30 text-success hover:bg-success/10" onClick={() => setCreateSavingsOpen(true)}>
+            <div className="flex flex-wrap gap-2 sm:gap-4 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:overflow-visible md:pb-0">
+              <Button size="sm" variant="outline" className="shrink-0 gap-1.5 text-xs h-7 border-success/30 text-success hover:bg-success/10" onClick={() => setCreateSavingsOpen(true)}>
                 <PiggyBank className="w-3 h-3" />
                 {bn ? "অ্যাকাউন্ট খুলুন" : "Open Account"}
               </Button>
               {savingsAccounts && savingsAccounts.length > 0 && (
                 <>
-                  <Button size="sm" variant="outline" className="shrink-0 gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
+                  <Button size="sm" variant="outline" className="shrink-0 gap-1.5 text-xs h-7" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
                     <ArrowDownCircle className="w-3 h-3" />
                     {bn ? "জমা" : "Deposit"}
                   </Button>
-                  <Button size="sm" variant="outline" className="shrink-0 gap-1 text-xs h-7" onClick={() => { setSavingsTxType("savings_withdrawal"); setSavingsTxOpen(true); }}>
+                  <Button size="sm" variant="outline" className="shrink-0 gap-1.5 text-xs h-7" onClick={() => { setSavingsTxType("savings_withdrawal"); setSavingsTxOpen(true); }}>
                     <ArrowUpCircle className="w-3 h-3" />
                     {bn ? "উত্তোলন" : "Withdraw"}
                   </Button>
