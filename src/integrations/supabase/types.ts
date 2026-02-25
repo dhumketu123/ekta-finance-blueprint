@@ -1705,7 +1705,11 @@ export type Database = {
           name_en: string
           owner_id: string | null
           phone: string | null
+          pin_attempts: number
+          pin_locked_until: string | null
+          pin_updated_at: string | null
           role: string | null
+          transaction_pin_hash: string | null
           updated_at: string
         }
         Insert: {
@@ -1717,7 +1721,11 @@ export type Database = {
           name_en?: string
           owner_id?: string | null
           phone?: string | null
+          pin_attempts?: number
+          pin_locked_until?: string | null
+          pin_updated_at?: string | null
           role?: string | null
+          transaction_pin_hash?: string | null
           updated_at?: string
         }
         Update: {
@@ -1729,7 +1737,11 @@ export type Database = {
           name_en?: string
           owner_id?: string | null
           phone?: string | null
+          pin_attempts?: number
+          pin_locked_until?: string | null
+          pin_updated_at?: string | null
           role?: string | null
+          transaction_pin_hash?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2316,6 +2328,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_or_update_transaction_pin: {
+        Args: { _new_pin: string }
+        Returns: Json
+      }
       detect_high_risk_clients: { Args: never; Returns: Json }
       detect_officer_burnout: {
         Args: { _failure_threshold?: number; _weekly_threshold?: number }
@@ -2414,6 +2430,7 @@ export type Database = {
       verify_all_branches_integrity: { Args: never; Returns: Json }
       verify_event_chain_integrity: { Args: never; Returns: Json }
       verify_ledger_integrity: { Args: { p_branch_id: string }; Returns: Json }
+      verify_transaction_pin: { Args: { _input_pin: string }; Returns: Json }
     }
     Enums: {
       account_code:
