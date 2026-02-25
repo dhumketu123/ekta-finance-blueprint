@@ -51,9 +51,6 @@ export const useUpdateQuantumConfig = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (config: Partial<QuantumLedgerConfig>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Login required");
-
       const { data: current } = await supabase
         .from("system_settings" as any)
         .select("setting_value")
@@ -62,24 +59,11 @@ export const useUpdateQuantumConfig = () => {
 
       const merged = { ...((current as any)?.setting_value ?? DEFAULT_CONFIG), ...config };
 
-      const { data, error } = await supabase
-        .from("system_settings" as any)
-        .update({ setting_value: merged as any, updated_by: user.id } as any)
-        .eq("setting_key", "quantum_ledger_config")
-        .select() as any;
-
+      const { error } = await supabase.rpc("upsert_system_setting" as any, {
+        p_setting_key: "quantum_ledger_config",
+        p_setting_value: merged,
+      });
       if (error) throw error;
-
-      if (!data || data.length === 0) {
-        const { error: upsertError } = await supabase
-          .from("system_settings" as any)
-          .upsert({
-            setting_key: "quantum_ledger_config",
-            setting_value: merged as any,
-            updated_by: user.id,
-          } as any, { onConflict: "setting_key" }) as any;
-        if (upsertError) throw upsertError;
-      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["system_settings", "quantum_ledger_config"] });
