@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Save, User, MessageSquare, Atom, ShieldCheck, Settings, Lock } from "lucide-react";
+import { Loader2, Save, User, MessageSquare, Atom, ShieldCheck, Settings, Lock, KeyRound } from "lucide-react";
 import { z } from "zod";
 import SmsGatewayConfig from "@/components/settings/SmsGatewayConfig";
 import QuantumLedgerSettings from "@/components/settings/QuantumLedgerSettings";
+import SecuritySettingsCard from "@/components/settings/SecuritySettingsCard";
 
 const profileSchema = z.object({
   name_en: z.string().trim().min(1, "Name is required").max(100),
@@ -276,6 +277,19 @@ const SettingsPage = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Transaction PIN Card */}
+          <div className={premiumCard}>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <KeyRound className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">
+                {bn ? "ট্রানজেকশন PIN" : "Transaction PIN"}
+              </h2>
+            </div>
+            <SecuritySettingsCard />
           </div>
 
           {/* SMS Gateway */}
