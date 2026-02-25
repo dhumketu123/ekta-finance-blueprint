@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShieldCheck, CheckCircle2, Lock, AlertTriangle } from "lucide-react";
@@ -55,6 +56,7 @@ export default function TransactionAuthModal({ open, onClose, onAuthorized }: Pr
 
   const handleDigit = useCallback((index: number, value: string) => {
     if (verifying || countdown > 0) return;
+    if (value.length > 1) return; // prevent paste
     const digit = value.replace(/\D/g, "").slice(-1);
     const next = [...pin];
     next[index] = digit;
@@ -86,6 +88,7 @@ export default function TransactionAuthModal({ open, onClose, onAuthorized }: Pr
         setStep("success");
         setTimeout(() => {
           onAuthorized();
+          onClose();
         }, 800);
       } else if (result.status === "locked") {
         setLockedUntil(result.locked_until);
@@ -95,9 +98,12 @@ export default function TransactionAuthModal({ open, onClose, onAuthorized }: Pr
         setRemainingAttempts(result.remaining_attempts);
         triggerShake();
       } else if (result.status === "no_pin") {
-        // No PIN set — auto-authorize for now (Phase 5 will handle setup flow)
-        setStep("success");
-        setTimeout(() => onAuthorized(), 800);
+        onClose();
+        toast.error(
+          lang === "bn"
+            ? "প্রথমে সেটিংস থেকে ট্রানজেকশন PIN সেট করুন"
+            : "Please set your Transaction PIN in Settings first"
+        );
       }
     } catch {
       triggerShake();
