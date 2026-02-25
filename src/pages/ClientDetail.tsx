@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
@@ -29,8 +30,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
-  History, FileText, Filter, Download, BarChart3, Archive
+  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import CommunicationHub from "@/components/CommunicationHub";
 import SnoozePanel from "@/components/SnoozePanel";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
@@ -57,6 +61,8 @@ const ClientDetail = () => {
   const [historyPage, setHistoryPage] = useState(1);
   const [exportOpen, setExportOpen] = useState(false);
   const [showSettled, setShowSettled] = useState(false);
+  const [chartDateFrom, setChartDateFrom] = useState<Date | undefined>(undefined);
+  const [chartDateTo, setChartDateTo] = useState<Date | undefined>(undefined);
   const HISTORY_PER_PAGE = 20;
 
   // ALL active loans for this client (multi-loan support)
@@ -343,6 +349,38 @@ const ClientDetail = () => {
         )}
       </div>
 
+      {/* ── Date Range Filter ── */}
+      <div className="flex items-center gap-2 flex-wrap animate-slide-up" style={{ animationDelay: "0.06s" }}>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateFrom && "text-muted-foreground")}>
+              <CalendarIcon className="w-3.5 h-3.5" />
+              {chartDateFrom ? format(chartDateFrom, "dd MMM yyyy") : (bn ? "শুরুর তারিখ" : "From")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={chartDateFrom} onSelect={setChartDateFrom} initialFocus className="p-3 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+        <span className="text-xs text-muted-foreground">→</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateTo && "text-muted-foreground")}>
+              <CalendarIcon className="w-3.5 h-3.5" />
+              {chartDateTo ? format(chartDateTo, "dd MMM yyyy") : (bn ? "শেষ তারিখ" : "To")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={chartDateTo} onSelect={setChartDateTo} initialFocus className="p-3 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+        {(chartDateFrom || chartDateTo) && (
+          <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => { setChartDateFrom(undefined); setChartDateTo(undefined); }}>
+            {bn ? "রিসেট" : "Reset"}
+          </Button>
+        )}
+      </div>
+
       {/* ── All Active Loans (Multi-Loan Support) ── */}
       {hasActiveLoans && activeLoans!.map((loan, idx) => {
         const daysUntilDue = loan.next_due_date
@@ -558,7 +596,7 @@ const ClientDetail = () => {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <FinancialJourneyChart clientId={id!} loanIds={activeLoans!.map(l => l.id)} />
+              <FinancialJourneyChart clientId={id!} loanIds={activeLoans!.map(l => l.id)} dateRange={{ from: chartDateFrom ?? null, to: chartDateTo ?? null }} />
             </div>
             <PaymentHealthGauge
               punctualityPct={punctPct}
