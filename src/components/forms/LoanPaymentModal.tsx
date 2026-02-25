@@ -220,8 +220,8 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             transaction={pendingTransaction}
             loanDisplayId={loanDisplayId}
             executePayment={executePayment}
-            onComplete={resetAndClose}
-            onCancel={() => setStep("form")}
+            onComplete={() => { setStep("result"); setPendingTransaction(null); }}
+            onCancel={() => { setStep("form"); setPendingTransaction(null); }}
           />
         ) : step === "result" && result ? (
           <div className="space-y-4">
