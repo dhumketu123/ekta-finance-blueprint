@@ -383,8 +383,21 @@ const ClientDetail = () => {
         )}
       </div>
 
-      {/* ── All Active Loans (Multi-Loan Support) ── */}
-      {hasActiveLoans && activeLoans!.map((loan, idx) => {
+      {/* ── Loan Status Section ── */}
+      {hasActiveLoans && (
+        <section className="mt-6 sm:mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                {bn ? "ঋণের অবস্থা" : "Loan Status"}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {bn ? "সক্রিয় ঋণ এবং পরিশোধের অগ্রগতি" : "Overview of active and repayment progress"}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">
+      {activeLoans!.map((loan, idx) => {
         const daysUntilDue = loan.next_due_date
           ? Math.ceil((new Date(loan.next_due_date).getTime() - Date.now()) / 86400000)
           : null;
@@ -537,9 +550,22 @@ const ClientDetail = () => {
           </div>
         );
       })}
+          </div>
+        </section>
+      )}
 
-      {/* ── Savings Summary (with action buttons) ── */}
-      {/* ── Savings Summary (with action buttons) ── */}
+      {/* ── Savings Management Section ── */}
+      <section className="mt-6 sm:mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+              {bn ? "সঞ্চয় ব্যবস্থাপনা" : "Savings Management"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {bn ? "অ্যাকাউন্ট ব্যালেন্স এবং লেনদেন" : "Account balance and transactions"}
+            </p>
+          </div>
+        </div>
       <div className="card-elevated p-4 sm:p-5 border-l-4 border-l-success animate-slide-up overflow-hidden" style={{ animationDelay: "0.12s" }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
@@ -605,6 +631,7 @@ const ClientDetail = () => {
           </div>
         )}
       </div>
+      </section>
 
       {/* ── Financial Journey Chart & Health Gauge ── */}
       {hasActiveLoans && (() => {
@@ -634,8 +661,19 @@ const ClientDetail = () => {
         );
       })()}
 
-      {/* ── Aggregate Summary Card ── */}
+      {/* ── Financial Summary Section ── */}
       {hasActiveLoans && (
+        <section className="mt-6 sm:mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                {bn ? "আর্থিক সারসংক্ষেপ" : "Financial Summary"}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {bn ? "সম্মিলিত ঋণ এবং সঞ্চয় পর্যালোচনা" : "Combined loan and savings overview"}
+              </p>
+            </div>
+          </div>
         <div className="card-elevated p-4 sm:p-5 animate-slide-up overflow-hidden" style={{ animationDelay: "0.14s" }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
@@ -694,10 +732,22 @@ const ClientDetail = () => {
             <p className="mt-3 text-xs text-muted-foreground text-center">{bn ? "কোনো বন্ধ ঋণ নেই" : "No settled loans"}</p>
           )}
         </div>
+        </section>
       )}
 
-      {/* ── Client Analytics Panel ── */}
+      {/* ── Analytics Section ── */}
       {hasActiveLoans && (
+        <section className="mt-6 sm:mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                {bn ? "অ্যানালিটিক্স" : "Analytics"}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {bn ? "কর্মক্ষমতা এবং পরিশোধ অন্তর্দৃষ্টি" : "Performance and repayment insights"}
+              </p>
+            </div>
+          </div>
         <ClientAnalyticsPanel
           loans={(activeLoans ?? []).map(l => ({
             ...l,
@@ -717,6 +767,7 @@ const ClientDetail = () => {
           }))}
           savingsBalance={totalSavingsBalance}
         />
+        </section>
       )}
 
       {/* ── Tabs: Info | Schedule | History | Hub ── */}
@@ -748,6 +799,17 @@ const ClientDetail = () => {
 
       {/* ── INFO TAB ── */}
       {activeTab === "info" && (
+        <div className="space-y-0">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                {bn ? "ক্লায়েন্ট তথ্য" : "Client Information"}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {bn ? "ব্যক্তিগত এবং যোগাযোগের বিবরণ" : "Personal and contact details"}
+              </p>
+            </div>
+          </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
           {/* Personal */}
           <div className="card-elevated p-5 space-y-4 animate-slide-up" style={{ animationDelay: "0.15s" }}>
@@ -823,6 +885,7 @@ const ClientDetail = () => {
               <DetailField label={t("detail.nextDeposit")} value={nextPaymentDate || "—"} />
             </div>
           </div>
+        </div>
         </div>
       )}
 
