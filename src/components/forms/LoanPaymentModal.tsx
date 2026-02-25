@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import SecurePaymentDialog from "./SecurePaymentDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
+import ConfirmExecutionScreen from "@/components/payment/ConfirmExecutionScreen";
 
 const schema = z.object({
   loan_id: z.string().uuid("Invalid Loan ID"),
@@ -51,7 +52,7 @@ export interface PendingTransaction {
   notes?: string;
 }
 
-type ModalStep = "form" | "result";
+type ModalStep = "form" | "confirm" | "result";
 
 export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanInfo }: Props) {
   const { lang } = useLanguage();
@@ -119,13 +120,12 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     isProcessingRef.current = false;
   }, [form]);
 
-  // ─── PIN verified callback ───
+  // ─── PIN verified → move to hold-to-confirm screen ───
   const handleAuthorized = useCallback(() => {
     setAuthModalOpen(false);
     if (!pendingTransaction) return;
-    // PHASE 4: Will call executePayment(pendingTransaction) here after Hold-to-Confirm
-    console.log("[PHASE 3] PIN verified. Pending transaction ready for Phase 4.");
-  }, [pendingTransaction, bn]);
+    setStep("confirm");
+  }, [pendingTransaction]);
 
   // PHASE 4: This function must only run after PIN + Hold verification.
   const executePayment = async (pending: PendingTransaction) => {
@@ -210,10 +210,20 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       </>
     ) : undefined;
 
+  const loanDisplayId = loanInfo?.loan_id || loanInfo?.id?.slice(0, 8);
+
   return (
     <>
       <SecurePaymentDialog open={open} onClose={resetAndClose} footer={footer}>
-        {step === "result" && result ? (
+        {step === "confirm" && pendingTransaction ? (
+          <ConfirmExecutionScreen
+            transaction={pendingTransaction}
+            loanDisplayId={loanDisplayId}
+            executePayment={executePayment}
+            onComplete={resetAndClose}
+            onCancel={() => setStep("form")}
+          />
+        ) : step === "result" && result ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-success">
               <CheckCircle2 className="w-5 h-5" />
@@ -249,7 +259,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
               <div className="p-3 rounded-xl bg-muted/50 space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{bn ? "ঋণ" : "Loan"}</span>
-                  <span className="font-mono font-semibold">{loanInfo.loan_id || loanInfo.id.slice(0, 8)}</span>
+                  <span className="font-mono font-semibold">{loanDisplayId}</span>
                 </div>
                 {Number(loanInfo.penalty_amount) > 0 && (
                   <div className="flex justify-between text-destructive">
@@ -302,7 +312,6 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
         )}
       </SecurePaymentDialog>
 
-      {/* PIN Verification Modal */}
       <TransactionAuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
