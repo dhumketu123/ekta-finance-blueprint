@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, ShieldCheck, ArrowRight } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import SecurePaymentDialog from "./SecurePaymentDialog";
 
 const schema = z.object({
   loan_id: z.string().uuid("Invalid Loan ID"),
@@ -43,17 +43,18 @@ interface PaymentResult {
   loan_closed: boolean;
 }
 
-interface PendingTransaction {
+export interface PendingTransaction {
   loan_id: string;
   amount: number;
   reference_id?: string;
   notes?: string;
 }
 
-function openTransactionAuthModal(_pending: PendingTransaction): Promise<boolean> {
-  // Phase 2 will implement PIN/OTP verification here
-  // For now, returns true to proceed directly
-  return Promise.resolve(true);
+// TODO PHASE 2: Implement PIN verification modal
+function openTransactionAuthModal(_pending: PendingTransaction): void {
+  // Phase 2 will implement PIN/OTP verification here.
+  // For now this is a no-op placeholder.
+  console.log("[PHASE 2 PLACEHOLDER] Transaction auth modal would open here", _pending);
 }
 
 type ModalStep = "form" | "result";
@@ -76,7 +77,6 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [step, setStep] = useState<ModalStep>("form");
   const [pendingTransaction, setPendingTransaction] = useState<PendingTransaction | null>(null);
-
   const isProcessingRef = useRef(false);
 
   const resetAndClose = useCallback(() => {
@@ -90,7 +90,8 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     onClose();
   }, [onClose, prefilledLoanId]);
 
-  const handleNextStep = useCallback(async () => {
+  // ─── Step 1: Validate & store as pending ONLY. NO DB write. ───
+  const handleNextStep = useCallback(() => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     setLoading(true);
@@ -116,16 +117,16 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     };
     setPendingTransaction(pending);
 
-    const authorized = await openTransactionAuthModal(pending);
-    if (authorized) {
-      await executePayment(pending);
-    } else {
-      setLoading(false);
-      isProcessingRef.current = false;
-    }
+    // Phase 1: ONLY store pending + trigger placeholder auth modal. NO execution.
+    openTransactionAuthModal(pending);
+
+    setLoading(false);
+    isProcessingRef.current = false;
   }, [form]);
 
+  // PHASE 4: This function must only run after PIN + Hold verification.
   const executePayment = async (pending: PendingTransaction) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase.rpc("apply_loan_payment", {
         _loan_id: pending.loan_id,
@@ -185,160 +186,117 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 flex flex-col max-h-[90vh]">
-        <DialogHeader className="p-4 pb-2 border-b border-border">
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            {bn ? "নিরাপদ ঋণ পরিশোধ" : "Secure Loan Payment"}
-          </DialogTitle>
-        </DialogHeader>
+  // ─── Footer (form step only) ───
+  const footer =
+    step === "form" && !result ? (
+      <>
+        <Button variant="outline" onClick={resetAndClose} className="flex-1 text-xs" disabled={loading}>
+          {bn ? "বাতিল করুন" : "Cancel"}
+        </Button>
+        <Button
+          onClick={handleNextStep}
+          disabled={loading || isProcessingRef.current}
+          className="flex-1 text-xs gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading ? "..." : (
+            <>
+              {bn ? "পরবর্তী ধাপ" : "Next Step"}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
+        </Button>
+      </>
+    ) : undefined;
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {step === "result" && result ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-success">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm font-semibold">
-                  {result.loan_closed
-                    ? bn ? "ঋণ বন্ধ হয়েছে!" : "Loan Closed!"
-                    : bn ? "পেমেন্ট সফল" : "Payment Applied"}
-                </span>
-              </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between p-2 rounded bg-destructive/10">
-                  <span>{bn ? "জরিমানা প্রদান" : "Penalty Paid"}</span>
-                  <span className="font-bold">৳{Number(result.penalty_paid).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-warning/10">
-                  <span>{bn ? "সুদ প্রদান" : "Interest Paid"}</span>
-                  <span className="font-bold">৳{Number(result.interest_paid).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-success/10">
-                  <span>{bn ? "আসল প্রদান" : "Principal Paid"}</span>
-                  <span className="font-bold">৳{Number(result.principal_paid).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-muted font-bold">
-                  <span>{bn ? "অবশিষ্ট" : "Remaining"}</span>
-                  <span>৳{Number(result.new_outstanding).toLocaleString()}</span>
-                </div>
-              </div>
-              <Button onClick={resetAndClose} className="w-full text-xs">
-                {bn ? "বন্ধ করুন" : "Close"}
-              </Button>
+  return (
+    <SecurePaymentDialog open={open} onClose={resetAndClose} footer={footer}>
+      {step === "result" && result ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-success">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="text-sm font-semibold">
+              {result.loan_closed ? (bn ? "ঋণ বন্ধ হয়েছে!" : "Loan Closed!") : (bn ? "পেমেন্ট সফল" : "Payment Applied")}
+            </span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between p-2 rounded bg-destructive/10">
+              <span>{bn ? "জরিমানা প্রদান" : "Penalty Paid"}</span>
+              <span className="font-bold">৳{Number(result.penalty_paid).toLocaleString()}</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {loanInfo && (
-                <div className="p-3 rounded-xl bg-muted/50 space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{bn ? "ঋণ" : "Loan"}</span>
-                    <span className="font-mono font-semibold">{loanInfo.loan_id || loanInfo.id.slice(0, 8)}</span>
-                  </div>
-                  {Number(loanInfo.penalty_amount) > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>{bn ? "জরিমানা বকেয়া" : "Penalty Due"}</span>
-                      <span className="font-bold">৳{Number(loanInfo.penalty_amount).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{bn ? "বকেয়া সুদ" : "Interest Due"}</span>
-                    <span className="font-bold text-warning">৳{Number(loanInfo.outstanding_interest).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{bn ? "বকেয়া আসল" : "Principal Due"}</span>
-                    <span className="font-bold">৳{Number(loanInfo.outstanding_principal).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
-                    <span className="font-semibold">{bn ? "কিস্তির পরিমাণ (EMI)" : "EMI Amount"}</span>
-                    <span className="font-bold text-primary">৳{Number(loanInfo.emi_amount).toLocaleString()}</span>
-                  </div>
+            <div className="flex justify-between p-2 rounded bg-warning/10">
+              <span>{bn ? "সুদ প্রদান" : "Interest Paid"}</span>
+              <span className="font-bold">৳{Number(result.interest_paid).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between p-2 rounded bg-success/10">
+              <span>{bn ? "আসল প্রদান" : "Principal Paid"}</span>
+              <span className="font-bold">৳{Number(result.principal_paid).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between p-2 rounded bg-muted font-bold">
+              <span>{bn ? "অবশিষ্ট" : "Remaining"}</span>
+              <span>৳{Number(result.new_outstanding).toLocaleString()}</span>
+            </div>
+          </div>
+          <Button onClick={resetAndClose} className="w-full text-xs">
+            {bn ? "বন্ধ করুন" : "Close"}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {loanInfo && (
+            <div className="p-3 rounded-xl bg-muted/50 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{bn ? "ঋণ" : "Loan"}</span>
+                <span className="font-mono font-semibold">{loanInfo.loan_id || loanInfo.id.slice(0, 8)}</span>
+              </div>
+              {Number(loanInfo.penalty_amount) > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>{bn ? "জরিমানা বকেয়া" : "Penalty Due"}</span>
+                  <span className="font-bold">৳{Number(loanInfo.penalty_amount).toLocaleString()}</span>
                 </div>
               )}
-
-              <div>
-                <Label className="text-xs">Loan ID *</Label>
-                <Input
-                  value={form.loan_id}
-                  onChange={(e) => setForm({ ...form, loan_id: e.target.value })}
-                  className="text-sm font-mono"
-                  placeholder="UUID"
-                  readOnly={!!prefilledLoanId}
-                />
-                {errors.loan_id && <p className="text-xs text-destructive mt-1">{errors.loan_id}</p>}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{bn ? "বকেয়া সুদ" : "Interest Due"}</span>
+                <span className="font-bold text-warning">৳{Number(loanInfo.outstanding_interest).toLocaleString()}</span>
               </div>
-              <div>
-                <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
-                <Input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="text-sm"
-                  placeholder={suggestedAmount > 0 ? `${bn ? "প্রস্তাবিত" : "Suggested"}: ৳${suggestedAmount.toLocaleString()}` : ""}
-                />
-                {suggestedAmount > 0 && !form.amount && (
-                  <button
-                    type="button"
-                    className="text-[10px] text-primary mt-1 hover:underline"
-                    onClick={() => setForm({ ...form, amount: String(suggestedAmount) })}
-                  >
-                    {bn ? `৳${suggestedAmount.toLocaleString()} প্রস্তাবিত পূরণ করুন` : `Fill suggested ৳${suggestedAmount.toLocaleString()}`}
-                  </button>
-                )}
-                {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{bn ? "বকেয়া আসল" : "Principal Due"}</span>
+                <span className="font-bold">৳{Number(loanInfo.outstanding_principal).toLocaleString()}</span>
               </div>
-              <div>
-                <Label className="text-xs">Reference ID</Label>
-                <Input
-                  value={form.reference_id}
-                  onChange={(e) => setForm({ ...form, reference_id: e.target.value })}
-                  className="text-sm"
-                  placeholder="Optional unique reference"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Notes</Label>
-                <Textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="text-sm"
-                  rows={2}
-                />
-              </div>
-              <div className="flex items-start gap-2 p-2 rounded bg-muted text-xs text-muted-foreground">
-                <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>{bn ? "পেমেন্ট অগ্রাধিকার: জরিমানা → সুদ → আসল" : "Payment priority: Penalty → Interest → Principal"}</span>
+              <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
+                <span className="font-semibold">{bn ? "কিস্তির পরিমাণ (EMI)" : "EMI Amount"}</span>
+                <span className="font-bold text-primary">৳{Number(loanInfo.emi_amount).toLocaleString()}</span>
               </div>
             </div>
           )}
-        </div>
-
-        {step === "form" && !result && (
-          <div className="sticky bottom-0 bg-background border-t border-border p-4 z-50 flex gap-3">
-            <Button
-              variant="outline"
-              onClick={resetAndClose}
-              className="flex-1 text-xs"
-              disabled={loading}
-            >
-              {bn ? "বাতিল করুন" : "Cancel"}
-            </Button>
-            <Button
-              onClick={handleNextStep}
-              disabled={loading || isProcessingRef.current}
-              className="flex-1 text-xs gap-1.5"
-            >
-              {loading ? "..." : (
-                <>
-                  {bn ? "পরবর্তী ধাপ" : "Next Step"}
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              )}
-            </Button>
+          <div>
+            <Label className="text-xs">Loan ID *</Label>
+            <Input value={form.loan_id} onChange={(e) => setForm({ ...form, loan_id: e.target.value })} className="text-sm font-mono" placeholder="UUID" readOnly={!!prefilledLoanId} />
+            {errors.loan_id && <p className="text-xs text-destructive mt-1">{errors.loan_id}</p>}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          <div>
+            <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
+            <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="text-sm" placeholder={suggestedAmount > 0 ? `${bn ? "প্রস্তাবিত" : "Suggested"}: ৳${suggestedAmount.toLocaleString()}` : ""} />
+            {suggestedAmount > 0 && !form.amount && (
+              <button type="button" className="text-[10px] text-primary mt-1 hover:underline" onClick={() => setForm({ ...form, amount: String(suggestedAmount) })}>
+                {bn ? `৳${suggestedAmount.toLocaleString()} প্রস্তাবিত পূরণ করুন` : `Fill suggested ৳${suggestedAmount.toLocaleString()}`}
+              </button>
+            )}
+            {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
+          </div>
+          <div>
+            <Label className="text-xs">Reference ID</Label>
+            <Input value={form.reference_id} onChange={(e) => setForm({ ...form, reference_id: e.target.value })} className="text-sm" placeholder="Optional unique reference" />
+          </div>
+          <div>
+            <Label className="text-xs">Notes</Label>
+            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="text-sm" rows={2} />
+          </div>
+          <div className="flex items-start gap-2 p-2 rounded bg-muted text-xs text-muted-foreground">
+            <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{bn ? "পেমেন্ট অগ্রাধিকার: জরিমানা → সুদ → আসল" : "Payment priority: Penalty → Interest → Principal"}</span>
+          </div>
+        </div>
+      )}
+    </SecurePaymentDialog>
   );
 }
