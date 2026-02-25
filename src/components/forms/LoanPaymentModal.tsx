@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, MessageSquare } from "lucide-react";
 import SecurePaymentDialog from "./SecurePaymentDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import ConfirmExecutionScreen from "@/components/payment/ConfirmExecutionScreen";
+import { buildSmsIntentUri } from "@/hooks/useSmsGateway";
 
 const schema = z.object({
   loan_id: z.string().uuid("Invalid Loan ID"),
@@ -74,6 +76,20 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [pendingTransaction, setPendingTransaction] = useState<PendingTransaction | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const isProcessingRef = useRef(false);
+  const [clientPhone, setClientPhone] = useState<string>("");
+
+  const { data: smsConfig } = useQuery({
+    queryKey: ["sms_gateway_config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("system_settings" as any)
+        .select("setting_value")
+        .eq("setting_key", "sms_gateway")
+        .maybeSingle();
+      return (data as any)?.setting_value as { mode: string; active: boolean } | undefined;
+    },
+    staleTime: 60_000,
+  });
 
   const resetAndClose = useCallback(() => {
     setResult(null);
@@ -154,6 +170,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
         if (loanData) {
           const client = (loanData as any).clients;
           if (client?.phone) {
+            setClientPhone(client.phone);
             const clientName = client.name_bn || client.name_en;
             const remaining = Number(paymentData.new_outstanding);
             const paid = Number(paymentData.total_payment);
@@ -190,6 +207,24 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   };
 
   const loanDisplayId = loanInfo?.loan_id || loanInfo?.id?.slice(0, 8);
+
+  const handleSendSMS = useCallback(() => {
+    if (!result || !clientPhone) return;
+    const paid = Number(result.total_payment).toLocaleString("en-US");
+    const remaining = Number(result.new_outstanding).toLocaleString("en-US");
+
+    const msgBn = result.loan_closed
+      ? `একতা ফাইন্যান্স: আপনার ঋণ সম্পূর্ণ পরিশোধিত! ৳${paid} গৃহীত। ধন্যবাদ!`
+      : `একতা ফাইন্যান্স: আপনার ৳${paid} পেমেন্ট সফল হয়েছে। বর্তমান বকেয়া: ৳${remaining}। ধন্যবাদ!`;
+
+    const isNative = smsConfig?.mode === "mobile_native" || !smsConfig?.mode;
+
+    if (isNative) {
+      window.location.href = buildSmsIntentUri(clientPhone, msgBn);
+    } else {
+      toast.success(bn ? "SMS সার্ভারে পাঠানো হয়েছে ✅" : "SMS queued on server ✅");
+    }
+  }, [result, clientPhone, smsConfig, bn]);
 
   return (
     <>
@@ -228,9 +263,20 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                 <span>৳{Number(result.new_outstanding).toLocaleString()}</span>
               </div>
             </div>
-            <Button onClick={resetAndClose} className="w-full text-xs">
-              {bn ? "বন্ধ করুন" : "Close"}
-            </Button>
+            <div className="flex gap-3 w-full mt-6 pt-4 border-t border-border">
+              <Button variant="outline" className="flex-1 text-xs" onClick={resetAndClose}>
+                {bn ? "বন্ধ করুন" : "Close"}
+              </Button>
+              {clientPhone && (
+                <Button
+                  className="flex-1 text-xs gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all"
+                  onClick={handleSendSMS}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {bn ? "SMS পাঠান" : "Send SMS"}
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
