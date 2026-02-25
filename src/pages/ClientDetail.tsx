@@ -386,7 +386,7 @@ const ClientDetail = () => {
 
       {/* ── Loan Status Section ── */}
       {hasActiveLoans && (
-        <section className="mt-6 sm:mt-8">
+        <section>
           <SectionHeader
             title={bn ? "ঋণের অবস্থা" : "Loan Status"}
             subtitle={bn ? "সক্রিয় ঋণ এবং পরিশোধের অগ্রগতি" : "Overview of active and repayment progress"}
@@ -550,7 +550,7 @@ const ClientDetail = () => {
       )}
 
       {/* ── Savings Management Section ── */}
-      <section className="mt-6 sm:mt-8">
+      <section>
         <SectionHeader
           title={bn ? "সঞ্চয় ব্যবস্থাপনা" : "Savings Management"}
           subtitle={bn ? "অ্যাকাউন্ট ব্যালেন্স এবং লেনদেন" : "Account balance and transactions"}
@@ -652,7 +652,7 @@ const ClientDetail = () => {
 
       {/* ── Financial Summary Section ── */}
       {hasActiveLoans && (
-        <section className="mt-6 sm:mt-8">
+        <section>
           <SectionHeader
             title={bn ? "আর্থিক সারসংক্ষেপ" : "Financial Summary"}
             subtitle={bn ? "সম্মিলিত ঋণ এবং সঞ্চয় পর্যালোচনা" : "Combined loan and savings overview"}
@@ -720,7 +720,7 @@ const ClientDetail = () => {
 
       {/* ── Analytics Section ── */}
       {hasActiveLoans && (
-        <section className="mt-6 sm:mt-8">
+        <section>
           <SectionHeader
             title={bn ? "অ্যানালিটিক্স" : "Analytics"}
             subtitle={bn ? "কর্মক্ষমতা এবং পরিশোধ অন্তর্দৃষ্টি" : "Performance and repayment insights"}
