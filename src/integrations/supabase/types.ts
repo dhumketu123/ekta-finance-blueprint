@@ -2422,6 +2422,10 @@ export type Database = {
         Returns: Json
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
+      upsert_system_setting: {
+        Args: { p_setting_key: string; p_setting_value: Json }
+        Returns: undefined
+      }
       validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }
       validate_ledger_v2_balance: {
         Args: { _txn_group_id: string }

@@ -79,31 +79,13 @@ export default function SmsGatewayConfig() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(bn ? "লগইন প্রয়োজন" : "Login required");
-
       const newValue: GatewayConfig = { mode, webhook_url: webhookUrl.trim(), active };
 
-      // First try update
-      const { data, error } = await supabase
-        .from("system_settings" as any)
-        .update({ setting_value: newValue as any, updated_by: user.id } as any)
-        .eq("setting_key", "sms_gateway")
-        .select() as any;
-
+      const { error } = await supabase.rpc("upsert_system_setting" as any, {
+        p_setting_key: "sms_gateway",
+        p_setting_value: newValue,
+      });
       if (error) throw error;
-
-      // If no rows returned, try upsert (row might not exist yet)
-      if (!data || data.length === 0) {
-        const { error: upsertError } = await supabase
-          .from("system_settings" as any)
-          .upsert({
-            setting_key: "sms_gateway",
-            setting_value: newValue as any,
-            updated_by: user.id,
-          } as any, { onConflict: "setting_key" }) as any;
-        if (upsertError) throw upsertError;
-      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["system_settings"] });
