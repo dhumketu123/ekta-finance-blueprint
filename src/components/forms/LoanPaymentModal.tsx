@@ -189,32 +189,11 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     }
   };
 
-  const footer =
-    step === "form" && !result ? (
-      <>
-        <Button variant="outline" onClick={resetAndClose} className="flex-1 text-xs" disabled={loading}>
-          {bn ? "বাতিল করুন" : "Cancel"}
-        </Button>
-        <Button
-          onClick={handleNextStep}
-          disabled={loading || isProcessingRef.current}
-          className="flex-1 text-xs gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
-        >
-          {loading ? "..." : (
-            <>
-              {bn ? "পরবর্তী ধাপ" : "Next Step"}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </>
-          )}
-        </Button>
-      </>
-    ) : undefined;
-
   const loanDisplayId = loanInfo?.loan_id || loanInfo?.id?.slice(0, 8);
 
   return (
     <>
-      <SecurePaymentDialog open={open} onClose={resetAndClose} footer={footer}>
+      <SecurePaymentDialog open={open} onClose={resetAndClose}>
         {step === "confirm" && pendingTransaction ? (
           <ConfirmExecutionScreen
             transaction={pendingTransaction}
@@ -307,6 +286,23 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             <div className="flex items-start gap-2 p-2 rounded bg-muted text-xs text-muted-foreground">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>{bn ? "পেমেন্ট অগ্রাধিকার: জরিমানা → সুদ → আসল" : "Payment priority: Penalty → Interest → Principal"}</span>
+            </div>
+            <div className="flex justify-end items-center gap-3 mt-8 pb-12 pt-4 border-t border-border">
+              <Button variant="outline" onClick={resetAndClose} className="flex-1 text-xs" disabled={loading}>
+                {bn ? "বাতিল করুন" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleNextStep}
+                disabled={loading || isProcessingRef.current}
+                className="flex-1 text-xs gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {loading ? "..." : (
+                  <>
+                    {bn ? "পরবর্তী ধাপ" : "Next Step"}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         )}

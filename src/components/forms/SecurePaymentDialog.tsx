@@ -7,10 +7,9 @@ interface SecurePaymentDialogProps {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
-  footer?: ReactNode;
 }
 
-export default function SecurePaymentDialog({ open, onClose, children, footer }: SecurePaymentDialogProps) {
+export default function SecurePaymentDialog({ open, onClose, children }: SecurePaymentDialogProps) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
 
@@ -24,11 +23,6 @@ export default function SecurePaymentDialog({ open, onClose, children, footer }:
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
-        {footer && (
-          <div className="shrink-0 bg-background border-t border-border p-4 mt-auto flex gap-3 z-50">
-            {footer}
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
