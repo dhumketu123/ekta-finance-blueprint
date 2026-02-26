@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
-import { Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle, BarChart3, Server, ShieldAlert } from "lucide-react";
+import { Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle, BarChart3, Server, ShieldAlert, Rocket } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AnomalyIntelligencePanel from "@/components/analytics/AnomalyIntelligencePanel";
 import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
+import LaunchReadinessPanel from "@/components/ops/LaunchReadinessPanel";
 
 const useNotificationStats = () =>
   useQuery({
@@ -154,6 +155,10 @@ const MonitoringDashboard = () => {
             <Activity className="w-3.5 h-3.5" />
             {lang === "bn" ? "ইন্টেগ্রিটি" : "Ledger Integrity"}
           </TabsTrigger>
+          <TabsTrigger value="launch" className="gap-1.5">
+            <Rocket className="w-3.5 h-3.5" />
+            {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -289,6 +294,10 @@ const MonitoringDashboard = () => {
 
         <TabsContent value="integrity">
           <LedgerIntegrityPanel />
+        </TabsContent>
+
+        <TabsContent value="launch">
+          <LaunchReadinessPanel />
         </TabsContent>
       </Tabs>
     </AppLayout>
