@@ -2202,6 +2202,41 @@ export type Database = {
           },
         ]
       }
+      tenant_settings: {
+        Row: {
+          created_at: string
+          id: number
+          setting_key: string
+          setting_value: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          setting_key: string
+          setting_value?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          setting_key?: string
+          setting_value?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -2626,6 +2661,10 @@ export type Database = {
       }
       upsert_tenant_rule: {
         Args: { p_description?: string; p_rule_key: string; p_rule_value: Json }
+        Returns: undefined
+      }
+      upsert_tenant_setting: {
+        Args: { p_setting_key: string; p_setting_value: Json }
         Returns: undefined
       }
       validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }
