@@ -1997,8 +1997,11 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string
           sent_at: string | null
+          sent_by: string | null
           status: string
+          tenant_id: string | null
           transaction_id: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -2009,8 +2012,11 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone: string
           sent_at?: string | null
+          sent_by?: string | null
           status?: string
+          tenant_id?: string | null
           transaction_id?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -2021,10 +2027,20 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string
           sent_at?: string | null
+          sent_by?: string | null
           status?: string
+          tenant_id?: string | null
           transaction_id?: string | null
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sms_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sms_logs_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -2648,6 +2664,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_super_admin_dashboard: { Args: never; Returns: Json }
       get_user_role: { Args: never; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
@@ -2692,6 +2709,7 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      reset_sms_quota: { Args: { p_tenant_id: string }; Returns: undefined }
       resolve_anomaly_alert: { Args: { p_event_id: string }; Returns: boolean }
       reverse_ledger_transaction: {
         Args: {
@@ -2701,12 +2719,23 @@ export type Database = {
         }
         Returns: Json
       }
+      send_sms: {
+        Args: {
+          p_message: string
+          p_message_type?: string
+          p_recipient: string
+          p_recipient_name?: string
+        }
+        Returns: string
+      }
       snooze_installment: {
         Args: { p_promised_date: string; p_schedule_id: string }
         Returns: Json
       }
+      suspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
       sync_overdue_schedules: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
+      unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
       upsert_subscription: {
         Args: {
           p_end_date: string
