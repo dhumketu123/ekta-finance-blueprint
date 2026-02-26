@@ -128,9 +128,24 @@ Deno.serve(async (req) => {
     results.schedule_overdue_sync = scheduleSync ?? {};
     if (scheduleSyncErr) results.schedule_sync_error = scheduleSyncErr.message;
 
-    // ═══ 3. Run overdue penalty check (2% monthly) ═══
-    const { data: penaltyResult, error: penaltyErr } = await supabase.rpc("check_and_apply_overdue_penalty", { _penalty_percent: 2 });
+    // ═══ 3. Run overdue penalty check (tenant-configurable rate) ═══
+    // Read penalty rate from tenant_rules, fallback to 2%
+    let penaltyRate = 2;
+    try {
+      const { data: penaltyRule } = await supabase
+        .from("tenant_rules")
+        .select("rule_value")
+        .eq("rule_key", "penalty_late_fee_rate")
+        .limit(1)
+        .maybeSingle();
+      if (penaltyRule?.rule_value !== undefined && penaltyRule?.rule_value !== null) {
+        penaltyRate = Number(penaltyRule.rule_value) || 2;
+      }
+    } catch { /* fallback to default */ }
+
+    const { data: penaltyResult, error: penaltyErr } = await supabase.rpc("check_and_apply_overdue_penalty", { _penalty_percent: penaltyRate });
     results.overdue_penalties = penaltyResult ?? {};
+    results.penalty_rate_used = penaltyRate;
     if (penaltyErr) results.penalty_error = penaltyErr.message;
 
     // ═══ 4. Auto-default loans (90+ days overdue) & auto-close zero-balance ═══

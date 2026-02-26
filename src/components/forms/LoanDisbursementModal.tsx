@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp, ShieldCheck, Send } from "lucide-react";
+import { useBusinessRules, validateLoanAmount, shouldUseMakerChecker } from "@/hooks/useBusinessRules";
 
 const schema = z.object({
   client_id:         z.string().uuid("গ্রাহক নির্বাচন করুন"),
@@ -49,6 +50,7 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
   const { data: clients = [] } = useClients();
   const { data: loanProducts = [] } = useLoanProducts();
   const { isAdmin } = usePermissions();
+  const { rules: bizRules } = useBusinessRules();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -101,14 +103,29 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
       setErrors(errs);
       return;
     }
+
+    // ── Tenant-rule loan amount validation ──
+    const amountError = validateLoanAmount(
+      parsed.data.principal_amount,
+      bizRules,
+      lang === "bn" ? "bn" : "en"
+    );
+    if (amountError) {
+      setErrors({ principal_amount: amountError });
+      return;
+    }
+
     setErrors({});
     setLoading(true);
+
+    // ── Approval workflow from tenant rules ──
+    const useMakerChecker = shouldUseMakerChecker(bizRules);
 
     try {
       const user = (await supabase.auth.getUser()).data.user;
 
-      if (isAdmin) {
-        // Admin: Direct disbursement (no approval needed)
+      if (isAdmin || bizRules.approval_workflow === "auto_approve") {
+        // Admin or auto_approve: Direct disbursement
         const { data, error } = await supabase.rpc("disburse_loan" as any, {
           _client_id:         parsed.data.client_id,
           _loan_product_id:   parsed.data.loan_product_id,
@@ -321,13 +338,16 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">{bn ? "আসল পরিমাণ ৳ *" : "Principal ৳ *"}</Label>
-                <Input
-                  type="number"
-                  value={form.principal_amount}
-                  onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
-                  className="text-sm h-9"
-                  placeholder={selectedProduct ? `${selectedProduct.min_amount}–${selectedProduct.max_amount}` : "0"}
-                />
+                 <Input
+                   type="number"
+                   value={form.principal_amount}
+                   onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
+                   className="text-sm h-9"
+                   placeholder={`৳${bizRules.min_loan_amount.toLocaleString()} – ৳${bizRules.max_loan_amount.toLocaleString()}`}
+                 />
+                 <p className="text-[10px] text-muted-foreground mt-0.5">
+                   {bn ? `সীমা: ৳${bizRules.min_loan_amount.toLocaleString()} – ৳${bizRules.max_loan_amount.toLocaleString()}` : `Limit: ৳${bizRules.min_loan_amount.toLocaleString()} – ৳${bizRules.max_loan_amount.toLocaleString()}`}
+                 </p>
                 {errors.principal_amount && <p className="text-xs text-destructive mt-1">{errors.principal_amount}</p>}
               </div>
               <div>

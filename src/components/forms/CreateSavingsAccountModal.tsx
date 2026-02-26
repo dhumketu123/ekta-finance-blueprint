@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBusinessRules } from "@/hooks/useBusinessRules";
 import { useSmsGateway, buildSmsIntentUri } from "@/hooks/useSmsGateway";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: gateway } = useSmsGateway();
+  const { rules: bizRules } = useBusinessRules();
 
   const [step, setStep] = useState<WizardStep>(1);
   const [selectedProduct, setSelectedProduct] = useState<SavingsProduct | null>(null);
@@ -91,7 +93,11 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
     if (!selectedProduct || depositAmount <= 0) return null;
     const freq = FREQ_MAP[selectedProduct.frequency];
     if (!freq) return null;
-    const r = selectedProduct.profit_rate / 100; // annual rate
+    // For DPS products, use tenant dps_interest_rate; otherwise use product rate
+    const effectiveRate = selectedProduct.product_type === "dps" && bizRules.dps_interest_rate
+      ? bizRules.dps_interest_rate
+      : selectedProduct.profit_rate;
+    const r = effectiveRate / 100; // annual rate
     const n = freq.perYear; // deposits per year
     const t = 1; // 1 year projection
     const P = depositAmount; // per-period deposit

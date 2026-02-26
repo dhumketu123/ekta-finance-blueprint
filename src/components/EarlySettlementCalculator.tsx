@@ -8,7 +8,7 @@ import { Calculator, TrendingDown, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuantumConfig } from "@/hooks/useQuantumConfig";
+import { useBusinessRules } from "@/hooks/useBusinessRules";
 
 interface Props {
   open: boolean;
@@ -19,7 +19,7 @@ interface Props {
 export default function EarlySettlementCalculator({ open, onClose, preselectedLoanId }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
-  const { config, isLoading: configLoading } = useQuantumConfig();
+  const { rules: bizRules, isLoading: configLoading } = useBusinessRules();
 
   const [loanId, setLoanId] = useState(preselectedLoanId ?? "");
 
@@ -47,12 +47,12 @@ export default function EarlySettlementCalculator({ open, onClose, preselectedLo
     const penalty = selectedLoan.penalty_amount || 0;
     const totalInterest = selectedLoan.total_interest || 0;
 
-    // Fetch rebate percentages from config
-    const rebateFlat = config.loan_rebate_flat ?? 30;
-    const rebateReducing = config.loan_rebate_reducing ?? 50;
-    const processingFeePercent = config.processing_fee_percent ?? 1;
-    const gracePeriodDays = config.grace_period_days ?? 5;
-    const minimumNoticeDays = config.minimum_notice_days ?? 7;
+    // Fetch from unified business rules (tenant_rules > quantum config > defaults)
+    const rebateFlat = bizRules.loan_rebate_flat;
+    const rebateReducing = bizRules.loan_rebate_reducing;
+    const processingFeePercent = bizRules.processing_fee_percent;
+    const gracePeriodDays = bizRules.grace_period_days;
+    const minimumNoticeDays = bizRules.minimum_notice_days;
 
     const paidInterest = totalInterest - outstandingInterest;
     const rebatePercent = selectedLoan.loan_model === "reducing" ? rebateReducing : rebateFlat;
@@ -127,13 +127,13 @@ export default function EarlySettlementCalculator({ open, onClose, preselectedLo
                 {bn ? `ছাড়: ${result?.rebatePercent ?? 0}%` : `Rebate: ${result?.rebatePercent ?? 0}%`}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                {bn ? `গ্রেস: ${config.grace_period_days ?? 5} দিন` : `Grace: ${config.grace_period_days ?? 5} days`}
+                {bn ? `গ্রেস: ${bizRules.grace_period_days} দিন` : `Grace: ${bizRules.grace_period_days} days`}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                {bn ? `প্রসেসিং: ${config.processing_fee_percent ?? 1}%` : `Processing: ${config.processing_fee_percent ?? 1}%`}
+                {bn ? `প্রসেসিং: ${bizRules.processing_fee_percent}%` : `Processing: ${bizRules.processing_fee_percent}%`}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                {bn ? `নোটিস: ${config.minimum_notice_days ?? 7} দিন` : `Notice: ${config.minimum_notice_days ?? 7} days`}
+                {bn ? `নোটিস: ${bizRules.minimum_notice_days} দিন` : `Notice: ${bizRules.minimum_notice_days} days`}
               </span>
             </div>
 
