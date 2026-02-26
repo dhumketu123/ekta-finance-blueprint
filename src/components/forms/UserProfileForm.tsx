@@ -94,7 +94,7 @@ export default function UserProfileForm({ open, onClose, role, editData }: Props
       name_bn: form.name_bn,
       phone: form.phone || null,
       role: role,
-    });
+    } as any);
     if (profileError) throw profileError;
 
     // Insert role

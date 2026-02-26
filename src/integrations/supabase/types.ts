@@ -2108,6 +2108,100 @@ export type Database = {
           },
         ]
       }
+      tenant_config: {
+        Row: {
+          accent_color: string
+          created_at: string
+          display_name: string
+          display_name_bn: string
+          footer_text: string | null
+          header_bg_url: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          sms_sender_name: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          created_at?: string
+          display_name?: string
+          display_name_bn?: string
+          footer_text?: string | null
+          header_bg_url?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          sms_sender_name?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          created_at?: string
+          display_name?: string
+          display_name_bn?: string
+          footer_text?: string | null
+          header_bg_url?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          sms_sender_name?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          rule_key: string
+          rule_value: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          rule_key: string
+          rule_value?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          rule_key?: string
+          rule_value?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -2514,6 +2608,24 @@ export type Database = {
       sync_overdue_schedules: { Args: never; Returns: Json }
       upsert_system_setting: {
         Args: { p_setting_key: string; p_setting_value: Json }
+        Returns: undefined
+      }
+      upsert_tenant_config: {
+        Args: {
+          p_accent_color?: string
+          p_display_name?: string
+          p_display_name_bn?: string
+          p_footer_text?: string
+          p_header_bg_url?: string
+          p_logo_url?: string
+          p_primary_color?: string
+          p_secondary_color?: string
+          p_sms_sender_name?: string
+        }
+        Returns: undefined
+      }
+      upsert_tenant_rule: {
+        Args: { p_description?: string; p_rule_key: string; p_rule_value: Json }
         Returns: undefined
       }
       validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }

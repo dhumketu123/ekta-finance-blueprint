@@ -157,7 +157,7 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
           balance: 0,
           status: "active",
           notes: `Opened via wizard. Product: ${selectedProduct.product_name_en}`,
-        })
+        } as any)
         .select("id")
         .single();
       if (accErr) throw accErr;
