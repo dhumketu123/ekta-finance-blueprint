@@ -13,6 +13,11 @@ interface HealthCheck {
   latency_ms?: number;
 }
 
+function measure<T>(fn: () => Promise<T>): Promise<{ result: T; ms: number }> {
+  const start = Date.now();
+  return fn().then((result) => ({ result, ms: Date.now() - start }));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,139 +26,208 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const checks: HealthCheck[] = [];
     const startTotal = Date.now();
 
     // ── 1. Database Connectivity ──
-    const dbStart = Date.now();
-    try {
+    const db = await measure(async () => {
       const { error } = await supabase.from("profiles").select("id").limit(1);
-      checks.push({
-        name: "database",
-        status: error ? "fail" : "pass",
-        detail: error?.message ?? "Connected",
-        latency_ms: Date.now() - dbStart,
-      });
-    } catch (e) {
-      checks.push({ name: "database", status: "fail", detail: String(e), latency_ms: Date.now() - dbStart });
-    }
+      return error;
+    });
+    checks.push({
+      name: "database",
+      status: db.result ? "fail" : "pass",
+      detail: db.result?.message ?? "Connected",
+      latency_ms: db.ms,
+    });
 
     // ── 2. Tenant Rules Loaded ──
-    try {
-      const { data, error } = await supabase.from("tenant_rules").select("id").limit(1);
+    const tr = await measure(async () => {
+      const { data, error } = await supabase.from("tenant_rules").select("id, rule_key").limit(10);
+      return { data, error };
+    });
+    {
+      const { data, error } = tr.result;
+      const ruleCount = data?.length ?? 0;
       checks.push({
         name: "tenant_rules",
-        status: error ? "fail" : (data && data.length > 0) ? "pass" : "warn",
-        detail: error ? error.message : (data && data.length > 0) ? `${data.length}+ rules configured` : "No tenant rules found — using defaults",
+        status: error ? "fail" : ruleCount > 0 ? "pass" : "warn",
+        detail: error
+          ? error.message
+          : ruleCount > 0
+            ? `${ruleCount} rules configured`
+            : "No tenant rules found — using defaults",
+        latency_ms: tr.ms,
       });
-    } catch (e) {
-      checks.push({ name: "tenant_rules", status: "fail", detail: String(e) });
     }
 
     // ── 3. Quantum Ledger Config ──
-    try {
+    const qc = await measure(async () => {
       const { data, error } = await supabase
         .from("system_settings")
         .select("setting_value")
         .eq("setting_key", "quantum_ledger_config")
         .maybeSingle();
+      return { data, error };
+    });
+    {
+      const { data, error } = qc.result;
       checks.push({
         name: "quantum_config",
         status: error ? "fail" : data ? "pass" : "warn",
         detail: error ? error.message : data ? "Config loaded" : "Using defaults",
+        latency_ms: qc.ms,
       });
-    } catch (e) {
-      checks.push({ name: "quantum_config", status: "fail", detail: String(e) });
     }
 
     // ── 4. Feature Flags ──
-    try {
+    const ff = await measure(async () => {
       const { data, error } = await supabase.from("feature_flags").select("feature_name, is_enabled");
+      return { data, error };
+    });
+    {
+      const { data, error } = ff.result;
       const enabledCount = data?.filter((f: any) => f.is_enabled).length ?? 0;
+      const totalCount = data?.length ?? 0;
       checks.push({
         name: "feature_flags",
-        status: error ? "fail" : "pass",
-        detail: error ? error.message : `${enabledCount}/${data?.length ?? 0} enabled`,
+        status: error ? "fail" : totalCount === 0 ? "warn" : "pass",
+        detail: error
+          ? error.message
+          : totalCount === 0
+            ? "No feature flags configured"
+            : `${enabledCount}/${totalCount} enabled`,
+        latency_ms: ff.ms,
       });
-    } catch (e) {
-      checks.push({ name: "feature_flags", status: "fail", detail: String(e) });
     }
 
     // ── 5. Recent Cron Activity (last 24h) ──
-    try {
+    const cron = await measure(async () => {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("id")
+        .select("id, action_type")
         .gte("created_at", yesterday)
-        .in("action_type", ["predict_loan_risk", "savings_reconciliation_alert", "overdue_penalty_applied"])
-        .limit(5);
+        .in("action_type", [
+          "predict_loan_risk",
+          "savings_reconciliation_alert",
+          "overdue_penalty_applied",
+          "monthly_investor_profit",
+        ])
+        .limit(50);
+      return { data, error };
+    });
+    {
+      const { data, error } = cron.result;
+      const jobCount = data?.length ?? 0;
       checks.push({
         name: "cron_activity",
-        status: error ? "fail" : (data && data.length > 0) ? "pass" : "warn",
-        detail: error ? error.message : (data && data.length > 0) ? `${data.length} jobs in 24h` : "No cron activity in 24h",
+        status: error ? "fail" : jobCount > 0 ? "pass" : "warn",
+        detail: error
+          ? error.message
+          : jobCount > 0
+            ? `${jobCount} jobs in 24h`
+            : "No cron activity in 24h",
+        latency_ms: cron.ms,
       });
-    } catch (e) {
-      checks.push({ name: "cron_activity", status: "fail", detail: String(e) });
     }
 
-    // ── 6. Notification Delivery Health ──
-    try {
+    // ── 6. Notification Delivery Health (last 7 days) ──
+    const notif = await measure(async () => {
       const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from("notification_logs")
         .select("delivery_status")
         .gte("created_at", lastWeek);
-      if (error) throw error;
-      const total = data?.length ?? 0;
-      const failed = data?.filter((n: any) => n.delivery_status === "failed").length ?? 0;
-      const failRate = total > 0 ? (failed / total) * 100 : 0;
-      checks.push({
-        name: "notifications",
-        status: failRate > 20 ? "fail" : failRate > 5 ? "warn" : "pass",
-        detail: `${total} sent, ${failed} failed (${failRate.toFixed(1)}% fail rate)`,
-      });
-    } catch (e) {
-      checks.push({ name: "notifications", status: "warn", detail: String(e) });
+      return { data, error };
+    });
+    {
+      const { data, error } = notif.result;
+      if (error) {
+        checks.push({ name: "notifications", status: "warn", detail: error.message, latency_ms: notif.ms });
+      } else {
+        const total = data?.length ?? 0;
+        const failed = data?.filter((n: any) => n.delivery_status === "failed").length ?? 0;
+        const failRate = total > 0 ? (failed / total) * 100 : 0;
+        checks.push({
+          name: "notifications",
+          status: total === 0 ? "pass" : failRate > 20 ? "fail" : failRate > 5 ? "warn" : "pass",
+          detail:
+            total === 0
+              ? "No notifications sent (7d)"
+              : `${total} sent, ${failed} failed (${failRate.toFixed(1)}%)`,
+          latency_ms: notif.ms,
+        });
+      }
     }
 
     // ── 7. Active Loans Health ──
-    try {
+    const loans = await measure(async () => {
       const { data, error } = await supabase
         .from("loans")
         .select("status")
         .is("deleted_at", null);
-      if (error) throw error;
-      const total = data?.length ?? 0;
-      const defaulted = data?.filter((l: any) => l.status === "default").length ?? 0;
-      const defaultRate = total > 0 ? (defaulted / total) * 100 : 0;
-      checks.push({
-        name: "loan_portfolio",
-        status: defaultRate > 15 ? "fail" : defaultRate > 5 ? "warn" : "pass",
-        detail: `${total} loans, ${defaulted} defaulted (${defaultRate.toFixed(1)}%)`,
-      });
-    } catch (e) {
-      checks.push({ name: "loan_portfolio", status: "fail", detail: String(e) });
+      return { data, error };
+    });
+    {
+      const { data, error } = loans.result;
+      if (error) {
+        checks.push({ name: "loan_portfolio", status: "fail", detail: error.message, latency_ms: loans.ms });
+      } else {
+        const total = data?.length ?? 0;
+        const defaulted = data?.filter((l: any) => l.status === "default").length ?? 0;
+        const active = data?.filter((l: any) => l.status === "active").length ?? 0;
+        const defaultRate = total > 0 ? (defaulted / total) * 100 : 0;
+        checks.push({
+          name: "loan_portfolio",
+          status: total === 0 ? "pass" : defaultRate > 15 ? "fail" : defaultRate > 5 ? "warn" : "pass",
+          detail:
+            total === 0
+              ? "No loans in portfolio"
+              : `${total} total, ${active} active, ${defaulted} defaulted (${defaultRate.toFixed(1)}%)`,
+          latency_ms: loans.ms,
+        });
+      }
     }
 
-    // ── 8. RLS Active Check ──
-    try {
-      // Check if core tables have RLS by trying anon access (should fail)
+    // ── 8. RLS Enforcement (Real Check via Anon Client) ──
+    const rls = await measure(async () => {
+      if (!anonKey) return { verified: false, reason: "SUPABASE_ANON_KEY not available" };
+      try {
+        const anonClient = createClient(supabaseUrl, anonKey);
+        const { data, error } = await anonClient
+          .from("clients")
+          .select("id")
+          .limit(1);
+        // If RLS is active, anon should get 0 rows or a permission error
+        if (error) return { verified: true, reason: "RLS blocked anon: " + error.code };
+        if (!data || data.length === 0) return { verified: true, reason: "RLS active — anon gets 0 rows" };
+        return { verified: false, reason: `CRITICAL: anon read ${data.length} rows from clients` };
+      } catch (e) {
+        return { verified: true, reason: "RLS blocked request" };
+      }
+    });
+    {
+      const { verified, reason } = rls.result;
       checks.push({
         name: "rls_enforcement",
-        status: "pass",
-        detail: "RLS policies active on core tables",
+        status: verified ? "pass" : "fail",
+        detail: reason,
+        latency_ms: rls.ms,
       });
-    } catch (e) {
-      checks.push({ name: "rls_enforcement", status: "fail", detail: String(e) });
     }
 
     // ── Summary ──
-    const overallStatus = checks.some((c) => c.status === "fail")
+    const failCount = checks.filter((c) => c.status === "fail").length;
+    const warnCount = checks.filter((c) => c.status === "warn").length;
+    const passCount = checks.filter((c) => c.status === "pass").length;
+
+    const overallStatus = failCount > 0
       ? "unhealthy"
-      : checks.some((c) => c.status === "warn")
+      : warnCount > 0
         ? "degraded"
         : "healthy";
 
@@ -162,6 +236,7 @@ Deno.serve(async (req) => {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         total_latency_ms: Date.now() - startTotal,
+        summary: { pass: passCount, warn: warnCount, fail: failCount },
         checks,
       }),
       {
