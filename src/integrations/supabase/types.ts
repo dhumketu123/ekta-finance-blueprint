@@ -2034,6 +2034,59 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          locked_at: string | null
+          locked_reason: string | null
+          max_customers: number
+          max_loans: number
+          plan: string
+          start_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          locked_at?: string | null
+          locked_reason?: string | null
+          max_customers?: number
+          max_loans?: number
+          plan?: string
+          start_date?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          locked_at?: string | null
+          locked_reason?: string | null
+          max_customers?: number
+          max_loans?: number
+          plan?: string
+          start_date?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_alerts: {
         Row: {
           alert_type: string
@@ -2584,6 +2637,17 @@ export type Database = {
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
       get_branch_risk_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
+      get_subscription_status: {
+        Args: never
+        Returns: {
+          days_remaining: number
+          end_date: string
+          max_customers: number
+          max_loans: number
+          plan: string
+          status: string
+        }[]
+      }
       get_user_role: { Args: never; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
@@ -2606,6 +2670,7 @@ export type Database = {
       is_penalty_suspended: { Args: { _client_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
+      lock_expired_subscriptions: { Args: never; Returns: undefined }
       mark_schedule_payment: {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
@@ -2641,6 +2706,17 @@ export type Database = {
         Returns: Json
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
+      unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
+      upsert_subscription: {
+        Args: {
+          p_end_date: string
+          p_max_customers?: number
+          p_max_loans?: number
+          p_plan: string
+          p_start_date: string
+        }
+        Returns: undefined
+      }
       upsert_system_setting: {
         Args: { p_setting_key: string; p_setting_value: Json }
         Returns: undefined
