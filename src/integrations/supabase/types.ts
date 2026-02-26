@@ -2455,6 +2455,7 @@ export type Database = {
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
       get_branch_risk_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
+      get_user_role: { Args: never; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
         Args: {
