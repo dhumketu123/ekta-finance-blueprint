@@ -359,7 +359,7 @@ export type Database = {
           savings_product_id?: string | null
           serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
-          tenant_id?: string
+          tenant_id: string
           union_name?: string | null
           upazila?: string | null
           updated_at?: string
@@ -903,7 +903,7 @@ export type Database = {
           serial_number?: number | null
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
-          tenant_id?: string
+          tenant_id: string
           tenure_years?: number | null
           updated_at?: string
           user_id?: string | null
@@ -1211,7 +1211,7 @@ export type Database = {
           penalty_amount?: number
           serial_number?: number | null
           status?: Database["public"]["Enums"]["loan_status"]
-          tenant_id?: string
+          tenant_id: string
           total_interest?: number
           total_principal?: number
           updated_at?: string
@@ -1757,7 +1757,7 @@ export type Database = {
           pin_locked_until?: string | null
           pin_updated_at?: string | null
           role?: string | null
-          tenant_id?: string
+          tenant_id: string
           transaction_pin_hash?: string | null
           updated_at?: string
         }
@@ -1893,7 +1893,7 @@ export type Database = {
           opened_date?: string
           savings_product_id?: string | null
           status?: string
-          tenant_id?: string
+          tenant_id: string
           updated_at?: string
         }
         Update: {
@@ -2085,7 +2085,7 @@ export type Database = {
           id?: string
           setting_key: string
           setting_value?: Json
-          tenant_id?: string
+          tenant_id: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -2418,6 +2418,7 @@ export type Database = {
         Args: { _new_pin: string }
         Returns: Json
       }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       detect_high_risk_clients: { Args: never; Returns: Json }
       detect_officer_burnout: {
         Args: { _failure_threshold?: number; _weekly_threshold?: number }
@@ -2473,6 +2474,7 @@ export type Database = {
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_penalty_suspended: { Args: { _client_id: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
       mark_schedule_payment: {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
