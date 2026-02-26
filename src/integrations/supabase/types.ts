@@ -324,6 +324,7 @@ export type Database = {
           savings_product_id: string | null
           serial_number: number | null
           status: Database["public"]["Enums"]["client_status"]
+          tenant_id: string
           union_name: string | null
           upazila: string | null
           updated_at: string
@@ -358,6 +359,7 @@ export type Database = {
           savings_product_id?: string | null
           serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
+          tenant_id?: string
           union_name?: string | null
           upazila?: string | null
           updated_at?: string
@@ -392,6 +394,7 @@ export type Database = {
           savings_product_id?: string | null
           serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
+          tenant_id?: string
           union_name?: string | null
           upazila?: string | null
           updated_at?: string
@@ -410,6 +413,13 @@ export type Database = {
             columns: ["savings_product_id"]
             isOneToOne: false
             referencedRelation: "savings_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -862,6 +872,7 @@ export type Database = {
           serial_number: number | null
           source_of_fund: string | null
           status: Database["public"]["Enums"]["investor_status"]
+          tenant_id: string
           tenure_years: number | null
           updated_at: string
           user_id: string | null
@@ -892,6 +903,7 @@ export type Database = {
           serial_number?: number | null
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
+          tenant_id?: string
           tenure_years?: number | null
           updated_at?: string
           user_id?: string | null
@@ -922,11 +934,20 @@ export type Database = {
           serial_number?: number | null
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
+          tenant_id?: string
           tenure_years?: number | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "investors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ledger_entries: {
         Row: {
@@ -1164,6 +1185,7 @@ export type Database = {
           penalty_amount: number
           serial_number: number | null
           status: Database["public"]["Enums"]["loan_status"]
+          tenant_id: string
           total_interest: number
           total_principal: number
           updated_at: string
@@ -1189,6 +1211,7 @@ export type Database = {
           penalty_amount?: number
           serial_number?: number | null
           status?: Database["public"]["Enums"]["loan_status"]
+          tenant_id?: string
           total_interest?: number
           total_principal?: number
           updated_at?: string
@@ -1214,6 +1237,7 @@ export type Database = {
           penalty_amount?: number
           serial_number?: number | null
           status?: Database["public"]["Enums"]["loan_status"]
+          tenant_id?: string
           total_interest?: number
           total_principal?: number
           updated_at?: string
@@ -1231,6 +1255,13 @@ export type Database = {
             columns: ["loan_product_id"]
             isOneToOne: false
             referencedRelation: "loan_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1709,6 +1740,7 @@ export type Database = {
           pin_locked_until: string | null
           pin_updated_at: string | null
           role: string | null
+          tenant_id: string
           transaction_pin_hash: string | null
           updated_at: string
         }
@@ -1725,6 +1757,7 @@ export type Database = {
           pin_locked_until?: string | null
           pin_updated_at?: string | null
           role?: string | null
+          tenant_id?: string
           transaction_pin_hash?: string | null
           updated_at?: string
         }
@@ -1741,6 +1774,7 @@ export type Database = {
           pin_locked_until?: string | null
           pin_updated_at?: string | null
           role?: string | null
+          tenant_id?: string
           transaction_pin_hash?: string | null
           updated_at?: string
         }
@@ -1750,6 +1784,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1839,6 +1880,7 @@ export type Database = {
           opened_date: string
           savings_product_id: string | null
           status: string
+          tenant_id: string
           updated_at: string
         }
         Insert: {
@@ -1851,6 +1893,7 @@ export type Database = {
           opened_date?: string
           savings_product_id?: string | null
           status?: string
+          tenant_id?: string
           updated_at?: string
         }
         Update: {
@@ -1863,6 +1906,7 @@ export type Database = {
           opened_date?: string
           savings_product_id?: string | null
           status?: string
+          tenant_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -1878,6 +1922,13 @@ export type Database = {
             columns: ["savings_product_id"]
             isOneToOne: false
             referencedRelation: "savings_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2025,6 +2076,7 @@ export type Database = {
           id: string
           setting_key: string
           setting_value: Json
+          tenant_id: string
           updated_at: string
           updated_by: string | null
         }
@@ -2033,6 +2085,7 @@ export type Database = {
           id?: string
           setting_key: string
           setting_value?: Json
+          tenant_id?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -2041,8 +2094,41 @@ export type Database = {
           id?: string
           setting_key?: string
           setting_value?: Json
+          tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          plan: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          plan?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          plan?: string
+          status?: string
         }
         Relationships: []
       }
@@ -2368,6 +2454,7 @@ export type Database = {
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
       get_branch_risk_summary: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
+      get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
