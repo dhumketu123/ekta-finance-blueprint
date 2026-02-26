@@ -41,6 +41,7 @@ import Commitments from "./pages/Commitments";
 import CommitmentAnalytics from "./pages/CommitmentAnalytics";
 import RiskHeatmap from "./pages/RiskHeatmap";
 import LedgerAudit from "./pages/LedgerAudit";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -86,6 +87,7 @@ const App = () => (
               <Route path="/commitment-analytics" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><CommitmentAnalytics /></ProtectedRoute>} />
               <Route path="/risk-heatmap" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><RiskHeatmap /></ProtectedRoute>} />
               <Route path="/ledger-audit" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><LedgerAudit /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
