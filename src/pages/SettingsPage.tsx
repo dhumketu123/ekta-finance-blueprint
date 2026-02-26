@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Save, User, MessageSquare, Atom, ShieldCheck, Settings, Lock, KeyRound } from "lucide-react";
+import { Loader2, Save, User, MessageSquare, Atom, ShieldCheck, Settings, Lock, KeyRound, Paintbrush, ScrollText } from "lucide-react";
 import { z } from "zod";
 import SmsGatewayConfig from "@/components/settings/SmsGatewayConfig";
 import QuantumLedgerSettings from "@/components/settings/QuantumLedgerSettings";
 import SecuritySettingsCard from "@/components/settings/SecuritySettingsCard";
+import TenantBrandingSettings from "@/components/settings/TenantBrandingSettings";
+import TenantRulesSettings from "@/components/settings/TenantRulesSettings";
 
 const profileSchema = z.object({
   name_en: z.string().trim().min(1, "Name is required").max(100),
@@ -167,21 +169,26 @@ const SettingsPage = () => {
       <PageHeader title={t("settings.title")} description={t("settings.description")} />
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mb-6 h-12 bg-muted/60 rounded-xl p-1">
-          <TabsTrigger value="profile" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1.5">
+        <TabsList className="w-full grid grid-cols-5 mb-6 h-12 bg-muted/60 rounded-xl p-1">
+          <TabsTrigger value="profile" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">{bn ? "প্রোফাইল" : "Profile"}</span>
-            <span className="sm:hidden">👤</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1.5">
+          <TabsTrigger value="branding" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1">
+            <Paintbrush className="w-4 h-4" />
+            <span className="hidden sm:inline">{bn ? "ব্র্যান্ডিং" : "Branding"}</span>
+          </TabsTrigger>
+          <TabsTrigger value="rules" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1">
+            <ScrollText className="w-4 h-4" />
+            <span className="hidden sm:inline">{bn ? "নিয়মাবলী" : "Rules"}</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1">
             <ShieldCheck className="w-4 h-4" />
             <span className="hidden sm:inline">{bn ? "সিকিউরিটি" : "Security"}</span>
-            <span className="sm:hidden">🛡️</span>
           </TabsTrigger>
-          <TabsTrigger value="system" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1.5">
+          <TabsTrigger value="system" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-md gap-1">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">{bn ? "সিস্টেম" : "System"}</span>
-            <span className="sm:hidden">⚙️</span>
           </TabsTrigger>
         </TabsList>
 
@@ -228,6 +235,39 @@ const SettingsPage = () => {
                 </Button>
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        {/* ===== BRANDING TAB ===== */}
+        <TabsContent value="branding" className="space-y-6 mt-0">
+          <div className={premiumCard}>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Paintbrush className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">
+                {bn ? "ব্র্যান্ডিং ও কাস্টমাইজেশন" : "Branding & Customization"}
+              </h2>
+            </div>
+            <TenantBrandingSettings />
+          </div>
+        </TabsContent>
+
+        {/* ===== RULES TAB ===== */}
+        <TabsContent value="rules" className="space-y-6 mt-0">
+          <div className={premiumCard}>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <ScrollText className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">
+                {bn ? "ব্যবসায়িক নিয়মাবলী" : "Business Rules"}
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              {bn ? "এই নিয়মগুলো শুধুমাত্র আপনার সমিতির জন্য প্রযোজ্য। অন্য সমিতিতে কোনো প্রভাব ফেলবে না।" : "These rules apply only to your organization. They do not affect other tenants."}
+            </p>
+            <TenantRulesSettings />
           </div>
         </TabsContent>
 
