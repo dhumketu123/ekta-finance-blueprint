@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenantId } from "@/hooks/useTenantId";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +21,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
   const [results, setResults] = useState<TestResult[]>([]);
   const [running, setRunning] = useState(false);
   const [testLoanId, setTestLoanId] = useState<string | null>(null);
+  const { tenantId } = useTenantId();
 
   const addResult = (r: TestResult) => setResults((prev) => [...prev, r]);
 
@@ -30,7 +32,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
     try {
       // 1. Create test client
       const { data: client, error: clientErr } = await (supabase.from("clients") as any)
-        .insert([{ name_en: "TEST_PAYMENT_CLIENT", name_bn: "টেস্ট", status: "active" }])
+        .insert([{ name_en: "TEST_PAYMENT_CLIENT", name_bn: "টেস্ট", status: "active", ...(tenantId ? { tenant_id: tenantId } : {}) }])
         .select().single();
       if (clientErr) throw clientErr;
 
@@ -48,6 +50,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
           status: "active",
           disbursement_date: "2025-01-01",
           maturity_date: "2025-12-31",
+          ...(tenantId ? { tenant_id: tenantId } : {}),
         }])
         .select().single();
       if (loanErr) throw loanErr;
