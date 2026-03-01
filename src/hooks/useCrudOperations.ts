@@ -1,9 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantId } from "@/hooks/useTenantId";
 import { toast } from "sonner";
 
 type CrudTable = "clients" | "investors" | "loan_products" | "savings_products";
+
+/** Tables that require tenant_id on INSERT */
+const TENANT_TABLES: CrudTable[] = ["clients", "investors"];
 
 const auditLog = async (action: string, entityType: string, entityId: string | null, userId?: string, details?: Record<string, unknown>) => {
   await supabase.from("audit_logs").insert([{
@@ -18,10 +22,16 @@ const auditLog = async (action: string, entityType: string, entityId: string | n
 export function useCreateRecord(table: CrudTable) {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId } = useTenantId();
 
   return useMutation({
     mutationFn: async (data: Record<string, any>) => {
-      const { data: result, error } = await (supabase.from(table) as any).insert([data]).select().single();
+      const payload = { ...data };
+      // Inject tenant_id for tenant-isolated tables
+      if (TENANT_TABLES.includes(table) && tenantId) {
+        payload.tenant_id = tenantId;
+      }
+      const { data: result, error } = await (supabase.from(table) as any).insert([payload]).select().single();
       if (error) throw error;
       await auditLog("create", table, result?.id, user?.id, { table });
       return result;

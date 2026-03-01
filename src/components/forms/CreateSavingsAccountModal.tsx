@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTenantId } from "@/hooks/useTenantId";
 import { useBusinessRules } from "@/hooks/useBusinessRules";
 import { useSmsGateway, buildSmsIntentUri } from "@/hooks/useSmsGateway";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -62,6 +63,7 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
   const qc = useQueryClient();
   const { data: gateway } = useSmsGateway();
   const { rules: bizRules } = useBusinessRules();
+  const { tenantId } = useTenantId();
 
   const [step, setStep] = useState<WizardStep>(1);
   const [selectedProduct, setSelectedProduct] = useState<SavingsProduct | null>(null);
@@ -155,15 +157,18 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
     setExecuting(true);
     try {
       // 1. Insert savings account
-      const { data: newAccount, error: accErr } = await supabase
-        .from("savings_accounts")
-        .insert({
+      const insertPayload: any = {
           client_id: clientId,
           savings_product_id: selectedProduct.id,
           balance: 0,
           status: "active",
           notes: `Opened via wizard. Product: ${selectedProduct.product_name_en}`,
-        } as any)
+        };
+      if (tenantId) insertPayload.tenant_id = tenantId;
+
+      const { data: newAccount, error: accErr } = await supabase
+        .from("savings_accounts")
+        .insert(insertPayload as any)
         .select("id")
         .single();
       if (accErr) throw accErr;
