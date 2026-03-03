@@ -2602,6 +2602,7 @@ export type Database = {
         Returns: Json
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
+      create_client_secure: { Args: { p_data: Json }; Returns: string }
       create_ledger_entry: {
         Args: {
           _branch_id: string
@@ -2736,6 +2737,10 @@ export type Database = {
       sync_overdue_schedules: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
       unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
+      update_client_secure: {
+        Args: { p_data: Json; p_id: string }
+        Returns: undefined
+      }
       upsert_subscription: {
         Args: {
           p_end_date: string
