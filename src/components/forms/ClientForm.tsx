@@ -67,58 +67,38 @@ const Field = ({
 
 export default function ClientForm({ open, onClose, editData }: Props) {
   const { lang } = useLanguage();
-  const create = useCreateRecord("clients");
-  const update = useUpdateRecord("clients");
+  const qc = useQueryClient();
   const isEdit = !!editData;
 
-  const [form, setForm] = useState<FormData>({
-    name_en: editData?.name_en ?? "",
-    name_bn: editData?.name_bn ?? "",
-    phone: editData?.phone ?? "",
-    area: editData?.area ?? "",
-    status: editData?.status ?? "active",
-    father_or_husband_name: editData?.father_or_husband_name ?? "",
-    mother_name: editData?.mother_name ?? "",
-    nid_number: editData?.nid_number ?? "",
-    date_of_birth: editData?.date_of_birth ?? "",
-    marital_status: editData?.marital_status ?? "",
-    occupation: editData?.occupation ?? "",
-    village: editData?.village ?? "",
-    post_office: editData?.post_office ?? "",
-    union_name: editData?.union_name ?? "",
-    upazila: editData?.upazila ?? "",
-    district: editData?.district ?? "",
-    nominee_name: editData?.nominee_name ?? "",
-    nominee_relation: editData?.nominee_relation ?? "",
-    nominee_phone: editData?.nominee_phone ?? "",
-    nominee_nid: editData?.nominee_nid ?? "",
+  const create = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const { data: result, error } = await supabase.rpc("create_client_secure", {
+        p_data: data as any,
+      });
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("সফলভাবে তৈরি হয়েছে");
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const set = (key: keyof FormData, value: string) => setForm((p) => ({ ...p, [key]: value }));
-
-  const handleSubmit = async () => {
-    const result = schema.safeParse(form);
-    if (!result.success) {
-      const errs: Record<string, string> = {};
-      result.error.errors.forEach((e) => { errs[e.path[0] as string] = e.message; });
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-
-    // Strip empty strings to null for optional fields
-    const clean: any = { ...result.data };
-    const optionals = ["phone","area","father_or_husband_name","mother_name","nid_number","date_of_birth","marital_status","occupation","village","post_office","union_name","upazila","district","nominee_name","nominee_relation","nominee_phone","nominee_nid"];
-    optionals.forEach((k) => { if (clean[k] === "") clean[k] = null; });
-
-    if (isEdit) {
-      await update.mutateAsync({ id: editData!.id, data: clean });
-    } else {
-      await create.mutateAsync(clean);
-    }
-    onClose();
-  };
+  const update = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, any> }) => {
+      const { error } = await supabase.rpc("update_client_secure", {
+        p_id: id,
+        p_data: data as any,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("সফলভাবে আপডেট হয়েছে");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const isPending = create.isPending || update.isPending;
   const t = (bn: string, en: string) => lang === "bn" ? bn : en;
