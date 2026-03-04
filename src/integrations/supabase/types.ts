@@ -845,6 +845,60 @@ export type Database = {
           },
         ]
       }
+      investor_weekly_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          investor_id: string
+          notes: string | null
+          tenant_id: string
+          transaction_date: string
+          type: string
+          weeks_covered: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id: string
+          notes?: string | null
+          tenant_id: string
+          transaction_date?: string
+          type: string
+          weeks_covered?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id?: string
+          notes?: string | null
+          tenant_id?: string
+          transaction_date?: string
+          type?: string
+          weeks_covered?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_weekly_transactions_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_weekly_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investors: {
         Row: {
           accumulated_profit: number
@@ -869,13 +923,17 @@ export type Database = {
           phone: string | null
           principal_amount: number
           reinvest: boolean
+          risk_flag: boolean
           serial_number: number | null
           source_of_fund: string | null
           status: Database["public"]["Enums"]["investor_status"]
           tenant_id: string
           tenure_years: number | null
+          total_weekly_paid: number
           updated_at: string
           user_id: string | null
+          weekly_paid_until: string | null
+          weekly_share: number
         }
         Insert: {
           accumulated_profit?: number
@@ -900,13 +958,17 @@ export type Database = {
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
+          risk_flag?: boolean
           serial_number?: number | null
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
           tenant_id: string
           tenure_years?: number | null
+          total_weekly_paid?: number
           updated_at?: string
           user_id?: string | null
+          weekly_paid_until?: string | null
+          weekly_share?: number
         }
         Update: {
           accumulated_profit?: number
@@ -931,13 +993,17 @@ export type Database = {
           phone?: string | null
           principal_amount?: number
           reinvest?: boolean
+          risk_flag?: boolean
           serial_number?: number | null
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
           tenant_id?: string
           tenure_years?: number | null
+          total_weekly_paid?: number
           updated_at?: string
           user_id?: string | null
+          weekly_paid_until?: string | null
+          weekly_share?: number
         }
         Relationships: [
           {
@@ -2603,6 +2669,10 @@ export type Database = {
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
       create_client_secure: { Args: { p_data: Json }; Returns: string }
+      create_investor_weekly_transaction: {
+        Args: { p_data: Json }
+        Returns: string
+      }
       create_ledger_entry: {
         Args: {
           _branch_id: string
@@ -2741,6 +2811,8 @@ export type Database = {
         Args: { p_data: Json; p_id: string }
         Returns: undefined
       }
+      update_investor_risk_flags: { Args: never; Returns: Json }
+      update_investor_status: { Args: never; Returns: Json }
       upsert_subscription: {
         Args: {
           p_end_date: string
