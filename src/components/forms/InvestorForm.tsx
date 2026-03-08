@@ -240,14 +240,14 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     }
 
     if (isEdit) {
-      await update.mutateAsync({ id: editData!.id, data });
+      await updateSecure.mutateAsync(data);
     } else {
       await createSecure.mutateAsync(data);
     }
     onClose();
   };
 
-  const isPending = createSecure.isPending || update.isPending;
+  const isPending = createSecure.isPending || updateSecure.isPending;
 
   const modalTitle = isEdit
     ? (bn ? "বিনিয়োগকারী সম্পাদনা" : "Edit Investor")
