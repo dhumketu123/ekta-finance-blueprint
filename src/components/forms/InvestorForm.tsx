@@ -55,7 +55,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const queryClient = useQueryClient();
-  const update = useUpdateRecord("investors");
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
   const isEdit = !!editData;
 
   const STEPS = useMemo(() => [
