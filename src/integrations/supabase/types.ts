@@ -2728,6 +2728,7 @@ export type Database = {
         }
         Returns: Json
       }
+      exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       generate_loan_schedule: {
         Args: {
           _client_id: string
@@ -2840,6 +2841,29 @@ export type Database = {
         Returns: undefined
       }
       update_investor_risk_flags: { Args: never; Returns: Json }
+      update_investor_secure: {
+        Args: {
+          p_address?: string
+          p_capital?: number
+          p_id: string
+          p_investment_model?: Database["public"]["Enums"]["investment_model"]
+          p_monthly_profit_percent?: number
+          p_name_bn?: string
+          p_name_en?: string
+          p_nid_number?: string
+          p_nominee_name?: string
+          p_nominee_nid?: string
+          p_nominee_phone?: string
+          p_nominee_relation?: string
+          p_phone?: string
+          p_principal_amount?: number
+          p_reinvest?: boolean
+          p_source_of_fund?: string
+          p_tenure_years?: number
+          p_weekly_share?: number
+        }
+        Returns: undefined
+      }
       update_investor_status: { Args: never; Returns: Json }
       upsert_subscription: {
         Args: {
