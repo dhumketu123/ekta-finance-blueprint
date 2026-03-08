@@ -9,12 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateRecord } from "@/hooks/useCrudOperations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const schema = z.object({
   name_en: z.string().trim().min(1, "Name (English) is required").max(100),
