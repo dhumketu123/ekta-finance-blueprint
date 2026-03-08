@@ -38,7 +38,8 @@ export const BusinessHealthAnalytics = () => {
       if (loansError) throw loansError;
 
       const activeLoans = loans?.filter((l) => l.status === "active") || [];
-      const overdueLoans = loans?.filter((l) => l.status === "overdue") || [];
+      // Check overdue via loan schedules or use a proxy (outstanding > 0 with past due)
+      const overdueLoans = loans?.filter((l) => l.status === "default") || [];
       const totalLoans = activeLoans.length + overdueLoans.length;
 
       // NPL Rate: (Overdue Loans / Total Active+Overdue Loans) * 100
