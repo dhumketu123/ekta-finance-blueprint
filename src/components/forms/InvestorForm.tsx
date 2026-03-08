@@ -9,12 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateRecord } from "@/hooks/useCrudOperations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const schema = z.object({
   name_en: z.string().trim().min(1, "Name (English) is required").max(100),
@@ -55,7 +55,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const queryClient = useQueryClient();
-  const update = useUpdateRecord("investors");
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
   const isEdit = !!editData;
 
   const STEPS = useMemo(() => [
@@ -163,6 +163,58 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     },
   });
 
+  const updateSecure = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const { error } = await supabase.rpc("update_investor_secure" as any, {
+        p_id: editData!.id,
+        p_name_en: data.name_en,
+        p_name_bn: data.name_bn || "",
+        p_phone: data.phone || null,
+        p_nid_number: data.nid_number || null,
+        p_address: data.address || null,
+        p_source_of_fund: data.source_of_fund || null,
+        p_capital: data.capital || 0,
+        p_weekly_share: data.weekly_share || 100,
+        p_monthly_profit_percent: data.monthly_profit_percent || 0,
+        p_tenure_years: data.tenure_years || 1,
+        p_investment_model: data.investment_model || "profit_only",
+        p_reinvest: data.reinvest ?? false,
+        p_principal_amount: data.principal_amount || 0,
+        p_nominee_name: data.nominee_name || null,
+        p_nominee_relation: data.nominee_relation || null,
+        p_nominee_phone: data.nominee_phone || null,
+        p_nominee_nid: data.nominee_nid || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast.success(bn ? "সফলভাবে আপডেট হয়েছে" : "Updated successfully");
+    },
+    onError: (err: Error) => {
+      console.error("INVESTOR UPDATE ERROR:", err);
+      toast.error(err.message);
+    },
+  });
+
+  const exitSecure = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("exit_investor_secure" as any, {
+        p_id: editData!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast.success(bn ? "পার্টনার সফলভাবে অব্যাহতি দেওয়া হয়েছে" : "Partner exit processed successfully");
+      onClose();
+    },
+    onError: (err: Error) => {
+      console.error("INVESTOR EXIT ERROR:", err);
+      toast.error(err.message);
+    },
+  });
+
   const handleSubmit = async () => {
     const result = schema.safeParse(form);
     if (!result.success) {
@@ -188,14 +240,14 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     }
 
     if (isEdit) {
-      await update.mutateAsync({ id: editData!.id, data });
+      await updateSecure.mutateAsync(data);
     } else {
       await createSecure.mutateAsync(data);
     }
     onClose();
   };
 
-  const isPending = createSecure.isPending || update.isPending;
+  const isPending = createSecure.isPending || updateSecure.isPending;
 
   const modalTitle = isEdit
     ? (bn ? "বিনিয়োগকারী সম্পাদনা" : "Edit Investor")
@@ -543,9 +595,23 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
         {/* Footer */}
         <div className="flex items-center justify-between p-6 pt-0 gap-3">
-          <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
-            <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
+              <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
+            </Button>
+            {isEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExitDialogOpen(true)}
+                disabled={isPending || exitSecure.isPending}
+                className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
+              >
+                <UserX className="w-3.5 h-3.5" />
+                {bn ? "অব্যাহতি দিন" : "Exit Partner"}
+              </Button>
+            )}
+          </div>
           {step < 4 ? (
             <Button size="sm" onClick={nextStep} className="gap-1.5">
               {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
@@ -561,6 +627,15 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
             </Button>
           )}
         </div>
+
+        {/* Exit Confirmation Dialog */}
+        <DeleteConfirmDialog
+          open={exitDialogOpen}
+          onClose={() => setExitDialogOpen(false)}
+          onConfirm={() => exitSecure.mutate()}
+          itemName={editData?.name_bn || editData?.name_en || (bn ? "পার্টনার" : "Partner")}
+          loading={exitSecure.isPending}
+        />
       </DialogContent>
     </Dialog>
   );
