@@ -54,9 +54,8 @@ const SOURCE_OF_FUND_OPTIONS = [
 export default function InvestorForm({ open, onClose, editData, isOwnerMode = false }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
-  const create = useCreateRecord("investors");
+  const queryClient = useQueryClient();
   const update = useUpdateRecord("investors");
-  const { tenantId } = useTenantId();
   const isEdit = !!editData;
 
   const STEPS = useMemo(() => [
