@@ -155,6 +155,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["investors"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
       toast.success(bn ? "সফলভাবে তৈরি হয়েছে" : "Created successfully");
     },
     onError: (err: Error) => {
