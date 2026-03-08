@@ -21,6 +21,7 @@ const schema = z.object({
   address: z.string().trim().max(500).optional(),
   source_of_fund: z.string().optional(),
   capital: z.coerce.number().min(0, "Capital must be >= 0"),
+  weekly_share: z.coerce.number().min(100, "Weekly share must be at least 100").default(100),
   monthly_profit_percent: z.coerce.number().min(0).max(100),
   tenure_years: z.coerce.number().min(1).max(10).optional(),
   investment_model: z.enum(["profit_only", "profit_plus_principal"]).default("profit_only"),
@@ -69,6 +70,7 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
     address: editData?.address ?? "",
     source_of_fund: editData?.source_of_fund ?? "",
     capital: editData?.capital ?? 0,
+    weekly_share: editData?.weekly_share ?? 100,
     monthly_profit_percent: editData?.monthly_profit_percent ?? 0,
     tenure_years: editData?.tenure_years ?? 1,
     investment_model: editData?.investment_model ?? "profit_only",
@@ -111,6 +113,7 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
     if (s === 2) {
       if (Number(form.capital) <= 0) errs.capital = "Capital must be > 0";
       if (Number(form.monthly_profit_percent) <= 0) errs.monthly_profit_percent = "Profit % is required";
+      if (Number(form.weekly_share) < 100) errs.weekly_share = "Weekly share must be at least 100";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -130,10 +133,17 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
       return;
     }
     setErrors({});
-    const data = { ...result.data };
+    const data: Record<string, any> = { ...result.data };
+    
     // Clean empty strings to null for optional fields
     const optionalFields = ["nid_number", "address", "source_of_fund", "nominee_name", "nominee_relation", "nominee_phone", "nominee_nid"];
-    optionalFields.forEach((f) => { if (!(data as any)[f]) (data as any)[f] = null; });
+    optionalFields.forEach((f) => { if (!data[f]) data[f] = null; });
+
+    // For new investors, set weekly_paid_until to current date
+    if (!isEdit) {
+      data.weekly_paid_until = new Date().toISOString().split('T')[0];
+      data.total_weekly_paid = 0;
+    }
 
     if (isEdit) {
       await update.mutateAsync({ id: editData!.id, data });
@@ -208,7 +218,7 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "ফোন" : "Phone"}</Label>
+                  <Label className="text-xs font-semibold">{lang === "bn" ? "ফোন (WhatsApp)" : "Phone (WhatsApp)"}</Label>
                   <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="text-sm mt-1.5" placeholder="01XXXXXXXXX" />
                 </div>
                 <div>
@@ -244,12 +254,20 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
                   {errors.capital && <p className="text-xs text-destructive mt-1">{errors.capital}</p>}
                 </div>
                 <div>
+                  <Label className="text-xs font-semibold">{lang === "bn" ? "সাপ্তাহিক শেয়ার ৳" : "Weekly Share ৳"} *</Label>
+                  <Input type="number" step="100" value={form.weekly_share} onChange={(e) => set("weekly_share", Number(e.target.value))} className="text-sm mt-1.5" placeholder="100" />
+                  {errors.weekly_share && <p className="text-xs text-destructive mt-1">{errors.weekly_share}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {lang === "bn" ? "সর্বনিম্ন ১০০ এবং ১০০ এর গুণিতক হতে হবে" : "Minimum 100, must be multiple of 100"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <Label className="text-xs font-semibold">{lang === "bn" ? "মাসিক মুনাফা %" : "Monthly Profit %"} *</Label>
                   <Input type="number" step="0.1" value={form.monthly_profit_percent} onChange={(e) => set("monthly_profit_percent", Number(e.target.value))} className="text-sm mt-1.5" />
                   {errors.monthly_profit_percent && <p className="text-xs text-destructive mt-1">{errors.monthly_profit_percent}</p>}
                 </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{lang === "bn" ? "মেয়াদ / লক-ইন পিরিয়ড" : "Tenure / Lock-in Period"}</Label>
                   <Select value={String(form.tenure_years)} onValueChange={(v) => set("tenure_years", Number(v))}>
@@ -261,16 +279,16 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "বিনিয়োগ মডেল" : "Investment Model"}</Label>
-                  <Select value={form.investment_model} onValueChange={(v) => set("investment_model", v)}>
-                    <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="profit_only">{lang === "bn" ? "শুধুমাত্র মুনাফা" : "Profit Only"}</SelectItem>
-                      <SelectItem value="profit_plus_principal">{lang === "bn" ? "মুনাফা + মূলধন (কম্পাউন্ড)" : "Profit + Principal (Compound)"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">{lang === "bn" ? "বিনিয়োগ মডেল" : "Investment Model"}</Label>
+                <Select value={form.investment_model} onValueChange={(v) => set("investment_model", v)}>
+                  <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="profit_only">{lang === "bn" ? "শুধুমাত্র মুনাফা" : "Profit Only"}</SelectItem>
+                    <SelectItem value="profit_plus_principal">{lang === "bn" ? "মুনাফা + মূলধন (কম্পাউন্ড)" : "Profit + Principal (Compound)"}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
@@ -320,21 +338,13 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
                           <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "মোট মুনাফা" : "Total Profit"}</p>
                           <p className="text-lg font-bold text-success">৳{projection.totalProfit.toLocaleString()}</p>
                         </div>
-                        <div className="bg-background/60 rounded-md p-3 text-center relative overflow-hidden">
-                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "ম্যাচুরিটি ভ্যালু" : "Maturity Value"}</p>
-                          <p className="text-lg font-bold text-primary flex items-center justify-center gap-1">
-                            <TrendingUp className="w-4 h-4 text-success" />
-                            ৳{projection.maturityValue.toLocaleString()}
-                          </p>
+                        <div className="bg-background/60 rounded-md p-3 text-center">
+                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "পরিপক্কতায় মোট" : "At Maturity"}</p>
+                          <p className="text-lg font-bold text-primary">৳{projection.maturityValue.toLocaleString()}</p>
                         </div>
                       </>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground text-center italic">
-                    {form.investment_model === "profit_plus_principal"
-                      ? (lang === "bn" ? `কম্পাউন্ড রিটার্ন: ৳${Number(form.capital).toLocaleString()} → ৳${projection.maturityValue.toLocaleString()} (${projection.months} মাসে)` : `Compound: ৳${Number(form.capital).toLocaleString()} → ৳${projection.maturityValue.toLocaleString()} in ${projection.months} months`)
-                      : (lang === "bn" ? `সরল মুনাফা: প্রতি মাসে ৳${projection.monthlyPayout.toLocaleString()} পে-আউট` : `Simple: ৳${projection.monthlyPayout.toLocaleString()}/month payout`)}
-                  </p>
                 </div>
               )}
             </div>
@@ -343,37 +353,20 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
           {/* Step 3: Nominee */}
           {step === 3 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
-              <p className="text-xs text-muted-foreground">{lang === "bn" ? "উত্তরাধিকারী / নমিনি তথ্য (100% শেয়ার)" : "Successor / Nominee Information (100% share)"}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির নাম" : "Nominee Name"}</Label>
                   <Input value={form.nominee_name} onChange={(e) => set("nominee_name", e.target.value)} className="text-sm mt-1.5" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "সম্পর্ক" : "Relation to Investor"}</Label>
-                  <Select value={form.nominee_relation} onValueChange={(v) => set("nominee_relation", v)}>
-                    <SelectTrigger className="text-sm mt-1.5"><SelectValue placeholder={lang === "bn" ? "নির্বাচন করুন" : "Select"} /></SelectTrigger>
-                    <SelectContent>
-                      {[
-                        { v: "spouse", en: "Spouse", bn: "স্বামী/স্ত্রী" },
-                        { v: "son", en: "Son", bn: "পুত্র" },
-                        { v: "daughter", en: "Daughter", bn: "কন্যা" },
-                        { v: "father", en: "Father", bn: "পিতা" },
-                        { v: "mother", en: "Mother", bn: "মাতা" },
-                        { v: "brother", en: "Brother", bn: "ভাই" },
-                        { v: "sister", en: "Sister", bn: "বোন" },
-                        { v: "other", en: "Other", bn: "অন্যান্য" },
-                      ].map((r) => (
-                        <SelectItem key={r.v} value={r.v}>{lang === "bn" ? r.bn : r.en}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs font-semibold">{lang === "bn" ? "সম্পর্ক" : "Relationship"}</Label>
+                  <Input value={form.nominee_relation} onChange={(e) => set("nominee_relation", e.target.value)} className="text-sm mt-1.5" placeholder={lang === "bn" ? "স্ত্রী / স্বামী / সন্তান" : "Spouse / Child / Parent"} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির ফোন" : "Nominee Phone"}</Label>
-                  <Input value={form.nominee_phone} onChange={(e) => set("nominee_phone", e.target.value)} className="text-sm mt-1.5" placeholder="01XXXXXXXXX" />
+                  <Input value={form.nominee_phone} onChange={(e) => set("nominee_phone", e.target.value)} className="text-sm mt-1.5" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির NID" : "Nominee NID"}</Label>
@@ -386,66 +379,57 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
           {/* Step 4: Agreement */}
           {step === 4 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
-              <p className="text-xs font-semibold text-muted-foreground mb-3">{lang === "bn" ? "চুক্তি সারসংক্ষেপ" : "Agreement Summary"}</p>
-              <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-2.5">
-                <SummaryRow label={lang === "bn" ? "বিনিয়োগকারী" : "Investor"} value={form.name_en || form.name_bn} />
-                <SummaryRow label={lang === "bn" ? "মূলধন" : "Capital"} value={`৳${Number(form.capital).toLocaleString()}`} />
-                <SummaryRow label={lang === "bn" ? "মুনাফা হার" : "Profit Rate"} value={`${form.monthly_profit_percent}% / ${lang === "bn" ? "মাস" : "month"}`} />
-                <SummaryRow label={lang === "bn" ? "মেয়াদ" : "Tenure"} value={`${form.tenure_years} ${lang === "bn" ? "বছর" : "Year(s)"}`} />
-                <SummaryRow label={lang === "bn" ? "মডেল" : "Model"} value={form.investment_model === "profit_only" ? (lang === "bn" ? "শুধুমাত্র মুনাফা" : "Profit Only") : (lang === "bn" ? "মুনাফা + মূলধন" : "Profit + Principal")} />
-                {form.nominee_name && <SummaryRow label={lang === "bn" ? "নমিনি" : "Nominee"} value={`${form.nominee_name} (${form.nominee_relation || "—"})`} />}
-                <div className="border-t border-border pt-2 mt-2">
-                  <SummaryRow
-                    label={lang === "bn" ? "প্রক্ষেপিত ম্যাচুরিটি" : "Projected Maturity"}
-                    value={`৳${projection.maturityValue.toLocaleString()}`}
-                    highlight
-                  />
-                </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground leading-relaxed max-h-48 overflow-y-auto">
+                {lang === "bn" ? (
+                  <>
+                    <p className="font-bold mb-2">বিনিয়োগ চুক্তির শর্তাবলী:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>আমি নিশ্চিত করছি যে প্রদত্ত সকল তথ্য সঠিক।</li>
+                      <li>আমি বুঝতে পারছি যে মুনাফার হার পরিবর্তনশীল হতে পারে।</li>
+                      <li>মেয়াদপূর্তির আগে উত্তোলনে জরিমানা প্রযোজ্য হবে।</li>
+                      <li>আমি সাপ্তাহিক শেয়ার প্রদান করতে সম্মত।</li>
+                      <li>প্রতিষ্ঠানের নীতিমালা মেনে চলতে সম্মত আছি।</li>
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold mb-2">Investment Agreement Terms:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>I confirm that all information provided is accurate.</li>
+                      <li>I understand profit rates may vary.</li>
+                      <li>Penalties apply for pre-mature withdrawal.</li>
+                      <li>I agree to pay weekly share contributions.</li>
+                      <li>I agree to follow institutional policies.</li>
+                    </ul>
+                  </>
+                )}
               </div>
-
-              <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border bg-muted/10">
-                <Checkbox
-                  id="agree"
-                  checked={agreed}
-                  onCheckedChange={(v) => setAgreed(v === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="agree" className="text-xs text-muted-foreground leading-relaxed cursor-pointer select-none">
-                  {lang === "bn"
-                    ? "আমি একতা ফাইন্যান্সের বিনিয়োগ শর্তাবলী এবং লক-ইন নীতিমালায় সম্মত।"
-                    : "I agree to the Ekta Finance Investment Terms & Lock-in conditions."}
-                </label>
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                <Checkbox id="agree" checked={agreed} onCheckedChange={(c) => setAgreed(!!c)} />
+                <Label htmlFor="agree" className="text-xs cursor-pointer">
+                  {lang === "bn" ? "আমি উপরের শর্তাবলী পড়েছি এবং সম্মত আছি" : "I have read and agree to the terms above"}
+                </Label>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <Button variant="ghost" size="sm" onClick={prevStep} disabled={step === 1} className="text-xs gap-1">
-              <ChevronLeft className="w-3.5 h-3.5" /> {lang === "bn" ? "পূর্ববর্তী" : "Back"}
+        {/* Footer */}
+        <div className="flex items-center justify-between p-6 pt-0 gap-3">
+          <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
+            <ChevronLeft className="w-4 h-4" /> {lang === "bn" ? "পেছনে" : "Back"}
+          </Button>
+          {step < 4 ? (
+            <Button size="sm" onClick={nextStep} className="gap-1.5">
+              {lang === "bn" ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
             </Button>
-            <span className="text-[10px] text-muted-foreground">{step}/4</span>
-            {step < 4 ? (
-              <Button size="sm" onClick={nextStep} className="text-xs gap-1">
-                {lang === "bn" ? "পরবর্তী" : "Next"} <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleSubmit} disabled={isPending || !agreed} className="text-xs gap-1.5">
-                {isPending ? "..." : isEdit ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "তৈরি করুন" : "Create")}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
+              {isPending ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...") : (lang === "bn" ? "সম্পন্ন করুন" : "Complete")}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function SummaryRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="flex items-center justify-between text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={cn("font-semibold", highlight && "text-primary text-sm")}>{value}</span>
-    </div>
   );
 }

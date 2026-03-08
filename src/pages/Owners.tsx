@@ -5,18 +5,16 @@ import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
+import { FridayExpressGrid } from "@/components/investor/FridayExpressGrid";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useOwners } from "@/hooks/useSupabaseData";
+import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantId } from "@/hooks/useTenantId";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, Plus, Edit2, Trash2, Users, Landmark, TrendingUp, Wallet, AlertTriangle } from "lucide-react";
-import UserProfileForm from "@/components/forms/UserProfileForm";
-import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
-import { useToast } from "@/hooks/use-toast";
+import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus } from "lucide-react";
+import InvestorForm from "@/components/forms/InvestorForm";
 
 interface DashboardMetrics {
   total_clients: number;
@@ -29,17 +27,14 @@ interface DashboardMetrics {
 const Owners = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { isAdmin } = usePermissions();
-  const { data: owners, isLoading } = useOwners();
+  const { isAdmin, isOwner, isTreasurer } = usePermissions();
+  const { data: investors, isLoading } = useInvestors();
   const { tenantId } = useTenantId();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const bn = lang === "bn";
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch executive dashboard metrics via RPC
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -58,38 +53,26 @@ const Owners = () => {
       };
     },
     enabled: !!tenantId,
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 
-  const handleEdit = (e: React.MouseEvent, o: any) => { e.stopPropagation(); setEditData(o); setFormOpen(true); };
-  const handleDelete = (e: React.MouseEvent, o: any) => { e.stopPropagation(); setDeleteTarget(o); };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleteLoading(true);
-    try {
-      await supabase.from("user_roles").delete().eq("user_id", deleteTarget.id).eq("role", "owner");
-      toast({ title: bn ? "মালিক সরানো হয়েছে" : "Owner removed" });
-      queryClient.invalidateQueries({ queryKey: ["owners"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setDeleteLoading(false);
-      setDeleteTarget(null);
-    }
-  };
-
   const formatCurrency = (val: number) => `৳${(val || 0).toLocaleString("bn-BD")}`;
+
+  const canManageInvestors = isAdmin || isOwner || isTreasurer;
 
   return (
     <AppLayout>
       <PageHeader
-        title={t("owners.title")}
-        description={t("owners.description")}
+        title={bn ? "মালিক ও পার্টনার" : "Owners & Partners"}
+        description={bn ? "বিনিয়োগকারী ও মালিকদের সাপ্তাহিক সংগ্রহ ব্যবস্থাপনা" : "Weekly collection management for investors & owners"}
         actions={
-          isAdmin ? (
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
-              <Plus className="w-3.5 h-3.5" /> {bn ? "মালিক যোগ করুন" : "Add Owner"}
+          canManageInvestors ? (
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => { setEditData(null); setFormOpen(true); }}
+            >
+              <Plus className="w-3.5 h-3.5" /> {bn ? "পার্টনার যোগ করুন" : "Add Partner"}
             </Button>
           ) : null
         }
@@ -144,94 +127,45 @@ const Owners = () => {
         />
       </div>
 
-      {/* Owners List Section */}
+      {/* Friday Express Collection Grid */}
       <SectionHeader
-        title={bn ? "মালিকদের তালিকা" : "Owners List"}
+        title={bn ? "⚡ ফ্রাইডে এক্সপ্রেস সংগ্রহ" : "⚡ Friday Express Collection"}
+        subtitle={bn ? "সাপ্তাহিক শেয়ার সংগ্রহ - একক ক্লিকে সকল পার্টনারের কালেকশন" : "Weekly share collection - Bulk process all partner payments"}
         className="mt-6"
       />
 
       {isLoading ? (
-        <TableSkeleton rows={3} cols={3} />
-      ) : !owners || owners.length === 0 ? (
-        <div className="card-elevated p-8 text-center text-sm text-muted-foreground mt-4">
-          {bn ? "কোনো মালিক পাওয়া যায়নি" : "No owners found"}
+        <TableSkeleton rows={5} cols={5} />
+      ) : !investors || investors.length === 0 ? (
+        <div className="card-elevated p-8 text-center mt-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <Users className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            {bn ? "কোনো পার্টনার/বিনিয়োগকারী পাওয়া যায়নি" : "No partners/investors found"}
+          </p>
+          {canManageInvestors && (
+            <Button
+              size="sm"
+              onClick={() => { setEditData(null); setFormOpen(true); }}
+              className="gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> {bn ? "প্রথম পার্টনার যোগ করুন" : "Add First Partner"}
+            </Button>
+          )}
         </div>
       ) : (
-        <>
-          <div className="card-elevated overflow-hidden hidden sm:block mt-4">
-            <Table className="table-premium">
-              <TableHeader className="table-header-premium">
-                <TableRow>
-                  <TableHead>{t("table.name")}</TableHead>
-                  <TableHead>{t("table.phone")}</TableHead>
-                  {isAdmin && <TableHead className="w-20"></TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {owners.map((o: any) => {
-                  const name = bn ? (o.name_bn || o.name_en) : o.name_en;
-                  return (
-                    <TableRow key={o.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/owners/${o.id}`)}>
-                      <TableCell>
-                        <p className="text-xs font-medium">{name}</p>
-                        {o.owner_id && <p className="text-[10px] text-muted-foreground font-mono">{o.owner_id}</p>}
-                      </TableCell>
-                      <TableCell className="text-xs">{o.phone || "—"}</TableCell>
-                      {isAdmin && (
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <button onClick={(e) => handleEdit(e, o)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                            <button onClick={(e) => handleDelete(e, o)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="sm:hidden space-y-3 mt-4">
-            {owners.map((o: any) => {
-              const name = bn ? (o.name_bn || o.name_en) : o.name_en;
-              return (
-                <div key={o.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/owners/${o.id}`)}>
-                  <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
-                    <Crown className="w-4.5 h-4.5 text-warning" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <p className="text-xs text-muted-foreground">{o.phone || "—"}</p>
-                  </div>
-                  {isAdmin && (
-                    <div className="flex gap-1 shrink-0">
-                      <button onClick={(e) => handleEdit(e, o)} className="p-1.5 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                      <button onClick={(e) => handleDelete(e, o)} className="p-1.5 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
+        <div className="mt-4">
+          <FridayExpressGrid investors={investors} />
+        </div>
       )}
 
+      {/* Investor Form Modal */}
       {formOpen && (
-        <UserProfileForm
+        <InvestorForm
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditData(null); }}
-          role="owner"
           editData={editData}
-        />
-      )}
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={handleConfirmDelete}
-          itemName={deleteTarget.name_en || deleteTarget.name_bn}
-          loading={deleteLoading}
         />
       )}
     </AppLayout>
