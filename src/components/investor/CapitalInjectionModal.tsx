@@ -1,0 +1,259 @@
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useInvestors } from "@/hooks/useSupabaseData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { CalendarIcon, Landmark, MessageCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface CapitalInjectionModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+interface SuccessData {
+  investorName: string;
+  amount: number;
+  totalCapital: number;
+  phone: string | null;
+}
+
+export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalProps) => {
+  const { lang } = useLanguage();
+  const bn = lang === "bn";
+  const queryClient = useQueryClient();
+  const { data: investors } = useInvestors();
+
+  const [selectedInvestorId, setSelectedInvestorId] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [date, setDate] = useState<Date>(new Date());
+  const [note, setNote] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
+
+  const selectedInvestor = investors?.find((i) => i.id === selectedInvestorId);
+
+  const formatCurrency = (val: number) => `৳${val.toLocaleString("bn-BD")}`;
+
+  const handleSubmit = async () => {
+    if (!selectedInvestorId || !amount || Number(amount) <= 0) {
+      toast.error(bn ? "অনুগ্রহ করে সকল তথ্য সঠিকভাবে পূরণ করুন" : "Please fill all fields correctly");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.rpc("create_investor_weekly_transaction", {
+        p_data: {
+          investor_id: selectedInvestorId,
+          type: "capital",
+          amount: Number(amount),
+          transaction_date: format(date, "yyyy-MM-dd"),
+          notes: note || (bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"),
+        },
+      });
+
+      if (error) throw error;
+
+      // Fetch updated investor data for success message
+      const { data: updatedInvestor } = await supabase
+        .from("investors")
+        .select("name_bn, name_en, capital, phone")
+        .eq("id", selectedInvestorId)
+        .single();
+
+      if (updatedInvestor) {
+        setSuccessData({
+          investorName: bn ? updatedInvestor.name_bn : updatedInvestor.name_en,
+          amount: Number(amount),
+          totalCapital: updatedInvestor.capital,
+          phone: updatedInvestor.phone,
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      queryClient.invalidateQueries({ queryKey: ["investor_weekly_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
+
+      toast.success(bn ? "মূলধন সফলভাবে জমা হয়েছে" : "Capital added successfully");
+    } catch (err: any) {
+      console.error("Capital injection error:", err);
+      toast.error(err.message || (bn ? "মূলধন জমা ব্যর্থ হয়েছে" : "Failed to add capital"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleWhatsAppReceipt = () => {
+    if (!successData?.phone) {
+      toast.error(bn ? "ফোন নম্বর পাওয়া যায়নি" : "Phone number not found");
+      return;
+    }
+
+    const phone = successData.phone.replace(/\D/g, "").replace(/^0/, "88");
+    const message = encodeURIComponent(
+      `সম্মানিত পার্টনার ${successData.investorName}, আপনার ৳${successData.amount.toLocaleString("bn-BD")} ত্রৈমাসিক মূলধন সফলভাবে জমা হয়েছে। মোট মূলধন: ৳${successData.totalCapital.toLocaleString("bn-BD")}। ধন্যবাদ, একতা ফাইন্যান্স।`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
+  const handleClose = () => {
+    setSelectedInvestorId("");
+    setAmount("");
+    setDate(new Date());
+    setNote("");
+    setSuccessData(null);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <Landmark className="w-5 h-5" />
+            {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
+          </DialogTitle>
+          <DialogDescription>
+            {bn ? "পার্টনারের মূলধন অ্যাকাউন্টে অর্থ জমা করুন" : "Add funds to partner's capital account"}
+          </DialogDescription>
+        </DialogHeader>
+
+        {successData ? (
+          <div className="space-y-6 py-4">
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-foreground">
+                  {bn ? "মূলধন সফলভাবে জমা হয়েছে!" : "Capital Added Successfully!"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {successData.investorName} - {formatCurrency(successData.amount)}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 w-full">
+                <p className="text-xs text-muted-foreground">{bn ? "মোট মূলধন" : "Total Capital"}</p>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(successData.totalCapital)}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              {successData.phone && (
+                <Button
+                  onClick={handleWhatsAppReceipt}
+                  className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {bn ? "WhatsApp রসিদ পাঠান" : "Send WhatsApp Receipt"}
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleClose} className="flex-1">
+                {bn ? "বন্ধ করুন" : "Close"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            {/* Partner Selection */}
+            <div className="space-y-2">
+              <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
+              <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {investors?.map((inv) => (
+                    <SelectItem key={inv.id} value={inv.id}>
+                      {bn ? inv.name_bn : inv.name_en} - {formatCurrency(inv.capital)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
+              <Input
+                type="number"
+                placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min={1}
+                className="text-lg"
+              />
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>{bn ? "তারিখ" : "Date"}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : bn ? "তারিখ নির্বাচন করুন" : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => d && setDate(d)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label>{bn ? "নোট (ঐচ্ছিক)" : "Note (Optional)"}</Label>
+              <Textarea
+                placeholder={bn ? "বিস্তারিত নোট লিখুন..." : "Add a note..."}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || !selectedInvestorId || !amount}
+              className="w-full gap-2 bg-primary hover:bg-primary/90"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
+                </>
+              ) : (
+                <>
+                  <Landmark className="w-4 h-4" />
+                  {bn ? "মূলধন জমা করুন" : "Add Capital"}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
