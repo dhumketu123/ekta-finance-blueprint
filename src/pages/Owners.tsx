@@ -139,6 +139,15 @@ const Owners = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
+                variant="ghost"
+                className="gap-1.5 text-xs rounded-lg"
+                onClick={handleSeedDummyData}
+                disabled={seedingLoading}
+              >
+                <Beaker className="w-3.5 h-3.5" /> {bn ? "🧪 ডামি ডেটা" : "🧪 Seed Data"}
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 className="gap-1.5 text-xs rounded-lg shadow-sm border-primary/30 text-primary hover:bg-primary/5"
                 onClick={() => setCapitalModalOpen(true)}
