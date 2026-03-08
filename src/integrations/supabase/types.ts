@@ -2669,6 +2669,29 @@ export type Database = {
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
       create_client_secure: { Args: { p_data: Json }; Returns: string }
+      create_investor_secure: {
+        Args: {
+          p_address?: string
+          p_capital?: number
+          p_investment_model?: Database["public"]["Enums"]["investment_model"]
+          p_monthly_profit_percent?: number
+          p_name_bn?: string
+          p_name_en: string
+          p_nid_number?: string
+          p_nominee_name?: string
+          p_nominee_nid?: string
+          p_nominee_phone?: string
+          p_nominee_relation?: string
+          p_phone?: string
+          p_principal_amount?: number
+          p_reinvest?: boolean
+          p_source_of_fund?: string
+          p_tenure_years?: number
+          p_weekly_paid_until?: string
+          p_weekly_share?: number
+        }
+        Returns: string
+      }
       create_investor_weekly_transaction: {
         Args: { p_data: Json }
         Returns: string

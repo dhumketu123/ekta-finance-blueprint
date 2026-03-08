@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { z } from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateRecord, useUpdateRecord } from "@/hooks/useCrudOperations";
+import { useUpdateRecord } from "@/hooks/useCrudOperations";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTenantId } from "@/hooks/useTenantId";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,9 +54,8 @@ const SOURCE_OF_FUND_OPTIONS = [
 export default function InvestorForm({ open, onClose, editData, isOwnerMode = false }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
-  const create = useCreateRecord("investors");
+  const queryClient = useQueryClient();
   const update = useUpdateRecord("investors");
-  const { tenantId } = useTenantId();
   const isEdit = !!editData;
 
   const STEPS = useMemo(() => [
@@ -127,6 +128,41 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
+  const createSecure = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const { data: investorId, error } = await supabase.rpc("create_investor_secure", {
+        p_name_en: data.name_en,
+        p_name_bn: data.name_bn || "",
+        p_phone: data.phone || null,
+        p_nid_number: data.nid_number || null,
+        p_address: data.address || null,
+        p_source_of_fund: data.source_of_fund || null,
+        p_capital: data.capital || 0,
+        p_weekly_share: data.weekly_share || 100,
+        p_monthly_profit_percent: data.monthly_profit_percent || 0,
+        p_tenure_years: data.tenure_years || 1,
+        p_investment_model: data.investment_model || "profit_only",
+        p_reinvest: data.reinvest ?? false,
+        p_principal_amount: data.principal_amount || 0,
+        p_nominee_name: data.nominee_name || null,
+        p_nominee_relation: data.nominee_relation || null,
+        p_nominee_phone: data.nominee_phone || null,
+        p_nominee_nid: data.nominee_nid || null,
+        p_weekly_paid_until: new Date().toISOString().split("T")[0],
+      });
+      if (error) throw error;
+      return investorId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast.success(bn ? "সফলভাবে তৈরি হয়েছে" : "Created successfully");
+    },
+    onError: (err: Error) => {
+      console.error("INVESTOR CREATE ERROR:", err);
+      toast.error(err.message);
+    },
+  });
+
   const handleSubmit = async () => {
     const result = schema.safeParse(form);
     if (!result.success) {
@@ -145,32 +181,21 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     // Owner mode: force founder equity payload
     if (isOwnerMode) {
       data.monthly_profit_percent = 0;
-      data.investment_model = "profit_only"; // stored as profit_only since founder_equity isn't in enum
+      data.investment_model = "profit_only";
       data.reinvest = true;
       data.tenure_years = 5;
       data.principal_amount = 0;
     }
 
-    // Inject tenant_id for RLS compliance
-    if (tenantId) {
-      data.tenant_id = tenantId;
-    }
-
-    // For new investors, set weekly_paid_until to current date
-    if (!isEdit) {
-      data.weekly_paid_until = new Date().toISOString().split('T')[0];
-      data.total_weekly_paid = 0;
-    }
-
     if (isEdit) {
       await update.mutateAsync({ id: editData!.id, data });
     } else {
-      await create.mutateAsync(data);
+      await createSecure.mutateAsync(data);
     }
     onClose();
   };
 
-  const isPending = create.isPending || update.isPending;
+  const isPending = createSecure.isPending || update.isPending;
 
   const modalTitle = isEdit
     ? (bn ? "বিনিয়োগকারী সম্পাদনা" : "Edit Investor")
