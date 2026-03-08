@@ -2723,6 +2723,10 @@ export type Database = {
       generate_weekly_intelligence_summary: { Args: never; Returns: Json }
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
       get_branch_risk_summary: { Args: never; Returns: Json }
+      get_dashboard_summary_metrics: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_server_time: { Args: never; Returns: Json }
       get_subscription_status: {
         Args: never
@@ -2771,6 +2775,7 @@ export type Database = {
         Args: { _investor_id: string }
         Returns: undefined
       }
+      process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
