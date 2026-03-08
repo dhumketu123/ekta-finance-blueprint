@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateRecord, useUpdateRecord } from "@/hooks/useCrudOperations";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle } from "lucide-react";
+import { useTenantId } from "@/hooks/useTenantId";
+import { Check, ChevronLeft, ChevronRight, TrendingUp, ShieldCheck, UserCheck, FileCheck2, AlertTriangle, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -37,14 +38,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   editData?: Record<string, any> | null;
+  isOwnerMode?: boolean;
 }
-
-const STEPS = [
-  { id: 1, title: "KYC & Identity", titleBn: "পরিচয় যাচাই", icon: UserCheck },
-  { id: 2, title: "Financial Contract", titleBn: "আর্থিক চুক্তি", icon: ShieldCheck },
-  { id: 3, title: "Nominee", titleBn: "নমিনি", icon: FileCheck2 },
-  { id: 4, title: "Agreement", titleBn: "চুক্তিনামা", icon: Check },
-];
 
 const SOURCE_OF_FUND_OPTIONS = [
   { value: "business", label: "Business", labelBn: "ব্যবসা" },
@@ -54,11 +49,20 @@ const SOURCE_OF_FUND_OPTIONS = [
   { value: "other", label: "Other", labelBn: "অন্যান্য" },
 ];
 
-export default function InvestorForm({ open, onClose, editData }: Props) {
+export default function InvestorForm({ open, onClose, editData, isOwnerMode = false }: Props) {
   const { lang } = useLanguage();
+  const bn = lang === "bn";
   const create = useCreateRecord("investors");
   const update = useUpdateRecord("investors");
+  const { tenantId } = useTenantId();
   const isEdit = !!editData;
+
+  const STEPS = useMemo(() => [
+    { id: 1, title: isOwnerMode ? "Digital KYC & Identity" : "KYC & Identity", titleBn: isOwnerMode ? "ডিজিটাল KYC ও পরিচয়" : "পরিচয় যাচাই", icon: UserCheck },
+    { id: 2, title: isOwnerMode ? "Core Capital Matrix" : "Financial Contract", titleBn: isOwnerMode ? "কোর ক্যাপিটাল ম্যাট্রিক্স" : "আর্থিক চুক্তি", icon: ShieldCheck },
+    { id: 3, title: isOwnerMode ? "Succession Planning" : "Nominee", titleBn: isOwnerMode ? "উত্তরাধিকার পরিকল্পনা" : "নমিনি", icon: FileCheck2 },
+    { id: 4, title: isOwnerMode ? "Equity Pact" : "Agreement", titleBn: isOwnerMode ? "ইকুইটি প্যাক্ট" : "চুক্তিনামা", icon: isOwnerMode ? Crown : Check },
+  ], [isOwnerMode]);
 
   const [step, setStep] = useState(1);
   const [agreed, setAgreed] = useState(false);
@@ -72,9 +76,9 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
     capital: editData?.capital ?? 0,
     weekly_share: editData?.weekly_share ?? 100,
     monthly_profit_percent: editData?.monthly_profit_percent ?? 0,
-    tenure_years: editData?.tenure_years ?? 1,
-    investment_model: editData?.investment_model ?? "profit_only",
-    reinvest: editData?.reinvest ?? false,
+    tenure_years: editData?.tenure_years ?? (isOwnerMode ? 5 : 1),
+    investment_model: editData?.investment_model ?? (isOwnerMode ? "profit_plus_principal" : "profit_only"),
+    reinvest: editData?.reinvest ?? (isOwnerMode ? true : false),
     principal_amount: editData?.principal_amount ?? 0,
     nominee_name: editData?.nominee_name ?? "",
     nominee_relation: editData?.nominee_relation ?? "",
@@ -98,7 +102,6 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
       const totalProfit = monthlyPayout * months;
       return { monthlyPayout, totalProfit, maturityValue: cap + totalProfit, months };
     } else {
-      // Compound interest
       const maturityValue = Math.round(cap * Math.pow(1 + monthlyRate, months));
       const totalProfit = maturityValue - cap;
       return { monthlyPayout: 0, totalProfit, maturityValue, months };
@@ -112,7 +115,7 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
     }
     if (s === 2) {
       if (Number(form.capital) <= 0) errs.capital = "Capital must be > 0";
-      if (Number(form.monthly_profit_percent) <= 0) errs.monthly_profit_percent = "Profit % is required";
+      if (!isOwnerMode && Number(form.monthly_profit_percent) <= 0) errs.monthly_profit_percent = "Profit % is required";
       if (Number(form.weekly_share) < 100) errs.weekly_share = "Weekly share must be at least 100";
     }
     setErrors(errs);
@@ -139,6 +142,20 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
     const optionalFields = ["nid_number", "address", "source_of_fund", "nominee_name", "nominee_relation", "nominee_phone", "nominee_nid"];
     optionalFields.forEach((f) => { if (!data[f]) data[f] = null; });
 
+    // Owner mode: force founder equity payload
+    if (isOwnerMode) {
+      data.monthly_profit_percent = 0;
+      data.investment_model = "profit_only"; // stored as profit_only since founder_equity isn't in enum
+      data.reinvest = true;
+      data.tenure_years = 5;
+      data.principal_amount = 0;
+    }
+
+    // Inject tenant_id for RLS compliance
+    if (tenantId) {
+      data.tenant_id = tenantId;
+    }
+
     // For new investors, set weekly_paid_until to current date
     if (!isEdit) {
       data.weekly_paid_until = new Date().toISOString().split('T')[0];
@@ -155,13 +172,25 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
 
   const isPending = create.isPending || update.isPending;
 
+  const modalTitle = isEdit
+    ? (bn ? "বিনিয়োগকারী সম্পাদনা" : "Edit Investor")
+    : isOwnerMode
+      ? (bn ? "ফাউন্ডার ইকুইটি প্যাক্ট" : "Founder Equity Onboarding")
+      : (bn ? "নতুন বিনিয়োগকারী অনবোর্ডিং" : "Enterprise Investor Onboarding");
+
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-base font-bold">
-            {isEdit ? (lang === "bn" ? "বিনিয়োগকারী সম্পাদনা" : "Edit Investor") : (lang === "bn" ? "নতুন বিনিয়োগকারী অনবোর্ডিং" : "Enterprise Investor Onboarding")}
+          <DialogTitle className="text-base font-bold flex items-center gap-2">
+            {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
+            {modalTitle}
           </DialogTitle>
+          {isOwnerMode && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {bn ? "কোর ফাউন্ডিং শেয়ারহোল্ডার — ৫ বছরের জিরো-ডিভিডেন্ড কম্পাউন্ডিং ভিশন" : "Core Founding Shareholder — 5-Year Zero-Dividend Compounding Vision"}
+            </p>
+          )}
         </DialogHeader>
 
         {/* Stepper */}
@@ -186,7 +215,7 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
                       "text-[10px] font-medium text-center leading-tight max-w-[70px]",
                       isActive ? "text-primary" : isDone ? "text-primary/70" : "text-muted-foreground/50"
                     )}>
-                      {lang === "bn" ? s.titleBn : s.title}
+                      {bn ? s.titleBn : s.title}
                     </span>
                   </div>
                   {i < STEPS.length - 1 && (
@@ -207,207 +236,280 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
             <div className="space-y-4 animate-in fade-in-50 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "নাম (ইংরেজি)" : "Name (English)"} *</Label>
+                  <Label className="text-xs font-semibold">{bn ? "নাম (ইংরেজি)" : "Name (English)"} *</Label>
                   <Input value={form.name_en} onChange={(e) => set("name_en", e.target.value)} className="text-sm mt-1.5" placeholder="Full name in English" />
                   {errors.name_en && <p className="text-xs text-destructive mt-1">{errors.name_en}</p>}
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "নাম (বাংলা)" : "Name (Bangla)"}</Label>
+                  <Label className="text-xs font-semibold">{bn ? "নাম (বাংলা)" : "Name (Bangla)"}</Label>
                   <Input value={form.name_bn} onChange={(e) => set("name_bn", e.target.value)} className="text-sm mt-1.5" placeholder="পূর্ণ নাম বাংলায়" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "ফোন (WhatsApp)" : "Phone (WhatsApp)"}</Label>
+                  <Label className="text-xs font-semibold">{bn ? "ফোন (WhatsApp)" : "Phone (WhatsApp)"}</Label>
                   <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="text-sm mt-1.5" placeholder="01XXXXXXXXX" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "জাতীয় পরিচয়পত্র নম্বর" : "NID Number"}</Label>
+                  <Label className="text-xs font-semibold">{bn ? "জাতীয় পরিচয়পত্র নম্বর" : "NID Number"}</Label>
                   <Input value={form.nid_number} onChange={(e) => set("nid_number", e.target.value)} className="text-sm mt-1.5" placeholder="NID / Smart Card No." />
                 </div>
               </div>
               <div>
-                <Label className="text-xs font-semibold">{lang === "bn" ? "ঠিকানা" : "Address"}</Label>
-                <Textarea value={form.address} onChange={(e) => set("address", e.target.value)} className="text-sm mt-1.5 min-h-[70px]" placeholder={lang === "bn" ? "সম্পূর্ণ ঠিকানা লিখুন" : "Full address"} />
+                <Label className="text-xs font-semibold">{bn ? "ঠিকানা" : "Address"}</Label>
+                <Textarea value={form.address} onChange={(e) => set("address", e.target.value)} className="text-sm mt-1.5 min-h-[70px]" placeholder={bn ? "সম্পূর্ণ ঠিকানা লিখুন" : "Full address"} />
               </div>
-              <div>
-                <Label className="text-xs font-semibold">{lang === "bn" ? "অর্থের উৎস" : "Source of Fund"}</Label>
-                <Select value={form.source_of_fund} onValueChange={(v) => set("source_of_fund", v)}>
-                  <SelectTrigger className="text-sm mt-1.5"><SelectValue placeholder={lang === "bn" ? "নির্বাচন করুন" : "Select source"} /></SelectTrigger>
-                  <SelectContent>
-                    {SOURCE_OF_FUND_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{lang === "bn" ? o.labelBn : o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Financial Contract */}
-          {step === 2 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {!isOwnerMode && (
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "মূলধন ৳" : "Capital Amount ৳"} *</Label>
-                  <Input type="number" value={form.capital} onChange={(e) => set("capital", Number(e.target.value))} className="text-sm mt-1.5" />
-                  {errors.capital && <p className="text-xs text-destructive mt-1">{errors.capital}</p>}
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "সাপ্তাহিক শেয়ার ৳" : "Weekly Share ৳"} *</Label>
-                  <Input type="number" step="100" value={form.weekly_share} onChange={(e) => set("weekly_share", Number(e.target.value))} className="text-sm mt-1.5" placeholder="100" />
-                  {errors.weekly_share && <p className="text-xs text-destructive mt-1">{errors.weekly_share}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {lang === "bn" ? "সর্বনিম্ন ১০০ এবং ১০০ এর গুণিতক হতে হবে" : "Minimum 100, must be multiple of 100"}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "মাসিক মুনাফা %" : "Monthly Profit %"} *</Label>
-                  <Input type="number" step="0.1" value={form.monthly_profit_percent} onChange={(e) => set("monthly_profit_percent", Number(e.target.value))} className="text-sm mt-1.5" />
-                  {errors.monthly_profit_percent && <p className="text-xs text-destructive mt-1">{errors.monthly_profit_percent}</p>}
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "মেয়াদ / লক-ইন পিরিয়ড" : "Tenure / Lock-in Period"}</Label>
-                  <Select value={String(form.tenure_years)} onValueChange={(v) => set("tenure_years", Number(v))}>
-                    <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
+                  <Label className="text-xs font-semibold">{bn ? "অর্থের উৎস" : "Source of Fund"}</Label>
+                  <Select value={form.source_of_fund} onValueChange={(v) => set("source_of_fund", v)}>
+                    <SelectTrigger className="text-sm mt-1.5"><SelectValue placeholder={bn ? "নির্বাচন করুন" : "Select source"} /></SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((y) => (
-                        <SelectItem key={y} value={String(y)}>{y} {lang === "bn" ? "বছর" : (y === 1 ? "Year" : "Years")}</SelectItem>
+                      {SOURCE_OF_FUND_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{bn ? o.labelBn : o.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">{lang === "bn" ? "বিনিয়োগ মডেল" : "Investment Model"}</Label>
-                <Select value={form.investment_model} onValueChange={(v) => set("investment_model", v)}>
-                  <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="profit_only">{lang === "bn" ? "শুধুমাত্র মুনাফা" : "Profit Only"}</SelectItem>
-                    <SelectItem value="profit_plus_principal">{lang === "bn" ? "মুনাফা + মূলধন (কম্পাউন্ড)" : "Profit + Principal (Compound)"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
-                <Label className="text-xs font-semibold">{lang === "bn" ? "স্বয়ংক্রিয় পুনঃবিনিয়োগ" : "Auto Reinvest"}</Label>
-                <Switch checked={form.reinvest} onCheckedChange={(v) => set("reinvest", v)} />
-              </div>
-
-              {/* Anti-Loss Rule Warning */}
-              <div className="flex gap-3 p-3.5 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 mb-1">
-                    {lang === "bn" ? "⚠️ মেয়াদপূর্তির পূর্বে ভাঙানোর নীতি" : "⚠️ Pre-mature Encashment Policy"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    {lang === "bn"
-                      ? "মেয়াদপূর্তির আগে উত্তোলন করলে, পূর্ববর্তী মুনাফা জরিমানা হারে পুনঃগণনা করা হবে এবং মূলধনের বিপরীতে সমন্বয় করা হবে।"
-                      : "If withdrawn before maturity, previous profits will be recalculated at a penalty rate, adjusting against the principal to ensure institutional liquidity."}
-                  </p>
-                </div>
-              </div>
-
-              {/* AI Projection Card */}
-              {Number(form.capital) > 0 && Number(form.monthly_profit_percent) > 0 && (
-                <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold text-primary">
-                      {lang === "bn" ? "💡 AI প্রজেকশন" : "💡 AI Projection"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {form.investment_model === "profit_only" ? (
-                      <>
-                        <div className="bg-background/60 rounded-md p-3 text-center">
-                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "মাসিক পে-আউট" : "Monthly Payout"}</p>
-                          <p className="text-lg font-bold text-primary">৳{projection.monthlyPayout.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-background/60 rounded-md p-3 text-center">
-                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? `মোট মুনাফা (${projection.months} মাসে)` : `Total Profit (${projection.months}mo)`}</p>
-                          <p className="text-lg font-bold text-success">৳{projection.totalProfit.toLocaleString()}</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-background/60 rounded-md p-3 text-center">
-                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "মোট মুনাফা" : "Total Profit"}</p>
-                          <p className="text-lg font-bold text-success">৳{projection.totalProfit.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-background/60 rounded-md p-3 text-center">
-                          <p className="text-[10px] text-muted-foreground mb-1">{lang === "bn" ? "পরিপক্কতায় মোট" : "At Maturity"}</p>
-                          <p className="text-lg font-bold text-primary">৳{projection.maturityValue.toLocaleString()}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 3: Nominee */}
-          {step === 3 && (
+          {/* Step 2: Financial Contract / Core Capital Matrix */}
+          {step === 2 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির নাম" : "Nominee Name"}</Label>
+                  <Label className="text-xs font-semibold">
+                    {isOwnerMode
+                      ? (bn ? "প্রাথমিক মূলধন (Initial Core Equity) ৳" : "Initial Core Equity ৳")
+                      : (bn ? "মূলধন ৳" : "Capital Amount ৳")
+                    } *
+                  </Label>
+                  <Input type="number" value={form.capital} onChange={(e) => set("capital", Number(e.target.value))} className="text-sm mt-1.5" />
+                  {errors.capital && <p className="text-xs text-destructive mt-1">{errors.capital}</p>}
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">
+                    {isOwnerMode
+                      ? (bn ? "সাপ্তাহিক ক্যাপিটাল ইনজেকশন ৳" : "Weekly Capital Injection ৳")
+                      : (bn ? "সাপ্তাহিক শেয়ার ৳" : "Weekly Share ৳")
+                    } *
+                  </Label>
+                  <Input type="number" step="100" value={form.weekly_share} onChange={(e) => set("weekly_share", Number(e.target.value))} className="text-sm mt-1.5" placeholder="100" />
+                  {errors.weekly_share && <p className="text-xs text-destructive mt-1">{errors.weekly_share}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {bn ? "সর্বনিম্ন ১০০ এবং ১০০ এর গুণিতক হতে হবে" : "Minimum 100, must be multiple of 100"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Owner Mode: Show locked-in summary instead of editable fields */}
+              {isOwnerMode ? (
+                <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold text-primary">
+                      {bn ? "ফাউন্ডার ইকুইটি কনফিগারেশন (লকড)" : "Founder Equity Configuration (Locked)"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-background/60 rounded-lg p-3 text-center border border-border/50">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">{bn ? "লক-ইন পিরিয়ড" : "Lock-in Period"}</p>
+                      <p className="text-lg font-bold text-foreground">5 {bn ? "বছর" : "Years"}</p>
+                    </div>
+                    <div className="bg-background/60 rounded-lg p-3 text-center border border-border/50">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">{bn ? "ডিভিডেন্ড মডেল" : "Dividend Model"}</p>
+                      <p className="text-sm font-bold text-foreground">{bn ? "জিরো-ডিভিডেন্ড" : "Zero-Dividend"}</p>
+                    </div>
+                    <div className="bg-background/60 rounded-lg p-3 text-center border border-border/50">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">{bn ? "রি-ইনভেস্ট" : "Reinvest"}</p>
+                      <p className="text-sm font-bold text-primary">100% ✓</p>
+                    </div>
+                    <div className="bg-background/60 rounded-lg p-3 text-center border border-border/50">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">{bn ? "মুনাফা হার" : "Profit Rate"}</p>
+                      <p className="text-sm font-bold text-foreground">{bn ? "বোর্ড নির্ধারিত" : "Board-Decided"}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{bn ? "মাসিক মুনাফা %" : "Monthly Profit %"} *</Label>
+                      <Input type="number" step="0.1" value={form.monthly_profit_percent} onChange={(e) => set("monthly_profit_percent", Number(e.target.value))} className="text-sm mt-1.5" />
+                      {errors.monthly_profit_percent && <p className="text-xs text-destructive mt-1">{errors.monthly_profit_percent}</p>}
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold">{bn ? "মেয়াদ / লক-ইন পিরিয়ড" : "Tenure / Lock-in Period"}</Label>
+                      <Select value={String(form.tenure_years)} onValueChange={(v) => set("tenure_years", Number(v))}>
+                        <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((y) => (
+                            <SelectItem key={y} value={String(y)}>{y} {bn ? "বছর" : (y === 1 ? "Year" : "Years")}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold">{bn ? "বিনিয়োগ মডেল" : "Investment Model"}</Label>
+                    <Select value={form.investment_model} onValueChange={(v) => set("investment_model", v)}>
+                      <SelectTrigger className="text-sm mt-1.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="profit_only">{bn ? "শুধুমাত্র মুনাফা" : "Profit Only"}</SelectItem>
+                        <SelectItem value="profit_plus_principal">{bn ? "মুনাফা + মূলধন (কম্পাউন্ড)" : "Profit + Principal (Compound)"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                    <Label className="text-xs font-semibold">{bn ? "স্বয়ংক্রিয় পুনঃবিনিয়োগ" : "Auto Reinvest"}</Label>
+                    <Switch checked={form.reinvest} onCheckedChange={(v) => set("reinvest", v)} />
+                  </div>
+
+                  {/* Anti-Loss Rule Warning */}
+                  <div className="flex gap-3 p-3.5 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 mb-1">
+                        {bn ? "⚠️ মেয়াদপূর্তির পূর্বে ভাঙানোর নীতি" : "⚠️ Pre-mature Encashment Policy"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {bn
+                          ? "মেয়াদপূর্তির আগে উত্তোলন করলে, পূর্ববর্তী মুনাফা জরিমানা হারে পুনঃগণনা করা হবে এবং মূলধনের বিপরীতে সমন্বয় করা হবে।"
+                          : "If withdrawn before maturity, previous profits will be recalculated at a penalty rate, adjusting against the principal to ensure institutional liquidity."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* AI Projection Card */}
+                  {Number(form.capital) > 0 && Number(form.monthly_profit_percent) > 0 && (
+                    <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-bold text-primary">
+                          {bn ? "💡 AI প্রজেকশন" : "💡 AI Projection"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {form.investment_model === "profit_only" ? (
+                          <>
+                            <div className="bg-background/60 rounded-md p-3 text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">{bn ? "মাসিক পে-আউট" : "Monthly Payout"}</p>
+                              <p className="text-lg font-bold text-primary">৳{projection.monthlyPayout.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-background/60 rounded-md p-3 text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">{bn ? `মোট মুনাফা (${projection.months} মাসে)` : `Total Profit (${projection.months}mo)`}</p>
+                              <p className="text-lg font-bold text-success">৳{projection.totalProfit.toLocaleString()}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="bg-background/60 rounded-md p-3 text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">{bn ? "মোট মুনাফা" : "Total Profit"}</p>
+                              <p className="text-lg font-bold text-success">৳{projection.totalProfit.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-background/60 rounded-md p-3 text-center">
+                              <p className="text-[10px] text-muted-foreground mb-1">{bn ? "পরিপক্কতায় মোট" : "At Maturity"}</p>
+                              <p className="text-lg font-bold text-primary">৳{projection.maturityValue.toLocaleString()}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Nominee / Succession Planning */}
+          {step === 3 && (
+            <div className="space-y-4 animate-in fade-in-50 duration-300">
+              {isOwnerMode && (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {bn
+                    ? "আপনার অনুপস্থিতিতে ইকুইটি অংশের দাবিদার হিসেবে নমিনি নির্ধারণ করুন।"
+                    : "Designate a nominee as the rightful claimant of your equity share in your absence."}
+                </p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{bn ? "নমিনির নাম" : "Nominee Name"}</Label>
                   <Input value={form.nominee_name} onChange={(e) => set("nominee_name", e.target.value)} className="text-sm mt-1.5" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "সম্পর্ক" : "Relationship"}</Label>
-                  <Input value={form.nominee_relation} onChange={(e) => set("nominee_relation", e.target.value)} className="text-sm mt-1.5" placeholder={lang === "bn" ? "স্ত্রী / স্বামী / সন্তান" : "Spouse / Child / Parent"} />
+                  <Label className="text-xs font-semibold">{bn ? "সম্পর্ক" : "Relationship"}</Label>
+                  <Input value={form.nominee_relation} onChange={(e) => set("nominee_relation", e.target.value)} className="text-sm mt-1.5" placeholder={bn ? "স্ত্রী / স্বামী / সন্তান" : "Spouse / Child / Parent"} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির ফোন" : "Nominee Phone"}</Label>
+                  <Label className="text-xs font-semibold">{bn ? "নমিনির ফোন" : "Nominee Phone"}</Label>
                   <Input value={form.nominee_phone} onChange={(e) => set("nominee_phone", e.target.value)} className="text-sm mt-1.5" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{lang === "bn" ? "নমিনির NID" : "Nominee NID"}</Label>
+                  <Label className="text-xs font-semibold">{bn ? "নমিনির NID" : "Nominee NID"}</Label>
                   <Input value={form.nominee_nid} onChange={(e) => set("nominee_nid", e.target.value)} className="text-sm mt-1.5" />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 4: Agreement */}
+          {/* Step 4: Agreement / Equity Pact */}
           {step === 4 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
-              <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground leading-relaxed max-h-48 overflow-y-auto">
-                {lang === "bn" ? (
-                  <>
-                    <p className="font-bold mb-2">বিনিয়োগ চুক্তির শর্তাবলী:</p>
-                    <ul className="list-disc pl-4 space-y-1">
-                      <li>আমি নিশ্চিত করছি যে প্রদত্ত সকল তথ্য সঠিক।</li>
-                      <li>আমি বুঝতে পারছি যে মুনাফার হার পরিবর্তনশীল হতে পারে।</li>
-                      <li>মেয়াদপূর্তির আগে উত্তোলনে জরিমানা প্রযোজ্য হবে।</li>
-                      <li>আমি সাপ্তাহিক শেয়ার প্রদান করতে সম্মত।</li>
-                      <li>প্রতিষ্ঠানের নীতিমালা মেনে চলতে সম্মত আছি।</li>
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-bold mb-2">Investment Agreement Terms:</p>
-                    <ul className="list-disc pl-4 space-y-1">
-                      <li>I confirm that all information provided is accurate.</li>
-                      <li>I understand profit rates may vary.</li>
-                      <li>Penalties apply for pre-mature withdrawal.</li>
-                      <li>I agree to pay weekly share contributions.</li>
-                      <li>I agree to follow institutional policies.</li>
-                    </ul>
-                  </>
-                )}
-              </div>
+              {isOwnerMode ? (
+                <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-5 space-y-3 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.15)]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Crown className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-bold text-primary">
+                      {bn ? "কর্পোরেট ইকুইটি ও স্মার্ট প্যাক্ট" : "Corporate Equity & Smart Pact"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-[1.8] max-h-52 overflow-y-auto pr-1 space-y-2">
+                    <p><strong className="text-foreground">১. ফাউন্ডার স্ট্যাটাস:</strong> আমি এই প্রতিষ্ঠানের একজন মূল ফাউন্ডিং শেয়ারহোল্ডার হিসেবে যুক্ত হচ্ছি।</p>
+                    <p><strong className="text-foreground">২. অটোমেটেড ক্যাপিটাল:</strong> সিস্টেমের নিয়ম অনুযায়ী আমি নিয়মিত সাপ্তাহিক "কোর ক্যাপিটাল" প্রদান করতে চুক্তিবদ্ধ।</p>
+                    <p><strong className="text-foreground">৩. জিরো-ডিভিডেন্ড কম্পাউন্ডিং:</strong> আগামী ৫ বছর (৬০ মাস) যাবতীয় মুনাফা ১০০% রি-ইনভেস্ট বা কম্পাউন্ডিং করা হবে। এই সময়ে কোনো অন্তর্বর্তীকালীন লভ্যাংশ উত্তোলন করা হবে না।</p>
+                    <p><strong className="text-foreground">৪. ফিউচার গভর্ন্যান্স:</strong> ৫ বছর পর কোম্পানির মোট ভ্যালুয়েশন (Valuation) এবং সঞ্চিত মূলধনের ওপর ভিত্তি করে বোর্ড সভার মাধ্যমে ডিভিডেন্ড বা স্যালারি মডেল নির্ধারণ করা হবে।</p>
+                    <p><strong className="text-foreground">৫. ইমিউটেবল রেকর্ড:</strong> আমার প্রতিটি লেনদেন সিস্টেমে অপরিবর্তনীয় (Immutable) অডিট ট্রেইল হিসেবে সংরক্ষিত থাকবে।</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground leading-relaxed max-h-48 overflow-y-auto">
+                  {bn ? (
+                    <>
+                      <p className="font-bold mb-2">বিনিয়োগ চুক্তির শর্তাবলী:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>আমি নিশ্চিত করছি যে প্রদত্ত সকল তথ্য সঠিক।</li>
+                        <li>আমি বুঝতে পারছি যে মুনাফার হার পরিবর্তনশীল হতে পারে।</li>
+                        <li>মেয়াদপূর্তির আগে উত্তোলনে জরিমানা প্রযোজ্য হবে।</li>
+                        <li>আমি সাপ্তাহিক শেয়ার প্রদান করতে সম্মত।</li>
+                        <li>প্রতিষ্ঠানের নীতিমালা মেনে চলতে সম্মত আছি।</li>
+                      </ul>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-bold mb-2">Investment Agreement Terms:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>I confirm that all information provided is accurate.</li>
+                        <li>I understand profit rates may vary.</li>
+                        <li>Penalties apply for pre-mature withdrawal.</li>
+                        <li>I agree to pay weekly share contributions.</li>
+                        <li>I agree to follow institutional policies.</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
               <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
                 <Checkbox id="agree" checked={agreed} onCheckedChange={(c) => setAgreed(!!c)} />
                 <Label htmlFor="agree" className="text-xs cursor-pointer">
-                  {lang === "bn" ? "আমি উপরের শর্তাবলী পড়েছি এবং সম্মত আছি" : "I have read and agree to the terms above"}
+                  {isOwnerMode
+                    ? (bn ? "আমি উপরের ইকুইটি প্যাক্ট পড়েছি এবং সম্পূর্ণ সম্মত আছি" : "I have read and fully agree to the Equity Pact above")
+                    : (bn ? "আমি উপরের শর্তাবলী পড়েছি এবং সম্মত আছি" : "I have read and agree to the terms above")
+                  }
                 </Label>
               </div>
             </div>
@@ -417,15 +519,20 @@ export default function InvestorForm({ open, onClose, editData }: Props) {
         {/* Footer */}
         <div className="flex items-center justify-between p-6 pt-0 gap-3">
           <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
-            <ChevronLeft className="w-4 h-4" /> {lang === "bn" ? "পেছনে" : "Back"}
+            <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
           </Button>
           {step < 4 ? (
             <Button size="sm" onClick={nextStep} className="gap-1.5">
-              {lang === "bn" ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
+              {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
-              {isPending ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...") : (lang === "bn" ? "সম্পন্ন করুন" : "Complete")}
+              {isPending
+                ? (bn ? "প্রক্রিয়াকরণ..." : "Processing...")
+                : isOwnerMode
+                  ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
+                  : (bn ? "সম্পন্ন করুন" : "Complete")
+              }
             </Button>
           )}
         </div>

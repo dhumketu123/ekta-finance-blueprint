@@ -280,6 +280,7 @@ const Owners = () => {
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditData(null); }}
           editData={editData}
+          isOwnerMode
         />
       )}
 
