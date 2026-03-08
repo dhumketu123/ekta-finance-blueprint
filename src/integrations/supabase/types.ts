@@ -2645,6 +2645,7 @@ export type Database = {
         Returns: Json
       }
       auto_default_loans: { Args: never; Returns: Json }
+      auto_resolve_user_tenant: { Args: never; Returns: string }
       calculate_credit_score: { Args: { _client_id: string }; Returns: Json }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
