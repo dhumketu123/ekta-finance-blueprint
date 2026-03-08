@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -14,8 +15,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantId } from "@/hooks/useTenantId";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase } from "lucide-react";
+import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase, Beaker } from "lucide-react";
 import InvestorForm from "@/components/forms/InvestorForm";
 
 interface DashboardMetrics {
