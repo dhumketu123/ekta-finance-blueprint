@@ -253,6 +253,11 @@ const Owners = () => {
         className="mt-6"
       />
 
+      {/* DEBUG INDICATOR - Remove after investigation */}
+      <div className="p-2 bg-red-100 text-red-800 text-xs font-mono mt-2 rounded border border-red-300">
+        DEBUG MODE: TenantID={tenantId || 'NULL'} | DataCount={investors?.length || 0} | Error={error ? String(error) : 'none'} | ActiveCount={investors?.filter((i: any) => i.status === 'active' && !i.deleted_at).length || 0}
+      </div>
+
       {isLoading ? (
         <TableSkeleton rows={5} cols={5} />
       ) : !investors || investors.length === 0 ? (
