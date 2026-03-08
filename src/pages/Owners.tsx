@@ -33,8 +33,13 @@ const Owners = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
-  const { data: investors, isLoading } = useInvestors();
+  const { data: investors, isLoading, error } = useInvestors();
   const { tenantId } = useTenantId();
+
+  // DEBUG: Log investor fetch results
+  console.log('DEBUG - Current Tenant ID:', tenantId);
+  console.log('DEBUG - Raw Investors Data fetched:', investors);
+  console.log('DEBUG - Fetch Error (if any):', error);
   const queryClient = useQueryClient();
   const bn = lang === "bn";
 
