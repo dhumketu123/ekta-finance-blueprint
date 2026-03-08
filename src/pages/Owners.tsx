@@ -84,6 +84,11 @@ const Owners = () => {
         status: "active" as const,
         tenant_id: tenantId,
         weekly_paid_until: today,
+        monthly_profit_percent: 0,
+        investment_model: "profit_only" as const,
+        reinvest: false,
+        principal_amount: 0,
+        tenure_years: 1,
       },
       {
         name_bn: "আব্দুল্লাহ আল নোমান",
@@ -94,6 +99,11 @@ const Owners = () => {
         status: "active" as const,
         tenant_id: tenantId,
         weekly_paid_until: today,
+        monthly_profit_percent: 0,
+        investment_model: "profit_only" as const,
+        reinvest: false,
+        principal_amount: 0,
+        tenure_years: 1,
       },
       {
         name_bn: "কাজী জহিরুল হক",
@@ -104,6 +114,11 @@ const Owners = () => {
         status: "active" as const,
         tenant_id: tenantId,
         weekly_paid_until: today,
+        monthly_profit_percent: 0,
+        investment_model: "profit_only" as const,
+        reinvest: false,
+        principal_amount: 0,
+        tenure_years: 1,
       },
     ];
 
@@ -112,6 +127,7 @@ const Owners = () => {
     setSeedingLoading(false);
 
     if (error) {
+      console.error("SEEDER DB ERROR:", error);
       toast({
         title: bn ? "ত্রুটি" : "Error",
         description: error.message,
