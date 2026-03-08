@@ -33,8 +33,13 @@ const Owners = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
-  const { data: investors, isLoading } = useInvestors();
+  const { data: investors, isLoading, error } = useInvestors();
   const { tenantId } = useTenantId();
+
+  // DEBUG: Log investor fetch results
+  console.log('DEBUG - Current Tenant ID:', tenantId);
+  console.log('DEBUG - Raw Investors Data fetched:', investors);
+  console.log('DEBUG - Fetch Error (if any):', error);
   const queryClient = useQueryClient();
   const bn = lang === "bn";
 
@@ -247,6 +252,11 @@ const Owners = () => {
         subtitle={bn ? "সাপ্তাহিক শেয়ার সংগ্রহ - একক ক্লিকে সকল পার্টনারের কালেকশন" : "Weekly share collection - Bulk process all partner payments"}
         className="mt-6"
       />
+
+      {/* DEBUG INDICATOR - Remove after investigation */}
+      <div className="p-2 bg-red-100 text-red-800 text-xs font-mono mt-2 rounded border border-red-300">
+        DEBUG MODE: TenantID={tenantId || 'NULL'} | DataCount={investors?.length || 0} | Error={error ? String(error) : 'none'} | ActiveCount={investors?.filter((i: any) => i.status === 'active' && !i.deleted_at).length || 0}
+      </div>
 
       {isLoading ? (
         <TableSkeleton rows={5} cols={5} />
