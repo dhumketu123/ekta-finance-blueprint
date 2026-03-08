@@ -31,6 +31,7 @@ interface DashboardMetrics {
 const Owners = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
   const { data: investors, isLoading } = useInvestors();
   const { tenantId } = useTenantId();
@@ -40,6 +41,7 @@ const Owners = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [capitalModalOpen, setCapitalModalOpen] = useState(false);
+  const [seedingLoading, setSeedingLoading] = useState(false);
 
   // Fetch executive dashboard metrics via RPC
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
