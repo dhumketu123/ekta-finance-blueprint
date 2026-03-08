@@ -65,6 +65,68 @@ const Owners = () => {
 
   const formatCurrency = (val: number) => `৳${(val || 0).toLocaleString("bn-BD")}`;
 
+  const handleSeedDummyData = async () => {
+    if (!tenantId) {
+      toast({ title: "Error", description: "Unable to determine tenant ID", variant: "destructive" });
+      return;
+    }
+
+    setSeedingLoading(true);
+    const today = format(new Date(), "yyyy-MM-dd");
+
+    const dummyInvestors = [
+      {
+        name_bn: "মোঃ শফিকুল ইসলাম",
+        name_en: "Shafiqul Islam",
+        phone: "01711000001",
+        capital: 5000,
+        weekly_share: 100,
+        status: "active" as const,
+        tenant_id: tenantId,
+        weekly_paid_until: today,
+      },
+      {
+        name_bn: "আব্দুল্লাহ আল নোমান",
+        name_en: "Abdullah Al Noman",
+        phone: "01811000002",
+        capital: 20000,
+        weekly_share: 200,
+        status: "active" as const,
+        tenant_id: tenantId,
+        weekly_paid_until: today,
+      },
+      {
+        name_bn: "কাজী জহিরুল হক",
+        name_en: "Kazi Zahirul Haque",
+        phone: "01911000003",
+        capital: 2000,
+        weekly_share: 100,
+        status: "active" as const,
+        tenant_id: tenantId,
+        weekly_paid_until: today,
+      },
+    ];
+
+    const { error } = await supabase.from("investors").insert(dummyInvestors);
+
+    setSeedingLoading(false);
+
+    if (error) {
+      toast({
+        title: bn ? "ত্রুটি" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: bn ? "সফল" : "Success",
+        description: bn ? "ডামি ডেটা লোড হয়েছে!" : "Dummy data loaded successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
+    }
+  };
+
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
 
   return (
