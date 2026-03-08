@@ -163,6 +163,58 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     },
   });
 
+  const updateSecure = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const { error } = await supabase.rpc("update_investor_secure" as any, {
+        p_id: editData!.id,
+        p_name_en: data.name_en,
+        p_name_bn: data.name_bn || "",
+        p_phone: data.phone || null,
+        p_nid_number: data.nid_number || null,
+        p_address: data.address || null,
+        p_source_of_fund: data.source_of_fund || null,
+        p_capital: data.capital || 0,
+        p_weekly_share: data.weekly_share || 100,
+        p_monthly_profit_percent: data.monthly_profit_percent || 0,
+        p_tenure_years: data.tenure_years || 1,
+        p_investment_model: data.investment_model || "profit_only",
+        p_reinvest: data.reinvest ?? false,
+        p_principal_amount: data.principal_amount || 0,
+        p_nominee_name: data.nominee_name || null,
+        p_nominee_relation: data.nominee_relation || null,
+        p_nominee_phone: data.nominee_phone || null,
+        p_nominee_nid: data.nominee_nid || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast.success(bn ? "সফলভাবে আপডেট হয়েছে" : "Updated successfully");
+    },
+    onError: (err: Error) => {
+      console.error("INVESTOR UPDATE ERROR:", err);
+      toast.error(err.message);
+    },
+  });
+
+  const exitSecure = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("exit_investor_secure" as any, {
+        p_id: editData!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast.success(bn ? "পার্টনার সফলভাবে অব্যাহতি দেওয়া হয়েছে" : "Partner exit processed successfully");
+      onClose();
+    },
+    onError: (err: Error) => {
+      console.error("INVESTOR EXIT ERROR:", err);
+      toast.error(err.message);
+    },
+  });
+
   const handleSubmit = async () => {
     const result = schema.safeParse(form);
     if (!result.success) {
