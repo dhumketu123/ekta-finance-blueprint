@@ -270,7 +270,7 @@ const Owners = () => {
         </div>
       ) : (
         <div className="mt-4">
-          <FridayExpressGrid investors={investors} />
+          <FridayExpressGrid investors={investors.filter((inv: any) => inv.status === 'active' && !inv.deleted_at)} />
         </div>
       )}
 
