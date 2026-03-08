@@ -5,7 +5,9 @@ import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
+import { BusinessHealthAnalytics } from "@/components/dashboard/BusinessHealthAnalytics";
 import { FridayExpressGrid } from "@/components/investor/FridayExpressGrid";
+import { CapitalInjectionModal } from "@/components/investor/CapitalInjectionModal";
 import { Button } from "@/components/ui/button";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -13,7 +15,7 @@ import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantId } from "@/hooks/useTenantId";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus } from "lucide-react";
+import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase } from "lucide-react";
 import InvestorForm from "@/components/forms/InvestorForm";
 
 interface DashboardMetrics {
@@ -35,6 +37,7 @@ const Owners = () => {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
+  const [capitalModalOpen, setCapitalModalOpen] = useState(false);
 
   // Fetch executive dashboard metrics via RPC
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -67,13 +70,23 @@ const Owners = () => {
         description={bn ? "বিনিয়োগকারী ও মালিকদের সাপ্তাহিক সংগ্রহ ব্যবস্থাপনা" : "Weekly collection management for investors & owners"}
         actions={
           canManageInvestors ? (
-            <Button
-              size="sm"
-              className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => { setEditData(null); setFormOpen(true); }}
-            >
-              <Plus className="w-3.5 h-3.5" /> {bn ? "পার্টনার যোগ করুন" : "Add Partner"}
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs rounded-lg shadow-sm border-primary/30 text-primary hover:bg-primary/5"
+                onClick={() => setCapitalModalOpen(true)}
+              >
+                <Briefcase className="w-3.5 h-3.5" /> {bn ? "মূলধন জমা" : "Add Capital"}
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => { setEditData(null); setFormOpen(true); }}
+              >
+                <Plus className="w-3.5 h-3.5" /> {bn ? "পার্টনার যোগ করুন" : "Add Partner"}
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -84,7 +97,7 @@ const Owners = () => {
         subtitle={bn ? "প্রতিষ্ঠানের সামগ্রিক আর্থিক চিত্র" : "Organization-wide financial overview"}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4 mb-6">
         <MetricCard
           title={bn ? "মোট গ্রাহক" : "Total Clients"}
           value={metrics?.total_clients ?? 0}
@@ -125,6 +138,16 @@ const Owners = () => {
           isLoading={metricsLoading}
           variant="warning"
         />
+      </div>
+
+      {/* Business Health Analytics */}
+      <SectionHeader
+        title={bn ? "ব্যবসায়িক স্বাস্থ্য বিশ্লেষণ" : "Business Health Analytics"}
+        subtitle={bn ? "ঋণ পোর্টফোলিও ও আদায় কর্মক্ষমতা" : "Loan portfolio & recovery performance"}
+        className="mt-6"
+      />
+      <div className="mt-4 mb-8">
+        <BusinessHealthAnalytics />
       </div>
 
       {/* Friday Express Collection Grid */}
@@ -168,6 +191,12 @@ const Owners = () => {
           editData={editData}
         />
       )}
+
+      {/* Capital Injection Modal */}
+      <CapitalInjectionModal
+        open={capitalModalOpen}
+        onClose={() => setCapitalModalOpen(false)}
+      />
     </AppLayout>
   );
 };
