@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { SectionHeader } from "@/components/SectionHeader";
-import { MetricCard } from "@/components/dashboard/MetricCard";
 import { BusinessHealthAnalytics } from "@/components/dashboard/BusinessHealthAnalytics";
 import { FridayExpressGrid } from "@/components/investor/FridayExpressGrid";
+import { MasterTreasury } from "@/components/investor/MasterTreasury";
+import { FoundersWallets } from "@/components/investor/FoundersWallets";
 import { CapitalInjectionModal } from "@/components/investor/CapitalInjectionModal";
 import { Button } from "@/components/ui/button";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -14,7 +15,7 @@ import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantId } from "@/hooks/useTenantId";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase } from "lucide-react";
+import { Users, Plus, Briefcase } from "lucide-react";
 import InvestorForm from "@/components/forms/InvestorForm";
 
 interface DashboardMetrics {
@@ -57,9 +58,10 @@ const Owners = () => {
     staleTime: 2 * 60 * 1000,
   });
 
-  const formatCurrency = (val: number) => `৳${(val || 0).toLocaleString("bn-BD")}`;
-
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
+
+  // Get active investors for wallets and grid
+  const activeInvestors = investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [];
 
   return (
     <AppLayout>
@@ -89,54 +91,25 @@ const Owners = () => {
         }
       />
 
-      {/* Executive Financial Summary Dashboard */}
+      {/* Master Treasury - Silicon Valley Style Dashboard */}
       <SectionHeader
-        title={bn ? "এক্সিকিউটিভ আর্থিক সারসংক্ষেপ" : "Executive Financial Summary"}
-        subtitle={bn ? "প্রতিষ্ঠানের সামগ্রিক আর্থিক চিত্র" : "Organization-wide financial overview"}
+        title={bn ? "মাস্টার ট্রেজারি" : "Master Treasury"}
+        subtitle={bn ? "কোম্পানির সম্পূর্ণ আর্থিক অবস্থান একনজরে" : "Complete financial position at a glance"}
       />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4 mb-6">
-        <MetricCard
-          title={bn ? "মোট গ্রাহক" : "Total Clients"}
-          value={metrics?.total_clients ?? 0}
-          label={bn ? "নিবন্ধিত সদস্য" : "Registered members"}
-          icon={<Users className="w-5 h-5" />}
-          isLoading={metricsLoading}
-          variant="default"
-        />
-        <MetricCard
-          title={bn ? "সক্রিয় ঋণ" : "Active Loans"}
-          value={metrics?.active_loans ?? 0}
-          label={bn ? "চলমান ঋণ হিসাব" : "Running loan accounts"}
-          icon={<Landmark className="w-5 h-5" />}
-          isLoading={metricsLoading}
-          variant="success"
-        />
-        <MetricCard
-          title={bn ? "মোট বিনিয়োগ" : "Total Investment"}
-          value={formatCurrency(metrics?.total_investor_capital ?? 0)}
-          label={bn ? "বিনিয়োগকারী মূলধন" : "Investor capital"}
-          icon={<Wallet className="w-5 h-5" />}
-          isLoading={metricsLoading}
-          variant="default"
-        />
-        <MetricCard
-          title={bn ? "অর্জিত মুনাফা" : "Interest Earned"}
-          value={formatCurrency(metrics?.total_interest_earned ?? 0)}
-          label={bn ? "সুদ থেকে আয়" : "Revenue from interest"}
-          icon={<TrendingUp className="w-5 h-5" />}
-          isLoading={metricsLoading}
-          variant="success"
-        />
-        <MetricCard
-          title={bn ? "বকেয়া ঋণ" : "Outstanding Loans"}
-          value={formatCurrency(metrics?.total_outstanding ?? 0)}
-          label={bn ? "অপরিশোধিত মূলধন" : "Unpaid principal"}
-          icon={<AlertTriangle className="w-5 h-5" />}
-          isLoading={metricsLoading}
-          variant="warning"
+      <div className="mt-4 mb-8">
+        <MasterTreasury
+          investors={activeInvestors}
+          metrics={metrics || null}
+          isLoading={metricsLoading || isLoading}
         />
       </div>
+
+      {/* Founders' Smart Wallets */}
+      {activeInvestors.length > 0 && (
+        <div className="mb-8">
+          <FoundersWallets investors={activeInvestors} />
+        </div>
+      )}
 
       {/* Business Health Analytics */}
       <SectionHeader
@@ -177,7 +150,7 @@ const Owners = () => {
         </div>
       ) : (
         <div className="mt-4">
-          <FridayExpressGrid investors={investors.filter((inv: any) => inv.status === 'active' && !inv.deleted_at)} />
+          <FridayExpressGrid investors={activeInvestors} />
         </div>
       )}
 
