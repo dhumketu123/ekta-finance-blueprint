@@ -5,12 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MessageCircle, Lock, CheckCircle2, Loader2, Zap, Users } from "lucide-react";
+import { MessageCircle, Lock, CheckCircle2, Loader2, Zap, Users, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, isAfter, parseISO } from "date-fns";
+import { CustomTransactionModal } from "./CustomTransactionModal";
 
 interface Investor {
   id: string;
@@ -40,6 +47,12 @@ export function FridayExpressGrid({ investors }: Props) {
   const queryClient = useQueryClient();
   const bn = lang === "bn";
   const today = new Date();
+
+  // Custom transaction modal state
+  const [customTxModal, setCustomTxModal] = useState<{ open: boolean; investor: Investor | null }>({
+    open: false,
+    investor: null,
+  });
 
   // Initialize collection state
   const [rows, setRows] = useState<Record<string, CollectionRow>>(() => {
@@ -132,6 +145,7 @@ export function FridayExpressGrid({ investors }: Props) {
       const successCount = results.filter((r) => r.success).length;
       const failCount = results.filter((r) => r.error).length;
       queryClient.invalidateQueries({ queryKey: ["investors"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
       if (successCount > 0) {
         toast.success(bn ? `${successCount} জন সংগ্রহ সফল!` : `${successCount} collections processed!`);
       }
@@ -169,7 +183,6 @@ export function FridayExpressGrid({ investors }: Props) {
       toast.error(bn ? "ফোন নম্বর নেই" : "No phone number");
       return;
     }
-    // Normalize phone number (remove leading 0, add country code)
     let normalized = phone.replace(/\D/g, "");
     if (normalized.startsWith("0")) {
       normalized = "88" + normalized;
@@ -235,7 +248,9 @@ export function FridayExpressGrid({ investors }: Props) {
               <TableHead className="text-xs font-bold text-center w-20">
                 {bn ? "সপ্তাহ" : "Weeks"}
               </TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-12 text-center">
+                {bn ? "অ্যাকশন" : "Actions"}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -318,15 +333,34 @@ export function FridayExpressGrid({ investors }: Props) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      onClick={() => openWhatsApp(inv.phone, inv, row.amount)}
-                      disabled={!inv.phone}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => openWhatsApp(inv.phone, inv, row.amount)}
+                          disabled={!inv.phone}
+                          className="gap-2 cursor-pointer"
+                        >
+                          <MessageCircle className="w-4 h-4 text-green-600" />
+                          {bn ? "💬 হোয়াটসঅ্যাপ রিসিপ্ট" : "💬 WhatsApp Receipt"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setCustomTxModal({ open: true, investor: inv })}
+                          className="gap-2 cursor-pointer"
+                        >
+                          <Zap className="w-4 h-4 text-primary" />
+                          {bn ? "⚡ কাস্টম লেনদেন" : "⚡ Custom Transaction"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               );
@@ -357,6 +391,16 @@ export function FridayExpressGrid({ investors }: Props) {
           )}
         </Button>
       </div>
+
+      {/* Custom Transaction Modal */}
+      {customTxModal.investor && (
+        <CustomTransactionModal
+          investorId={customTxModal.investor.id}
+          investorName={bn ? (customTxModal.investor.name_bn || customTxModal.investor.name_en) : customTxModal.investor.name_en}
+          open={customTxModal.open}
+          onClose={() => setCustomTxModal({ open: false, investor: null })}
+        />
+      )}
     </div>
   );
 }
