@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -15,9 +13,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantId } from "@/hooks/useTenantId";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase, Beaker } from "lucide-react";
+import { Users, Landmark, TrendingUp, Wallet, AlertTriangle, Plus, Briefcase } from "lucide-react";
 import InvestorForm from "@/components/forms/InvestorForm";
 
 interface DashboardMetrics {
@@ -29,21 +26,16 @@ interface DashboardMetrics {
 }
 
 const Owners = () => {
-  const { t, lang } = useLanguage();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { lang } = useLanguage();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
-  const { data: investors, isLoading, error } = useInvestors();
+  const { data: investors, isLoading } = useInvestors();
   const { tenantId } = useTenantId();
-
-  
   const queryClient = useQueryClient();
   const bn = lang === "bn";
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [capitalModalOpen, setCapitalModalOpen] = useState(false);
-  const [seedingLoading, setSeedingLoading] = useState(false);
 
   // Fetch executive dashboard metrics via RPC
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -67,103 +59,16 @@ const Owners = () => {
 
   const formatCurrency = (val: number) => `৳${(val || 0).toLocaleString("bn-BD")}`;
 
-  const handleSeedDummyData = async () => {
-    if (!tenantId) {
-      toast({ title: "Error", description: "Unable to determine tenant ID", variant: "destructive" });
-      return;
-    }
-
-    setSeedingLoading(true);
-    const today = format(new Date(), "yyyy-MM-dd");
-
-    const dummyInvestors = [
-      {
-        name_bn: "মোঃ শফিকুল ইসলাম",
-        name_en: "Shafiqul Islam",
-        phone: "01711000001",
-        capital: 5000,
-        weekly_share: 100,
-        status: "active" as const,
-        tenant_id: tenantId,
-        weekly_paid_until: today,
-        monthly_profit_percent: 0,
-        investment_model: "profit_only" as const,
-        reinvest: false,
-        principal_amount: 0,
-        tenure_years: 1,
-      },
-      {
-        name_bn: "আব্দুল্লাহ আল নোমান",
-        name_en: "Abdullah Al Noman",
-        phone: "01811000002",
-        capital: 20000,
-        weekly_share: 200,
-        status: "active" as const,
-        tenant_id: tenantId,
-        weekly_paid_until: today,
-        monthly_profit_percent: 0,
-        investment_model: "profit_only" as const,
-        reinvest: false,
-        principal_amount: 0,
-        tenure_years: 1,
-      },
-      {
-        name_bn: "কাজী জহিরুল হক",
-        name_en: "Kazi Zahirul Haque",
-        phone: "01911000003",
-        capital: 2000,
-        weekly_share: 100,
-        status: "active" as const,
-        tenant_id: tenantId,
-        weekly_paid_until: today,
-        monthly_profit_percent: 0,
-        investment_model: "profit_only" as const,
-        reinvest: false,
-        principal_amount: 0,
-        tenure_years: 1,
-      },
-    ];
-
-    const { error } = await supabase.from("investors").insert(dummyInvestors);
-
-    setSeedingLoading(false);
-
-    if (error) {
-      console.error("SEEDER DB ERROR:", error);
-      toast({
-        title: bn ? "ত্রুটি" : "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: bn ? "সফল" : "Success",
-        description: bn ? "ডামি ডেটা লোড হয়েছে!" : "Dummy data loaded successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["investors"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
-    }
-  };
-
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
 
   return (
     <AppLayout>
       <PageHeader
-        title={bn ? "মালিক ও পার্টনার" : "Owners & Partners"}
-        description={bn ? "বিনিয়োগকারী ও মালিকদের সাপ্তাহিক সংগ্রহ ব্যবস্থাপনা" : "Weekly collection management for investors & owners"}
+        title={bn ? "ফাউন্ডার ও ইকুইটি পার্টনার" : "Founders & Equity Partners"}
+        description={bn ? "কোর ফাউন্ডিং মেম্বারদের ইকুইটি, সাপ্তাহিক ইনজেকশন ও সার্বিক পোর্টফোলিও ব্যবস্থাপনা" : "Equity, weekly injections, and portfolio management for core founders"}
         actions={
           canManageInvestors ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="gap-1.5 text-xs rounded-lg"
-                onClick={handleSeedDummyData}
-                disabled={seedingLoading}
-              >
-                <Beaker className="w-3.5 h-3.5" /> {bn ? "🧪 ডামি ডেটা" : "🧪 Seed Data"}
-              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -250,7 +155,6 @@ const Owners = () => {
         className="mt-6"
       />
 
-
       {isLoading ? (
         <TableSkeleton rows={5} cols={5} />
       ) : !investors || investors.length === 0 ? (
@@ -259,7 +163,7 @@ const Owners = () => {
             <Users className="w-8 h-8 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            {bn ? "কোনো পার্টনার/বিনিয়োগকারী পাওয়া যায়নি" : "No partners/investors found"}
+            {bn ? "কোনো ফাউন্ডিং পার্টনার পাওয়া যায়নি" : "No founding partners found"}
           </p>
           {canManageInvestors && (
             <Button
