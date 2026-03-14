@@ -129,7 +129,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) handleClose(); }}>
       <DialogContent
         className="sm:max-w-md"
-        onInteractOutside={(e) => e.preventDefault()}
+        hideClose={isSubmitting}
+        onInteractOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
         onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
       >
         <DialogHeader className="flex-shrink-0">
