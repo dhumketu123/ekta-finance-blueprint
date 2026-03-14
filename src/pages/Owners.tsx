@@ -105,7 +105,10 @@ const Owners = () => {
   });
 
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
-  const activeInvestors = investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [];
+  const activeInvestors = useMemo(
+    () => investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [],
+    [investors]
+  );
   const dashboardLoading = metricsLoading || isLoading;
 
   return (

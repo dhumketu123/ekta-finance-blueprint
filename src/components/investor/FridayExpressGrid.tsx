@@ -476,4 +476,4 @@ export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: 
       </div>
     </TooltipProvider>
   );
-}
+});

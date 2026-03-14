@@ -126,7 +126,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) handleClose(); }}>
       <DialogContent
         className="sm:max-w-md"
         onInteractOutside={(e) => e.preventDefault()}
