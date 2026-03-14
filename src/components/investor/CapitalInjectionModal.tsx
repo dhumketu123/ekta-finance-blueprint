@@ -179,11 +179,12 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
             </div>
           </div>
         ) : (
-          <div className="max-h-[70vh] overflow-y-auto py-2 pr-1">
-            <div className="flex flex-col gap-4">
-              {/* Partner Selection */}
-              <div className="space-y-2">
-                <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
+          <>
+            <div className="max-h-[50vh] overflow-y-auto py-2 pr-1 -mr-2">
+              <div className="flex flex-col gap-4">
+                {/* Partner Selection */}
+                <div className="space-y-2">
+                  <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
                   <SelectTrigger>
                     <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
