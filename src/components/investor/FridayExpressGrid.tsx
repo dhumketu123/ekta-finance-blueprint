@@ -61,7 +61,7 @@ function getFounderTier(inv: Investor): { key: string; label_en: string; label_b
   return { key: "seed", label_en: "Seed", label_bn: "সিড", className: "border-muted-foreground/30 text-muted-foreground bg-muted/50" };
 }
 
-export function FridayExpressGrid({ investors }: Props) {
+export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: Props) {
   const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
