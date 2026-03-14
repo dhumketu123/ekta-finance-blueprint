@@ -117,7 +117,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     onClose();
   };
 
-  const displayAmount = amount ? Number(amount).toLocaleString() : "";
+  const displayAmount = useMemo(() => (amount ? Number(amount).toLocaleString() : ""), [amount]);
+  const formattedPreview = useMemo(() => (amount && Number(amount) > 0 ? formatCurrency(Number(amount)) : null), [amount, formatCurrency]);
 
   const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
