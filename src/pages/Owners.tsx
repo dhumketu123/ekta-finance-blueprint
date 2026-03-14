@@ -110,7 +110,6 @@ const Owners = () => {
     () => investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [],
     [investors]
   );
-  const dashboardLoading = metricsLoading || isLoading;
 
   return (
     <AppLayout>
