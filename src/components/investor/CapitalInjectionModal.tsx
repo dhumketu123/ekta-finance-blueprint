@@ -179,9 +179,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
             </div>
           </div>
         ) : (
-          <div className="flex flex-col">
-            {/* Scrollable form area */}
-            <div className="max-h-[60vh] overflow-y-auto space-y-4 py-2 pr-1">
+          <div className="max-h-[70vh] overflow-y-auto py-2 pr-1">
+            <div className="flex flex-col gap-4">
               {/* Partner Selection */}
               <div className="space-y-2">
                 <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
@@ -199,7 +198,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                 </Select>
               </div>
 
-              {/* Amount - Professional financial input */}
+              {/* Amount */}
               <div className="space-y-2">
                 <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
                 <div className="relative">
@@ -256,36 +255,36 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                   rows={2}
                 />
               </div>
-            </div>
 
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-0 z-50 flex flex-col sm:flex-row gap-2 pt-4 mt-4 border-t border-border/50 bg-background">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="flex-1 gap-2"
-              >
-                <X className="w-4 h-4" />
-                {bn ? "বাতিল করুন" : "Cancel"}
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !isFormValid}
-                className="flex-1 gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
-                  </>
-                ) : (
-                  <>
-                    <Landmark className="w-4 h-4" />
-                    {bn ? "মূলধন জমা নিশ্চিত করুন" : "Confirm Capital Deposit"}
-                  </>
-                )}
-              </Button>
+              {/* Action Buttons — normal flow, no sticky/fixed */}
+              <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-border/50">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !isFormValid}
+                  className="w-full gap-2 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-md rounded-lg transition-all duration-200"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
+                    </>
+                  ) : (
+                    <>
+                      <Landmark className="w-4 h-4" />
+                      {bn ? "মূলধন জমা নিশ্চিত করুন" : "Confirm Capital Deposit"}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  className="w-full gap-2 border-border hover:bg-accent rounded-lg transition-all duration-200"
+                >
+                  <X className="w-4 h-4" />
+                  {bn ? "বাতিল করুন" : "Cancel"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
