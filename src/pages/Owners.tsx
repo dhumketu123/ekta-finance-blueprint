@@ -139,13 +139,13 @@ const Owners = () => {
         }
       />
 
-      {/* Master Treasury */}
+      {/* Master Treasury — renders as soon as EITHER metrics or investors arrive */}
       <SectionHeader
         title={bn ? "মাস্টার ট্রেজারি" : "Master Treasury"}
         subtitle={bn ? "কোম্পানির সম্পূর্ণ আর্থিক অবস্থান একনজরে" : "Complete financial position at a glance"}
       />
       <div className="mt-4 mb-8">
-        {dashboardLoading ? (
+        {metricsLoading && isLoading ? (
           <TreasurySkeleton />
         ) : (
           <MasterTreasury
@@ -156,9 +156,9 @@ const Owners = () => {
         )}
       </div>
 
-      {/* Founders' Smart Wallets */}
+      {/* Founders' Smart Wallets — renders as soon as investors arrive */}
       <div className="mb-8">
-        {dashboardLoading ? (
+        {isLoading ? (
           <WalletsSkeleton />
         ) : activeInvestors.length > 0 ? (
           <FoundersWallets investors={activeInvestors} />
