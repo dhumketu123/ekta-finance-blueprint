@@ -211,6 +211,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                       onChange={handleAmountChange}
                       className="pl-8 text-right text-lg font-semibold tracking-wide h-11"
                       autoComplete="off"
+                      aria-label={bn ? "পরিমাণ" : "Amount in Taka"}
                     />
                   </div>
                   {amount && Number(amount) > 0 && (
