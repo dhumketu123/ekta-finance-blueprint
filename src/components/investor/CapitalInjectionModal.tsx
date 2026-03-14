@@ -88,7 +88,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
       toast.success(bn ? "মূলধন সফলভাবে জমা হয়েছে" : "Capital added successfully");
     } catch (err: any) {
       console.error("Capital injection error:", err);
-      toast.error(err.message || (bn ? "মূলধন জমা ব্যর্থ হয়েছে" : "Failed to add capital"));
+      const fallback = bn ? "মূলধন জমা ব্যর্থ হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Failed to add capital. Please check your connection and try again.";
+      toast.error(err?.message || fallback);
     } finally {
       setIsSubmitting(false);
     }
