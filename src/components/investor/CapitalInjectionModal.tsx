@@ -41,9 +41,9 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
-  const formatCurrency = (val: number) => `৳${val.toLocaleString("bn-BD")}`;
+  const formatCurrency = useCallback((val: number) => `৳${val.toLocaleString("bn-BD")}`, []);
 
-  const isFormValid = selectedInvestorId && amount && Number(amount) > 0;
+  const isFormValid = Boolean(selectedInvestorId && amount && Number(amount) > 0);
 
   const handleSubmit = useCallback(async () => {
     if (!isFormValid) {
