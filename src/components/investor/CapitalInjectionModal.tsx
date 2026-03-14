@@ -118,10 +118,10 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
 
   const displayAmount = amount ? Number(amount).toLocaleString() : "";
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9]/g, "");
+  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
     setAmount(raw);
-  };
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) handleClose(); }}>
