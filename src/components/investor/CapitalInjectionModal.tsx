@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { useInvestors } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CalendarIcon, Landmark, MessageCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, Landmark, MessageCircle, Loader2, CheckCircle2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CapitalInjectionModalProps {
@@ -41,12 +41,12 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
-  const selectedInvestor = investors?.find((i) => i.id === selectedInvestorId);
-
   const formatCurrency = (val: number) => `৳${val.toLocaleString("bn-BD")}`;
 
-  const handleSubmit = async () => {
-    if (!selectedInvestorId || !amount || Number(amount) <= 0) {
+  const isFormValid = selectedInvestorId && amount && Number(amount) > 0;
+
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid) {
       toast.error(bn ? "অনুগ্রহ করে সকল তথ্য সঠিকভাবে পূরণ করুন" : "Please fill all fields correctly");
       return;
     }
@@ -66,7 +66,6 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
 
       if (error) throw error;
 
-      // Fetch updated investor data for success message
       const { data: updatedInvestor } = await supabase
         .from("investors")
         .select("name_bn, name_en, capital, phone")
@@ -93,7 +92,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedInvestorId, amount, date, note, bn, isFormValid, queryClient]);
 
   const handleWhatsAppReceipt = () => {
     if (!successData?.phone) {
@@ -117,9 +116,22 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     onClose();
   };
 
+  // Format display value with commas
+  const displayAmount = amount ? Number(amount).toLocaleString() : "";
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strip non-numeric characters, allow only digits
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    setAmount(raw);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-primary">
             <Landmark className="w-5 h-5" />
@@ -141,7 +153,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                   {bn ? "মূলধন সফলভাবে জমা হয়েছে!" : "Capital Added Successfully!"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {successData.investorName} - {formatCurrency(successData.amount)}
+                  {successData.investorName} — {formatCurrency(successData.amount)}
                 </p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 w-full">
@@ -150,7 +162,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
               {successData.phone && (
                 <Button
                   onClick={handleWhatsAppReceipt}
@@ -163,95 +175,117 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               <Button variant="outline" onClick={handleClose} className="flex-1">
                 {bn ? "বন্ধ করুন" : "Close"}
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         ) : (
-          <div className="space-y-4 py-2">
-            {/* Partner Selection */}
-            <div className="space-y-2">
-              <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
-              <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
-                </SelectTrigger>
-                <SelectContent>
-                  {investors?.map((inv) => (
-                    <SelectItem key={inv.id} value={inv.id}>
-                      {bn ? inv.name_bn : inv.name_en} - {formatCurrency(inv.capital)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <>
+            <div className="space-y-4 py-2">
+              {/* Partner Selection */}
+              <div className="space-y-2">
+                <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
+                <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {investors?.map((inv) => (
+                      <SelectItem key={inv.id} value={inv.id}>
+                        {bn ? inv.name_bn : inv.name_en} — {formatCurrency(inv.capital)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Amount */}
-            <div className="space-y-2">
-              <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
-              <Input
-                type="number"
-                placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min={1}
-                className="text-lg"
-              />
-            </div>
-
-            {/* Date */}
-            <div className="space-y-2">
-              <Label>{bn ? "তারিখ" : "Date"}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : bn ? "তারিখ নির্বাচন করুন" : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(d) => d && setDate(d)}
-                    initialFocus
-                    className="pointer-events-auto"
+              {/* Amount - Professional financial input */}
+              <div className="space-y-2">
+                <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">৳</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
+                    value={displayAmount}
+                    onChange={handleAmountChange}
+                    className="pl-8 text-lg font-semibold tracking-wide"
+                    autoComplete="off"
                   />
-                </PopoverContent>
-              </Popover>
+                </div>
+                {amount && Number(amount) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(Number(amount))}
+                  </p>
+                )}
+              </div>
+
+              {/* Date */}
+              <div className="space-y-2">
+                <Label>{bn ? "তারিখ" : "Date"}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : bn ? "তারিখ নির্বাচন করুন" : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(d) => d && setDate(d)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Note */}
+              <div className="space-y-2">
+                <Label>{bn ? "নোট (ঐচ্ছিক)" : "Note (Optional)"}</Label>
+                <Textarea
+                  placeholder={bn ? "বিস্তারিত নোট লিখুন..." : "Add a note..."}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                />
+              </div>
             </div>
 
-            {/* Note */}
-            <div className="space-y-2">
-              <Label>{bn ? "নোট (ঐচ্ছিক)" : "Note (Optional)"}</Label>
-              <Textarea
-                placeholder={bn ? "বিস্তারিত নোট লিখুন..." : "Add a note..."}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            {/* Submit */}
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || !selectedInvestorId || !amount}
-              className="w-full gap-2 bg-primary hover:bg-primary/90"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
-                </>
-              ) : (
-                <>
-                  <Landmark className="w-4 h-4" />
-                  {bn ? "মূলধন জমা করুন" : "Add Capital"}
-                </>
-              )}
-            </Button>
-          </div>
+            {/* Fixed Action Footer */}
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="flex-1 gap-2"
+              >
+                <X className="w-4 h-4" />
+                {bn ? "বাতিল করুন" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !isFormValid}
+                className="flex-1 gap-2 bg-primary hover:bg-primary/90"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
+                  </>
+                ) : (
+                  <>
+                    <Landmark className="w-4 h-4" />
+                    {bn ? "মূলধন জমা নিশ্চিত করুন" : "Confirm Capital Deposit"}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
         )}
       </DialogContent>
     </Dialog>

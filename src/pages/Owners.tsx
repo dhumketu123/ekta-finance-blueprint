@@ -9,7 +9,7 @@ import { MasterTreasury } from "@/components/investor/MasterTreasury";
 import { FoundersWallets } from "@/components/investor/FoundersWallets";
 import { CapitalInjectionModal } from "@/components/investor/CapitalInjectionModal";
 import { Button } from "@/components/ui/button";
-import { TableSkeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -26,6 +26,51 @@ interface DashboardMetrics {
   total_outstanding: number;
 }
 
+// Skeleton components for professional loading states
+const TreasurySkeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    <div className="rounded-2xl bg-muted/40 border border-border/30 p-6 sm:p-8 space-y-4">
+      <Skeleton className="h-3 w-36" />
+      <Skeleton className="h-12 w-64" />
+      <Skeleton className="h-3 w-48" />
+      <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/30">
+        <Skeleton className="h-20 rounded-lg" />
+        <Skeleton className="h-20 rounded-lg" />
+      </div>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
+    </div>
+  </div>
+);
+
+const WalletsSkeleton = () => (
+  <div className="space-y-3 animate-pulse">
+    <div className="flex items-center gap-2">
+      <Skeleton className="h-7 w-7 rounded-lg" />
+      <Skeleton className="h-4 w-32" />
+    </div>
+    <div className="flex gap-3 overflow-hidden">
+      {[1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-28 w-[180px] flex-shrink-0 rounded-xl" />
+      ))}
+    </div>
+  </div>
+);
+
+const GridSkeleton = () => (
+  <div className="space-y-3 animate-pulse">
+    <Skeleton className="h-16 rounded-lg" />
+    <div className="rounded-xl border border-border/30 overflow-hidden">
+      <Skeleton className="h-10 w-full" />
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} className="h-14 w-full border-t border-border/10" />
+      ))}
+    </div>
+  </div>
+);
+
 const Owners = () => {
   const { lang } = useLanguage();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
@@ -38,7 +83,7 @@ const Owners = () => {
   const [editData, setEditData] = useState<any>(null);
   const [capitalModalOpen, setCapitalModalOpen] = useState(false);
 
-  // Fetch executive dashboard metrics via RPC
+  // Dashboard metrics with 60s cache to avoid re-fetching on navigation
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ["dashboard_summary_metrics", tenantId],
     queryFn: async () => {
@@ -55,13 +100,13 @@ const Owners = () => {
       };
     },
     enabled: !!tenantId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 2 * 60 * 1000,
   });
 
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
-
-  // Get active investors for wallets and grid
   const activeInvestors = investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [];
+  const dashboardLoading = metricsLoading || isLoading;
 
   return (
     <AppLayout>
@@ -91,25 +136,31 @@ const Owners = () => {
         }
       />
 
-      {/* Master Treasury - Silicon Valley Style Dashboard */}
+      {/* Master Treasury */}
       <SectionHeader
         title={bn ? "মাস্টার ট্রেজারি" : "Master Treasury"}
         subtitle={bn ? "কোম্পানির সম্পূর্ণ আর্থিক অবস্থান একনজরে" : "Complete financial position at a glance"}
       />
       <div className="mt-4 mb-8">
-        <MasterTreasury
-          investors={activeInvestors}
-          metrics={metrics || null}
-          isLoading={metricsLoading || isLoading}
-        />
+        {dashboardLoading ? (
+          <TreasurySkeleton />
+        ) : (
+          <MasterTreasury
+            investors={activeInvestors}
+            metrics={metrics || null}
+            isLoading={false}
+          />
+        )}
       </div>
 
       {/* Founders' Smart Wallets */}
-      {activeInvestors.length > 0 && (
-        <div className="mb-8">
+      <div className="mb-8">
+        {dashboardLoading ? (
+          <WalletsSkeleton />
+        ) : activeInvestors.length > 0 ? (
           <FoundersWallets investors={activeInvestors} />
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {/* Business Health Analytics */}
       <SectionHeader
@@ -129,7 +180,9 @@ const Owners = () => {
       />
 
       {isLoading ? (
-        <TableSkeleton rows={5} cols={5} />
+        <div className="mt-4">
+          <GridSkeleton />
+        </div>
       ) : !investors || investors.length === 0 ? (
         <div className="card-elevated p-8 text-center mt-4">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
@@ -154,7 +207,7 @@ const Owners = () => {
         </div>
       )}
 
-      {/* Investor Form Modal */}
+      {/* Modals */}
       {formOpen && (
         <InvestorForm
           open={formOpen}
@@ -164,7 +217,6 @@ const Owners = () => {
         />
       )}
 
-      {/* Capital Injection Modal */}
       <CapitalInjectionModal
         open={capitalModalOpen}
         onClose={() => setCapitalModalOpen(false)}
