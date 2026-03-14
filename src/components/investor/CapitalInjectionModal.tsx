@@ -132,7 +132,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
       >
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-primary">
             <Landmark className="w-5 h-5" />
             {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
@@ -162,11 +162,11 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               </div>
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-border/50">
               {successData.phone && (
                 <Button
                   onClick={handleWhatsAppReceipt}
-                  className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
                 >
                   <MessageCircle className="w-4 h-4" />
                   {bn ? "WhatsApp রসিদ পাঠান" : "Send WhatsApp Receipt"}
@@ -175,11 +175,12 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               <Button variant="outline" onClick={handleClose} className="flex-1">
                 {bn ? "বন্ধ করুন" : "Close"}
               </Button>
-            </DialogFooter>
+            </div>
           </div>
         ) : (
-          <>
-            <div className="space-y-4 py-2">
+          <div className="flex flex-col">
+            {/* Scrollable form area */}
+            <div className="max-h-[60vh] overflow-y-auto space-y-4 py-2 pr-1">
               {/* Partner Selection */}
               <div className="space-y-2">
                 <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
@@ -201,19 +202,19 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               <div className="space-y-2">
                 <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">৳</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-base">৳</span>
                   <Input
                     type="text"
                     inputMode="numeric"
                     placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
                     value={displayAmount}
                     onChange={handleAmountChange}
-                    className="pl-8 text-lg font-semibold tracking-wide"
+                    className="pl-8 text-right text-lg font-semibold tracking-wide"
                     autoComplete="off"
                   />
                 </div>
                 {amount && Number(amount) > 0 && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground text-right">
                     {formatCurrency(Number(amount))}
                   </p>
                 )}
@@ -256,8 +257,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               </div>
             </div>
 
-            {/* Fixed Action Footer */}
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-border/50">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 z-50 flex flex-col sm:flex-row gap-2 pt-4 mt-4 border-t border-border/50 bg-background">
               <Button
                 variant="outline"
                 onClick={handleClose}
@@ -270,7 +271,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !isFormValid}
-                className="flex-1 gap-2 bg-primary hover:bg-primary/90"
+                className="flex-1 gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
               >
                 {isSubmitting ? (
                   <>
@@ -284,8 +285,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                   </>
                 )}
               </Button>
-            </DialogFooter>
-          </>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
