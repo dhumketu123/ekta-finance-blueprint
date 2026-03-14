@@ -216,9 +216,9 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                       aria-label={bn ? "পরিমাণ" : "Amount in Taka"}
                     />
                   </div>
-                  {amount && Number(amount) > 0 && (
+                  {formattedPreview && (
                     <p className="text-xs text-muted-foreground text-right">
-                      {formatCurrency(Number(amount))}
+                      {formattedPreview}
                     </p>
                   )}
                 </div>
