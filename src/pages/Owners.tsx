@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
@@ -105,7 +105,10 @@ const Owners = () => {
   });
 
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
-  const activeInvestors = investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [];
+  const activeInvestors = useMemo(
+    () => investors?.filter((inv: any) => inv.status === 'active' && !inv.deleted_at) || [],
+    [investors]
+  );
   const dashboardLoading = metricsLoading || isLoading;
 
   return (
