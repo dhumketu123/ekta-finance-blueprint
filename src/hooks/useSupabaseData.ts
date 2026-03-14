@@ -51,6 +51,9 @@ export const useInvestors = () =>
       if (error) throw error;
       return data as Investor[];
     },
+    staleTime: 60 * 1000,
+    gcTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
 export const useInvestor = (id: string) =>
