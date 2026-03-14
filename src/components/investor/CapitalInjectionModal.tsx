@@ -41,9 +41,9 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
-  const formatCurrency = (val: number) => `৳${val.toLocaleString("bn-BD")}`;
+  const formatCurrency = useCallback((val: number) => `৳${val.toLocaleString("bn-BD")}`, []);
 
-  const isFormValid = selectedInvestorId && amount && Number(amount) > 0;
+  const isFormValid = Boolean(selectedInvestorId && amount && Number(amount) > 0);
 
   const handleSubmit = useCallback(async () => {
     if (!isFormValid) {
@@ -118,10 +118,10 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
 
   const displayAmount = amount ? Number(amount).toLocaleString() : "";
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9]/g, "");
+  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
     setAmount(raw);
-  };
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) handleClose(); }}>
@@ -211,6 +211,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                       onChange={handleAmountChange}
                       className="pl-8 text-right text-lg font-semibold tracking-wide h-11"
                       autoComplete="off"
+                      aria-label={bn ? "পরিমাণ" : "Amount in Taka"}
                     />
                   </div>
                   {amount && Number(amount) > 0 && (
