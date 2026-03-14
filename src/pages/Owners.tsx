@@ -102,6 +102,7 @@ const Owners = () => {
     enabled: !!tenantId,
     staleTime: 60 * 1000,
     gcTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const canManageInvestors = isAdmin || isOwner || isTreasurer;
