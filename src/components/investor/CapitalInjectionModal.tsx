@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
       toast.success(bn ? "মূলধন সফলভাবে জমা হয়েছে" : "Capital added successfully");
     } catch (err: any) {
       console.error("Capital injection error:", err);
-      toast.error(err.message || (bn ? "মূলধন জমা ব্যর্থ হয়েছে" : "Failed to add capital"));
+      const fallback = bn ? "মূলধন জমা ব্যর্থ হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Failed to add capital. Please check your connection and try again.";
+      toast.error(err?.message || fallback);
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +117,8 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     onClose();
   };
 
-  const displayAmount = amount ? Number(amount).toLocaleString() : "";
+  const displayAmount = useMemo(() => (amount ? Number(amount).toLocaleString() : ""), [amount]);
+  const formattedPreview = useMemo(() => (amount && Number(amount) > 0 ? formatCurrency(Number(amount)) : null), [amount, formatCurrency]);
 
   const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
@@ -214,9 +216,9 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
                       aria-label={bn ? "পরিমাণ" : "Amount in Taka"}
                     />
                   </div>
-                  {amount && Number(amount) > 0 && (
+                  {formattedPreview && (
                     <p className="text-xs text-muted-foreground text-right">
-                      {formatCurrency(Number(amount))}
+                      {formattedPreview}
                     </p>
                   )}
                 </div>
