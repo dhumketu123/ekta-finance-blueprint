@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,11 +116,9 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
     onClose();
   };
 
-  // Format display value with commas
   const displayAmount = amount ? Number(amount).toLocaleString() : "";
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Strip non-numeric characters, allow only digits
     const raw = e.target.value.replace(/[^0-9]/g, "");
     setAmount(raw);
   };
@@ -128,7 +126,7 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) handleClose(); }}>
       <DialogContent
-        className="sm:max-w-md"
+        className="sm:max-w-md flex flex-col max-h-[90vh]"
         hideClose={isSubmitting}
         onInteractOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
         onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
@@ -180,114 +178,116 @@ export const CapitalInjectionModal = ({ open, onClose }: CapitalInjectionModalPr
           </div>
         ) : (
           <>
-            <div className="max-h-[50vh] overflow-y-auto py-2 pr-1 -mr-2">
+            {/* Scrollable Form Body */}
+            <div className="flex-1 min-h-0 overflow-y-auto py-2 pr-1">
               <div className="flex flex-col gap-4">
                 {/* Partner Selection */}
                 <div className="space-y-2">
                   <Label>{bn ? "পার্টনার নির্বাচন করুন" : "Select Partner"}</Label>
-                <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {investors?.map((inv) => (
-                      <SelectItem key={inv.id} value={inv.id}>
-                        {bn ? inv.name_bn : inv.name_en} — {formatCurrency(inv.capital)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder={bn ? "পার্টনার নির্বাচন করুন..." : "Select partner..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {investors?.map((inv) => (
+                        <SelectItem key={inv.id} value={inv.id}>
+                          {bn ? inv.name_bn : inv.name_en} — {formatCurrency(inv.capital)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Amount */}
-              <div className="space-y-2">
-                <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-base">৳</span>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
-                    value={displayAmount}
-                    onChange={handleAmountChange}
-                    className="pl-8 text-right text-lg font-semibold tracking-wide"
-                    autoComplete="off"
+                {/* Amount */}
+                <div className="space-y-2">
+                  <Label>{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-base">৳</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder={bn ? "পরিমাণ লিখুন" : "Enter amount"}
+                      value={displayAmount}
+                      onChange={handleAmountChange}
+                      className="pl-8 text-right text-lg font-semibold tracking-wide h-11"
+                      autoComplete="off"
+                    />
+                  </div>
+                  {amount && Number(amount) > 0 && (
+                    <p className="text-xs text-muted-foreground text-right">
+                      {formatCurrency(Number(amount))}
+                    </p>
+                  )}
+                </div>
+
+                {/* Date */}
+                <div className="space-y-2">
+                  <Label>{bn ? "তারিখ" : "Date"}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full h-11 justify-start text-left font-normal", !date && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : bn ? "তারিখ নির্বাচন করুন" : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => d && setDate(d)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Note */}
+                <div className="space-y-2">
+                  <Label>{bn ? "নোট (ঐচ্ছিক)" : "Note (Optional)"}</Label>
+                  <Textarea
+                    placeholder={bn ? "বিস্তারিত নোট লিখুন..." : "Add a note..."}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={2}
                   />
                 </div>
-                {amount && Number(amount) > 0 && (
-                  <p className="text-xs text-muted-foreground text-right">
-                    {formatCurrency(Number(amount))}
-                  </p>
-                )}
-              </div>
-
-              {/* Date */}
-              <div className="space-y-2">
-                <Label>{bn ? "তারিখ" : "Date"}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : bn ? "তারিখ নির্বাচন করুন" : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={(d) => d && setDate(d)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Note */}
-              <div className="space-y-2">
-                <Label>{bn ? "নোট (ঐচ্ছিক)" : "Note (Optional)"}</Label>
-                <Textarea
-                  placeholder={bn ? "বিস্তারিত নোট লিখুন..." : "Add a note..."}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              {/* Action Buttons — normal flow, no sticky/fixed */}
-              <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-border/50">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !isFormValid}
-                  className="w-full gap-2 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-md rounded-lg transition-all duration-200"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
-                    </>
-                  ) : (
-                    <>
-                      <Landmark className="w-4 h-4" />
-                      {bn ? "মূলধন জমা নিশ্চিত করুন" : "Confirm Capital Deposit"}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleClose}
-                  disabled={isSubmitting}
-                  className="w-full gap-2 border-border hover:bg-accent rounded-lg transition-all duration-200"
-                >
-                  <X className="w-4 h-4" />
-                  {bn ? "বাতিল করুন" : "Cancel"}
-                </Button>
               </div>
             </div>
-          </div>
+
+            {/* Footer — always visible, never overlaps inputs */}
+            <div className="flex flex-col sm:flex-row-reverse gap-2 pt-4 border-t border-border/50 flex-shrink-0">
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !isFormValid}
+                className="w-full sm:w-auto gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-lg transition-all duration-200"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}
+                  </>
+                ) : (
+                  <>
+                    <Landmark className="w-4 h-4" />
+                    {bn ? "মূলধন জমা নিশ্চিত করুন" : "Confirm Capital Deposit"}
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto gap-2 border-border hover:bg-accent rounded-lg transition-all duration-200"
+              >
+                <X className="w-4 h-4" />
+                {bn ? "বাতিল করুন" : "Cancel"}
+              </Button>
+            </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
