@@ -335,8 +335,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           </div>
         </div>
 
-        {/* Scrollable Body — safe bottom padding for mobile nav */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-24 md:pb-6 space-y-4">
+        {/* Scrollable Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-6 space-y-4">
           {/* Step 1: KYC */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
@@ -640,8 +640,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           )}
         </div>
 
-        {/* Sticky Footer — above mobile nav */}
-        <div className="sticky bottom-0 flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 z-[60] gap-3">
+        {/* Fixed Footer — always visible above mobile nav */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
               <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
