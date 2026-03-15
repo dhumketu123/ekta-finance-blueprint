@@ -80,7 +80,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     monthly_profit_percent: editData?.monthly_profit_percent ?? "",
     profit_cycle: "monthly" as "monthly" | "yearly",
     tenure_years: editData?.tenure_years ?? (isOwnerMode ? 5 : 1),
-    investment_model: editData?.investment_model ?? (isOwnerMode ? "profit_plus_principal" : "profit_only"),
+    investment_model: editData?.investment_model ?? "profit_only",
     reinvest: editData?.reinvest ?? (isOwnerMode ? true : false),
     principal_amount: editData?.principal_amount ?? "",
     nominee_name: editData?.nominee_name ?? "",
@@ -641,7 +641,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </div>
 
         {/* Sticky Footer — above mobile nav */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 z-[60] gap-3">
+        <div className="sticky bottom-0 flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 z-[60] gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
               <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
