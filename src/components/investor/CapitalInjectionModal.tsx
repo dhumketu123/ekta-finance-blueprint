@@ -60,7 +60,7 @@ const vaultTransition = {
   initial: { opacity: 0, x: 40, scale: 0.95 },
   animate: { opacity: 1, x: 0, scale: 1 },
   exit: { opacity: 0, x: -40, scale: 0.95 },
-  transition: { duration: 0.28, ease: [0.33, 1, 0.68, 1] },
+  transition: { duration: 0.28, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] },
 };
 
 export const CapitalInjectionModal = ({
