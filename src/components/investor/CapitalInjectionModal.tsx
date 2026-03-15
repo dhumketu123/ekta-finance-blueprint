@@ -714,7 +714,7 @@ export const CapitalInjectionModal = ({
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
               >
-                <Loader2 className="w-10 h-10 text-emerald-600" />
+                <Loader2 className="w-10 h-10 text-primary" />
               </motion.div>
               <p className="text-sm font-medium text-muted-foreground">
                 {bn ? "মূলধন জমা প্রক্রিয়াকরণ হচ্ছে..." : "Processing capital deposit..."}
