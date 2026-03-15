@@ -388,8 +388,7 @@ export const CapitalInjectionModal = ({
           {phase === "form" && (
             <motion.div
               key="form"
-              {...slideLeft}
-              transition={{ duration: 0.25 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2">
