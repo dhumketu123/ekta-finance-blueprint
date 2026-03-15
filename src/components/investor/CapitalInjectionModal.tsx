@@ -634,16 +634,15 @@ export const CapitalInjectionModal = ({
               {/* Footer */}
               <div className="flex-shrink-0 border-t border-border/50 px-6 py-4">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => {
                     resetPin();
                     setPhase("form");
                   }}
                   disabled={pinVerifying}
-                  className="w-full gap-2"
+                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
                 >
-                  <X className="w-4 h-4" />
-                  {bn ? "ফিরে যান" : "Go Back"}
+                  {bn ? "← ফিরে যান" : "← Back"}
                 </Button>
               </div>
             </motion.div>
