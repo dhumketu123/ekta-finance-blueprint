@@ -707,8 +707,7 @@ export const CapitalInjectionModal = ({
           {phase === "executing" && (
             <motion.div
               key="executing"
-              {...scaleIn}
-              transition={{ duration: 0.2 }}
+              {...vaultTransition}
               className="flex-1 min-h-0 px-6 py-12 flex flex-col items-center justify-center gap-4"
             >
               <motion.div
