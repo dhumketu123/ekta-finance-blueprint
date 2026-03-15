@@ -499,7 +499,7 @@ export const CapitalInjectionModal = ({
                 <Button
                   onClick={() => setPhase("pin")}
                   disabled={!isFormValid}
-                  className="w-full sm:w-auto gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-lg transition-all duration-200"
+                  className="w-full sm:w-auto gap-2 py-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md rounded-lg transition-all duration-200"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   {bn ? "নিরাপদে এগিয়ে যান" : "Proceed Securely"}
