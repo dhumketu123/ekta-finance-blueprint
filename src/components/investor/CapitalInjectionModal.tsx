@@ -740,9 +740,9 @@ export const CapitalInjectionModal = ({
                         stiffness: 300,
                         damping: 15,
                       }}
-                      className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"
+                      className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center"
                     >
-                      <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                      <CheckCircle2 className="w-8 h-8 text-success" />
                     </motion.div>
                     <div>
                       <p className="text-lg font-semibold text-foreground">
