@@ -57,10 +57,19 @@ type Phase = "form" | "pin" | "confirm" | "executing" | "success";
 
 // ── Combined slide + fade + scale variants (glass pop) ──
 const vaultTransition = {
-  initial: { opacity: 0, x: 40, scale: 0.95 },
-  animate: { opacity: 1, x: 0, scale: 1 },
-  exit: { opacity: 0, x: -40, scale: 0.95 },
-  transition: { duration: 0.28, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] },
+  initial: { opacity: 0, x: 40, scale: 0.92 },
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.3, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] },
+  },
+  exit: {
+    opacity: 0,
+    x: -40,
+    scale: 0.92,
+    transition: { duration: 0.25, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] },
+  },
 };
 
 export const CapitalInjectionModal = ({
@@ -625,16 +634,15 @@ export const CapitalInjectionModal = ({
               {/* Footer */}
               <div className="flex-shrink-0 border-t border-border/50 px-6 py-4">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => {
                     resetPin();
                     setPhase("form");
                   }}
                   disabled={pinVerifying}
-                  className="w-full gap-2"
+                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
                 >
-                  <X className="w-4 h-4" />
-                  {bn ? "ফিরে যান" : "Go Back"}
+                  {bn ? "← ফিরে যান" : "← Back"}
                 </Button>
               </div>
             </motion.div>
