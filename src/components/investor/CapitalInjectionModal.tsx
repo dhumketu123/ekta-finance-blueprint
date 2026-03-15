@@ -351,6 +351,7 @@ export const CapitalInjectionModal = ({
       <DialogContent
         className="sm:max-w-md p-0 flex flex-col max-h-[90vh] gap-0 overflow-hidden"
         hideClose={isLocked}
+        aria-live="polite"
         onInteractOutside={(e) => {
           if (isLocked) e.preventDefault();
         }}
