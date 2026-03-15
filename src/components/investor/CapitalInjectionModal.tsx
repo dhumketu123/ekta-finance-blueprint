@@ -726,8 +726,7 @@ export const CapitalInjectionModal = ({
           {phase === "success" && successData && (
             <motion.div
               key="success"
-              {...scaleIn}
-              transition={{ duration: 0.3 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               <div className="flex-1 min-h-0 overflow-y-auto px-6">
