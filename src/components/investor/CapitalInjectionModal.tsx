@@ -55,17 +55,12 @@ interface SuccessData {
 
 type Phase = "form" | "pin" | "confirm" | "executing" | "success";
 
-// ── Animation Variants ──
-const slideLeft = {
-  initial: { opacity: 0, x: 40 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
-};
-
-const scaleIn = {
-  initial: { opacity: 0, scale: 0.92 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.92 },
+// ── Combined slide + fade + scale variants (glass pop) ──
+const vaultTransition = {
+  initial: { opacity: 0, x: 40, scale: 0.95 },
+  animate: { opacity: 1, x: 0, scale: 1 },
+  exit: { opacity: 0, x: -40, scale: 0.95 },
+  transition: { duration: 0.28, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] },
 };
 
 export const CapitalInjectionModal = ({
@@ -356,6 +351,7 @@ export const CapitalInjectionModal = ({
       <DialogContent
         className="sm:max-w-md p-0 flex flex-col max-h-[90vh] gap-0 overflow-hidden"
         hideClose={isLocked}
+        aria-live="polite"
         onInteractOutside={(e) => {
           if (isLocked) e.preventDefault();
         }}
@@ -392,8 +388,7 @@ export const CapitalInjectionModal = ({
           {phase === "form" && (
             <motion.div
               key="form"
-              {...slideLeft}
-              transition={{ duration: 0.25 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2">
@@ -504,7 +499,7 @@ export const CapitalInjectionModal = ({
                 <Button
                   onClick={() => setPhase("pin")}
                   disabled={!isFormValid}
-                  className="w-full sm:w-auto gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-lg transition-all duration-200"
+                  className="w-full sm:w-auto gap-2 py-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md rounded-lg transition-all duration-200"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   {bn ? "নিরাপদে এগিয়ে যান" : "Proceed Securely"}
@@ -525,8 +520,7 @@ export const CapitalInjectionModal = ({
           {phase === "pin" && (
             <motion.div
               key="pin"
-              {...scaleIn}
-              transition={{ duration: 0.25 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               {/* Glassmorphism vault overlay */}
@@ -563,7 +557,7 @@ export const CapitalInjectionModal = ({
                         ? { x: [0, -12, 12, -8, 8, -4, 4, 0] }
                         : {}
                     }
-                    transition={{ duration: 0.4 }}
+                    transition={pinShake ? { type: "spring", stiffness: 400, damping: 15 } : {}}
                   >
                     {pin.map((digit, i) => (
                       <input
@@ -578,7 +572,9 @@ export const CapitalInjectionModal = ({
                         onChange={(e) => handlePinDigit(i, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(i, e)}
                         disabled={pinVerifying || countdown > 0}
-                        className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-border bg-background text-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={`PIN digit ${i + 1}`}
+                        aria-invalid={remainingAttempts !== null && remainingAttempts < 3}
+                        className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-border bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         autoComplete="off"
                       />
                     ))}
@@ -607,7 +603,7 @@ export const CapitalInjectionModal = ({
                       <motion.div
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg"
+                        className="flex items-center gap-2 text-xs text-warning-foreground bg-warning/10 px-3 py-2 rounded-lg"
                       >
                         <AlertTriangle className="w-3.5 h-3.5" />
                         <span>
@@ -648,8 +644,7 @@ export const CapitalInjectionModal = ({
           {phase === "confirm" && (
             <motion.div
               key="confirm"
-              {...scaleIn}
-              transition={{ duration: 0.3 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
@@ -712,15 +707,14 @@ export const CapitalInjectionModal = ({
           {phase === "executing" && (
             <motion.div
               key="executing"
-              {...scaleIn}
-              transition={{ duration: 0.2 }}
+              {...vaultTransition}
               className="flex-1 min-h-0 px-6 py-12 flex flex-col items-center justify-center gap-4"
             >
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
               >
-                <Loader2 className="w-10 h-10 text-emerald-600" />
+                <Loader2 className="w-10 h-10 text-primary" />
               </motion.div>
               <p className="text-sm font-medium text-muted-foreground">
                 {bn ? "মূলধন জমা প্রক্রিয়াকরণ হচ্ছে..." : "Processing capital deposit..."}
@@ -732,8 +726,7 @@ export const CapitalInjectionModal = ({
           {phase === "success" && successData && (
             <motion.div
               key="success"
-              {...scaleIn}
-              transition={{ duration: 0.3 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               <div className="flex-1 min-h-0 overflow-y-auto px-6">
@@ -747,9 +740,9 @@ export const CapitalInjectionModal = ({
                         stiffness: 300,
                         damping: 15,
                       }}
-                      className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"
+                      className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center"
                     >
-                      <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                      <CheckCircle2 className="w-8 h-8 text-success" />
                     </motion.div>
                     <div>
                       <p className="text-lg font-semibold text-foreground">
@@ -776,7 +769,7 @@ export const CapitalInjectionModal = ({
                     {successData.phone && (
                       <Button
                         onClick={handleWhatsAppReceipt}
-                        className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                        className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg"
                       >
                         <MessageCircle className="w-4 h-4" />
                         {bn

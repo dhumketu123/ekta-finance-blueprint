@@ -26,6 +26,7 @@ export default function ArcReactorButton({
   const startRef = useRef(0);
   const rafRef = useRef(0);
   const completedRef = useRef(false);
+  const keyHoldRef = useRef(false);
 
   const radius = (size - 10) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -36,15 +37,19 @@ export default function ArcReactorButton({
     const pct = Math.min(elapsed / holdDuration, 1);
     setProgress(pct);
 
-    // Progressive haptics
-    if (pct > 0.25 && pct < 0.5 && navigator.vibrate) navigator.vibrate(5);
-    if (pct > 0.5 && pct < 0.75 && navigator.vibrate) navigator.vibrate(10);
-    if (pct > 0.75 && navigator.vibrate) navigator.vibrate(15);
+    // Progressive haptic ramp
+    if (navigator.vibrate) {
+      if (pct > 0.75) navigator.vibrate(25);
+      else if (pct > 0.5) navigator.vibrate(15);
+      else if (pct > 0.25) navigator.vibrate(10);
+      else if (pct > 0) navigator.vibrate(5);
+    }
 
     if (pct >= 1 && !completedRef.current) {
       completedRef.current = true;
       setState("done");
-      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      // Completion pulse: solid + micro
+      if (navigator.vibrate) navigator.vibrate([50, 30, 20]);
       onConfirmed();
       return;
     }
@@ -64,11 +69,34 @@ export default function ArcReactorButton({
 
   const handleEnd = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
+    keyHoldRef.current = false;
     if (!completedRef.current) {
       setProgress(0);
       setState("idle");
     }
   }, []);
+
+  // Keyboard support: Enter/Space triggers hold simulation
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if ((e.key === "Enter" || e.key === " ") && !keyHoldRef.current) {
+        e.preventDefault();
+        keyHoldRef.current = true;
+        handleStart();
+      }
+    },
+    [handleStart]
+  );
+
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleEnd();
+      }
+    },
+    [handleEnd]
+  );
 
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
@@ -83,40 +111,46 @@ export default function ArcReactorButton({
 
   const pctDisplay = Math.round(progress * 100);
 
-  const glowIntensity = state === "holding"
-    ? `0 0 ${15 + progress * 30}px rgba(5,150,105,${0.3 + progress * 0.5})`
-    : state === "done"
-      ? "0 0 40px rgba(5,150,105,0.8)"
-      : "0 0 15px rgba(5,150,105,0.2)";
+  // Inner + outer glow layers for vault-grade lighting
+  const glowShadow =
+    state === "holding"
+      ? `0 0 ${10 + progress * 20}px rgba(5,150,105,${0.25 + progress * 0.4}), 0 0 ${25 + progress * 40}px rgba(5,150,105,${0.15 + progress * 0.35})`
+      : state === "done"
+        ? "0 0 20px rgba(5,150,105,0.7), 0 0 50px rgba(5,150,105,0.4)"
+        : "0 0 10px rgba(5,150,105,0.15), 0 0 25px rgba(5,150,105,0.08)";
 
   return (
     <motion.button
       type="button"
       aria-label={label}
+      role="button"
+      tabIndex={0}
       disabled={disabled}
       onPointerDown={handleStart}
       onPointerUp={handleEnd}
       onPointerLeave={handleEnd}
       onPointerCancel={handleEnd}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       animate={{
         scale: state === "holding" ? 0.96 : state === "done" ? 1.05 : 1,
       }}
       transition={{
         type: "spring",
-        stiffness: 300,
-        damping: 20,
+        stiffness: 350,
+        damping: 25,
       }}
       className={cn(
         "relative select-none touch-none cursor-pointer rounded-full flex items-center justify-center",
         "bg-gradient-to-br from-emerald-500 to-emerald-700 dark:from-emerald-600 dark:to-emerald-800",
-        "transition-shadow duration-200",
+        "transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         disabled && "opacity-40 cursor-not-allowed",
         className
       )}
       style={{
         width: size,
         height: size,
-        boxShadow: glowIntensity,
+        boxShadow: glowShadow,
       }}
     >
       {/* SVG ring */}
@@ -135,7 +169,7 @@ export default function ArcReactorButton({
           strokeWidth={5}
           fill="none"
         />
-        {/* Progress arc */}
+        {/* Progress arc with premium easing */}
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -149,8 +183,8 @@ export default function ArcReactorButton({
           animate={{ strokeDashoffset: strokeOffset }}
           transition={
             state === "idle" && progress === 0
-              ? { type: "spring", stiffness: 300, damping: 20 }
-              : { duration: 0 }
+              ? { type: "spring", stiffness: 350, damping: 25 }
+              : { duration: 0, ease: [0.33, 1, 0.68, 1] }
           }
         />
       </svg>
