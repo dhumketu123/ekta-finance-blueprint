@@ -166,7 +166,7 @@ export const CapitalInjectionModal = ({
       return;
     }
 
-    const phone = successData.phone.replace(/\D/g, "").replace(/^0/, "88");
+    const phone = successData.phone.replace(/\D/g, "").replace(/^0/, "880");
     const message = encodeURIComponent(
       `সম্মানিত পার্টনার ${successData.investorName}, আপনার ৳${successData.amount.toLocaleString("bn-BD")} ত্রৈমাসিক মূলধন সফলভাবে জমা হয়েছে। মোট মূলধন: ৳${successData.totalCapital.toLocaleString("bn-BD")}। ধন্যবাদ, একতা ফাইন্যান্স।`
     );
