@@ -603,7 +603,7 @@ export const CapitalInjectionModal = ({
                       <motion.div
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg"
+                        className="flex items-center gap-2 text-xs text-warning-foreground bg-warning/10 px-3 py-2 rounded-lg"
                       >
                         <AlertTriangle className="w-3.5 h-3.5" />
                         <span>
