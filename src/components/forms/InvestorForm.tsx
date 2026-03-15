@@ -80,7 +80,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     monthly_profit_percent: editData?.monthly_profit_percent ?? "",
     profit_cycle: "monthly" as "monthly" | "yearly",
     tenure_years: editData?.tenure_years ?? (isOwnerMode ? 5 : 1),
-    investment_model: editData?.investment_model ?? (isOwnerMode ? "profit_plus_principal" : "profit_only"),
+    investment_model: editData?.investment_model ?? "profit_only",
     reinvest: editData?.reinvest ?? (isOwnerMode ? true : false),
     principal_amount: editData?.principal_amount ?? "",
     nominee_name: editData?.nominee_name ?? "",
