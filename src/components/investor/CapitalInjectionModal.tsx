@@ -572,7 +572,9 @@ export const CapitalInjectionModal = ({
                         onChange={(e) => handlePinDigit(i, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(i, e)}
                         disabled={pinVerifying || countdown > 0}
-                        className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-border bg-background text-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={`PIN digit ${i + 1}`}
+                        aria-invalid={remainingAttempts !== null && remainingAttempts < 3}
+                        className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-border bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         autoComplete="off"
                       />
                     ))}
