@@ -638,41 +638,41 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
               </div>
             </div>
           )}
-        </div>
 
-        {/* Fixed Footer — always visible above mobile nav */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] gap-3">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
-              <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
-            </Button>
-            {isEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setExitDialogOpen(true)}
-                disabled={isPending || exitSecure.isPending}
-                className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
-              >
-                <UserX className="w-3.5 h-3.5" />
-                {bn ? "অব্যাহতি দিন" : "Exit Partner"}
+          {/* Navigation Buttons — inside scroll, moves with content */}
+          <div className="flex items-center justify-between pt-6 mt-2 border-t border-border gap-3">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
+                <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
+              </Button>
+              {isEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExitDialogOpen(true)}
+                  disabled={isPending || exitSecure.isPending}
+                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
+                >
+                  <UserX className="w-3.5 h-3.5" />
+                  {bn ? "অব্যাহতি দিন" : "Exit Partner"}
+                </Button>
+              )}
+            </div>
+            {step < 4 ? (
+              <Button size="sm" onClick={nextStep} className="gap-1.5">
+                {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
+                {isPending
+                  ? (bn ? "প্রক্রিয়াকরণ..." : "Processing...")
+                  : isOwnerMode
+                    ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
+                    : (bn ? "সম্পন্ন করুন" : "Complete")
+                }
               </Button>
             )}
           </div>
-          {step < 4 ? (
-            <Button size="sm" onClick={nextStep} className="gap-1.5">
-              {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
-              {isPending
-                ? (bn ? "প্রক্রিয়াকরণ..." : "Processing...")
-                : isOwnerMode
-                  ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
-                  : (bn ? "সম্পন্ন করুন" : "Complete")
-              }
-            </Button>
-          )}
         </div>
 
         {/* Exit Confirmation Dialog */}
