@@ -55,17 +55,12 @@ interface SuccessData {
 
 type Phase = "form" | "pin" | "confirm" | "executing" | "success";
 
-// ── Animation Variants ──
-const slideLeft = {
-  initial: { opacity: 0, x: 40 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
-};
-
-const scaleIn = {
-  initial: { opacity: 0, scale: 0.92 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.92 },
+// ── Combined slide + fade + scale variants (glass pop) ──
+const vaultTransition = {
+  initial: { opacity: 0, x: 40, scale: 0.95 },
+  animate: { opacity: 1, x: 0, scale: 1 },
+  exit: { opacity: 0, x: -40, scale: 0.95 },
+  transition: { duration: 0.28, ease: [0.33, 1, 0.68, 1] },
 };
 
 export const CapitalInjectionModal = ({
