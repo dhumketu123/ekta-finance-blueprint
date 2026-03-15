@@ -769,7 +769,7 @@ export const CapitalInjectionModal = ({
                     {successData.phone && (
                       <Button
                         onClick={handleWhatsAppReceipt}
-                        className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                        className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg"
                       >
                         <MessageCircle className="w-4 h-4" />
                         {bn
