@@ -557,7 +557,7 @@ export const CapitalInjectionModal = ({
                         ? { x: [0, -12, 12, -8, 8, -4, 4, 0] }
                         : {}
                     }
-                    transition={{ duration: 0.4 }}
+                    transition={pinShake ? { type: "spring", stiffness: 400, damping: 15 } : {}}
                   >
                     {pin.map((digit, i) => (
                       <input
