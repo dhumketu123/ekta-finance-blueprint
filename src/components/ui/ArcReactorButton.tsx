@@ -142,7 +142,7 @@ export default function ArcReactorButton({
       }}
       className={cn(
         "relative select-none touch-none cursor-pointer rounded-full flex items-center justify-center",
-        "bg-gradient-to-br from-emerald-500 to-emerald-700 dark:from-emerald-600 dark:to-emerald-800",
+        "bg-gradient-to-br from-success to-primary",
         "transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         disabled && "opacity-40 cursor-not-allowed",
         className
