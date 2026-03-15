@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,8 +24,9 @@ const schema = z.object({
   address: z.string().trim().max(500).optional(),
   source_of_fund: z.string().optional(),
   capital: z.coerce.number().min(0, "Capital must be >= 0"),
-  weekly_share: z.coerce.number().min(100, "Weekly share must be at least 100").default(100),
+  weekly_share: z.coerce.number().default(0),
   monthly_profit_percent: z.coerce.number().min(0).max(100),
+  profit_cycle: z.enum(["monthly", "yearly"]).default("monthly"),
   tenure_years: z.coerce.number().min(1).max(10).optional(),
   investment_model: z.enum(["profit_only", "profit_plus_principal"]).default("profit_only"),
   reinvest: z.boolean().default(false),
@@ -74,13 +75,14 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     nid_number: editData?.nid_number ?? "",
     address: editData?.address ?? "",
     source_of_fund: editData?.source_of_fund ?? "",
-    capital: editData?.capital ?? 0,
-    weekly_share: editData?.weekly_share ?? 100,
-    monthly_profit_percent: editData?.monthly_profit_percent ?? 0,
+    capital: editData?.capital ?? "",
+    weekly_share: 0,
+    monthly_profit_percent: editData?.monthly_profit_percent ?? "",
+    profit_cycle: "monthly" as "monthly" | "yearly",
     tenure_years: editData?.tenure_years ?? (isOwnerMode ? 5 : 1),
     investment_model: editData?.investment_model ?? (isOwnerMode ? "profit_plus_principal" : "profit_only"),
     reinvest: editData?.reinvest ?? (isOwnerMode ? true : false),
-    principal_amount: editData?.principal_amount ?? 0,
+    principal_amount: editData?.principal_amount ?? "",
     nominee_name: editData?.nominee_name ?? "",
     nominee_relation: editData?.nominee_relation ?? "",
     nominee_phone: editData?.nominee_phone ?? "",
@@ -88,15 +90,24 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const set = (key: string, val: any) => setForm((p) => ({ ...p, [key]: val }));
+  const set = useCallback((key: string, val: any) => setForm((p) => ({ ...p, [key]: val })), []);
+
+  // Frictionless numeric handler: keeps empty string, only coerce on submit
+  const setNumeric = useCallback((key: string, rawValue: string) => {
+    // Allow empty string for UX, strip non-numeric except dot
+    const cleaned = rawValue.replace(/[^0-9.]/g, "");
+    set(key, cleaned);
+  }, [set]);
 
   // AI Projection calculations
   const projection = useMemo(() => {
     const cap = Number(form.capital) || 0;
-    const pct = Number(form.monthly_profit_percent) || 0;
+    const rawPct = Number(form.monthly_profit_percent) || 0;
     const years = Number(form.tenure_years) || 1;
     const months = years * 12;
-    const monthlyRate = pct / 100;
+
+    // Convert yearly rate to monthly if needed
+    const monthlyRate = form.profit_cycle === "yearly" ? rawPct / 100 / 12 : rawPct / 100;
 
     if (form.investment_model === "profit_only") {
       const monthlyPayout = Math.round(cap * monthlyRate);
@@ -107,26 +118,25 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
       const totalProfit = maturityValue - cap;
       return { monthlyPayout: 0, totalProfit, maturityValue, months };
     }
-  }, [form.capital, form.monthly_profit_percent, form.tenure_years, form.investment_model]);
+  }, [form.capital, form.monthly_profit_percent, form.tenure_years, form.investment_model, form.profit_cycle]);
 
-  const validateStep = (s: number): boolean => {
+  const validateStep = useCallback((s: number): boolean => {
     const errs: Record<string, string> = {};
     if (s === 1) {
-      if (!form.name_en.trim()) errs.name_en = "Name (English) is required";
+      if (!form.name_en.trim()) errs.name_en = bn ? "নাম (ইংরেজি) আবশ্যক" : "Name (English) is required";
     }
     if (s === 2) {
-      if (Number(form.capital) <= 0) errs.capital = "Capital must be > 0";
-      if (!isOwnerMode && Number(form.monthly_profit_percent) <= 0) errs.monthly_profit_percent = "Profit % is required";
-      if (Number(form.weekly_share) < 100) errs.weekly_share = "Weekly share must be at least 100";
+      if (Number(form.capital) <= 0) errs.capital = bn ? "মূলধন ০ এর বেশি হতে হবে" : "Capital must be > 0";
+      if (!isOwnerMode && Number(form.monthly_profit_percent) <= 0) errs.monthly_profit_percent = bn ? "মুনাফা % আবশ্যক" : "Profit % is required";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
-  };
+  }, [form.name_en, form.capital, form.monthly_profit_percent, isOwnerMode, bn]);
 
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (validateStep(step)) setStep((s) => Math.min(s + 1, 4));
-  };
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  }, [validateStep, step]);
+  const prevStep = useCallback(() => setStep((s) => Math.max(s - 1, 1)), []);
 
   const createSecure = useMutation({
     mutationFn: async (data: Record<string, any>) => {
@@ -138,7 +148,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         p_address: data.address || null,
         p_source_of_fund: data.source_of_fund || null,
         p_capital: data.capital || 0,
-        p_weekly_share: data.weekly_share || 100,
+        p_weekly_share: 0,
         p_monthly_profit_percent: data.monthly_profit_percent || 0,
         p_tenure_years: data.tenure_years || 1,
         p_investment_model: data.investment_model || "profit_only",
@@ -175,7 +185,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         p_address: data.address || null,
         p_source_of_fund: data.source_of_fund || null,
         p_capital: data.capital || 0,
-        p_weekly_share: data.weekly_share || 100,
+        p_weekly_share: 0,
         p_monthly_profit_percent: data.monthly_profit_percent || 0,
         p_tenure_years: data.tenure_years || 1,
         p_investment_model: data.investment_model || "profit_only",
@@ -216,8 +226,17 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     },
   });
 
-  const handleSubmit = async () => {
-    const result = schema.safeParse(form);
+  const handleSubmit = useCallback(async () => {
+    // Coerce empty strings to 0 on final submission
+    const coercedForm = {
+      ...form,
+      capital: Number(form.capital) || 0,
+      weekly_share: 0,
+      monthly_profit_percent: Number(form.monthly_profit_percent) || 0,
+      principal_amount: Number(form.principal_amount) || 0,
+    };
+
+    const result = schema.safeParse(coercedForm);
     if (!result.success) {
       const errs: Record<string, string> = {};
       result.error.errors.forEach((e) => { errs[e.path[0] as string] = e.message; });
@@ -227,6 +246,11 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
     setErrors({});
     const data: Record<string, any> = { ...result.data };
     
+    // Convert yearly profit to monthly for backend storage
+    if (data.profit_cycle === "yearly") {
+      data.monthly_profit_percent = Number((data.monthly_profit_percent / 12).toFixed(4));
+    }
+
     // Clean empty strings to null for optional fields
     const optionalFields = ["nid_number", "address", "source_of_fund", "nominee_name", "nominee_relation", "nominee_phone", "nominee_nid"];
     optionalFields.forEach((f) => { if (!data[f]) data[f] = null; });
@@ -240,13 +264,16 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
       data.principal_amount = 0;
     }
 
+    // Always send weekly_share as 0
+    data.weekly_share = 0;
+
     if (isEdit) {
       await updateSecure.mutateAsync(data);
     } else {
       await createSecure.mutateAsync(data);
     }
     onClose();
-  };
+  }, [form, isOwnerMode, isEdit, createSecure, updateSecure, onClose]);
 
   const isPending = createSecure.isPending || updateSecure.isPending;
 
@@ -258,8 +285,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
             {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
             {modalTitle}
@@ -272,7 +299,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="px-6 pt-4">
+        <div className="px-6 pt-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -308,34 +335,35 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           </div>
         </div>
 
-        <div className="p-6 pt-5 space-y-4">
+        {/* Scrollable Body — safe bottom padding for mobile nav */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-24 md:pb-6 space-y-4">
           {/* Step 1: KYC */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নাম (ইংরেজি)" : "Name (English)"} *</Label>
-                  <Input value={form.name_en} onChange={(e) => set("name_en", e.target.value)} className="text-sm mt-1.5" placeholder="Full name in English" />
+                  <Input value={form.name_en} onChange={(e) => set("name_en", e.target.value)} className="text-sm mt-1.5" placeholder="Full name in English" aria-label="Name English" />
                   {errors.name_en && <p className="text-xs text-destructive mt-1">{errors.name_en}</p>}
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নাম (বাংলা)" : "Name (Bangla)"}</Label>
-                  <Input value={form.name_bn} onChange={(e) => set("name_bn", e.target.value)} className="text-sm mt-1.5" placeholder="পূর্ণ নাম বাংলায়" />
+                  <Input value={form.name_bn} onChange={(e) => set("name_bn", e.target.value)} className="text-sm mt-1.5" placeholder="পূর্ণ নাম বাংলায়" aria-label="Name Bangla" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "ফোন (WhatsApp)" : "Phone (WhatsApp)"}</Label>
-                  <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="text-sm mt-1.5" placeholder="01XXXXXXXXX" />
+                  <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="text-sm mt-1.5" placeholder="01XXXXXXXXX" aria-label="Phone" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "জাতীয় পরিচয়পত্র নম্বর" : "NID Number"}</Label>
-                  <Input value={form.nid_number} onChange={(e) => set("nid_number", e.target.value)} className="text-sm mt-1.5" placeholder="NID / Smart Card No." />
+                  <Input value={form.nid_number} onChange={(e) => set("nid_number", e.target.value)} className="text-sm mt-1.5" placeholder="NID / Smart Card No." aria-label="NID Number" />
                 </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold">{bn ? "ঠিকানা" : "Address"}</Label>
-                <Textarea value={form.address} onChange={(e) => set("address", e.target.value)} className="text-sm mt-1.5 min-h-[70px]" placeholder={bn ? "সম্পূর্ণ ঠিকানা লিখুন" : "Full address"} />
+                <Textarea value={form.address} onChange={(e) => set("address", e.target.value)} className="text-sm mt-1.5 min-h-[70px]" placeholder={bn ? "সম্পূর্ণ ঠিকানা লিখুন" : "Full address"} aria-label="Address" />
               </div>
               {!isOwnerMode && (
                 <div>
@@ -356,30 +384,24 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           {/* Step 2: Financial Contract / Core Capital Matrix */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">
-                    {isOwnerMode
-                      ? (bn ? "প্রাথমিক মূলধন (Initial Core Equity) ৳" : "Initial Core Equity ৳")
-                      : (bn ? "মূলধন ৳" : "Capital Amount ৳")
-                    } *
-                  </Label>
-                  <Input type="number" value={form.capital} onChange={(e) => set("capital", Number(e.target.value))} className="text-sm mt-1.5" />
-                  {errors.capital && <p className="text-xs text-destructive mt-1">{errors.capital}</p>}
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">
-                    {isOwnerMode
-                      ? (bn ? "সাপ্তাহিক ক্যাপিটাল ইনজেকশন ৳" : "Weekly Capital Injection ৳")
-                      : (bn ? "সাপ্তাহিক শেয়ার ৳" : "Weekly Share ৳")
-                    } *
-                  </Label>
-                  <Input type="number" step="100" value={form.weekly_share} onChange={(e) => set("weekly_share", Number(e.target.value))} className="text-sm mt-1.5" placeholder="100" />
-                  {errors.weekly_share && <p className="text-xs text-destructive mt-1">{errors.weekly_share}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {bn ? "সর্বনিম্ন ১০০ এবং ১০০ এর গুণিতক হতে হবে" : "Minimum 100, must be multiple of 100"}
-                  </p>
-                </div>
+              {/* Capital Input — frictionless */}
+              <div>
+                <Label className="text-xs font-semibold">
+                  {isOwnerMode
+                    ? (bn ? "প্রাথমিক মূলধন (Initial Core Equity) ৳" : "Initial Core Equity ৳")
+                    : (bn ? "মূলধন ৳" : "Capital Amount ৳")
+                  } *
+                </Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={form.capital}
+                  onChange={(e) => setNumeric("capital", e.target.value)}
+                  className="text-sm mt-1.5"
+                  placeholder="0"
+                  aria-label="Capital Amount"
+                />
+                {errors.capital && <p className="text-xs text-destructive mt-1">{errors.capital}</p>}
               </div>
 
               {/* Owner Mode: Show locked-in summary instead of editable fields */}
@@ -412,10 +434,31 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                 </div>
               ) : (
                 <>
+                  {/* Profit % + Cycle Selector */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs font-semibold">{bn ? "মাসিক মুনাফা %" : "Monthly Profit %"} *</Label>
-                      <Input type="number" step="0.1" value={form.monthly_profit_percent} onChange={(e) => set("monthly_profit_percent", Number(e.target.value))} className="text-sm mt-1.5" />
+                      <Label className="text-xs font-semibold">{bn ? "মুনাফা %" : "Profit %"} *</Label>
+                      <div className="flex gap-2 mt-1.5">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.1"
+                          value={form.monthly_profit_percent}
+                          onChange={(e) => setNumeric("monthly_profit_percent", e.target.value)}
+                          className="text-sm flex-1"
+                          placeholder="0"
+                          aria-label="Profit Percentage"
+                        />
+                        <Select value={form.profit_cycle} onValueChange={(v: "monthly" | "yearly") => set("profit_cycle", v)}>
+                          <SelectTrigger className="text-sm w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monthly">{bn ? "মাসিক" : "Monthly"}</SelectItem>
+                            <SelectItem value="yearly">{bn ? "বাৎসরিক" : "Yearly"}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       {errors.monthly_profit_percent && <p className="text-xs text-destructive mt-1">{errors.monthly_profit_percent}</p>}
                     </div>
                     <div>
@@ -447,10 +490,10 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                   </div>
 
                   {/* Anti-Loss Rule Warning */}
-                  <div className="flex gap-3 p-3.5 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                  <div className="flex gap-3 p-3.5 rounded-lg border border-warning/30 bg-warning/5">
+                    <AlertTriangle className="w-5 h-5 text-warning-foreground shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 mb-1">
+                      <p className="text-xs font-bold text-warning-foreground mb-1">
                         {bn ? "⚠️ মেয়াদপূর্তির পূর্বে ভাঙানোর নীতি" : "⚠️ Pre-mature Encashment Policy"}
                       </p>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -468,6 +511,11 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                         <TrendingUp className="w-4 h-4 text-primary" />
                         <span className="text-xs font-bold text-primary">
                           {bn ? "💡 AI প্রজেকশন" : "💡 AI Projection"}
+                          {form.profit_cycle === "yearly" && (
+                            <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                              ({bn ? "বাৎসরিক হার → মাসিক রূপান্তর" : "Yearly → Monthly converted"})
+                            </span>
+                          )}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -515,21 +563,21 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নমিনির নাম" : "Nominee Name"}</Label>
-                  <Input value={form.nominee_name} onChange={(e) => set("nominee_name", e.target.value)} className="text-sm mt-1.5" />
+                  <Input value={form.nominee_name} onChange={(e) => set("nominee_name", e.target.value)} className="text-sm mt-1.5" aria-label="Nominee Name" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "সম্পর্ক" : "Relationship"}</Label>
-                  <Input value={form.nominee_relation} onChange={(e) => set("nominee_relation", e.target.value)} className="text-sm mt-1.5" placeholder={bn ? "স্ত্রী / স্বামী / সন্তান" : "Spouse / Child / Parent"} />
+                  <Input value={form.nominee_relation} onChange={(e) => set("nominee_relation", e.target.value)} className="text-sm mt-1.5" placeholder={bn ? "স্ত্রী / স্বামী / সন্তান" : "Spouse / Child / Parent"} aria-label="Nominee Relationship" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নমিনির ফোন" : "Nominee Phone"}</Label>
-                  <Input value={form.nominee_phone} onChange={(e) => set("nominee_phone", e.target.value)} className="text-sm mt-1.5" />
+                  <Input value={form.nominee_phone} onChange={(e) => set("nominee_phone", e.target.value)} className="text-sm mt-1.5" aria-label="Nominee Phone" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নমিনির NID" : "Nominee NID"}</Label>
-                  <Input value={form.nominee_nid} onChange={(e) => set("nominee_nid", e.target.value)} className="text-sm mt-1.5" />
+                  <Input value={form.nominee_nid} onChange={(e) => set("nominee_nid", e.target.value)} className="text-sm mt-1.5" aria-label="Nominee NID" />
                 </div>
               </div>
             </div>
@@ -563,7 +611,6 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                         <li>আমি নিশ্চিত করছি যে প্রদত্ত সকল তথ্য সঠিক।</li>
                         <li>আমি বুঝতে পারছি যে মুনাফার হার পরিবর্তনশীল হতে পারে।</li>
                         <li>মেয়াদপূর্তির আগে উত্তোলনে জরিমানা প্রযোজ্য হবে।</li>
-                        <li>আমি সাপ্তাহিক শেয়ার প্রদান করতে সম্মত।</li>
                         <li>প্রতিষ্ঠানের নীতিমালা মেনে চলতে সম্মত আছি।</li>
                       </ul>
                     </>
@@ -574,7 +621,6 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                         <li>I confirm that all information provided is accurate.</li>
                         <li>I understand profit rates may vary.</li>
                         <li>Penalties apply for pre-mature withdrawal.</li>
-                        <li>I agree to pay weekly share contributions.</li>
                         <li>I agree to follow institutional policies.</li>
                       </ul>
                     </>
@@ -594,8 +640,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 pt-0 gap-3">
+        {/* Sticky Footer — above mobile nav */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 z-[60] gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
               <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
