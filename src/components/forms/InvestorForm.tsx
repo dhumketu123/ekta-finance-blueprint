@@ -335,8 +335,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           </div>
         </div>
 
-        {/* Scrollable Body — safe bottom padding for mobile nav */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-24 md:pb-6 space-y-4">
+        {/* Scrollable Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-6 space-y-4">
           {/* Step 1: KYC */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
