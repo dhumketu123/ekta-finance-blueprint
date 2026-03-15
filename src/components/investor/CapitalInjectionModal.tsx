@@ -520,8 +520,7 @@ export const CapitalInjectionModal = ({
           {phase === "pin" && (
             <motion.div
               key="pin"
-              {...scaleIn}
-              transition={{ duration: 0.25 }}
+              {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
               {/* Glassmorphism vault overlay */}
