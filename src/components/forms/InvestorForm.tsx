@@ -640,8 +640,8 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           )}
         </div>
 
-        {/* Sticky Footer — above mobile nav */}
-        <div className="sticky bottom-0 flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 z-[60] gap-3">
+        {/* Fixed Footer — always visible above mobile nav */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background flex-shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
               <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
