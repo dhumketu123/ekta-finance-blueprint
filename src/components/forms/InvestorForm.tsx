@@ -585,7 +585,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 4: Agreement / Equity Pact */}
           {step === 4 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {isOwnerMode ? (
                 <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-5 space-y-3 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center gap-2 mb-1">
