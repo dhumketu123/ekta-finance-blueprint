@@ -659,7 +659,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
               )}
             </div>
             {step < 4 ? (
-              <Button size="sm" onClick={nextStep} className="gap-1.5">
+              <Button size="sm" onClick={nextStep} className="gap-1.5 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
