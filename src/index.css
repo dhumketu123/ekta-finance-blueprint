@@ -165,6 +165,62 @@
   .font-english {
     font-family: var(--font-english);
   }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  /* Floating label input */
+  .input-float { position: relative; width: 100%; }
+  .input-float input {
+    width: 100%; border-radius: var(--radius); padding: 0.75rem 1rem; outline: none;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    transition: border-color var(--duration-normal) var(--ease-premium), box-shadow var(--duration-normal) var(--ease-premium);
+  }
+  .input-float label {
+    position: absolute; top: 0.75rem; left: 1rem; font-size: 0.875rem;
+    color: hsl(var(--muted-foreground)); pointer-events: none;
+    transition: all var(--duration-normal) var(--ease-premium);
+  }
+  .input-float input:focus + label,
+  .input-float input:not(:placeholder-shown) + label {
+    transform: translateY(-1.25rem) scale(0.85);
+    color: hsl(var(--primary));
+  }
+
+  /* Shake animation for errors */
+  .shake-error {
+    animation: shake-x 0.35s var(--ease-premium);
+  }
+  @keyframes shake-x {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+
+  /* Ripple effect for buttons */
+  .ripple-btn { position: relative; overflow: hidden; }
+  .ripple-btn .ripple-circle {
+    position: absolute; border-radius: 50%; transform: scale(0);
+    animation: ripple-expand 0.5s linear;
+    background-color: hsl(var(--primary-foreground) / 0.2);
+  }
+  @keyframes ripple-expand { to { transform: scale(4); opacity: 0; } }
 }
 
 @layer utilities {
