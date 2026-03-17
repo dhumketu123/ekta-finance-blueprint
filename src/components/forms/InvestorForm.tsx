@@ -286,7 +286,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] min-h-[50vh] flex flex-col p-0 overflow-hidden overscroll-none">
-        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0 bg-background/70 backdrop-blur-md">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
             {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
             {modalTitle}
