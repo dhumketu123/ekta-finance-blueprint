@@ -383,7 +383,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 2: Financial Contract / Core Capital Matrix */}
           {step === 2 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {/* Capital Input — frictionless */}
               <div>
                 <Label className="text-xs font-semibold">
