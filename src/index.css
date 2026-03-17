@@ -6,6 +6,12 @@
 
 @layer base {
   :root {
+    --bottom-nav-height: 72px;
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --space-6: 24px;
+    --safe-bottom-padding: calc(var(--bottom-nav-height) + var(--safe-area-bottom) + var(--space-6));
+    --keyboard-offset: 0px;
+
     --background: 0 0% 100%;
     --foreground: 200 30% 16%;
 

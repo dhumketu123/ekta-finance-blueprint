@@ -285,7 +285,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] min-h-[50vh] flex flex-col p-0 overflow-hidden overscroll-none">
         <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
             {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
@@ -336,7 +336,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(var(--safe-bottom-padding, 120px) + var(--keyboard-offset, 0px))" }}>
           {/* Step 1: KYC */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in-50 duration-300">
