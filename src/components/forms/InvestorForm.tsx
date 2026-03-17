@@ -339,7 +339,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(var(--safe-bottom-padding, 120px) + var(--keyboard-offset, 0px))" }}>
           {/* Step 1: KYC */}
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নাম (ইংরেজি)" : "Name (English)"} *</Label>
