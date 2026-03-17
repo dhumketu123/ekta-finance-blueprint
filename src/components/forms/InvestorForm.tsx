@@ -642,7 +642,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           {/* Navigation Buttons — inside scroll, moves with content */}
           <div className="flex items-center justify-between pt-6 mt-2 border-t border-border gap-3">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
               </Button>
               {isEdit && (
