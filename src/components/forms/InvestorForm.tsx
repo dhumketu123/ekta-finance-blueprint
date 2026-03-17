@@ -299,7 +299,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="px-6 pt-4 flex-shrink-0">
+        <div className="px-6 pt-4 flex-shrink-0 border-b border-border/40 bg-muted/30">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
