@@ -286,7 +286,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] min-h-[50vh] flex flex-col p-0 overflow-hidden overscroll-none">
-        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0 bg-background/70 backdrop-blur-md">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
             {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
             {modalTitle}
@@ -299,7 +299,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="px-6 pt-4 flex-shrink-0">
+        <div className="px-6 pt-4 flex-shrink-0 border-b border-border/40 bg-muted/30">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -336,10 +336,10 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(var(--safe-bottom-padding, 120px) + var(--keyboard-offset, 0px))" }}>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(var(--safe-bottom-padding, 120px) + var(--keyboard-offset, 0px))" }}>
           {/* Step 1: KYC */}
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{bn ? "নাম (ইংরেজি)" : "Name (English)"} *</Label>
@@ -383,7 +383,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 2: Financial Contract / Core Capital Matrix */}
           {step === 2 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {/* Capital Input — frictionless */}
               <div>
                 <Label className="text-xs font-semibold">
@@ -552,7 +552,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 3: Nominee / Succession Planning */}
           {step === 3 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {isOwnerMode && (
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {bn
@@ -585,7 +585,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 4: Agreement / Equity Pact */}
           {step === 4 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {isOwnerMode ? (
                 <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-5 space-y-3 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center gap-2 mb-1">
@@ -642,7 +642,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           {/* Navigation Buttons — inside scroll, moves with content */}
           <div className="flex items-center justify-between pt-6 mt-2 border-t border-border gap-3">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
               </Button>
               {isEdit && (
@@ -659,14 +659,17 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
               )}
             </div>
             {step < 4 ? (
-              <Button size="sm" onClick={nextStep} className="gap-1.5">
+              <Button size="sm" onClick={nextStep} className="gap-1.5 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
-                {isPending
-                  ? (bn ? "প্রক্রিয়াকরণ..." : "Processing...")
-                  : isOwnerMode
+              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    {bn ? "প্রক্রিয়াকরণ..." : "Processing..."}
+                  </span>
+                ) : isOwnerMode
                     ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
                     : (bn ? "সম্পন্ন করুন" : "Complete")
                 }

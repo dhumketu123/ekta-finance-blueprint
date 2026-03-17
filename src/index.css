@@ -12,6 +12,10 @@
     --safe-bottom-padding: calc(var(--bottom-nav-height) + var(--safe-area-bottom) + var(--space-6));
     --keyboard-offset: 0px;
 
+    --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+
     --background: 0 0% 100%;
     --foreground: 200 30% 16%;
 
@@ -148,6 +152,10 @@
     -webkit-overflow-scrolling: touch;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 
   .font-bangla {
