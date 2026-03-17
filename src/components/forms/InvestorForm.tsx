@@ -663,10 +663,13 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
                 {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px]">
-                {isPending
-                  ? (bn ? "প্রক্রিয়াকরণ..." : "Processing...")
-                  : isOwnerMode
+              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    {bn ? "প্রক্রিয়াকরণ..." : "Processing..."}
+                  </span>
+                ) : isOwnerMode
                     ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
                     : (bn ? "সম্পন্ন করুন" : "Complete")
                 }
