@@ -552,7 +552,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
 
           {/* Step 3: Nominee / Succession Planning */}
           {step === 3 && (
-            <div className="space-y-4 animate-in fade-in-50 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {isOwnerMode && (
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {bn
