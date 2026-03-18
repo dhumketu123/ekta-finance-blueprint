@@ -105,14 +105,15 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
       </div>
 
       {/* SMS Modal */}
-      <Dialog open={smsOpen} onOpenChange={setSmsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-sm">
+      <Drawer open={smsOpen} onOpenChange={setSmsOpen}>
+        <DrawerContent>
+          <DrawerHeader className="border-b border-border/40">
+            <DrawerTitle className="flex items-center gap-2 text-sm">
               <MessageSquare className="w-4 h-4 text-primary" />
               {bn ? "SMS পাঠান" : "Send SMS"} — {clientName}
-            </DialogTitle>
-          </DialogHeader>
+            </DrawerTitle>
+          </DrawerHeader>
+          <DrawerBody>
 
           <div className="space-y-4 py-2">
             {/* Quick-fill template pills */}
