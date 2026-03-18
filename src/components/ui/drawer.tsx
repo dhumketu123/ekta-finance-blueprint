@@ -18,7 +18,7 @@ const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
+  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-[110] bg-black/80", className)} {...props} />
 ));
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
@@ -31,26 +31,40 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-[110] mt-24 flex max-h-[92dvh] flex-col rounded-t-2xl border bg-background shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.2)]",
         className,
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {/* Drag handle */}
+      <div className="flex-shrink-0 flex items-center justify-center py-3">
+        <div className="h-1.5 w-12 rounded-full bg-muted-foreground/20" />
+      </div>
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));
 DrawerContent.displayName = "DrawerContent";
 
-const DrawerHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)} {...props} />
-);
+const DrawerHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex-shrink-0 grid gap-1.5 px-4 pb-3 text-center sm:text-left", className)} {...props} />
+));
 DrawerHeader.displayName = "DrawerHeader";
 
-const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mt-auto flex flex-col gap-2 p-4", className)} {...props} />
-);
+const DrawerFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, style, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex-shrink-0 flex flex-col gap-2 border-t border-border/40 p-4", className)}
+    style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 16px))", ...style }}
+    {...props}
+  />
+));
 DrawerFooter.displayName = "DrawerFooter";
 
 const DrawerTitle = React.forwardRef<
@@ -73,6 +87,23 @@ const DrawerDescription = React.forwardRef<
 ));
 DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
 
+/**
+ * Scrollable body wrapper for drawer content.
+ * Place form fields / main content inside this.
+ * Footer buttons go in DrawerFooter (outside this).
+ */
+const DrawerBody = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4", className)}
+    {...props}
+  />
+));
+DrawerBody.displayName = "DrawerBody";
+
 export {
   Drawer,
   DrawerPortal,
@@ -84,4 +115,5 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
+  DrawerBody,
 };
