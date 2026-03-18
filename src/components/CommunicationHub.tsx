@@ -113,9 +113,7 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
               {bn ? "SMS পাঠান" : "Send SMS"} — {clientName}
             </DrawerTitle>
           </DrawerHeader>
-          <DrawerBody>
-
-          <div className="space-y-4 py-2">
+          <DrawerBody className="space-y-4">
             {/* Quick-fill template pills */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2">
