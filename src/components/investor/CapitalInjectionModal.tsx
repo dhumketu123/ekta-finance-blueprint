@@ -527,8 +527,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              {/* Glassmorphism vault overlay */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+              <DrawerBody>
                 <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-5">
                   {/* Summary */}
                   <div className="text-center space-y-1">
