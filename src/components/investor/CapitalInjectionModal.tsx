@@ -623,10 +623,10 @@ export const CapitalInjectionModal = ({
                     </p>
                   )}
                 </div>
-              </div>
+              </DrawerBody>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-6 py-4">
+              <DrawerFooter>
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -638,7 +638,7 @@ export const CapitalInjectionModal = ({
                 >
                   {bn ? "← ফিরে যান" : "← Back"}
                 </Button>
-              </div>
+              </DrawerFooter>
             </motion.div>
           )}
 
