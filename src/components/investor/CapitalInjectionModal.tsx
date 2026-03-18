@@ -731,7 +731,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              <div className="flex-1 min-h-0 overflow-y-auto px-6">
+              <DrawerBody>
                 <div className="space-y-6 py-4">
                   <div className="flex flex-col items-center justify-center text-center space-y-3">
                     <motion.div
