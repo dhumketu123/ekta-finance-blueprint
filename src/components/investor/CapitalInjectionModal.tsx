@@ -788,11 +788,11 @@ export const CapitalInjectionModal = ({
                     </Button>
                   </div>
                 </div>
-              </div>
+              </DrawerBody>
             </motion.div>
           )}
         </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };
