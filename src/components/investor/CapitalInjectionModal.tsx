@@ -496,11 +496,10 @@ export const CapitalInjectionModal = ({
                       rows={2}
                     />
                   </div>
-                </div>
-              </div>
+              </DrawerBody>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-6 py-4 flex flex-col sm:flex-row-reverse gap-2">
+              <DrawerFooter className="flex-col sm:flex-row-reverse gap-2">
                 <Button
                   onClick={() => setPhase("pin")}
                   disabled={!isFormValid}
@@ -517,7 +516,7 @@ export const CapitalInjectionModal = ({
                   <X className="w-4 h-4" />
                   {bn ? "বাতিল করুন" : "Cancel"}
                 </Button>
-              </div>
+              </DrawerFooter>
             </motion.div>
           )}
 
