@@ -701,35 +701,23 @@ const InvestorDetail = () => {
         </DrawerContent>
       </Drawer>
 
-      {/* ═══ Add Capital Modal ═══ */}
-      <Dialog open={addCapitalOpen} onOpenChange={setAddCapitalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ═══ Add Capital Drawer ═══ */}
+      <Drawer open={addCapitalOpen} onOpenChange={setAddCapitalOpen}>
+        <DrawerContent className="max-h-[85dvh]">
+          <DrawerHeader className="border-b border-border/40">
+            <DrawerTitle className="flex items-center gap-2">
               <PlusCircle className="w-5 h-5 text-primary" />
               {bn ? "মূলধন যোগ" : "Add Capital"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-3">
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             <div>
               <Label className="text-xs font-bold">{bn ? "মূলধন পরিমাণ (৳)" : "Capital Amount (৳)"}</Label>
-              <Input
-                type="number"
-                value={capitalAmount}
-                onChange={(e) => setCapitalAmount(e.target.value)}
-                placeholder="50000"
-                className="mt-1.5"
-              />
+              <Input type="number" value={capitalAmount} onChange={(e) => setCapitalAmount(e.target.value)} placeholder="50000" className="mt-1.5" />
             </div>
             <div>
               <Label className="text-xs font-bold">{bn ? "ফি (ঐচ্ছিক)" : "Fee (Optional)"}</Label>
-              <Input
-                type="number"
-                value={feeAmount}
-                onChange={(e) => setFeeAmount(e.target.value)}
-                placeholder="0"
-                className="mt-1.5"
-              />
+              <Input type="number" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="0" className="mt-1.5" />
             </div>
             {capitalAmount && Number(capitalAmount) > 0 && (
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
@@ -738,39 +726,32 @@ const InvestorDetail = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddCapitalOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
-            <Button onClick={handleAddCapital} disabled={submitting} className="gap-1.5">
+          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+            <Button onClick={handleAddCapital} disabled={submitting} className="w-full gap-1.5">
               {submitting ? "..." : bn ? "যোগ করুন" : "Add Capital"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button variant="outline" className="w-full" onClick={() => setAddCapitalOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
-      {/* ═══ Withdrawal Modal ═══ */}
-      <Dialog open={withdrawalOpen} onOpenChange={setWithdrawalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ═══ Withdrawal Drawer ═══ */}
+      <Drawer open={withdrawalOpen} onOpenChange={setWithdrawalOpen}>
+        <DrawerContent className="max-h-[85dvh]">
+          <DrawerHeader className="border-b border-border/40">
+            <DrawerTitle className="flex items-center gap-2">
               <ArrowDownCircle className="w-5 h-5 text-destructive" />
               {bn ? "উত্তোলন" : "Withdrawal"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-3">
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
               <p className="text-xs text-muted-foreground">{bn ? "বর্তমান মূলধন" : "Current Capital"}</p>
               <p className="text-xl font-bold text-foreground">৳{capital.toLocaleString()}</p>
             </div>
             <div>
               <Label className="text-xs font-bold">{bn ? "উত্তোলনের পরিমাণ (৳)" : "Withdrawal Amount (৳)"}</Label>
-              <Input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="10000"
-                max={capital}
-                className="mt-1.5"
-              />
+              <Input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="10000" max={capital} className="mt-1.5" />
             </div>
             {withdrawAmount && Number(withdrawAmount) > 0 && (
               <div className="p-3 rounded-lg bg-muted/50 border border-border/60">
@@ -781,19 +762,14 @@ const InvestorDetail = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setWithdrawalOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
-            <Button
-              onClick={handleWithdrawal}
-              disabled={submitting || Number(withdrawAmount) > capital || Number(withdrawAmount) <= 0}
-              variant="destructive"
-              className="gap-1.5"
-            >
+          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+            <Button onClick={handleWithdrawal} disabled={submitting || Number(withdrawAmount) > capital || Number(withdrawAmount) <= 0} variant="destructive" className="w-full gap-1.5">
               {submitting ? "..." : bn ? "উত্তোলন করুন" : "Withdraw"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button variant="outline" className="w-full" onClick={() => setWithdrawalOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </AppLayout>
   );
 };
