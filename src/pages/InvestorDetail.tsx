@@ -734,7 +734,11 @@ const InvestorDetail = () => {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-                <p className="text-lg font-bold text-success mt-0.5">৳{monthlyProfit.toLocaleString()}</p>
+    </AppLayout>
+  );
+};
+
+export default InvestorDetail;
                 <p className="text-[10px] text-muted-foreground">{capital.toLocaleString()} × {profitPct}%</p>
               </div>
               <div className={`p-3 rounded-xl border ${dueDividend > 0 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"}`}>
