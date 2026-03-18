@@ -97,37 +97,37 @@ export function PartnerLedgerModal({ investorId, investorName, open, onClose }: 
     .reduce((s, t) => s + t.amount, 0);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] p-0 overflow-hidden border-primary/20">
+    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
+      <DrawerContent>
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+        <DrawerHeader className="border-b border-border/40 bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <BookOpen className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold">
+              <DrawerTitle className="text-lg font-bold">
                 {bn ? "📜 হিসাব বিবরণী" : "📜 Audit Ledger"}
-              </DialogTitle>
-              <DialogDescription className="text-sm">
+              </DrawerTitle>
+              <DrawerDescription className="text-sm">
                 {investorName} — {bn ? "সকল লেনদেনের রেকর্ড" : "Complete transaction history"}
-              </DialogDescription>
+              </DrawerDescription>
             </div>
           </div>
-        </DialogHeader>
+        </DrawerHeader>
 
-        {/* Summary Bar */}
-        <div className="mx-6 mt-4 flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
-          <span className="text-xs text-muted-foreground">
-            {bn ? "মোট এন্ট্রি" : "Total Entries"}: <strong>{transactions.length}</strong>
-          </span>
-          <span className="text-xs font-semibold text-primary">
-            {bn ? "মোট জমা" : "Total Deposits"}: ৳{totalDeposits.toLocaleString("bn-BD")}
-          </span>
-        </div>
+        <DrawerBody>
+          {/* Summary Bar */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border mb-4">
+            <span className="text-xs text-muted-foreground">
+              {bn ? "মোট এন্ট্রি" : "Total Entries"}: <strong>{transactions.length}</strong>
+            </span>
+            <span className="text-xs font-semibold text-primary">
+              {bn ? "মোট জমা" : "Total Deposits"}: ৳{totalDeposits.toLocaleString("bn-BD")}
+            </span>
+          </div>
 
-        {/* Table */}
-        <ScrollArea className="flex-1 px-6 pb-2" style={{ maxHeight: "50vh" }}>
+          {/* Table */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -189,16 +189,16 @@ export function PartnerLedgerModal({ investorId, investorName, open, onClose }: 
               </TableBody>
             </Table>
           )}
-        </ScrollArea>
+        </DrawerBody>
 
         {/* Footer: Digital Signature Badge */}
-        <div className="px-6 py-3 border-t border-border bg-muted/30 flex items-center justify-center gap-2">
+        <DrawerFooter className="flex-row items-center justify-center gap-2 bg-muted/30">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600">
             {bn ? "ডিজিটাল সিগনেচার ভেরিফাইড • ইমিউটেবল লেজার" : "Digital Signature Verified • Immutable Ledger"}
           </span>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
