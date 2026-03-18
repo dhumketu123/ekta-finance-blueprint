@@ -252,10 +252,10 @@ export default function SmartTransactionForm({ open, onClose, prefillClientId }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onClose}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="text-sm font-bold flex items-center gap-2">
             {bn ? "স্মার্ট লেনদেন" : "Smart Transaction"}
             <Button
               size="sm"
@@ -266,8 +266,9 @@ export default function SmartTransactionForm({ open, onClose, prefillClientId }:
               {listening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
               {listening ? (bn ? "বন্ধ করুন" : "Stop") : (bn ? "ভয়েস ইনপুট" : "Voice Input")}
             </Button>
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody>
 
         {voiceText && (
           <div className="p-2 rounded-lg bg-accent/30 border border-accent/50 text-xs">
