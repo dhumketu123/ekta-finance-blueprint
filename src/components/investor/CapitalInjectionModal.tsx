@@ -2,12 +2,14 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -351,16 +353,13 @@ export const CapitalInjectionModal = ({
   const isLocked = phase === "executing" || isSubmitting;
 
   return (
-    <Dialog
+    <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen && !isLocked) handleClose();
       }}
     >
-      <DialogContent
-        className="sm:max-w-md p-0 flex flex-col max-h-[90vh] gap-0 overflow-hidden"
-        hideClose={isLocked}
-        aria-live="polite"
+      <DrawerContent
         onInteractOutside={(e) => {
           if (isLocked) e.preventDefault();
         }}
@@ -369,27 +368,25 @@ export const CapitalInjectionModal = ({
         }}
       >
         {/* ── Header ── */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-2">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary">
-              <Landmark className="w-5 h-5" />
-              {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
-            </DialogTitle>
-            <DialogDescription>
-              {phase === "pin"
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2 text-primary">
+            <Landmark className="w-5 h-5" />
+            {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
+          </DrawerTitle>
+          <DrawerDescription>
+            {phase === "pin"
+              ? bn
+                ? "নিরাপত্তা যাচাই করুন"
+                : "Verify your identity"
+              : phase === "confirm"
                 ? bn
-                  ? "নিরাপত্তা যাচাই করুন"
-                  : "Verify your identity"
-                : phase === "confirm"
-                  ? bn
-                    ? "চূড়ান্ত নিশ্চিতকরণ"
-                    : "Final confirmation"
-                  : bn
-                    ? "পার্টনারের মূলধন অ্যাকাউন্টে অর্থ জমা করুন"
-                    : "Add funds to partner's capital account"}
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+                  ? "চূড়ান্ত নিশ্চিতকরণ"
+                  : "Final confirmation"
+                : bn
+                  ? "পার্টনারের মূলধন অ্যাকাউন্টে অর্থ জমা করুন"
+                  : "Add funds to partner's capital account"}
+          </DrawerDescription>
+        </DrawerHeader>
 
         {/* ── Animated Phase Content ── */}
         <AnimatePresence mode="wait">
@@ -400,8 +397,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2">
-                <div className="flex flex-col gap-4">
+              <DrawerBody className="space-y-4">
                   {/* Partner Selection */}
                   <div className="space-y-2">
                     <Label>
@@ -500,11 +496,10 @@ export const CapitalInjectionModal = ({
                       rows={2}
                     />
                   </div>
-                </div>
-              </div>
+              </DrawerBody>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-6 py-4 flex flex-col sm:flex-row-reverse gap-2">
+              <DrawerFooter className="flex-col sm:flex-row-reverse gap-2">
                 <Button
                   onClick={() => setPhase("pin")}
                   disabled={!isFormValid}
@@ -521,7 +516,7 @@ export const CapitalInjectionModal = ({
                   <X className="w-4 h-4" />
                   {bn ? "বাতিল করুন" : "Cancel"}
                 </Button>
-              </div>
+              </DrawerFooter>
             </motion.div>
           )}
 
@@ -532,8 +527,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              {/* Glassmorphism vault overlay */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+              <DrawerBody>
                 <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-5">
                   {/* Summary */}
                   <div className="text-center space-y-1">
@@ -629,10 +623,10 @@ export const CapitalInjectionModal = ({
                     </p>
                   )}
                 </div>
-              </div>
+              </DrawerBody>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-6 py-4">
+              <DrawerFooter>
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -644,7 +638,7 @@ export const CapitalInjectionModal = ({
                 >
                   {bn ? "← ফিরে যান" : "← Back"}
                 </Button>
-              </div>
+              </DrawerFooter>
             </motion.div>
           )}
 
@@ -655,7 +649,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
+              <DrawerBody>
                 <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-6">
                   {/* Deposit summary */}
                   <div className="text-center space-y-1">
@@ -694,10 +688,10 @@ export const CapitalInjectionModal = ({
                     </p>
                   </div>
                 </div>
-              </div>
+              </DrawerBody>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-6 py-4">
+              <DrawerFooter>
                 <Button
                   variant="outline"
                   onClick={() => setPhase("pin")}
@@ -707,7 +701,7 @@ export const CapitalInjectionModal = ({
                   <X className="w-4 h-4" />
                   {bn ? "ফিরে যান" : "Go Back"}
                 </Button>
-              </div>
+              </DrawerFooter>
             </motion.div>
           )}
 
@@ -737,7 +731,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              <div className="flex-1 min-h-0 overflow-y-auto px-6">
+              <DrawerBody>
                 <div className="space-y-6 py-4">
                   <div className="flex flex-col items-center justify-center text-center space-y-3">
                     <motion.div
@@ -794,11 +788,11 @@ export const CapitalInjectionModal = ({
                     </Button>
                   </div>
                 </div>
-              </div>
+              </DrawerBody>
             </motion.div>
           )}
         </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };

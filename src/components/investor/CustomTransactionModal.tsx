@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,19 +95,19 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
   const TypeIcon = selectedType?.icon ?? Banknote;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Drawer open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
             {bn ? "কাস্টম লেনদেন" : "Custom Transaction"}
-          </DialogTitle>
-          <DialogDescription>
+          </DrawerTitle>
+          <DrawerDescription>
             {bn ? `পার্টনার: ${investorName}` : `Partner: ${investorName}`}
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-4 py-4">
+        <DrawerBody className="space-y-4">
           {/* Transaction Type */}
           <div className="space-y-2">
             <Label htmlFor="type">{bn ? "লেনদেনের ধরন" : "Transaction Type"}</Label>
@@ -174,16 +175,16 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
               </div>
             </div>
           )}
-        </div>
+        </DrawerBody>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose} disabled={mutation.isPending}>
+        <DrawerFooter className="flex-row gap-2">
+          <Button variant="outline" onClick={handleClose} disabled={mutation.isPending} className="flex-1">
             {bn ? "বাতিল" : "Cancel"}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={amount <= 0 || mutation.isPending}
-            className="gap-2"
+            className="flex-1 gap-2"
           >
             {mutation.isPending ? (
               <>
@@ -197,8 +198,8 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

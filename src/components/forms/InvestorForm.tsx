@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -284,59 +284,59 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
       : (bn ? "নতুন বিনিয়োগকারী অনবোর্ডিং" : "Enterprise Investor Onboarding");
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] min-h-[50vh] flex flex-col p-0 overflow-hidden overscroll-none">
-        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0 bg-background/70 backdrop-blur-md">
-          <DialogTitle className="text-base font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={() => onClose()}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40 bg-background/70 backdrop-blur-md">
+          <DrawerTitle className="text-base font-bold flex items-center gap-2">
             {isOwnerMode && <Crown className="w-5 h-5 text-primary" />}
             {modalTitle}
-          </DialogTitle>
+          </DrawerTitle>
           {isOwnerMode && (
             <p className="text-[11px] text-muted-foreground mt-1">
               {bn ? "কোর ফাউন্ডিং শেয়ারহোল্ডার — ৫ বছরের জিরো-ডিভিডেন্ড কম্পাউন্ডিং ভিশন" : "Core Founding Shareholder — 5-Year Zero-Dividend Compounding Vision"}
             </p>
           )}
-        </DialogHeader>
 
-        {/* Stepper */}
-        <div className="px-6 pt-4 flex-shrink-0 border-b border-border/40 bg-muted/30">
-          <div className="flex items-center justify-between">
-            {STEPS.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = step === s.id;
-              const isDone = step > s.id;
-              return (
-                <div key={s.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                    <div className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                      isDone ? "bg-primary border-primary text-primary-foreground" :
-                      isActive ? "border-primary bg-primary/10 text-primary" :
-                      "border-muted-foreground/30 text-muted-foreground/50"
-                    )}>
-                      {isDone ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+          {/* Stepper */}
+          <div className="pt-4 border-t border-border/40 mt-3 bg-muted/30 -mx-4 px-4 pb-3 rounded-b-lg">
+            <div className="flex items-center justify-between">
+              {STEPS.map((s, i) => {
+                const Icon = s.icon;
+                const isActive = step === s.id;
+                const isDone = step > s.id;
+                return (
+                  <div key={s.id} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                      <div className={cn(
+                        "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                        isDone ? "bg-primary border-primary text-primary-foreground" :
+                        isActive ? "border-primary bg-primary/10 text-primary" :
+                        "border-muted-foreground/30 text-muted-foreground/50"
+                      )}>
+                        {isDone ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-medium text-center leading-tight max-w-[70px]",
+                        isActive ? "text-primary" : isDone ? "text-primary/70" : "text-muted-foreground/50"
+                      )}>
+                        {bn ? s.titleBn : s.title}
+                      </span>
                     </div>
-                    <span className={cn(
-                      "text-[10px] font-medium text-center leading-tight max-w-[70px]",
-                      isActive ? "text-primary" : isDone ? "text-primary/70" : "text-muted-foreground/50"
-                    )}>
-                      {bn ? s.titleBn : s.title}
-                    </span>
+                    {i < STEPS.length - 1 && (
+                      <div className={cn(
+                        "h-0.5 flex-1 mx-2 mt-[-18px] rounded-full transition-all duration-300",
+                        isDone ? "bg-primary" : "bg-muted-foreground/20"
+                      )} />
+                    )}
                   </div>
-                  {i < STEPS.length - 1 && (
-                    <div className={cn(
-                      "h-0.5 flex-1 mx-2 mt-[-18px] rounded-full transition-all duration-300",
-                      isDone ? "bg-primary" : "bg-muted-foreground/20"
-                    )} />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </DrawerHeader>
 
         {/* Scrollable Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-6 pt-5 space-y-4" style={{ paddingBottom: "calc(var(--safe-bottom-padding, 120px) + var(--keyboard-offset, 0px))" }}>
+        <DrawerBody className="space-y-4">
           {/* Step 1: KYC */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -639,44 +639,45 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
             </div>
           )}
 
-          {/* Navigation Buttons — inside scroll, moves with content */}
-          <div className="flex items-center justify-between pt-6 mt-2 border-t border-border gap-3">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
-              </Button>
-              {isEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setExitDialogOpen(true)}
-                  disabled={isPending || exitSecure.isPending}
-                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
-                >
-                  <UserX className="w-3.5 h-3.5" />
-                  {bn ? "অব্যাহতি দিন" : "Exit Partner"}
-                </Button>
-              )}
-            </div>
-            {step < 4 ? (
-              <Button size="sm" onClick={nextStep} className="gap-1.5 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                {isPending ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                    {bn ? "প্রক্রিয়াকরণ..." : "Processing..."}
-                  </span>
-                ) : isOwnerMode
-                    ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
-                    : (bn ? "সম্পন্ন করুন" : "Complete")
-                }
+        </DrawerBody>
+
+        {/* Navigation Footer */}
+        <DrawerFooter className="flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={prevStep} disabled={step === 1 || isPending} className="gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+              <ChevronLeft className="w-4 h-4" /> {bn ? "পেছনে" : "Back"}
+            </Button>
+            {isEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExitDialogOpen(true)}
+                disabled={isPending || exitSecure.isPending}
+                className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
+              >
+                <UserX className="w-3.5 h-3.5" />
+                {bn ? "অব্যাহতি দিন" : "Exit Partner"}
               </Button>
             )}
           </div>
-        </div>
+          {step < 4 ? (
+            <Button size="sm" onClick={nextStep} className="gap-1.5 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+              {bn ? "পরবর্তী" : "Next"} <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button size="sm" onClick={handleSubmit} disabled={!agreed || isPending} className="gap-1.5 min-w-[120px] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+              {isPending ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  {bn ? "প্রক্রিয়াকরণ..." : "Processing..."}
+                </span>
+              ) : isOwnerMode
+                  ? (bn ? "প্যাক্ট সম্পন্ন করুন" : "Sign Equity Pact")
+                  : (bn ? "সম্পন্ন করুন" : "Complete")
+              }
+            </Button>
+          )}
+        </DrawerFooter>
 
         {/* Exit Confirmation Dialog */}
         <DeleteConfirmDialog
@@ -686,7 +687,7 @@ export default function InvestorForm({ open, onClose, editData, isOwnerMode = fa
           itemName={editData?.name_bn || editData?.name_en || (bn ? "পার্টনার" : "Partner")}
           loading={exitSecure.isPending}
         />
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
