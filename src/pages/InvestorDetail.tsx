@@ -739,7 +739,6 @@ const InvestorDetail = () => {
 };
 
 export default InvestorDetail;
-              </div>
               <div className={`p-3 rounded-xl border ${dueDividend > 0 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"}`}>
                 <p className="text-[11px] text-muted-foreground">{bn ? "পূর্ববর্তী বকেয়া" : "Previous Due"}</p>
                 <p className={`text-lg font-bold mt-0.5 ${dueDividend > 0 ? "text-destructive" : "text-muted-foreground"}`}>
