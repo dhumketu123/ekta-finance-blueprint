@@ -353,16 +353,13 @@ export const CapitalInjectionModal = ({
   const isLocked = phase === "executing" || isSubmitting;
 
   return (
-    <Dialog
+    <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen && !isLocked) handleClose();
       }}
     >
-      <DialogContent
-        className="sm:max-w-md p-0 flex flex-col max-h-[90vh] gap-0 overflow-hidden"
-        hideClose={isLocked}
-        aria-live="polite"
+      <DrawerContent
         onInteractOutside={(e) => {
           if (isLocked) e.preventDefault();
         }}
@@ -371,27 +368,25 @@ export const CapitalInjectionModal = ({
         }}
       >
         {/* ── Header ── */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-2">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary">
-              <Landmark className="w-5 h-5" />
-              {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
-            </DialogTitle>
-            <DialogDescription>
-              {phase === "pin"
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2 text-primary">
+            <Landmark className="w-5 h-5" />
+            {bn ? "ত্রৈমাসিক মূলধন জমা" : "Quarterly Capital Injection"}
+          </DrawerTitle>
+          <DrawerDescription>
+            {phase === "pin"
+              ? bn
+                ? "নিরাপত্তা যাচাই করুন"
+                : "Verify your identity"
+              : phase === "confirm"
                 ? bn
-                  ? "নিরাপত্তা যাচাই করুন"
-                  : "Verify your identity"
-                : phase === "confirm"
-                  ? bn
-                    ? "চূড়ান্ত নিশ্চিতকরণ"
-                    : "Final confirmation"
-                  : bn
-                    ? "পার্টনারের মূলধন অ্যাকাউন্টে অর্থ জমা করুন"
-                    : "Add funds to partner's capital account"}
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+                  ? "চূড়ান্ত নিশ্চিতকরণ"
+                  : "Final confirmation"
+                : bn
+                  ? "পার্টনারের মূলধন অ্যাকাউন্টে অর্থ জমা করুন"
+                  : "Add funds to partner's capital account"}
+          </DrawerDescription>
+        </DrawerHeader>
 
         {/* ── Animated Phase Content ── */}
         <AnimatePresence mode="wait">
