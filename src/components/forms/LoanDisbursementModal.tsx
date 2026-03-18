@@ -430,7 +430,8 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }

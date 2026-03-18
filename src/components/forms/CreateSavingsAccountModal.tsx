@@ -611,8 +611,8 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
               </motion.div>
             )}
           </AnimatePresence>
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
 
       {/* PIN Auth Modal */}
       <TransactionAuthModal

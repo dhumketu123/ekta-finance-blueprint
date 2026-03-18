@@ -180,8 +180,9 @@ export default function EarlySettlementCalculator({ open, onClose, preselectedLo
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

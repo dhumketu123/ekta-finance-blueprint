@@ -147,23 +147,25 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
           />
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isPending}>
-            {lang === "bn" ? "বাতিল" : "Cancel"}
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {isPending
-              ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...")
-              : (lang === "bn" ? "রিশিডিউল করুন" : "Reschedule")}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+        <DrawerFooter>
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isPending}>
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isPending
+                ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...")
+                : (lang === "bn" ? "রিশিডিউল করুন" : "Reschedule")}
+            </Button>
+          </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

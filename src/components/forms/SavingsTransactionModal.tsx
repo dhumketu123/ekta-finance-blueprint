@@ -225,12 +225,15 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
             />
           </div>
 
+        </div>
+        </DrawerBody>
+        <DrawerFooter>
           <Button onClick={handleSubmit} disabled={submitMut.isPending} className="w-full text-xs">
             {submitMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {bn ? "অনুমোদনের জন্য জমা দিন" : "Submit for Approval"}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

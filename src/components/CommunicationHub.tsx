@@ -161,9 +161,10 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
                 {smsText.length}/160
               </p>
             </div>
+          </DrawerBody>
 
-            {/* Send */}
-            <div className="flex gap-2">
+          <DrawerFooter>
+            <div className="flex gap-2 w-full">
               <Button variant="outline" className="flex-1 text-xs" onClick={() => setSmsOpen(false)}>
                 {bn ? "বাতিল" : "Cancel"}
               </Button>
@@ -176,9 +177,9 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
                 {bn ? "পাঠান" : "Send"}
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };

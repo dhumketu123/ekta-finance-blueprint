@@ -451,7 +451,8 @@ export default function SmartTransactionForm({ open, onClose, prefillClientId }:
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }
