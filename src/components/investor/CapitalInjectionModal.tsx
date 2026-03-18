@@ -397,8 +397,7 @@ export const CapitalInjectionModal = ({
               {...vaultTransition}
               className="flex flex-col flex-1 min-h-0"
             >
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2">
-                <div className="flex flex-col gap-4">
+              <DrawerBody className="space-y-4">
                   {/* Partner Selection */}
                   <div className="space-y-2">
                     <Label>
