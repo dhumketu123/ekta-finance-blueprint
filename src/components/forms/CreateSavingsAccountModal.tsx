@@ -8,7 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTenantId } from "@/hooks/useTenantId";
 import { useBusinessRules } from "@/hooks/useBusinessRules";
 import { useSmsGateway, buildSmsIntentUri } from "@/hooks/useSmsGateway";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
