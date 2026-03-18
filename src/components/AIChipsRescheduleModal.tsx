@@ -5,7 +5,7 @@ import { Sparkles, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogAIChipSelect, type Commitment } from "@/hooks/useCommitments";
 
