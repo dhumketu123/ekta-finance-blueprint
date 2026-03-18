@@ -585,16 +585,16 @@ const InvestorDetail = () => {
         </Tabs>
       </div>
 
-      {/* ═══ PHASE 2: Pay Dividend Modal (Upgraded — Partial Payout) ═══ */}
-      <Dialog open={payDividendOpen} onOpenChange={setPayDividendOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ═══ PHASE 2: Pay Dividend Drawer ═══ */}
+      <Drawer open={payDividendOpen} onOpenChange={setPayDividendOpen}>
+        <DrawerContent className="max-h-[85dvh]">
+          <DrawerHeader className="border-b border-border/40">
+            <DrawerTitle className="flex items-center gap-2">
               <Banknote className="w-5 h-5 text-success" />
               {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 py-3">
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
             {/* Breakdown header */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-success/5 border border-success/20">
@@ -688,18 +688,18 @@ const InvestorDetail = () => {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPayDividendOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
+          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
             <Button
               onClick={handlePayDividend}
               disabled={submitting || !dividendPayAmount || Number(dividendPayAmount) <= 0 || Number(dividendPayAmount) > totalPayable}
-              className="bg-success hover:bg-success/90 text-success-foreground gap-1.5"
+              className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1.5"
             >
               {submitting ? "..." : bn ? "নিশ্চিত করুন" : "Confirm Payment"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button variant="outline" className="w-full" onClick={() => setPayDividendOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* ═══ Add Capital Modal ═══ */}
       <Dialog open={addCapitalOpen} onOpenChange={setAddCapitalOpen}>
