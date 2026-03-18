@@ -68,14 +68,15 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
     : "—";
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md mx-4">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base font-bangla">
+    <Drawer open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2 text-base font-bangla">
             <Sparkles className="w-5 h-5 text-accent" />
             {lang === "bn" ? "AI রিশিডিউল" : "AI Reschedule"}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody className="space-y-4">
 
         {/* Client info */}
         <div className="bg-muted/50 rounded-lg p-3 border border-border/40">
