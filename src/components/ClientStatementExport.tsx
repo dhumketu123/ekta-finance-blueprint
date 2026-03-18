@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody } from "@/components/ui/drawer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
 
@@ -257,15 +257,15 @@ ${analytics ? `
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onClose}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="text-sm font-bold flex items-center gap-2">
             <Download className="w-4 h-4 text-primary" />
             {bn ? "স্টেটমেন্ট এক্সপোর্ট" : "Export Statement"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody className="space-y-3">
           <p className="text-xs text-muted-foreground">
             {bn ? `${clientName} — ${loans.length} টি ঋণ, ${transactions.length} টি লেনদেন` : `${clientName} — ${loans.length} loans, ${transactions.length} transactions`}
           </p>
@@ -286,8 +286,8 @@ ${analytics ? `
             {exporting === "csv" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
             {bn ? "CSV ডাউনলোড" : "CSV Download"}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }

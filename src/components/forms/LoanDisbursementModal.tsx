@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,10 +193,10 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
   const bn = lang === "bn";
 
   return (
-    <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={resetAndClose}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="text-sm font-bold flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
             {bn ? "ঋণ বিতরণ" : "Loan Disbursement"}
             {!isAdmin && (
@@ -205,8 +205,9 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
                 {bn ? "অনুমোদন প্রয়োজন" : "Requires Approval"}
               </span>
             )}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody>
 
         {/* Maker-Checker submission success */}
         {submitted ? (
@@ -429,7 +430,8 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }

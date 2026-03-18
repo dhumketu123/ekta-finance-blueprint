@@ -5,7 +5,7 @@ import { Sparkles, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogAIChipSelect, type Commitment } from "@/hooks/useCommitments";
 
@@ -68,14 +68,15 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
     : "—";
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md mx-4">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base font-bangla">
+    <Drawer open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2 text-base font-bangla">
             <Sparkles className="w-5 h-5 text-accent" />
             {lang === "bn" ? "AI রিশিডিউল" : "AI Reschedule"}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody className="space-y-4">
 
         {/* Client info */}
         <div className="bg-muted/50 rounded-lg p-3 border border-border/40">
@@ -146,23 +147,25 @@ const AIChipsRescheduleModal = ({ commitment, open, onClose, onConfirm, isPendin
           />
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isPending}>
-            {lang === "bn" ? "বাতিল" : "Cancel"}
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {isPending
-              ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...")
-              : (lang === "bn" ? "রিশিডিউল করুন" : "Reschedule")}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerBody>
+        <DrawerFooter>
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isPending}>
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isPending
+                ? (lang === "bn" ? "প্রক্রিয়াকরণ..." : "Processing...")
+                : (lang === "bn" ? "রিশিডিউল করুন" : "Reschedule")}
+            </Button>
+          </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

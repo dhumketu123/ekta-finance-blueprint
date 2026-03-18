@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogCommunication } from "@/hooks/useSnooze";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { Phone, MessageCircle, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -105,16 +105,15 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
       </div>
 
       {/* SMS Modal */}
-      <Dialog open={smsOpen} onOpenChange={setSmsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-sm">
+      <Drawer open={smsOpen} onOpenChange={setSmsOpen}>
+        <DrawerContent>
+          <DrawerHeader className="border-b border-border/40">
+            <DrawerTitle className="flex items-center gap-2 text-sm">
               <MessageSquare className="w-4 h-4 text-primary" />
               {bn ? "SMS পাঠান" : "Send SMS"} — {clientName}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
+            </DrawerTitle>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
             {/* Quick-fill template pills */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2">
@@ -160,9 +159,10 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
                 {smsText.length}/160
               </p>
             </div>
+          </DrawerBody>
 
-            {/* Send */}
-            <div className="flex gap-2">
+          <DrawerFooter>
+            <div className="flex gap-2 w-full">
               <Button variant="outline" className="flex-1 text-xs" onClick={() => setSmsOpen(false)}>
                 {bn ? "বাতিল" : "Cancel"}
               </Button>
@@ -175,9 +175,9 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
                 {bn ? "পাঠান" : "Send"}
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };

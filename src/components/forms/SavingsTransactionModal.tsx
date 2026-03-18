@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,18 +104,19 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && resetAndClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={(o) => !o && resetAndClose()}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="text-sm font-bold flex items-center gap-2">
             {txType === "savings_deposit" ? (
               <ArrowDownCircle className="w-4 h-4 text-success" />
             ) : (
               <ArrowUpCircle className="w-4 h-4 text-warning" />
             )}
             {bn ? "সঞ্চয় লেনদেন" : "Savings Transaction"}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody>
 
         <div className="space-y-3">
           {/* Client */}
@@ -224,12 +225,15 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
             />
           </div>
 
+        </div>
+        </DrawerBody>
+        <DrawerFooter>
           <Button onClick={handleSubmit} disabled={submitMut.isPending} className="w-full text-xs">
             {submitMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {bn ? "অনুমোদনের জন্য জমা দিন" : "Submit for Approval"}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
