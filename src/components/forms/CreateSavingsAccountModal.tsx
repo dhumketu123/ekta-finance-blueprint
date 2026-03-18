@@ -230,16 +230,15 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
 
   return (
     <>
-      <Dialog open={open && !pinOpen} onOpenChange={(o) => !o && handleClose()}>
-        <DialogContent
-          className="sm:max-w-lg p-0 gap-0 overflow-hidden border-0"
+      <Drawer open={open && !pinOpen} onOpenChange={(o) => !o && handleClose()}>
+        <DrawerContent
+          className="p-0 gap-0 overflow-hidden border-0"
           style={{
             background: "hsl(var(--card) / 0.92)",
             backdropFilter: "blur(20px) saturate(1.6)",
             WebkitBackdropFilter: "blur(20px) saturate(1.6)",
             boxShadow: "0 24px 80px -16px hsl(var(--primary) / 0.2), 0 0 0 1px hsl(var(--border) / 0.5)",
           }}
-          hideClose={done}
         >
           {/* Progress bar */}
           {!done && (
