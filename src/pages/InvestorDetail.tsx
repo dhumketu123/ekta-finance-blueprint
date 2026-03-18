@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerBody } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -78,7 +78,7 @@ const InvestorDetail = () => {
   const hasDb = !!dbInvestor;
   const inv: any = hasDb ? dbInvestor : sampleInv;
 
-  // Memoized sparkline — also must be before returns
+  // Memoized sparkline
   const sparklineData = useMemo(() => {
     if (!txns) return Array.from({ length: 6 }, (_, i) => ({ month: "", value: 0 }));
     const now = new Date();
@@ -138,7 +138,6 @@ const InvestorDetail = () => {
   const countdown = getDividendCountdown(lastProfitDate, bn);
   const projection = reinvest ? getProjection(capital, profitPct, bn) : null;
 
-  // Dividend history & Capital transactions
   const dividendTxns = txns?.filter((tx: any) => tx.type === "investor_profit") ?? [];
   const capitalTxns = txns?.filter((tx: any) =>
     ["loan_disbursement", "investor_principal_return", "savings_deposit"].includes(tx.type) ||
@@ -164,25 +163,16 @@ const InvestorDetail = () => {
         updatePayload.capital = capital + payAmt;
         updatePayload.accumulated_profit = (inv.accumulated_profit || 0) + payAmt;
       }
-      const { error: updErr } = await supabase
-        .from("investors")
-        .update(updatePayload)
-        .eq("id", inv.id);
+      const { error: updErr } = await supabase.from("investors").update(updatePayload).eq("id", inv.id);
       if (updErr) throw updErr;
-      // Log transaction with exact paid amount + notes
       const txNote = [
         payoutMode === "reinvest" ? "Reinvested to capital" : "Cash payout",
         newDueDividend > 0 ? `(Partial: ৳${newDueDividend} remaining due)` : "(Full payment)",
         dividendNotes ? `— ${dividendNotes}` : "",
       ].filter(Boolean).join(" ");
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: inv.id,
-        type: "investor_profit" as any,
-        amount: payAmt,
-        status: "paid" as any,
-        transaction_date: format(new Date(), "yyyy-MM-dd"),
-        notes: txNote,
-        performed_by: user.id,
+        investor_id: inv.id, type: "investor_profit" as any, amount: payAmt, status: "paid" as any,
+        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: txNote, performed_by: user.id,
       });
       if (txErr) throw txErr;
       toast.success(bn ? "লভ্যাংশ প্রদান সফল ✅" : "Dividend paid successfully ✅");
@@ -205,35 +195,17 @@ const InvestorDetail = () => {
     if (!amt || amt <= 0) { toast.error(bn ? "সঠিক পরিমাণ দিন" : "Enter valid amount"); return; }
     setSubmitting(true);
     try {
-      const { error: updErr } = await supabase
-        .from("investors")
-        .update({
-          capital: capital + amt,
-          principal_amount: (inv.principal_amount || 0) + amt,
-        })
-        .eq("id", inv.id);
+      const { error: updErr } = await supabase.from("investors").update({ capital: capital + amt, principal_amount: (inv.principal_amount || 0) + amt }).eq("id", inv.id);
       if (updErr) throw updErr;
-      // Log capital transaction
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: inv.id,
-        type: "savings_deposit" as any,
-        amount: amt,
-        status: "paid" as any,
-        transaction_date: format(new Date(), "yyyy-MM-dd"),
-        notes: `Capital addition${fee > 0 ? ` (Fee: ৳${fee})` : ""}`,
-        performed_by: user.id,
+        investor_id: inv.id, type: "savings_deposit" as any, amount: amt, status: "paid" as any,
+        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: `Capital addition${fee > 0 ? ` (Fee: ৳${fee})` : ""}`, performed_by: user.id,
       });
       if (txErr) throw txErr;
-      // Log fee if present
       if (fee > 0) {
         await supabase.from("transactions").insert({
-          investor_id: inv.id,
-          type: "loan_penalty" as any,
-          amount: fee,
-          status: "paid" as any,
-          transaction_date: format(new Date(), "yyyy-MM-dd"),
-          notes: "Capital addition processing fee",
-          performed_by: user.id,
+          investor_id: inv.id, type: "loan_penalty" as any, amount: fee, status: "paid" as any,
+          transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital addition processing fee", performed_by: user.id,
         });
       }
       toast.success(bn ? "মূলধন যোগ সফল ✅" : "Capital added ✅");
@@ -255,19 +227,11 @@ const InvestorDetail = () => {
     if (!amt || amt <= 0 || amt > capital) { toast.error(bn ? "সঠিক পরিমাণ দিন" : "Invalid amount"); return; }
     setSubmitting(true);
     try {
-      const { error: updErr } = await supabase
-        .from("investors")
-        .update({ capital: capital - amt })
-        .eq("id", inv.id);
+      const { error: updErr } = await supabase.from("investors").update({ capital: capital - amt }).eq("id", inv.id);
       if (updErr) throw updErr;
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: inv.id,
-        type: "investor_principal_return" as any,
-        amount: amt,
-        status: "paid" as any,
-        transaction_date: format(new Date(), "yyyy-MM-dd"),
-        notes: "Capital withdrawal",
-        performed_by: user.id,
+        investor_id: inv.id, type: "investor_principal_return" as any, amount: amt, status: "paid" as any,
+        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital withdrawal", performed_by: user.id,
       });
       if (txErr) throw txErr;
       toast.success(bn ? "উত্তোলন সফল ✅" : "Withdrawal successful ✅");
@@ -286,9 +250,7 @@ const InvestorDetail = () => {
     const allTxns = txns ?? [];
     if (!allTxns.length) { toast.info(bn ? "কোনো লেনদেন নেই" : "No transactions"); return; }
     const headers = ["Date", "Type", "Amount (৳)", "Status", "Notes"];
-    const rows = allTxns.map((tx: any) => [
-      tx.transaction_date, tx.type, tx.amount, tx.status, tx.notes || ""
-    ]);
+    const rows = allTxns.map((tx: any) => [tx.transaction_date, tx.type, tx.amount, tx.status, tx.notes || ""]);
     const csv = [headers.join(","), ...rows.map((r: string[]) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -306,7 +268,6 @@ const InvestorDetail = () => {
 
       {/* ═══ PHASE 1: Premium Hero Section ═══ */}
       <div className="card-elevated p-6 border-l-4 border-l-success relative overflow-hidden">
-        {/* Background sparkline */}
         <div className="absolute inset-0 opacity-[0.06] pointer-events-none">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData}>
@@ -320,7 +281,6 @@ const InvestorDetail = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
         <div className="relative flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center shrink-0 ring-2 ring-success/20">
             <TrendingUp className="w-8 h-8 text-success" />
@@ -328,7 +288,6 @@ const InvestorDetail = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-foreground truncate">{name}</h2>
-              {/* Tier Badge */}
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold ${tier.color} shadow-sm`}>
                 <TierIcon className="w-3 h-3" />
                 {tier.label}
@@ -337,9 +296,7 @@ const InvestorDetail = () => {
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               <span className="text-xs text-muted-foreground font-mono">{inv.investor_id ?? inv.id.slice(0, 8)}</span>
               <StatusBadge status={reinvest ? "active" : "inactive"} />
-              {phone && (
-                <CommunicationHub clientId={inv.id} clientPhone={phone} clientName={name} />
-              )}
+              {phone && <CommunicationHub clientId={inv.id} clientPhone={phone} clientName={name} />}
             </div>
           </div>
         </div>
@@ -347,89 +304,39 @@ const InvestorDetail = () => {
 
       {/* ═══ Wealth Tracker Metric Cards ═══ */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${dueDividend > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
-        <MetricCard
-          title={bn ? "মোট মূলধন" : "Total Capital"}
-          value={`৳${capital.toLocaleString()}`}
-          icon={<Wallet className="w-5 h-5" />}
-          variant="success"
-        />
-        <MetricCard
-          title={bn ? "মাসিক লভ্যাংশ" : "Monthly Profit"}
-          value={`৳${monthlyProfit.toLocaleString()}`}
-          subtitle={`${profitPct}%`}
-          icon={<TrendingUp className="w-5 h-5" />}
-        />
-        <MetricCard
-          title={bn ? "মোট লভ্যাংশ প্রদান" : "Total Profit Paid"}
-          value={`৳${totalProfitPaid.toLocaleString()}`}
-          icon={<Banknote className="w-5 h-5" />}
-          variant="warning"
-        />
-        {dueDividend > 0 && (
-          <MetricCard
-            title={bn ? "বকেয়া লভ্যাংশ" : "Due Dividend"}
-            value={`৳${dueDividend.toLocaleString()}`}
-            icon={<Calendar className="w-5 h-5" />}
-            variant="destructive"
-          />
-        )}
-        <MetricCard
-          title={bn ? "লভ্যাংশ কাউন্টডাউন" : "Dividend Countdown"}
-          value={countdown}
-          icon={<Timer className="w-5 h-5" />}
-          variant="default"
-        />
+        <MetricCard title={bn ? "মোট মূলধন" : "Total Capital"} value={`৳${capital.toLocaleString()}`} icon={<Wallet className="w-5 h-5" />} variant="success" />
+        <MetricCard title={bn ? "মাসিক লভ্যাংশ" : "Monthly Profit"} value={`৳${monthlyProfit.toLocaleString()}`} subtitle={`${profitPct}%`} icon={<TrendingUp className="w-5 h-5" />} />
+        <MetricCard title={bn ? "মোট লভ্যাংশ প্রদান" : "Total Profit Paid"} value={`৳${totalProfitPaid.toLocaleString()}`} icon={<Banknote className="w-5 h-5" />} variant="warning" />
+        {dueDividend > 0 && <MetricCard title={bn ? "বকেয়া লভ্যাংশ" : "Due Dividend"} value={`৳${dueDividend.toLocaleString()}`} icon={<Calendar className="w-5 h-5" />} variant="destructive" />}
+        <MetricCard title={bn ? "লভ্যাংশ কাউন্টডাউন" : "Dividend Countdown"} value={countdown} icon={<Timer className="w-5 h-5" />} variant="default" />
       </div>
 
       {/* ═══ PHASE 2: Action Buttons ═══ */}
       {hasDb && (
         <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setDividendPayAmount(String(totalPayable)); setDividendNotes(""); setPayDividendOpen(true); }}
-            className="gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-md"
-          >
+          <Button onClick={() => { setPayoutMode(reinvest ? "reinvest" : "cash"); setDividendPayAmount(String(totalPayable)); setDividendNotes(""); setPayDividendOpen(true); }} className="gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-md">
             <Banknote className="w-4 h-4" />
             {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
             {dueDividend > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold">Due</span>}
           </Button>
-          <Button
-            onClick={() => setAddCapitalOpen(true)}
-            variant="outline"
-            className="gap-2 border-primary/30 hover:bg-primary/5"
-          >
+          <Button onClick={() => setAddCapitalOpen(true)} variant="outline" className="gap-2 border-primary/30 hover:bg-primary/5">
             <PlusCircle className="w-4 h-4 text-primary" />
             {bn ? "মূলধন যোগ" : "Add Capital"}
           </Button>
-          <Button
-            onClick={() => setWithdrawalOpen(true)}
-            variant="outline"
-            className="gap-2 border-destructive/30 hover:bg-destructive/5"
-          >
+          <Button onClick={() => setWithdrawalOpen(true)} variant="outline" className="gap-2 border-destructive/30 hover:bg-destructive/5">
             <ArrowDownCircle className="w-4 h-4 text-destructive" />
             {bn ? "উত্তোলন" : "Withdrawal"}
           </Button>
-          {/* Agreement PDF Button */}
           {inv && (
             <AgreementPDFTemplate
               investor={hasDb ? inv : {
-                id: inv.id,
-                name_en: inv.nameEn || inv.name_en,
-                name_bn: inv.nameBn || inv.name_bn,
-                phone: inv.phone,
-                nid_number: inv.nid_number || null,
-                address: inv.address || null,
-                investor_id: inv.investor_id || null,
-                capital: capital,
-                monthly_profit_percent: profitPct,
-                tenure_years: inv.tenure_years || null,
-                investment_model: inv.investment_model || "profit_only",
-                maturity_date: inv.maturity_date || null,
-                nominee_name: inv.nominee_name || null,
-                nominee_phone: inv.nominee_phone || null,
-                nominee_nid: inv.nominee_nid || null,
-                nominee_relation: inv.nominee_relation || null,
-                reinvest: reinvest,
-                source_of_fund: inv.source_of_fund || null,
+                id: inv.id, name_en: inv.nameEn || inv.name_en, name_bn: inv.nameBn || inv.name_bn, phone: inv.phone,
+                nid_number: inv.nid_number || null, address: inv.address || null, investor_id: inv.investor_id || null,
+                capital: capital, monthly_profit_percent: profitPct, tenure_years: inv.tenure_years || null,
+                investment_model: inv.investment_model || "profit_only", maturity_date: inv.maturity_date || null,
+                nominee_name: inv.nominee_name || null, nominee_phone: inv.nominee_phone || null,
+                nominee_nid: inv.nominee_nid || null, nominee_relation: inv.nominee_relation || null,
+                reinvest: reinvest, source_of_fund: inv.source_of_fund || null,
               }}
               bn={bn}
             />
@@ -441,13 +348,9 @@ const InvestorDetail = () => {
       {projection && (
         <div className="card-elevated p-5 border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 shrink-0">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
+            <div className="p-2 rounded-xl bg-primary/10 shrink-0"><Sparkles className="w-5 h-5 text-primary" /></div>
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                {bn ? "AI প্রজেকশন" : "AI Projection"}
-              </h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-1">{bn ? "AI প্রজেকশন" : "AI Projection"}</h3>
               <p className="text-sm text-foreground/80 leading-relaxed">{projection}</p>
             </div>
           </div>
@@ -459,9 +362,7 @@ const InvestorDetail = () => {
         <div className="card-elevated p-5">
           <div className="flex items-center gap-2 mb-3">
             <LineChartIcon className="w-4 h-4 text-success" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {bn ? "লভ্যাংশ ট্রেন্ড (৬ মাস)" : "Profit Trend (6 Months)"}
-            </h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{bn ? "লভ্যাংশ ট্রেন্ড (৬ মাস)" : "Profit Trend (6 Months)"}</h3>
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -473,10 +374,7 @@ const InvestorDetail = () => {
                   </linearGradient>
                 </defs>
                 <Area type="monotone" dataKey="value" stroke="hsl(var(--success))" fill="url(#profitGrad)" strokeWidth={2.5} />
-                <RechartsTooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
-                  formatter={(v: number) => [`৳${v.toLocaleString()}`, bn ? "লভ্যাংশ" : "Profit"]}
-                />
+                <RechartsTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} formatter={(v: number) => [`৳${v.toLocaleString()}`, bn ? "লভ্যাংশ" : "Profit"]} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -501,27 +399,17 @@ const InvestorDetail = () => {
       {/* ═══ PHASE 4: Ledger Tabs ═══ */}
       <div className="card-elevated p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            {bn ? "লেনদেন লেজার" : "Transaction Ledger"}
-          </h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{bn ? "লেনদেন লেজার" : "Transaction Ledger"}</h3>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleDownloadStatement}>
             <Download className="w-3.5 h-3.5" />
             {bn ? "স্টেটমেন্ট" : "Statement"}
           </Button>
         </div>
-
         <Tabs defaultValue="dividends" className="w-full">
           <TabsList className="w-full grid grid-cols-2 mb-4">
-            <TabsTrigger value="dividends" className="text-xs gap-1.5">
-              <Banknote className="w-3.5 h-3.5" />
-              {bn ? "লভ্যাংশ ইতিহাস" : "Dividend History"}
-            </TabsTrigger>
-            <TabsTrigger value="capital" className="text-xs gap-1.5">
-              <Wallet className="w-3.5 h-3.5" />
-              {bn ? "মূলধন লেনদেন" : "Capital Transactions"}
-            </TabsTrigger>
+            <TabsTrigger value="dividends" className="text-xs gap-1.5"><Banknote className="w-3.5 h-3.5" />{bn ? "লভ্যাংশ ইতিহাস" : "Dividend History"}</TabsTrigger>
+            <TabsTrigger value="capital" className="text-xs gap-1.5"><Wallet className="w-3.5 h-3.5" />{bn ? "মূলধন লেনদেন" : "Capital Transactions"}</TabsTrigger>
           </TabsList>
-
           <TabsContent value="dividends">
             {dividendTxns.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">{bn ? "কোনো লভ্যাংশ রেকর্ড নেই" : "No dividend records"}</p>
@@ -550,7 +438,6 @@ const InvestorDetail = () => {
               </div>
             )}
           </TabsContent>
-
           <TabsContent value="capital">
             {capitalTxns.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">{bn ? "কোনো মূলধন লেনদেন নেই" : "No capital transactions"}</p>
@@ -584,17 +471,16 @@ const InvestorDetail = () => {
         </Tabs>
       </div>
 
-      {/* ═══ PHASE 2: Pay Dividend Drawer ═══ */}
+      {/* ═══ Pay Dividend Drawer ═══ */}
       <Drawer open={payDividendOpen} onOpenChange={setPayDividendOpen}>
-        <DrawerContent className="max-h-[85dvh]">
-          <DrawerHeader className="border-b border-border/40">
+        <DrawerContent>
+          <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Banknote className="w-5 h-5 text-success" />
               {bn ? "লভ্যাংশ প্রদান" : "Pay Dividend"}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-            {/* Breakdown header */}
+          <DrawerBody className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-success/5 border border-success/20">
                 <p className="text-[11px] text-muted-foreground">{bn ? "এই মাসের লভ্যাংশ" : "This Month's Profit"}</p>
@@ -603,34 +489,18 @@ const InvestorDetail = () => {
               </div>
               <div className={`p-3 rounded-xl border ${dueDividend > 0 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"}`}>
                 <p className="text-[11px] text-muted-foreground">{bn ? "পূর্ববর্তী বকেয়া" : "Previous Due"}</p>
-                <p className={`text-lg font-bold mt-0.5 ${dueDividend > 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                  ৳{dueDividend.toLocaleString()}
-                </p>
+                <p className={`text-lg font-bold mt-0.5 ${dueDividend > 0 ? "text-destructive" : "text-muted-foreground"}`}>৳{dueDividend.toLocaleString()}</p>
                 <p className="text-[10px] text-muted-foreground">{bn ? "অপরিশোধিত" : "Unpaid balance"}</p>
               </div>
             </div>
-
-            {/* Total Payable banner */}
             <div className="p-4 rounded-xl bg-gradient-to-r from-success/10 to-success/5 border border-success/30">
               <p className="text-xs font-bold text-success uppercase tracking-wider">{bn ? "মোট প্রদেয়" : "Total Payable"}</p>
               <p className="text-3xl font-extrabold text-success mt-1">৳{totalPayable.toLocaleString()}</p>
             </div>
-
-            {/* Editable pay amount */}
             <div>
               <Label className="text-xs font-bold mb-1.5 block">{bn ? "প্রদানের পরিমাণ (৳)" : "Paying Amount (৳)"}</Label>
-              <Input
-                type="number"
-                value={dividendPayAmount}
-                onChange={(e) => setDividendPayAmount(e.target.value)}
-                placeholder={String(totalPayable)}
-                max={totalPayable}
-                min={1}
-                className="text-lg font-bold"
-              />
+              <Input type="number" value={dividendPayAmount} onChange={(e) => setDividendPayAmount(e.target.value)} placeholder={String(totalPayable)} max={totalPayable} min={1} className="text-lg font-bold" />
             </div>
-
-            {/* Live calculation widget */}
             {dividendPayAmount && Number(dividendPayAmount) > 0 && (
               <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -655,44 +525,26 @@ const InvestorDetail = () => {
                 </div>
               </div>
             )}
-
-            {/* Payout method */}
             <div>
               <Label className="text-xs font-bold mb-2 block">{bn ? "পরিশোধ পদ্ধতি" : "Payout Method"}</Label>
               <RadioGroup value={payoutMode} onValueChange={(v) => setPayoutMode(v as "cash" | "reinvest")} className="space-y-2">
                 <div className="flex items-center gap-3 p-3 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors">
                   <RadioGroupItem value="cash" id="cash" />
-                  <Label htmlFor="cash" className="text-sm cursor-pointer flex-1">
-                    💵 {bn ? "নগদ প্রদান" : "Cash Payout"}
-                  </Label>
+                  <Label htmlFor="cash" className="text-sm cursor-pointer flex-1">💵 {bn ? "নগদ প্রদান" : "Cash Payout"}</Label>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors">
                   <RadioGroupItem value="reinvest" id="reinvest" />
-                  <Label htmlFor="reinvest" className="text-sm cursor-pointer flex-1">
-                    🔄 {bn ? "মূলধনে পুনঃবিনিয়োগ" : "Reinvest to Capital"}
-                  </Label>
+                  <Label htmlFor="reinvest" className="text-sm cursor-pointer flex-1">🔄 {bn ? "মূলধনে পুনঃবিনিয়োগ" : "Reinvest to Capital"}</Label>
                 </div>
               </RadioGroup>
             </div>
-
-            {/* Notes / Remarks */}
             <div>
               <Label className="text-xs font-bold mb-1.5 block">{bn ? "নোটস / মন্তব্য (ঐচ্ছিক)" : "Notes / Remarks (Optional)"}</Label>
-              <textarea
-                value={dividendNotes}
-                onChange={(e) => setDividendNotes(e.target.value)}
-                placeholder={bn ? "আংশিক পরিশোধের কারণ লিখুন..." : "Reason for partial payment..."}
-                rows={2}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
+              <textarea value={dividendNotes} onChange={(e) => setDividendNotes(e.target.value)} placeholder={bn ? "আংশিক পরিশোধের কারণ লিখুন..." : "Reason for partial payment..."} rows={2} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
             </div>
-          </div>
-          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-            <Button
-              onClick={handlePayDividend}
-              disabled={submitting || !dividendPayAmount || Number(dividendPayAmount) <= 0 || Number(dividendPayAmount) > totalPayable}
-              className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1.5"
-            >
+          </DrawerBody>
+          <DrawerFooter>
+            <Button onClick={handlePayDividend} disabled={submitting || !dividendPayAmount || Number(dividendPayAmount) <= 0 || Number(dividendPayAmount) > totalPayable} className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1.5">
               {submitting ? "..." : bn ? "নিশ্চিত করুন" : "Confirm Payment"}
             </Button>
             <Button variant="outline" className="w-full" onClick={() => setPayDividendOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
@@ -702,14 +554,14 @@ const InvestorDetail = () => {
 
       {/* ═══ Add Capital Drawer ═══ */}
       <Drawer open={addCapitalOpen} onOpenChange={setAddCapitalOpen}>
-        <DrawerContent className="max-h-[85dvh]">
-          <DrawerHeader className="border-b border-border/40">
+        <DrawerContent>
+          <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <PlusCircle className="w-5 h-5 text-primary" />
               {bn ? "মূলধন যোগ" : "Add Capital"}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <DrawerBody className="space-y-4">
             <div>
               <Label className="text-xs font-bold">{bn ? "মূলধন পরিমাণ (৳)" : "Capital Amount (৳)"}</Label>
               <Input type="number" value={capitalAmount} onChange={(e) => setCapitalAmount(e.target.value)} placeholder="50000" className="mt-1.5" />
@@ -724,8 +576,8 @@ const InvestorDetail = () => {
                 <p className="text-xl font-bold text-primary">৳{(capital + Number(capitalAmount)).toLocaleString()}</p>
               </div>
             )}
-          </div>
-          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          </DrawerBody>
+          <DrawerFooter>
             <Button onClick={handleAddCapital} disabled={submitting} className="w-full gap-1.5">
               {submitting ? "..." : bn ? "যোগ করুন" : "Add Capital"}
             </Button>
@@ -736,14 +588,14 @@ const InvestorDetail = () => {
 
       {/* ═══ Withdrawal Drawer ═══ */}
       <Drawer open={withdrawalOpen} onOpenChange={setWithdrawalOpen}>
-        <DrawerContent className="max-h-[85dvh]">
-          <DrawerHeader className="border-b border-border/40">
+        <DrawerContent>
+          <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <ArrowDownCircle className="w-5 h-5 text-destructive" />
               {bn ? "উত্তোলন" : "Withdrawal"}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <DrawerBody className="space-y-4">
             <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
               <p className="text-xs text-muted-foreground">{bn ? "বর্তমান মূলধন" : "Current Capital"}</p>
               <p className="text-xl font-bold text-foreground">৳{capital.toLocaleString()}</p>
@@ -760,8 +612,8 @@ const InvestorDetail = () => {
                 </p>
               </div>
             )}
-          </div>
-          <DrawerFooter className="border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          </DrawerBody>
+          <DrawerFooter>
             <Button onClick={handleWithdrawal} disabled={submitting || Number(withdrawAmount) > capital || Number(withdrawAmount) <= 0} variant="destructive" className="w-full gap-1.5">
               {submitting ? "..." : bn ? "উত্তোলন করুন" : "Withdraw"}
             </Button>
