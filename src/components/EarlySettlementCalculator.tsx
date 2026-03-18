@@ -91,14 +91,15 @@ export default function EarlySettlementCalculator({ open, onClose, preselectedLo
   const result = calculateSettlement();
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onClose}>
+      <DrawerContent>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="text-sm font-bold flex items-center gap-2">
             <Calculator className="w-4 h-4 text-primary" />
             {bn ? "তাড়াতাড়ি পরিশোধ ক্যালকুলেটর" : "Early Settlement Calculator"}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
+        <DrawerBody>
 
         {configLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
