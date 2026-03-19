@@ -119,13 +119,13 @@ export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Pr
       const { error: updErr } = await supabase.from("investors").update({ capital: capital + amt, principal_amount: (investor.principal_amount || 0) + amt }).eq("id", investor.id);
       if (updErr) throw updErr;
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "savings_deposit" as any, amount: amt, status: "paid" as any,
+        investor_id: investor.id, type: "savings_deposit", amount: amt, status: "paid",
         transaction_date: format(new Date(), "yyyy-MM-dd"), notes: `Capital addition${fee > 0 ? ` (Fee: ৳${fee})` : ""}`, performed_by: user.id,
       });
       if (txErr) throw txErr;
       if (fee > 0) {
         await supabase.from("transactions").insert({
-          investor_id: investor.id, type: "loan_penalty" as any, amount: fee, status: "paid" as any,
+          investor_id: investor.id, type: "loan_penalty", amount: fee, status: "paid",
           transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital addition processing fee", performed_by: user.id,
         });
       }
