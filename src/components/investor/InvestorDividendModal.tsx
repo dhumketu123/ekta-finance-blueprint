@@ -320,7 +320,21 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
               </motion.div>
               <p className="text-lg font-bold text-success">{bn ? "লভ্যাংশ প্রদান সফল!" : "Dividend Paid!"}</p>
               <p className="text-sm text-muted-foreground">৳{Number(dividendPayAmount).toLocaleString()}</p>
-              <Button onClick={handleClose} className="mt-4">{bn ? "বন্ধ করুন" : "Done"}</Button>
+              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                <Button
+                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
+                  onClick={() => {
+                    const payAmt = Number(dividendPayAmount);
+                    const name = investor.name_bn || investor.name_en || "";
+                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
+                    const msg = `সম্মানিত ${name},\n\nএকতা ফাইন্যান্স-এ আপনার বিনিয়োগের উপর সর্বশেষ লভ্যাংশ সফলভাবে প্রদান করা হয়েছে।\n\n💰 প্রদত্ত লভ্যাংশ: ${payAmt.toLocaleString()} ৳\n💼 আপনার মোট মূলধন: ${capital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের উপর নিরবচ্ছিন্ন আস্থা রাখার জন্য আন্তরিক ধন্যবাদ। আপনার আর্থিক সমৃদ্ধির পথে একতা ফাইন্যান্স সর্বদা আপনার পাশে আছে।\n\n— একতা ফাইন্যান্স`;
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
+                </Button>
+                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

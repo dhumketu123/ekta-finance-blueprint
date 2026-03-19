@@ -233,7 +233,21 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
               </motion.div>
               <p className="text-lg font-bold text-success">{bn ? "উত্তোলন সফল!" : "Withdrawal Complete!"}</p>
               <p className="text-sm text-muted-foreground">৳{amt.toLocaleString()}</p>
-              <Button onClick={handleClose} className="mt-4">{bn ? "বন্ধ করুন" : "Done"}</Button>
+              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                <Button
+                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
+                  onClick={() => {
+                    const name = investor.name_bn || investor.name_en || "";
+                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
+                    const remaining = capital - amt;
+                    const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
+                </Button>
+                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
