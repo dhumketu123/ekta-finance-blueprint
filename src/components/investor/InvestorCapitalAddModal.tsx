@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  PlusCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2,
+  PlusCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
@@ -119,13 +119,13 @@ export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Pr
       const { error: updErr } = await supabase.from("investors").update({ capital: capital + amt, principal_amount: (investor.principal_amount || 0) + amt }).eq("id", investor.id);
       if (updErr) throw updErr;
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "savings_deposit" as any, amount: amt, status: "paid" as any,
+        investor_id: investor.id, type: "savings_deposit", amount: amt, status: "paid",
         transaction_date: format(new Date(), "yyyy-MM-dd"), notes: `Capital addition${fee > 0 ? ` (Fee: ৳${fee})` : ""}`, performed_by: user.id,
       });
       if (txErr) throw txErr;
       if (fee > 0) {
         await supabase.from("transactions").insert({
-          investor_id: investor.id, type: "loan_penalty" as any, amount: fee, status: "paid" as any,
+          investor_id: investor.id, type: "loan_penalty", amount: fee, status: "paid",
           transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital addition processing fee", performed_by: user.id,
         });
       }
@@ -239,7 +239,22 @@ export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Pr
               </motion.div>
               <p className="text-lg font-bold text-success">{bn ? "মূলধন যোগ সফল!" : "Capital Added!"}</p>
               <p className="text-sm text-muted-foreground">৳{Number(capitalAmount).toLocaleString()}</p>
-              <Button onClick={handleClose} className="mt-4">{bn ? "বন্ধ করুন" : "Done"}</Button>
+              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                <Button
+                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
+                  onClick={() => {
+                    const amt = Number(capitalAmount);
+                    const newTotal = capital + amt;
+                    const name = investor.name_bn || investor.name_en || "";
+                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
+                    const msg = `নিরাপত্তা আপডেট 🔒\n\nসম্মানিত ${name},\nআপনার ভল্টে নতুন ফান্ড সফলভাবে জমা হয়েছে।\n\n📥 জমার পরিমাণ: ${amt.toLocaleString()} ৳\n💼 সর্বমোট মূলধন: ${newTotal.toLocaleString()} ৳\n\nআপনার ফান্ড একতা ফাইন্যান্স-এর সিকিউরড ভল্টে সম্পূর্ণ সুরক্ষিত আছে এবং পরবর্তী লভ্যাংশ চক্রের জন্য সক্রিয় করা হয়েছে।\n\n— একতা ফাইন্যান্স`;
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
+                </Button>
+                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
