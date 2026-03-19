@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2,
+  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
