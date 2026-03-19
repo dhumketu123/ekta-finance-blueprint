@@ -117,7 +117,7 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
       const { error: updErr } = await supabase.from("investors").update({ capital: capital - amt }).eq("id", investor.id);
       if (updErr) throw updErr;
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "investor_principal_return" as any, amount: amt, status: "paid" as any,
+        investor_id: investor.id, type: "investor_principal_return", amount: amt, status: "paid",
         transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital withdrawal", performed_by: user.id,
       });
       if (txErr) throw txErr;
