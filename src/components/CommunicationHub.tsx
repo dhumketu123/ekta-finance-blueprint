@@ -34,9 +34,13 @@ const CommunicationHub = ({ clientId, clientPhone, clientName, loanId }: Communi
   const [smsText, setSmsText] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  const phone = clientPhone?.replace(/\s/g, "") || "";
+  // Convert Bengali digits (০-৯) to ASCII (0-9), strip spaces/non-digit chars
+  const normalizeBnDigits = (raw: string): string =>
+    raw.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "");
+
+  const phone = normalizeBnDigits(clientPhone ?? "");
   const intlPhone = phone.startsWith("+") ? phone : phone.startsWith("0") ? `+88${phone}` : `+880${phone}`;
-  const waPhone = intlPhone.replace("+", "");
+  const waPhone = intlPhone.replace(/[^\d]/g, "");
 
   const handleCall = () => {
     logComm.mutate({ client_id: clientId, loan_id: loanId, comm_type: "call" });
