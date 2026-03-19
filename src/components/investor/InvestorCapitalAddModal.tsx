@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
@@ -7,37 +7,27 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
-  Loader2, Zap, Banknote, AlertTriangle, Settings2,
-  ShieldCheck, Lock, CheckCircle2,
+  PlusCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
 import confetti from "canvas-confetti";
 
 interface Props {
-  investorId: string;
-  investorName: string;
   open: boolean;
   onClose: () => void;
+  investor: any;
+  capital: number;
 }
 
-type TransactionType = "extra_capital" | "penalty" | "adjustment";
 type Phase = "form" | "pin" | "confirm" | "executing" | "success";
-
-const TRANSACTION_TYPES: { value: TransactionType; labelBn: string; labelEn: string; icon: typeof Banknote; color: string }[] = [
-  { value: "extra_capital", labelBn: "অতিরিক্ত মূলধন", labelEn: "Additional Capital", icon: Banknote, color: "text-success" },
-  { value: "penalty", labelBn: "জরিমানা / বিলম্ব ফি", labelEn: "Penalty / Late Fee", icon: AlertTriangle, color: "text-destructive" },
-  { value: "adjustment", labelBn: "সমন্বয় / কারেকশন", labelEn: "Adjustment / Correction", icon: Settings2, color: "text-warning" },
-];
 
 const vaultTransition = {
   initial: { opacity: 0, x: 40, scale: 0.92 },
@@ -45,15 +35,15 @@ const vaultTransition = {
   exit: { opacity: 0, x: -40, scale: 0.92, transition: { duration: 0.25, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] } },
 };
 
-export function CustomTransactionModal({ investorId, investorName, open, onClose }: Props) {
+export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Props) {
   const { lang } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
 
   const [phase, setPhase] = useState<Phase>("form");
-  const [type, setType] = useState<TransactionType>("extra_capital");
-  const [amount, setAmount] = useState<number>(0);
-  const [notes, setNotes] = useState("");
+  const [capitalAmount, setCapitalAmount] = useState("");
+  const [feeAmount, setFeeAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // PIN state
@@ -65,10 +55,8 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
   const [countdown, setCountdown] = useState(0);
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const isFormValid = amount > 0;
+  const isFormValid = capitalAmount && Number(capitalAmount) > 0;
   const isLocked = phase === "executing" || submitting;
-  const selectedType = TRANSACTION_TYPES.find((t) => t.value === type);
-  const TypeIcon = selectedType?.icon ?? Banknote;
 
   useEffect(() => {
     if (!lockedUntil) { setCountdown(0); return; }
@@ -122,47 +110,52 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
   const formatCountdownTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   const handleExecute = useCallback(async () => {
-    if (submitting) return;
+    if (!user || submitting) return;
     setSubmitting(true);
     setPhase("executing");
     try {
-      const typeLabels: Record<TransactionType, string> = {
-        extra_capital: bn ? "অতিরিক্ত মূলধন" : "Additional Capital",
-        penalty: bn ? "জরিমানা" : "Penalty",
-        adjustment: bn ? "সমন্বয়" : "Adjustment",
-      };
-      const fullNotes = `[${typeLabels[type]}] ${notes}`.trim();
-      const { error } = await supabase.rpc("create_investor_weekly_transaction", {
-        p_data: { investor_id: investorId, type, amount, notes: fullNotes },
+      const amt = Number(capitalAmount);
+      const fee = Number(feeAmount) || 0;
+      const { error: updErr } = await supabase.from("investors").update({ capital: capital + amt, principal_amount: (investor.principal_amount || 0) + amt }).eq("id", investor.id);
+      if (updErr) throw updErr;
+      const { error: txErr } = await supabase.from("transactions").insert({
+        investor_id: investor.id, type: "savings_deposit" as any, amount: amt, status: "paid" as any,
+        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: `Capital addition${fee > 0 ? ` (Fee: ৳${fee})` : ""}`, performed_by: user.id,
       });
-      if (error) throw error;
+      if (txErr) throw txErr;
+      if (fee > 0) {
+        await supabase.from("transactions").insert({
+          investor_id: investor.id, type: "loan_penalty" as any, amount: fee, status: "paid" as any,
+          transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital addition processing fee", performed_by: user.id,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["investors"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
-      toast.success(bn ? "লেনদেন সফল!" : "Transaction completed!");
+      toast.success(bn ? "মূলধন যোগ সফল ✅" : "Capital added ✅");
       setPhase("success");
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || "Error");
       setPhase("confirm");
     } finally { setSubmitting(false); }
-  }, [submitting, type, amount, notes, investorId, bn, queryClient]);
+  }, [user, capitalAmount, feeAmount, capital, investor, bn, queryClient, submitting]);
 
   const handleClose = useCallback(() => {
-    setPhase("form"); setType("extra_capital"); setAmount(0); setNotes(""); resetPin(); onClose();
+    setPhase("form"); setCapitalAmount(""); setFeeAmount(""); resetPin(); onClose();
   }, [onClose, resetPin]);
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
       <DrawerContent onInteractOutside={(e) => { if (isLocked) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (isLocked) e.preventDefault(); }}>
         <DrawerHeader className="border-b border-border/40">
-          <DrawerTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" />
-            {bn ? "কাস্টম লেনদেন" : "Custom Transaction"}
+          <DrawerTitle className="flex items-center gap-2 text-primary">
+            <PlusCircle className="w-5 h-5" />
+            {bn ? "মূলধন যোগ" : "Add Capital"}
           </DrawerTitle>
           <DrawerDescription>
             {phase === "pin" ? (bn ? "নিরাপত্তা যাচাই" : "Security verification")
               : phase === "confirm" ? (bn ? "চূড়ান্ত নিশ্চিতকরণ" : "Final confirmation")
-              : (bn ? `পার্টনার: ${investorName}` : `Partner: ${investorName}`)}
+              : (bn ? "ইনভেস্টরের মূলধনে অর্থ যোগ করুন" : "Add funds to investor capital")}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -170,44 +163,18 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
           {phase === "form" && (
             <motion.div key="form" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
               <DrawerBody className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">{bn ? "লেনদেনের ধরন" : "Transaction Type"}</Label>
-                  <Select value={type} onValueChange={(v) => setType(v as TransactionType)}>
-                    <SelectTrigger id="type" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRANSACTION_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          <div className="flex items-center gap-2">
-                            <t.icon className={`w-4 h-4 ${t.color}`} />
-                            <span>{bn ? t.labelBn : t.labelEn}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <Label className="text-xs font-bold">{bn ? "মূলধন পরিমাণ (৳)" : "Capital Amount (৳)"}</Label>
+                  <Input type="number" value={capitalAmount} onChange={(e) => setCapitalAmount(e.target.value)} placeholder="50000" className="mt-1.5 text-lg font-bold" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">৳</span>
-                    <Input id="amount" type="number" min={1} step={100} value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} className="pl-8 text-lg font-semibold" placeholder="0" />
-                  </div>
+                <div>
+                  <Label className="text-xs font-bold">{bn ? "ফি (ঐচ্ছিক)" : "Fee (Optional)"}</Label>
+                  <Input type="number" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="0" className="mt-1.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">{bn ? "নোট / রেফারেন্স" : "Note / Reference"}</Label>
-                  <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={bn ? "লেনদেনের বিবরণ..." : "Transaction details..."} rows={3} className="resize-none" />
-                </div>
-                {amount > 0 && (
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TypeIcon className={`w-5 h-5 ${selectedType?.color}`} />
-                        <span className="text-sm font-medium">{bn ? selectedType?.labelBn : selectedType?.labelEn}</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">৳{amount.toLocaleString("bn-BD")}</span>
-                    </div>
+                {capitalAmount && Number(capitalAmount) > 0 && (
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">{bn ? "নতুন মোট মূলধন" : "New Total Capital"}</p>
+                    <p className="text-xl font-bold text-primary">৳{(capital + Number(capitalAmount)).toLocaleString()}</p>
                   </div>
                 )}
               </DrawerBody>
@@ -247,9 +214,9 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
             <motion.div key="confirm" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
               <DrawerBody className="flex flex-col items-center justify-center gap-5 py-8">
                 <div className="text-center space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{bn ? selectedType?.labelBn : selectedType?.labelEn}</p>
-                  <p className="text-3xl font-extrabold text-primary">৳{amount.toLocaleString("bn-BD")}</p>
-                  <p className="text-xs text-muted-foreground">{investorName}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{bn ? "মূলধন যোগ" : "Add Capital"}</p>
+                  <p className="text-3xl font-extrabold text-primary">৳{Number(capitalAmount).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{bn ? `নতুন মোট: ৳${(capital + Number(capitalAmount)).toLocaleString()}` : `New total: ৳${(capital + Number(capitalAmount)).toLocaleString()}`}</p>
                 </div>
                 <ArcReactorButton onConfirmed={handleExecute} disabled={submitting} label={bn ? "ধরে রাখুন" : "Hold"} sublabel={bn ? "নিশ্চিত করুন" : "to confirm"} />
                 <p className="text-[11px] text-muted-foreground">{bn ? "বোতামটি ২.৫ সেকেন্ড ধরে রাখুন" : "Hold for 2.5s to confirm"}</p>
@@ -270,8 +237,8 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </motion.div>
-              <p className="text-lg font-bold text-success">{bn ? "লেনদেন সফল!" : "Transaction Complete!"}</p>
-              <p className="text-sm text-muted-foreground">৳{amount.toLocaleString("bn-BD")}</p>
+              <p className="text-lg font-bold text-success">{bn ? "মূলধন যোগ সফল!" : "Capital Added!"}</p>
+              <p className="text-sm text-muted-foreground">৳{Number(capitalAmount).toLocaleString()}</p>
               <Button onClick={handleClose} className="mt-4">{bn ? "বন্ধ করুন" : "Done"}</Button>
             </motion.div>
           )}

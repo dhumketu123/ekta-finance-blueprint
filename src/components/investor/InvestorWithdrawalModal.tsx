@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
@@ -7,37 +7,27 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
-  Loader2, Zap, Banknote, AlertTriangle, Settings2,
-  ShieldCheck, Lock, CheckCircle2,
+  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
 import confetti from "canvas-confetti";
 
 interface Props {
-  investorId: string;
-  investorName: string;
   open: boolean;
   onClose: () => void;
+  investor: any;
+  capital: number;
 }
 
-type TransactionType = "extra_capital" | "penalty" | "adjustment";
 type Phase = "form" | "pin" | "confirm" | "executing" | "success";
-
-const TRANSACTION_TYPES: { value: TransactionType; labelBn: string; labelEn: string; icon: typeof Banknote; color: string }[] = [
-  { value: "extra_capital", labelBn: "অতিরিক্ত মূলধন", labelEn: "Additional Capital", icon: Banknote, color: "text-success" },
-  { value: "penalty", labelBn: "জরিমানা / বিলম্ব ফি", labelEn: "Penalty / Late Fee", icon: AlertTriangle, color: "text-destructive" },
-  { value: "adjustment", labelBn: "সমন্বয় / কারেকশন", labelEn: "Adjustment / Correction", icon: Settings2, color: "text-warning" },
-];
 
 const vaultTransition = {
   initial: { opacity: 0, x: 40, scale: 0.92 },
@@ -45,15 +35,14 @@ const vaultTransition = {
   exit: { opacity: 0, x: -40, scale: 0.92, transition: { duration: 0.25, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] } },
 };
 
-export function CustomTransactionModal({ investorId, investorName, open, onClose }: Props) {
+export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Props) {
   const { lang } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
 
   const [phase, setPhase] = useState<Phase>("form");
-  const [type, setType] = useState<TransactionType>("extra_capital");
-  const [amount, setAmount] = useState<number>(0);
-  const [notes, setNotes] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // PIN state
@@ -65,10 +54,9 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
   const [countdown, setCountdown] = useState(0);
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const isFormValid = amount > 0;
+  const amt = Number(withdrawAmount);
+  const isFormValid = amt > 0 && amt <= capital;
   const isLocked = phase === "executing" || submitting;
-  const selectedType = TRANSACTION_TYPES.find((t) => t.value === type);
-  const TypeIcon = selectedType?.icon ?? Banknote;
 
   useEffect(() => {
     if (!lockedUntil) { setCountdown(0); return; }
@@ -122,47 +110,44 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
   const formatCountdownTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   const handleExecute = useCallback(async () => {
-    if (submitting) return;
+    if (!user || submitting) return;
     setSubmitting(true);
     setPhase("executing");
     try {
-      const typeLabels: Record<TransactionType, string> = {
-        extra_capital: bn ? "অতিরিক্ত মূলধন" : "Additional Capital",
-        penalty: bn ? "জরিমানা" : "Penalty",
-        adjustment: bn ? "সমন্বয়" : "Adjustment",
-      };
-      const fullNotes = `[${typeLabels[type]}] ${notes}`.trim();
-      const { error } = await supabase.rpc("create_investor_weekly_transaction", {
-        p_data: { investor_id: investorId, type, amount, notes: fullNotes },
+      const { error: updErr } = await supabase.from("investors").update({ capital: capital - amt }).eq("id", investor.id);
+      if (updErr) throw updErr;
+      const { error: txErr } = await supabase.from("transactions").insert({
+        investor_id: investor.id, type: "investor_principal_return" as any, amount: amt, status: "paid" as any,
+        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital withdrawal", performed_by: user.id,
       });
-      if (error) throw error;
+      if (txErr) throw txErr;
       queryClient.invalidateQueries({ queryKey: ["investors"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard_summary_metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
-      toast.success(bn ? "লেনদেন সফল!" : "Transaction completed!");
+      toast.success(bn ? "উত্তোলন সফল ✅" : "Withdrawal successful ✅");
       setPhase("success");
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || "Error");
       setPhase("confirm");
     } finally { setSubmitting(false); }
-  }, [submitting, type, amount, notes, investorId, bn, queryClient]);
+  }, [user, amt, capital, investor, bn, queryClient, submitting]);
 
   const handleClose = useCallback(() => {
-    setPhase("form"); setType("extra_capital"); setAmount(0); setNotes(""); resetPin(); onClose();
+    setPhase("form"); setWithdrawAmount(""); resetPin(); onClose();
   }, [onClose, resetPin]);
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
       <DrawerContent onInteractOutside={(e) => { if (isLocked) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (isLocked) e.preventDefault(); }}>
         <DrawerHeader className="border-b border-border/40">
-          <DrawerTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" />
-            {bn ? "কাস্টম লেনদেন" : "Custom Transaction"}
+          <DrawerTitle className="flex items-center gap-2 text-destructive">
+            <ArrowDownCircle className="w-5 h-5" />
+            {bn ? "উত্তোলন" : "Withdrawal"}
           </DrawerTitle>
           <DrawerDescription>
             {phase === "pin" ? (bn ? "নিরাপত্তা যাচাই" : "Security verification")
               : phase === "confirm" ? (bn ? "চূড়ান্ত নিশ্চিতকরণ" : "Final confirmation")
-              : (bn ? `পার্টনার: ${investorName}` : `Partner: ${investorName}`)}
+              : (bn ? "ইনভেস্টরের মূলধন থেকে উত্তোলন" : "Withdraw from investor capital")}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -170,50 +155,26 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
           {phase === "form" && (
             <motion.div key="form" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
               <DrawerBody className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">{bn ? "লেনদেনের ধরন" : "Transaction Type"}</Label>
-                  <Select value={type} onValueChange={(v) => setType(v as TransactionType)}>
-                    <SelectTrigger id="type" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRANSACTION_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          <div className="flex items-center gap-2">
-                            <t.icon className={`w-4 h-4 ${t.color}`} />
-                            <span>{bn ? t.labelBn : t.labelEn}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+                  <p className="text-xs text-muted-foreground">{bn ? "বর্তমান মূলধন" : "Current Capital"}</p>
+                  <p className="text-xl font-bold text-foreground">৳{capital.toLocaleString()}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">{bn ? "পরিমাণ (৳)" : "Amount (৳)"}</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">৳</span>
-                    <Input id="amount" type="number" min={1} step={100} value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} className="pl-8 text-lg font-semibold" placeholder="0" />
-                  </div>
+                <div>
+                  <Label className="text-xs font-bold">{bn ? "উত্তোলনের পরিমাণ (৳)" : "Withdrawal Amount (৳)"}</Label>
+                  <Input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="10000" max={capital} className="mt-1.5 text-lg font-bold" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">{bn ? "নোট / রেফারেন্স" : "Note / Reference"}</Label>
-                  <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={bn ? "লেনদেনের বিবরণ..." : "Transaction details..."} rows={3} className="resize-none" />
-                </div>
-                {amount > 0 && (
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TypeIcon className={`w-5 h-5 ${selectedType?.color}`} />
-                        <span className="text-sm font-medium">{bn ? selectedType?.labelBn : selectedType?.labelEn}</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">৳{amount.toLocaleString("bn-BD")}</span>
-                    </div>
+                {withdrawAmount && Number(withdrawAmount) > 0 && (
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/60">
+                    <p className="text-xs text-muted-foreground">{bn ? "অবশিষ্ট মূলধন" : "Remaining Capital"}</p>
+                    <p className={`text-xl font-bold ${Number(withdrawAmount) > capital ? "text-destructive" : "text-foreground"}`}>
+                      ৳{Math.max(0, capital - Number(withdrawAmount)).toLocaleString()}
+                    </p>
                   </div>
                 )}
               </DrawerBody>
               <DrawerFooter className="flex-row gap-2">
                 <Button variant="ghost" onClick={handleClose} className="flex-1">{bn ? "বাতিল" : "Cancel"}</Button>
-                <Button onClick={() => setPhase("pin")} disabled={!isFormValid} className="flex-1 gap-1.5">
+                <Button onClick={() => setPhase("pin")} disabled={!isFormValid} className="flex-1 gap-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                   <ShieldCheck className="w-4 h-4" /> {bn ? "পরবর্তী ধাপ" : "Next Step"}
                 </Button>
               </DrawerFooter>
@@ -247,9 +208,9 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
             <motion.div key="confirm" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
               <DrawerBody className="flex flex-col items-center justify-center gap-5 py-8">
                 <div className="text-center space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{bn ? selectedType?.labelBn : selectedType?.labelEn}</p>
-                  <p className="text-3xl font-extrabold text-primary">৳{amount.toLocaleString("bn-BD")}</p>
-                  <p className="text-xs text-muted-foreground">{investorName}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{bn ? "উত্তোলন" : "Withdrawal"}</p>
+                  <p className="text-3xl font-extrabold text-destructive">৳{amt.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{bn ? `অবশিষ্ট: ৳${(capital - amt).toLocaleString()}` : `Remaining: ৳${(capital - amt).toLocaleString()}`}</p>
                 </div>
                 <ArcReactorButton onConfirmed={handleExecute} disabled={submitting} label={bn ? "ধরে রাখুন" : "Hold"} sublabel={bn ? "নিশ্চিত করুন" : "to confirm"} />
                 <p className="text-[11px] text-muted-foreground">{bn ? "বোতামটি ২.৫ সেকেন্ড ধরে রাখুন" : "Hold for 2.5s to confirm"}</p>
@@ -260,7 +221,7 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
 
           {phase === "executing" && (
             <motion.div key="executing" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-16">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <Loader2 className="w-10 h-10 text-destructive animate-spin" />
               <p className="text-sm font-medium text-muted-foreground">{bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}</p>
             </motion.div>
           )}
@@ -270,8 +231,8 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </motion.div>
-              <p className="text-lg font-bold text-success">{bn ? "লেনদেন সফল!" : "Transaction Complete!"}</p>
-              <p className="text-sm text-muted-foreground">৳{amount.toLocaleString("bn-BD")}</p>
+              <p className="text-lg font-bold text-success">{bn ? "উত্তোলন সফল!" : "Withdrawal Complete!"}</p>
+              <p className="text-sm text-muted-foreground">৳{amt.toLocaleString()}</p>
               <Button onClick={handleClose} className="mt-4">{bn ? "বন্ধ করুন" : "Done"}</Button>
             </motion.div>
           )}
