@@ -153,7 +153,7 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
       ].filter(Boolean).join(" ");
 
       const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "investor_profit" as any, amount: payAmt, status: "paid" as any,
+        investor_id: investor.id, type: "investor_profit", amount: payAmt, status: "paid",
         transaction_date: format(new Date(), "yyyy-MM-dd"), notes: txNote, performed_by: user.id,
       });
       if (txErr) throw txErr;
