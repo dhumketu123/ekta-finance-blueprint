@@ -2721,7 +2721,7 @@ export type Database = {
         Args: {
           _assigned_officer?: string
           _client_id: string
-          _disbursement_date?: string
+          _disbursement_date: string
           _loan_model?: string
           _loan_product_id: string
           _notes?: string
