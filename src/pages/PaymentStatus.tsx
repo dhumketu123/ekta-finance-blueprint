@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton, MetricCardSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
