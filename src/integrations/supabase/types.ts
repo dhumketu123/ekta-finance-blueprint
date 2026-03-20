@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_balances: {
+        Row: {
+          account_id: string
+          account_type: string
+          balance: number
+          id: string
+          last_entry_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          account_type: string
+          balance?: number
+          id?: string
+          last_entry_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          balance?: number
+          id?: string
+          last_entry_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_balances_last_entry_id_fkey"
+            columns: ["last_entry_id"]
+            isOneToOne: false
+            referencedRelation: "double_entry_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_balances_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_code: string
@@ -668,6 +713,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      double_entry_ledger: {
+        Row: {
+          account_id: string
+          account_type: string
+          balance_after: number
+          created_at: string
+          created_by: string
+          credit: number
+          currency: string
+          debit: number
+          id: string
+          narration: string | null
+          reference_id: string | null
+          reference_type: string
+          tenant_id: string
+        }
+        Insert: {
+          account_id: string
+          account_type: string
+          balance_after?: number
+          created_at?: string
+          created_by: string
+          credit?: number
+          currency?: string
+          debit?: number
+          id?: string
+          narration?: string | null
+          reference_id?: string | null
+          reference_type: string
+          tenant_id: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          balance_after?: number
+          created_at?: string
+          created_by?: string
+          credit?: number
+          currency?: string
+          debit?: number
+          id?: string
+          narration?: string | null
+          reference_id?: string | null
+          reference_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_entry_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_sourcing: {
         Row: {
