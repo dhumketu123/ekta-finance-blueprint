@@ -220,10 +220,7 @@ const InvestorDetail = () => {
               investor={inv}
               bn={bn}
             />
-          )}
-              bn={bn}
-            />
-          )}
+          )
         </div>
       )}
 
