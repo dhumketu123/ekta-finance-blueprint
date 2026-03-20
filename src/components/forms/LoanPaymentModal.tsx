@@ -162,6 +162,12 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       setStep("result");
       toast.success(bn ? "পেমেন্ট সফল" : "Payment successful");
 
+      // Reactive cache invalidation — auto-refresh all dependent views
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["loan_schedules"] });
+
       try {
         const { data: loanData } = await supabase
           .from("loans")
@@ -173,12 +179,13 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
           const client = (loanData as any).clients;
           if (client?.phone) {
             setClientPhone(client.phone);
-            const clientName = client.name_bn || client.name_en;
+            setClientName(client.name_bn || client.name_en || "");
+            const cName = client.name_bn || client.name_en;
             const remaining = Number(paymentData.new_outstanding);
             const paid = Number(paymentData.total_payment);
             const msgBn = paymentData.loan_closed
-              ? `✅ ${clientName}, আপনার ঋণ ${loanData.loan_id || ""} সম্পূর্ণ পরিশোধিত! ৳${paid.toLocaleString()} গৃহীত। ধন্যবাদ!`
-              : `✅ ${clientName}, ৳${paid.toLocaleString()} পরিশোধ গৃহীত। অবশিষ্ট: ৳${remaining.toLocaleString()}। ধন্যবাদ!`;
+              ? `✅ ${cName}, আপনার ঋণ ${loanData.loan_id || ""} সম্পূর্ণ পরিশোধিত! ৳${paid.toLocaleString()} গৃহীত। ধন্যবাদ!`
+              : `✅ ${cName}, ৳${paid.toLocaleString()} পরিশোধ গৃহীত। অবশিষ্ট: ৳${remaining.toLocaleString()}। ধন্যবাদ!`;
             const msgEn = paymentData.loan_closed
               ? `✅ ${client.name_en}, your loan ${loanData.loan_id || ""} is fully paid! ৳${paid.toLocaleString()} received. Thank you!`
               : `✅ ${client.name_en}, ৳${paid.toLocaleString()} payment received. Remaining: ৳${remaining.toLocaleString()}. Thank you!`;
