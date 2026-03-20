@@ -59,6 +59,8 @@ type ModalStep = "form" | "confirm" | "result";
 export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanInfo }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
+  const queryClient = useQueryClient();
+  const [clientName, setClientName] = useState("");
   const suggestedAmount = loanInfo
     ? Number(loanInfo.penalty_amount) + Number(loanInfo.outstanding_interest) + Number(loanInfo.emi_amount)
     : 0;
