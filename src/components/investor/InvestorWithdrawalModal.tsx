@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare,
+  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare, X,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
@@ -204,59 +204,103 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
             </motion.div>
           )}
 
+          {/* ═══ PHASE 3: Hold-to-Confirm (Arc Reactor) ═══ */}
           {phase === "confirm" && (
             <motion.div key="confirm" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
-              <DrawerBody className="flex flex-col items-center justify-center gap-5 py-8">
-                <div className="text-center space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{bn ? "উত্তোলন" : "Withdrawal"}</p>
-                  <p className="text-3xl font-extrabold text-destructive">৳{amt.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">{bn ? `অবশিষ্ট: ৳${(capital - amt).toLocaleString()}` : `Remaining: ৳${(capital - amt).toLocaleString()}`}</p>
-                </div>
-                <ArcReactorButton onConfirmed={handleExecute} disabled={submitting} label={bn ? "ধরে রাখুন" : "Hold"} sublabel={bn ? "নিশ্চিত করুন" : "to confirm"} />
-                <p className="text-[11px] text-muted-foreground">{bn ? "বোতামটি ২.৫ সেকেন্ড ধরে রাখুন" : "Hold for 2.5s to confirm"}</p>
-              </DrawerBody>
-              <DrawerFooter><Button variant="ghost" onClick={() => setPhase("form")} disabled={submitting}>{bn ? "বাতিল" : "Cancel"}</Button></DrawerFooter>
-            </motion.div>
-          )}
-
-          {phase === "executing" && (
-            <motion.div key="executing" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-16">
-              <Loader2 className="w-10 h-10 text-destructive animate-spin" />
-              <p className="text-sm font-medium text-muted-foreground">{bn ? "প্রক্রিয়াকরণ হচ্ছে..." : "Processing..."}</p>
-            </motion.div>
-          )}
-
-          {phase === "success" && (
-            <motion.div key="success" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-12">
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-success" />
-              </motion.div>
-              <p className="text-lg font-bold text-success">{bn ? "উত্তোলন সফল!" : "Withdrawal Complete!"}</p>
-              <p className="text-sm text-muted-foreground">৳{amt.toLocaleString()}</p>
-              {(() => {
-                const name = investor.name_bn || investor.name_en || "";
-                const rawPhone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
-                const cleanPhone = rawPhone.slice(-10);
-                const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
-                const remaining = capital - amt;
-                const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
-                const encoded = encodeURIComponent(msg);
-                return (
-                  <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
-                    <div className="flex gap-2 w-full">
-                      <Button className="flex-1 gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
-                        <MessageCircle className="w-4 h-4" /> WhatsApp
-                      </Button>
-                      <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
-                        <MessageSquare className="w-4 h-4" /> SMS
-                      </Button>
-                    </div>
-                    <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+              <DrawerBody>
+                <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-6">
+                  <div className="text-center space-y-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                      {bn ? "চূড়ান্ত নিশ্চিতকরণ" : "Final Confirmation"}
+                    </p>
+                    <p className="text-2xl font-bold text-destructive">
+                      ৳{amt.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      → {investor.name_bn || investor.name_en || ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {bn ? `অবশিষ্ট: ৳${(capital - amt).toLocaleString()}` : `Remaining: ৳${(capital - amt).toLocaleString()}`}
+                    </p>
                   </div>
-                );
-              })()}
+                  <div className="flex flex-col items-center gap-3">
+                    <ArcReactorButton
+                      onConfirmed={handleExecute}
+                      holdDuration={2500}
+                      size={110}
+                      disabled={submitting}
+                      label={bn ? "উত্তোলন নিশ্চিত করতে ধরে রাখুন" : "Hold to confirm withdrawal"}
+                      sublabel={bn ? "ধরুন" : "HOLD"}
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      {bn ? "নিশ্চিত করতে বোতাম ধরে রাখুন" : "Hold the button to confirm"}
+                    </p>
+                  </div>
+                </div>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="outline" onClick={() => setPhase("form")} disabled={submitting} className="w-full gap-2">
+                  <X className="w-4 h-4" />
+                  {bn ? "ফিরে যান" : "Go Back"}
+                </Button>
+              </DrawerFooter>
             </motion.div>
           )}
+
+          {/* ═══ PHASE 4: Executing ═══ */}
+          {phase === "executing" && (
+            <motion.div key="executing" {...vaultTransition} className="flex-1 min-h-0 px-6 py-12 flex flex-col items-center justify-center gap-4">
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}>
+                <Loader2 className="w-10 h-10 text-destructive" />
+              </motion.div>
+              <p className="text-sm font-medium text-muted-foreground">{bn ? "উত্তোলন প্রক্রিয়াকরণ হচ্ছে..." : "Processing withdrawal..."}</p>
+            </motion.div>
+          )}
+
+          {/* ═══ PHASE 5: Success ═══ */}
+          {phase === "success" && (() => {
+            const name = investor.name_bn || investor.name_en || "";
+            const rawPhone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
+            const cleanPhone = rawPhone.slice(-10);
+            const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
+            const remaining = capital - amt;
+            const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+            const encoded = encodeURIComponent(msg);
+            return (
+              <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
+                <DrawerBody>
+                  <div className="space-y-6 py-4">
+                    <div className="flex flex-col items-center justify-center text-center space-y-3">
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+                        <CheckCircle2 className="w-8 h-8 text-success" />
+                      </motion.div>
+                      <div>
+                        <p className="text-lg font-semibold text-foreground">{bn ? "উত্তোলন সফল!" : "Withdrawal Complete!"}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{name} — ৳{amt.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 w-full">
+                        <p className="text-xs text-muted-foreground">{bn ? "অবশিষ্ট মূলধন" : "Remaining Capital"}</p>
+                        <p className="text-2xl font-bold text-primary">৳{remaining.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
+                      {finalPhone && (
+                        <div className="flex gap-2 w-full">
+                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                            <MessageCircle className="w-4 h-4" /> WhatsApp
+                          </Button>
+                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                            <MessageSquare className="w-4 h-4" /> SMS
+                          </Button>
+                        </div>
+                      )}
+                      <Button variant="outline" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+                    </div>
+                  </div>
+                </DrawerBody>
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
       </DrawerContent>
     </Drawer>
