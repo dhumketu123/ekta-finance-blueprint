@@ -361,10 +361,23 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             </div>
             <div>
               <Label className="text-xs">{bn ? "পরিমাণ ৳" : "Amount ৳"} *</Label>
-              <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="text-sm" placeholder={suggestedAmount > 0 ? `${bn ? "প্রস্তাবিত" : "Suggested"}: ৳${suggestedAmount.toLocaleString()}` : ""} />
-              {suggestedAmount > 0 && !form.amount && (
-                <button type="button" className="text-[10px] text-primary mt-1 hover:underline" onClick={() => setForm({ ...form, amount: String(suggestedAmount) })}>
-                  {bn ? `৳${suggestedAmount.toLocaleString()} প্রস্তাবিত পূরণ করুন` : `Fill suggested ৳${suggestedAmount.toLocaleString()}`}
+              <Input
+                type="number"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                className={`text-sm ${Number(form.amount) > maxPayable && maxPayable > 0 ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                placeholder={smartSuggestion > 0 ? `${bn ? "প্রস্তাবিত" : "Suggested"}: ৳${smartSuggestion.toLocaleString()}` : ""}
+              />
+              {Number(form.amount) > maxPayable && maxPayable > 0 && (
+                <p className="text-[11px] font-bold text-destructive mt-1">
+                  ⚠️ {bn ? `সর্বোচ্চ বকেয়া ৳${maxPayable.toLocaleString()} এর বেশি পেমেন্ট নেওয়া সম্ভব নয়।` : `Cannot accept more than outstanding ৳${maxPayable.toLocaleString()}.`}
+                </p>
+              )}
+              {smartSuggestion > 0 && !form.amount && (
+                <button type="button" className="text-[10px] text-primary mt-1 hover:underline" onClick={() => setForm({ ...form, amount: String(smartSuggestion) })}>
+                  {isFullPayoff
+                    ? (bn ? `সম্পূর্ণ বকেয়া ৳${smartSuggestion.toLocaleString()} পূরণ করুন` : `Fill full outstanding ৳${smartSuggestion.toLocaleString()}`)
+                    : (bn ? `প্রস্তাবিত ৳${smartSuggestion.toLocaleString()} পূরণ করুন` : `Fill suggested ৳${smartSuggestion.toLocaleString()}`)}
                 </button>
               )}
               {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
