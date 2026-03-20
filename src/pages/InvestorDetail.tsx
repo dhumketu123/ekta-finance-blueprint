@@ -10,7 +10,7 @@ import AgreementPDFTemplate from "@/components/AgreementPDFTemplate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvestor, useTransactions } from "@/hooks/useSupabaseData";
-import { sampleInvestors } from "@/data/sampleData";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, Phone, Wallet, Crown, Gem, Award, Star,
@@ -66,9 +66,7 @@ const InvestorDetail = () => {
   const [addCapitalOpen, setAddCapitalOpen] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
 
-  const sampleInv = sampleInvestors.find((i) => i.id === id);
-  const hasDb = !!dbInvestor;
-  const inv: any = hasDb ? dbInvestor : sampleInv;
+  const inv = dbInvestor;
 
   // Memoized sparkline
   const sparklineData = useMemo(() => {
