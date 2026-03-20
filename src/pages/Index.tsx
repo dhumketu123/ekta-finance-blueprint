@@ -14,7 +14,7 @@ import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/compon
 import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
-import { sampleClients, sampleInvestors } from "@/data/sampleData";
+
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
@@ -26,23 +26,15 @@ const Dashboard = () => {
 
   const loading = metricsLoading || clientsLoading || investorsLoading;
 
-  // Use DB data if available, fallback to sample
-  const hasDbClients = dbClients && dbClients.length > 0;
-  const hasDbInvestors = dbInvestors && dbInvestors.length > 0;
+  // Use DB data only — no fake fallbacks
+  const displayClients = (dbClients ?? []).slice(0, 4);
+  const displayInvestors = dbInvestors ?? [];
 
-  const displayClients = hasDbClients
-    ? dbClients.slice(0, 4)
-    : sampleClients.slice(0, 4);
-
-  const displayInvestors = hasDbInvestors
-    ? dbInvestors
-    : sampleInvestors;
-
-  const totalClients = metrics?.totalClients ?? sampleClients.length;
-  const activeLoansCount = metrics?.activeLoansCount ?? sampleClients.filter((c) => c.loanStatus === "active").length;
-  const totalLoanAmount = metrics?.totalLoanAmount ?? sampleClients.filter((c) => c.loanStatus === "active").reduce((s, c) => s + (c.loanAmount || 0), 0);
-  const totalCapital = metrics?.totalCapital ?? sampleInvestors.reduce((s, i) => s + i.capital, 0);
-  const investorCount = metrics?.investorCount ?? sampleInvestors.length;
+  const totalClients = metrics?.totalClients ?? 0;
+  const activeLoansCount = metrics?.activeLoansCount ?? 0;
+  const totalLoanAmount = metrics?.totalLoanAmount ?? 0;
+  const totalCapital = metrics?.totalCapital ?? 0;
+  const investorCount = metrics?.investorCount ?? 0;
   const savingsThisMonth = metrics?.savingsThisMonth ?? 0;
   const overdueCount = metrics?.overdueCount ?? 0;
   const pendingCount = metrics?.pendingCount ?? 0;
