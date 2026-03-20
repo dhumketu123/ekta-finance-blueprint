@@ -313,30 +313,40 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
           )}
 
           {/* SUCCESS PHASE */}
-          {phase === "success" && (
-            <motion.div key="success" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-12">
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-success" />
+          {phase === "success" && (() => {
+            const payAmt = Number(dividendPayAmount);
+            const name = investor.name_bn || investor.name_en || "";
+            const rawPhone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
+            const cleanPhone = rawPhone.slice(-10);
+            const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
+            const isReinvest = payoutMode === "reinvest";
+            const newTotalCapital = isReinvest ? capital + payAmt : capital;
+            const msg = isReinvest
+              ? `সম্মানিত ${name},\nআপনার এই মাসের লভ্যাংশ ${payAmt.toLocaleString()} ৳ সফলভাবে মূলধনে পুনঃবিনিয়োগ করা হয়েছে।\n\n📈 আপনার বর্তমান মোট মূলধন: ${newTotalCapital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আর্থিক সমৃদ্ধির পথে একতা ফাইন্যান্স সর্বদা আপনার পাশে আছে।\n\n— একতা ফাইন্যান্স`
+              : `সম্মানিত ${name},\nএকতা ফাইন্যান্স থেকে আপনার লভ্যাংশ বাবদ ${payAmt.toLocaleString()} ৳ সফলভাবে প্রদান করা হয়েছে।\n\n💰 প্রদত্ত লভ্যাংশ: ${payAmt.toLocaleString()} ৳\n💼 বর্তমান মূলধন: ${capital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের উপর নিরবচ্ছিন্ন আস্থা রাখার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+            const encoded = encodeURIComponent(msg);
+            return (
+              <motion.div key="success" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-12">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-success" />
+                </motion.div>
+                <p className="text-lg font-bold text-success">{bn ? "লভ্যাংশ প্রদান সফল!" : "Dividend Paid!"}</p>
+                <p className="text-sm text-muted-foreground">৳{payAmt.toLocaleString()}</p>
+                {isReinvest && <p className="text-xs text-muted-foreground">🔄 {bn ? "পুনঃবিনিয়োগ সম্পন্ন" : "Reinvested"}</p>}
+                <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                  <div className="flex gap-2 w-full">
+                    <Button className="flex-1 gap-1.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white" disabled={!finalPhone} onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </Button>
+                    <Button className="flex-1 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white" disabled={!finalPhone} onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                      <MessageSquare className="w-4 h-4" /> SMS
+                    </Button>
+                  </div>
+                  <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+                </div>
               </motion.div>
-              <p className="text-lg font-bold text-success">{bn ? "লভ্যাংশ প্রদান সফল!" : "Dividend Paid!"}</p>
-              <p className="text-sm text-muted-foreground">৳{Number(dividendPayAmount).toLocaleString()}</p>
-              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
-                <Button
-                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
-                  onClick={() => {
-                    const payAmt = Number(dividendPayAmount);
-                    const name = investor.name_bn || investor.name_en || "";
-                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
-                    const msg = `সম্মানিত ${name},\n\nএকতা ফাইন্যান্স-এ আপনার বিনিয়োগের উপর সর্বশেষ লভ্যাংশ সফলভাবে প্রদান করা হয়েছে।\n\n💰 প্রদত্ত লভ্যাংশ: ${payAmt.toLocaleString()} ৳\n💼 আপনার মোট মূলধন: ${capital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের উপর নিরবচ্ছিন্ন আস্থা রাখার জন্য আন্তরিক ধন্যবাদ। আপনার আর্থিক সমৃদ্ধির পথে একতা ফাইন্যান্স সর্বদা আপনার পাশে আছে।\n\n— একতা ফাইন্যান্স`;
-                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
-                </Button>
-                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
-              </div>
-            </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
       </DrawerContent>
     </Drawer>
