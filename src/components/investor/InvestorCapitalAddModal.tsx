@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  PlusCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle,
+  PlusCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
@@ -232,31 +232,36 @@ export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Pr
             </motion.div>
           )}
 
-          {phase === "success" && (
-            <motion.div key="success" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-12">
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-success" />
+          {phase === "success" && (() => {
+            const amt = Number(capitalAmount);
+            const newTotal = capital + amt;
+            const name = investor.name_bn || investor.name_en || "";
+            const rawPhone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
+            const cleanPhone = rawPhone.slice(-10);
+            const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
+            const msg = `নিরাপত্তা আপডেট 🔒\n\nসম্মানিত ${name},\nআপনার ভল্টে নতুন ফান্ড সফলভাবে জমা হয়েছে।\n\n📥 জমার পরিমাণ: ${amt.toLocaleString()} ৳\n💼 সর্বমোট মূলধন: ${newTotal.toLocaleString()} ৳\n\nআপনার ফান্ড একতা ফাইন্যান্স-এর সিকিউরড ভল্টে সম্পূর্ণ সুরক্ষিত আছে এবং পরবর্তী লভ্যাংশ চক্রের জন্য সক্রিয় করা হয়েছে।\n\n— একতা ফাইন্যান্স`;
+            const encoded = encodeURIComponent(msg);
+            return (
+              <motion.div key="success" {...vaultTransition} className="flex flex-col items-center justify-center gap-4 py-12">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-success" />
+                </motion.div>
+                <p className="text-lg font-bold text-success">{bn ? "মূলধন যোগ সফল!" : "Capital Added!"}</p>
+                <p className="text-sm text-muted-foreground">৳{amt.toLocaleString()}</p>
+                <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                  <div className="flex gap-2 w-full">
+                    <Button className="flex-1 gap-1.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white" disabled={!finalPhone} onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </Button>
+                    <Button className="flex-1 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white" disabled={!finalPhone} onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                      <MessageSquare className="w-4 h-4" /> SMS
+                    </Button>
+                  </div>
+                  <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+                </div>
               </motion.div>
-              <p className="text-lg font-bold text-success">{bn ? "মূলধন যোগ সফল!" : "Capital Added!"}</p>
-              <p className="text-sm text-muted-foreground">৳{Number(capitalAmount).toLocaleString()}</p>
-              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
-                <Button
-                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
-                  onClick={() => {
-                    const amt = Number(capitalAmount);
-                    const newTotal = capital + amt;
-                    const name = investor.name_bn || investor.name_en || "";
-                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
-                    const msg = `নিরাপত্তা আপডেট 🔒\n\nসম্মানিত ${name},\nআপনার ভল্টে নতুন ফান্ড সফলভাবে জমা হয়েছে।\n\n📥 জমার পরিমাণ: ${amt.toLocaleString()} ৳\n💼 সর্বমোট মূলধন: ${newTotal.toLocaleString()} ৳\n\nআপনার ফান্ড একতা ফাইন্যান্স-এর সিকিউরড ভল্টে সম্পূর্ণ সুরক্ষিত আছে এবং পরবর্তী লভ্যাংশ চক্রের জন্য সক্রিয় করা হয়েছে।\n\n— একতা ফাইন্যান্স`;
-                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
-                </Button>
-                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
-              </div>
-            </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
       </DrawerContent>
     </Drawer>
