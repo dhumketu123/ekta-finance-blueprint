@@ -272,19 +272,42 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                 <span>৳{Number(result.new_outstanding).toLocaleString()}</span>
               </div>
             </div>
-            <div className="flex gap-3 w-full mt-6 pt-4 border-t border-border">
-              <Button variant="outline" className="flex-1 text-xs" onClick={resetAndClose}>
+            {clientPhone && result && (() => {
+              const normalizedPhone = (clientPhone || "")
+                .replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)))
+                .replace(/[^\d]/g, "");
+              const last10 = normalizedPhone.slice(-10);
+              const intlPhone = `880${last10}`;
+              const paid = Number(result.total_payment).toLocaleString("en-US");
+              const remaining = Number(result.new_outstanding).toLocaleString("en-US");
+              const waMsg = encodeURIComponent(
+                `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ${paid} ৳ সফলভাবে জমা হয়েছে।\n${result.loan_closed ? "আপনার ঋণ সম্পূর্ণ পরিশোধিত!" : `বর্তমান বকেয়া: ৳${remaining}`}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
+              );
+              return (
+                <div className="flex gap-2 w-full mt-4 pt-3 border-t border-border">
+                  <a
+                    href={`https://wa.me/${intlPhone}?text=${waMsg}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all active:scale-[0.97]"
+                  >
+                    <Phone className="w-4 h-4" />
+                    WhatsApp
+                  </a>
+                  <Button
+                    className="flex-1 text-xs gap-2 bg-sky-600 hover:bg-sky-700 text-white shadow-md transition-all active:scale-[0.97]"
+                    onClick={handleSendSMS}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    SMS
+                  </Button>
+                </div>
+              );
+            })()}
+            <div className="mt-3">
+              <Button variant="outline" className="w-full text-xs" onClick={resetAndClose}>
                 {bn ? "বন্ধ করুন" : "Close"}
               </Button>
-              {clientPhone && (
-                <Button
-                  className="flex-1 text-xs gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all"
-                  onClick={handleSendSMS}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  {bn ? "SMS পাঠান" : "Send SMS"}
-                </Button>
-              )}
             </div>
           </div>
         ) : (
