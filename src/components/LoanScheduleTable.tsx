@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { CalendarDays, CheckCircle2, Clock, AlertTriangle, Circle } from "lucide-react";
+import DynamicPtpBadge from "@/components/DynamicPtpBadge";
 
 interface Props {
   loanId: string;
