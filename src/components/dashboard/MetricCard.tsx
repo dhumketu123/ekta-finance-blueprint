@@ -6,6 +6,7 @@ interface MetricCardProps {
   title: string;
   value: string | number;
   label?: string;
+  subtitle?: string;
   icon: ReactNode;
   trend?: { value: number; positive: boolean };
   isLoading?: boolean;
@@ -73,11 +74,13 @@ export const MetricCard = ({
   title,
   value,
   label,
+  subtitle,
   icon,
   trend,
   isLoading = false,
   variant = "default",
 }: MetricCardProps) => {
+  const displayLabel = label || subtitle;
   const styles = variantStyles[variant];
 
   if (isLoading) {
@@ -125,9 +128,9 @@ export const MetricCard = ({
           <p className="mt-1.5 md:mt-2 text-2xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
             <AnimatedCounter value={value} />
           </p>
-          {label && (
+          {displayLabel && (
             <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground font-medium truncate">
-              {label}
+              {displayLabel}
             </p>
           )}
           {trend && (
