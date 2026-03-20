@@ -3,7 +3,7 @@ import RecoveryMatrix from "@/components/RecoveryMatrix";
 import CashflowOracleWidget from "@/components/CashflowOracleWidget";
 import SmartCollectionAssistant from "@/components/SmartCollectionAssistant";
 import AppLayout from "@/components/AppLayout";
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
 import RepaymentProgress from "@/components/RepaymentProgress";
 import PageHeader from "@/components/PageHeader";
