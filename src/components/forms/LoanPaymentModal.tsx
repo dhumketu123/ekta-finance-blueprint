@@ -400,7 +400,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
               </Button>
               <Button
                 onClick={handleNextStep}
-                disabled={loading || isProcessingRef.current}
+                disabled={loading || isProcessingRef.current || !form.amount || Number(form.amount) <= 0 || (maxPayable > 0 && Number(form.amount) > maxPayable)}
                 className="flex-1 text-xs gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? "..." : (
