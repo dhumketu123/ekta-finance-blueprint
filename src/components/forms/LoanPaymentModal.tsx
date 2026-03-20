@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, ArrowRight, MessageSquare } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, MessageSquare, Phone } from "lucide-react";
 import SecurePaymentDialog from "./SecurePaymentDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import ConfirmExecutionScreen from "@/components/payment/ConfirmExecutionScreen";
