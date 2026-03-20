@@ -154,6 +154,16 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const executePayment = async (pending: PendingTransaction) => {
     setLoading(true);
     try {
+      // PRE-FLIGHT AUTO-REPAIR: Un-close loan if outstanding principal still exists
+      // This fixes DB state mismatch where loan is marked 'closed' but debt remains
+      if (loanInfo && Number(loanInfo.outstanding_principal) > 0) {
+        await supabase
+          .from("loans")
+          .update({ status: "active" as any } as any)
+          .eq("id", pending.loan_id)
+          .eq("status", "closed" as any);
+      }
+
       const { data, error } = await supabase.rpc("apply_loan_payment", {
         _loan_id: pending.loan_id,
         _amount: pending.amount,
