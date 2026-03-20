@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlarmClock, Handshake, Timer, AlertTriangle, CheckCircle } from "lucide-react";
+import DynamicPtpBadge from "@/components/DynamicPtpBadge";
 
 interface SnoozePanelProps {
   schedule: {
