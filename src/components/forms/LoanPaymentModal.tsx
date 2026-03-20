@@ -159,9 +159,9 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       if (loanInfo && Number(loanInfo.outstanding_principal) > 0) {
         await supabase
           .from("loans")
-          .update({ status: "active" as any } as any)
+          .update({ status: "active" })
           .eq("id", pending.loan_id)
-          .eq("status", "closed" as any);
+          .eq("status", "closed");
       }
 
       const { data, error } = await supabase.rpc("apply_loan_payment", {
