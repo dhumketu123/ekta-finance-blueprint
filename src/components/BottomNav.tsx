@@ -44,7 +44,7 @@ const BottomNav = () => {
         {/* 3. Center FAB */}
         <div className="flex-1 flex items-center justify-center relative overflow-visible">
           <Link
-            to="/loans"
+            to="/transactions"
             className="absolute -top-8 flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-xl transform-gpu transition-transform duration-200 ease-out active:scale-95 active:shadow-[0_0_14px_hsl(var(--primary)/0.5)]"
           >
             <Wallet className="w-7 h-7" />

@@ -4,24 +4,33 @@ import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoanProduct } from "@/hooks/useSupabaseData";
-import { sampleLoanProducts } from "@/data/sampleData";
 import { CreditCard, Settings } from "lucide-react";
+import { MetricCardSkeleton } from "@/components/ui/skeleton";
 
 const LoanDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
-  const { data: dbLoan, isLoading } = useLoanProduct(id || "");
-
-  const sampleLoan = sampleLoanProducts.find((l) => l.id === id);
-  const hasDb = !!dbLoan;
-  const loan: any = hasDb ? dbLoan : sampleLoan;
+  const { data: loan, isLoading } = useLoanProduct(id || "");
 
   if (isLoading) {
     return (
       <AppLayout>
         <PageHeader title="..." />
-        <div className="card-elevated p-8 text-center animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+        <div className="space-y-4">
+          <div className="card-elevated p-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-muted" />
+              <div className="space-y-2 flex-1">
+                <div className="h-5 bg-muted rounded w-1/3" />
+                <div className="h-3 bg-muted rounded w-1/4" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </div>
         </div>
       </AppLayout>
     );
@@ -31,20 +40,15 @@ const LoanDetail = () => {
     return (
       <AppLayout>
         <PageHeader title={t("detail.notFound")} />
-        <div className="card-elevated p-8 text-center">
+        <div className="card-elevated p-8 text-center space-y-3">
+          <CreditCard className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <p className="text-sm text-muted-foreground">{t("detail.notFoundDesc")}</p>
         </div>
       </AppLayout>
     );
   }
 
-  const name = hasDb ? (lang === "bn" ? loan.product_name_bn : loan.product_name_en) : (lang === "bn" ? loan.nameBn : loan.nameEn);
-  const interest = hasDb ? loan.interest_rate : loan.interestRate;
-  const tenure = hasDb ? loan.tenure_months : loan.tenure;
-  const paymentType = hasDb ? loan.payment_type : loan.paymentType;
-  const minAmt = hasDb ? loan.min_amount : loan.minAmount;
-  const maxAmt = hasDb ? loan.max_amount : loan.maxAmount;
-  const maxConc = hasDb ? loan.max_concurrent : loan.maxConcurrent;
+  const name = lang === "bn" ? loan.product_name_bn : loan.product_name_en;
 
   return (
     <AppLayout>
@@ -65,15 +69,15 @@ const LoanDetail = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-5 border-l-4 border-l-warning text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.interest")}</p>
-          <p className="mt-2 text-2xl font-bold text-warning">{interest}%</p>
+          <p className="mt-2 text-2xl font-bold text-warning">{loan.interest_rate}%</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-primary text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.tenure")}</p>
-          <p className="mt-2 text-2xl font-bold text-primary">{tenure} {t("table.months")}</p>
+          <p className="mt-2 text-2xl font-bold text-primary">{loan.tenure_months} {t("table.months")}</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-success text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.maxConcurrent")}</p>
-          <p className="mt-2 text-2xl font-bold text-success">{maxConc}</p>
+          <p className="mt-2 text-2xl font-bold text-success">{loan.max_concurrent}</p>
         </div>
       </div>
 
@@ -84,9 +88,9 @@ const LoanDetail = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <DetailField label={t("table.product")} value={name} />
-          <DetailField label={t("table.paymentType")} value={String(paymentType).replace("_", " ")} />
-          <DetailField label={t("table.minAmount")} value={`৳${Number(minAmt).toLocaleString()}`} />
-          <DetailField label={t("table.maxAmount")} value={`৳${Number(maxAmt).toLocaleString()}`} highlight />
+          <DetailField label={t("table.paymentType")} value={String(loan.payment_type).replace("_", " ")} />
+          <DetailField label={t("table.minAmount")} value={`৳${Number(loan.min_amount).toLocaleString()}`} />
+          <DetailField label={t("table.maxAmount")} value={`৳${Number(loan.max_amount).toLocaleString()}`} highlight />
         </div>
       </div>
     </AppLayout>
