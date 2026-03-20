@@ -61,9 +61,14 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const bn = lang === "bn";
   const queryClient = useQueryClient();
   const [clientName, setClientName] = useState("");
-  const suggestedAmount = loanInfo
-    ? Number(loanInfo.penalty_amount) + Number(loanInfo.outstanding_interest) + Number(loanInfo.emi_amount)
+  const maxPayable = loanInfo
+    ? Number(loanInfo.outstanding_principal || 0) + Number(loanInfo.outstanding_interest || 0) + Number(loanInfo.penalty_amount || 0)
     : 0;
+  const emiSuggestion = loanInfo
+    ? Number(loanInfo.penalty_amount || 0) + Number(loanInfo.outstanding_interest || 0) + Number(loanInfo.emi_amount || 0)
+    : 0;
+  const smartSuggestion = maxPayable > 0 ? Math.min(emiSuggestion, maxPayable) : emiSuggestion;
+  const isFullPayoff = maxPayable < emiSuggestion;
 
   const [form, setForm] = useState({
     loan_id: prefilledLoanId ?? "",
