@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MetricCardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import { AlertTriangle, Eye, Shield, Flame, TrendingDown, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";

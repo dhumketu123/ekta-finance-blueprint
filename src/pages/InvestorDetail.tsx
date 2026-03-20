@@ -5,12 +5,12 @@ import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import StatusBadge from "@/components/StatusBadge";
 import CommunicationHub from "@/components/CommunicationHub";
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import AgreementPDFTemplate from "@/components/AgreementPDFTemplate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvestor, useTransactions } from "@/hooks/useSupabaseData";
-import { sampleInvestors } from "@/data/sampleData";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, Phone, Wallet, Crown, Gem, Award, Star,
@@ -66,9 +66,7 @@ const InvestorDetail = () => {
   const [addCapitalOpen, setAddCapitalOpen] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
 
-  const sampleInv = sampleInvestors.find((i) => i.id === id);
-  const hasDb = !!dbInvestor;
-  const inv: any = hasDb ? dbInvestor : sampleInv;
+  const inv = dbInvestor;
 
   // Memoized sparkline
   const sparklineData = useMemo(() => {
@@ -109,17 +107,17 @@ const InvestorDetail = () => {
     );
   }
 
-  const name = hasDb ? (bn ? inv.name_bn : inv.name_en) : (bn ? inv.nameBn : inv.nameEn);
-  const nameEn = hasDb ? inv.name_en : inv.nameEn;
+  const name = bn ? inv.name_bn : inv.name_en;
+  const nameEn = inv.name_en;
   const phone = inv.phone;
-  const capital = Number(hasDb ? inv.capital : inv.capital);
-  const profitPct = Number(hasDb ? inv.monthly_profit_percent : inv.monthlyProfitPercent);
+  const capital = Number(inv.capital);
+  const profitPct = Number(inv.monthly_profit_percent);
   const reinvest = inv.reinvest;
   const monthlyProfit = Math.round(capital * profitPct / 100);
-  const dueDividend = Number(hasDb ? inv.due_dividend ?? 0 : 0);
+  const dueDividend = Number(inv.due_dividend ?? 0);
   const totalPayable = monthlyProfit + dueDividend;
-  const lastProfitDate = hasDb ? inv.last_profit_date : null;
-  const maturityDate = hasDb ? inv.maturity_date : null;
+  const lastProfitDate = inv.last_profit_date;
+  const maturityDate = inv.maturity_date;
 
   const totalProfitPaid = txns
     ?.filter((tx: any) => tx.type === "investor_profit" && tx.status === "paid")
@@ -202,7 +200,7 @@ const InvestorDetail = () => {
       </div>
 
       {/* ═══ Action Buttons ═══ */}
-      {hasDb && (
+      {inv && (
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => setPayDividendOpen(true)} className="gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-md">
             <Banknote className="w-4 h-4" />
@@ -219,15 +217,7 @@ const InvestorDetail = () => {
           </Button>
           {inv && (
             <AgreementPDFTemplate
-              investor={hasDb ? inv : {
-                id: inv.id, name_en: inv.nameEn || inv.name_en, name_bn: inv.nameBn || inv.name_bn, phone: inv.phone,
-                nid_number: inv.nid_number || null, address: inv.address || null, investor_id: inv.investor_id || null,
-                capital: capital, monthly_profit_percent: profitPct, tenure_years: inv.tenure_years || null,
-                investment_model: inv.investment_model || "profit_only", maturity_date: inv.maturity_date || null,
-                nominee_name: inv.nominee_name || null, nominee_phone: inv.nominee_phone || null,
-                nominee_nid: inv.nominee_nid || null, nominee_relation: inv.nominee_relation || null,
-                reinvest: reinvest, source_of_fund: inv.source_of_fund || null,
-              }}
+              investor={inv}
               bn={bn}
             />
           )}

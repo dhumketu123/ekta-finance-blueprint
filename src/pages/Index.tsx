@@ -3,7 +3,7 @@ import RecoveryMatrix from "@/components/RecoveryMatrix";
 import CashflowOracleWidget from "@/components/CashflowOracleWidget";
 import SmartCollectionAssistant from "@/components/SmartCollectionAssistant";
 import AppLayout from "@/components/AppLayout";
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import StatusBadge from "@/components/StatusBadge";
 import RepaymentProgress from "@/components/RepaymentProgress";
 import PageHeader from "@/components/PageHeader";
@@ -14,7 +14,7 @@ import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/compon
 import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
-import { sampleClients, sampleInvestors } from "@/data/sampleData";
+
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
@@ -26,23 +26,15 @@ const Dashboard = () => {
 
   const loading = metricsLoading || clientsLoading || investorsLoading;
 
-  // Use DB data if available, fallback to sample
-  const hasDbClients = dbClients && dbClients.length > 0;
-  const hasDbInvestors = dbInvestors && dbInvestors.length > 0;
+  // Use DB data only — no fake fallbacks
+  const displayClients = (dbClients ?? []).slice(0, 4);
+  const displayInvestors = dbInvestors ?? [];
 
-  const displayClients = hasDbClients
-    ? dbClients.slice(0, 4)
-    : sampleClients.slice(0, 4);
-
-  const displayInvestors = hasDbInvestors
-    ? dbInvestors
-    : sampleInvestors;
-
-  const totalClients = metrics?.totalClients ?? sampleClients.length;
-  const activeLoansCount = metrics?.activeLoansCount ?? sampleClients.filter((c) => c.loanStatus === "active").length;
-  const totalLoanAmount = metrics?.totalLoanAmount ?? sampleClients.filter((c) => c.loanStatus === "active").reduce((s, c) => s + (c.loanAmount || 0), 0);
-  const totalCapital = metrics?.totalCapital ?? sampleInvestors.reduce((s, i) => s + i.capital, 0);
-  const investorCount = metrics?.investorCount ?? sampleInvestors.length;
+  const totalClients = metrics?.totalClients ?? 0;
+  const activeLoansCount = metrics?.activeLoansCount ?? 0;
+  const totalLoanAmount = metrics?.totalLoanAmount ?? 0;
+  const totalCapital = metrics?.totalCapital ?? 0;
+  const investorCount = metrics?.investorCount ?? 0;
   const savingsThisMonth = metrics?.savingsThisMonth ?? 0;
   const overdueCount = metrics?.overdueCount ?? 0;
   const pendingCount = metrics?.pendingCount ?? 0;
@@ -227,13 +219,12 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {displayClients.map((client) => {
-                const isDb = hasDbClients;
-                const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
-                const area = isDb ? (client as any).area : (client as any).area;
-                const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
+                const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
+                const area = (client as any).area;
+                const loanAmt = (client as any).loan_amount;
                 const status = (client as any).status;
                 const id = (client as any).id;
-                const nextPayment = isDb ? (client as any).next_payment_date : (client as any).nextDepositDate;
+                const nextPayment = (client as any).next_payment_date;
 
                 return (
                   <TooltipProvider key={id}>
@@ -259,10 +250,9 @@ const Dashboard = () => {
         </div>
         <div className="sm:hidden divide-y divide-border">
           {displayClients.map((client) => {
-            const isDb = hasDbClients;
-            const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
-            const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
-            const area = isDb ? (client as any).area : (client as any).area;
+            const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
+            const loanAmt = (client as any).loan_amount;
+            const area = (client as any).area;
             const status = (client as any).status;
             const id = (client as any).id;
 
@@ -308,10 +298,9 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {displayInvestors.map((inv) => {
-                const isDb = hasDbInvestors;
-                const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
-                const capital = isDb ? (inv as any).capital : (inv as any).capital;
-                const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+                const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
+                const capital = (inv as any).capital;
+                const profitPct = (inv as any).monthly_profit_percent;
                 const reinvest = (inv as any).reinvest;
                 const id = (inv as any).id;
 
@@ -329,10 +318,9 @@ const Dashboard = () => {
         </div>
         <div className="sm:hidden divide-y divide-border">
           {displayInvestors.map((inv) => {
-            const isDb = hasDbInvestors;
-            const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
-            const capital = isDb ? (inv as any).capital : (inv as any).capital;
-            const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+            const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
+            const capital = (inv as any).capital;
+            const profitPct = (inv as any).monthly_profit_percent;
             const reinvest = (inv as any).reinvest;
             const id = (inv as any).id;
 

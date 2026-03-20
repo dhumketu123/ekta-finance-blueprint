@@ -2,26 +2,76 @@ import { useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOwner } from "@/hooks/useSupabaseData";
-import { sampleOwners } from "@/data/sampleData";
-import { Crown, Phone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Crown, Phone, Wallet, TrendingUp, PiggyBank, BarChart3,
+  Calendar, CircleDollarSign,
+} from "lucide-react";
+import { MetricCardSkeleton } from "@/components/ui/skeleton";
+import { ResponsiveContainer, AreaChart, Area, Tooltip as RechartsTooltip, CartesianGrid, XAxis, YAxis } from "recharts";
+import { format, subMonths } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import StatusBadge from "@/components/StatusBadge";
 
 const OwnerDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
-  const { data: dbOwner, isLoading } = useOwner(id || "");
+  const bn = lang === "bn";
+  const { data: owner, isLoading } = useOwner(id || "");
 
-  const sampleOwner = sampleOwners.find((o) => o.id === id);
-  const hasDb = !!dbOwner;
-  const owner: any = hasDb ? dbOwner : sampleOwner;
+  // Fetch owner's profit share history
+  const { data: profitShares } = useQuery({
+    queryKey: ["owner_profit_shares", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("owner_profit_shares")
+        .select("*, owner_profit_distributions(period_month, net_profit, distribution_status)")
+        .eq("owner_id", id!)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  // Fetch all distributions for chart
+  const { data: distributions } = useQuery({
+    queryKey: ["owner_distributions_chart", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("owner_profit_shares")
+        .select("share_amount, created_at, payment_status")
+        .eq("owner_id", id!)
+        .order("created_at", { ascending: true })
+        .limit(24);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
 
   if (isLoading) {
     return (
       <AppLayout>
         <PageHeader title="..." />
-        <div className="card-elevated p-8 text-center animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+        <div className="space-y-4">
+          <div className="card-elevated p-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-muted" />
+              <div className="space-y-2 flex-1">
+                <div className="h-5 bg-muted rounded w-1/3" />
+                <div className="h-3 bg-muted rounded w-1/4" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
         </div>
       </AppLayout>
     );
@@ -31,21 +81,39 @@ const OwnerDetail = () => {
     return (
       <AppLayout>
         <PageHeader title={t("detail.notFound")} />
-        <div className="card-elevated p-8 text-center">
+        <div className="card-elevated p-8 text-center space-y-3">
+          <Crown className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <p className="text-sm text-muted-foreground">{t("detail.notFoundDesc")}</p>
         </div>
       </AppLayout>
     );
   }
 
-  const name = hasDb ? (lang === "bn" ? owner.name_bn : owner.name_en) : (lang === "bn" ? owner.nameBn : owner.nameEn);
-  const nameEn = hasDb ? owner.name_en : owner.nameEn;
+  const name = bn ? owner.name_bn : owner.name_en;
+  const nameEn = owner.name_en;
   const phone = owner.phone;
+
+  // Calculate metrics from profit shares
+  const totalProfitEarned = (profitShares ?? []).reduce((s, ps) => s + (ps.share_amount ?? 0), 0);
+  const paidShares = (profitShares ?? []).filter((ps) => ps.payment_status === "paid");
+  const pendingShares = (profitShares ?? []).filter((ps) => ps.payment_status === "pending");
+  const totalPaid = paidShares.reduce((s, ps) => s + (ps.share_amount ?? 0), 0);
+  const totalPending = pendingShares.reduce((s, ps) => s + (ps.share_amount ?? 0), 0);
+  const avgSharePct = (profitShares ?? []).length > 0
+    ? ((profitShares ?? []).reduce((s, ps) => s + (ps.share_percentage ?? 0), 0) / (profitShares ?? []).length).toFixed(1)
+    : "0";
+
+  // Chart data
+  const chartData = (distributions ?? []).map((d) => ({
+    month: format(new Date(d.created_at), "MMM yy"),
+    amount: d.share_amount ?? 0,
+  }));
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.owner")} — ${owner.owner_id ?? owner.id.slice(0, 8)}`} />
+      <PageHeader title={name} description={`${bn ? "মালিক" : "Owner"} — ${owner.owner_id ?? owner.id.slice(0, 8)}`} />
 
+      {/* Identity Card */}
       <div className="card-elevated p-6 border-l-4 border-l-warning">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-warning/10 flex items-center justify-center shrink-0">
@@ -58,6 +126,76 @@ const OwnerDetail = () => {
         </div>
       </div>
 
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-3">
+        <MetricCard
+          title={bn ? "মোট মুনাফা" : "Total Profit"}
+          value={`৳${totalProfitEarned.toLocaleString()}`}
+          icon={<TrendingUp className="w-5 h-5" />}
+          variant="success"
+        />
+        <MetricCard
+          title={bn ? "প্রাপ্ত" : "Received"}
+          value={`৳${totalPaid.toLocaleString()}`}
+          icon={<Wallet className="w-5 h-5" />}
+          variant="default"
+        />
+        <MetricCard
+          title={bn ? "বকেয়া" : "Pending"}
+          value={`৳${totalPending.toLocaleString()}`}
+          icon={<PiggyBank className="w-5 h-5" />}
+          variant="warning"
+        />
+        <MetricCard
+          title={bn ? "গড় শেয়ার" : "Avg Share %"}
+          value={`${avgSharePct}%`}
+          icon={<BarChart3 className="w-5 h-5" />}
+          variant="default"
+        />
+      </div>
+
+      {/* Profit Chart */}
+      {chartData.length > 0 && (
+        <div className="card-elevated p-5 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <CircleDollarSign className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "মুনাফা প্রবণতা" : "Profit Trend"}</h3>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                <defs>
+                  <linearGradient id="ownerProfitGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <RechartsTooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, bn ? "মুনাফা" : "Profit"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="hsl(var(--success))"
+                  strokeWidth={2}
+                  fill="url(#ownerProfitGrad)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Details */}
       <div className="card-elevated p-5 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Phone className="w-4 h-4" />
@@ -69,6 +207,75 @@ const OwnerDetail = () => {
           <DetailField label={t("table.phone")} value={phone || "—"} />
         </div>
       </div>
+
+      {/* Recent Profit Distributions */}
+      {(profitShares ?? []).length > 0 && (
+        <div className="card-elevated overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
+              {bn ? "সাম্প্রতিক মুনাফা বিতরণ" : "Recent Profit Distributions"}
+            </h3>
+          </div>
+          <div className="hidden sm:block">
+            <Table className="table-premium">
+              <TableHeader className="table-header-premium">
+                <TableRow>
+                  <TableHead>{bn ? "মাস" : "Period"}</TableHead>
+                  <TableHead>{bn ? "শেয়ার %" : "Share %"}</TableHead>
+                  <TableHead>{bn ? "পরিমাণ" : "Amount"}</TableHead>
+                  <TableHead>{bn ? "অবস্থা" : "Status"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(profitShares ?? []).slice(0, 10).map((ps) => (
+                  <TableRow key={ps.id}>
+                    <TableCell className="text-xs font-medium">
+                      {ps.owner_profit_distributions
+                        ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">{ps.share_percentage}%</TableCell>
+                    <TableCell className="text-xs font-semibold">৳{ps.share_amount.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={ps.payment_status === "paid" ? "active" : "pending"} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-border">
+            {(profitShares ?? []).slice(0, 10).map((ps) => (
+              <div key={ps.id} className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium">
+                    {ps.owner_profit_distributions
+                      ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                      : "—"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{ps.share_percentage}% {bn ? "শেয়ার" : "share"}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">৳{ps.share_amount.toLocaleString()}</p>
+                  <StatusBadge status={ps.payment_status === "paid" ? "active" : "pending"} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state for no distributions */}
+      {(profitShares ?? []).length === 0 && (
+        <div className="card-elevated p-8 text-center space-y-3">
+          <CircleDollarSign className="w-12 h-12 text-muted-foreground/20 mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {bn ? "এখনো কোনো মুনাফা বিতরণ হয়নি" : "No profit distributions yet"}
+          </p>
+        </div>
+      )}
     </AppLayout>
   );
 };

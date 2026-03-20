@@ -1,4 +1,4 @@
-import MetricCard from "@/components/MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Wallet, TrendingUp, Banknote, Calendar } from "lucide-react";
 import { format } from "date-fns";
 

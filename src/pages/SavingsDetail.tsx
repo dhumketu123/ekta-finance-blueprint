@@ -4,24 +4,33 @@ import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSavingsProduct } from "@/hooks/useSupabaseData";
-import { sampleSavingsProducts } from "@/data/sampleData";
 import { PiggyBank, Settings } from "lucide-react";
+import { MetricCardSkeleton } from "@/components/ui/skeleton";
 
 const SavingsDetail = () => {
   const { id } = useParams();
   const { t, lang } = useLanguage();
-  const { data: dbSp, isLoading } = useSavingsProduct(id || "");
-
-  const sampleSp = sampleSavingsProducts.find((s) => s.id === id);
-  const hasDb = !!dbSp;
-  const sp: any = hasDb ? dbSp : sampleSp;
+  const { data: sp, isLoading } = useSavingsProduct(id || "");
 
   if (isLoading) {
     return (
       <AppLayout>
         <PageHeader title="..." />
-        <div className="card-elevated p-8 text-center animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+        <div className="space-y-4">
+          <div className="card-elevated p-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-muted" />
+              <div className="space-y-2 flex-1">
+                <div className="h-5 bg-muted rounded w-1/3" />
+                <div className="h-3 bg-muted rounded w-1/4" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </div>
         </div>
       </AppLayout>
     );
@@ -31,18 +40,16 @@ const SavingsDetail = () => {
     return (
       <AppLayout>
         <PageHeader title={t("detail.notFound")} />
-        <div className="card-elevated p-8 text-center">
+        <div className="card-elevated p-8 text-center space-y-3">
+          <PiggyBank className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <p className="text-sm text-muted-foreground">{t("detail.notFoundDesc")}</p>
         </div>
       </AppLayout>
     );
   }
 
-  const name = hasDb ? (lang === "bn" ? sp.product_name_bn : sp.product_name_en) : (lang === "bn" ? sp.nameBn : sp.nameEn);
-  const nameEn = hasDb ? sp.product_name_en : sp.nameEn;
-  const freq = hasDb ? sp.frequency : sp.frequency;
-  const minAmt = hasDb ? sp.min_amount : sp.minAmount;
-  const maxAmt = hasDb ? sp.max_amount : sp.maxAmount;
+  const name = lang === "bn" ? sp.product_name_bn : sp.product_name_en;
+  const nameEn = sp.product_name_en;
 
   return (
     <AppLayout>
@@ -63,15 +70,15 @@ const SavingsDetail = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-5 border-l-4 border-l-primary text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.frequency")}</p>
-          <p className="mt-2 text-xl font-bold text-primary capitalize">{freq}</p>
+          <p className="mt-2 text-xl font-bold text-primary capitalize">{sp.frequency}</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-warning text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.minAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-warning">৳{Number(minAmt).toLocaleString()}</p>
+          <p className="mt-2 text-2xl font-bold text-warning">৳{Number(sp.min_amount).toLocaleString()}</p>
         </div>
         <div className="card-elevated p-5 border-l-4 border-l-success text-center">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.maxAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-success">৳{Number(maxAmt).toLocaleString()}</p>
+          <p className="mt-2 text-2xl font-bold text-success">৳{Number(sp.max_amount).toLocaleString()}</p>
         </div>
       </div>
 
@@ -83,9 +90,9 @@ const SavingsDetail = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <DetailField label={t("table.product")} value={name} />
           <DetailField label={t("detail.nameEn")} value={nameEn} />
-          <DetailField label={t("table.frequency")} value={freq} />
-          <DetailField label={t("table.minAmount")} value={`৳${Number(minAmt).toLocaleString()}`} />
-          <DetailField label={t("table.maxAmount")} value={`৳${Number(maxAmt).toLocaleString()}`} highlight />
+          <DetailField label={t("table.frequency")} value={sp.frequency} />
+          <DetailField label={t("table.minAmount")} value={`৳${Number(sp.min_amount).toLocaleString()}`} />
+          <DetailField label={t("table.maxAmount")} value={`৳${Number(sp.max_amount).toLocaleString()}`} highlight />
         </div>
       </div>
     </AppLayout>
