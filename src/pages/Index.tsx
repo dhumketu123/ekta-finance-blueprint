@@ -219,13 +219,12 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {displayClients.map((client) => {
-                const isDb = hasDbClients;
-                const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
-                const area = isDb ? (client as any).area : (client as any).area;
-                const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
+                const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
+                const area = (client as any).area;
+                const loanAmt = (client as any).loan_amount;
                 const status = (client as any).status;
                 const id = (client as any).id;
-                const nextPayment = isDb ? (client as any).next_payment_date : (client as any).nextDepositDate;
+                const nextPayment = (client as any).next_payment_date;
 
                 return (
                   <TooltipProvider key={id}>
@@ -251,10 +250,9 @@ const Dashboard = () => {
         </div>
         <div className="sm:hidden divide-y divide-border">
           {displayClients.map((client) => {
-            const isDb = hasDbClients;
-            const name = isDb ? (lang === "bn" ? (client as any).name_bn : (client as any).name_en) : (lang === "bn" ? (client as any).nameBn : (client as any).nameEn);
-            const loanAmt = isDb ? (client as any).loan_amount : (client as any).loanAmount;
-            const area = isDb ? (client as any).area : (client as any).area;
+            const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
+            const loanAmt = (client as any).loan_amount;
+            const area = (client as any).area;
             const status = (client as any).status;
             const id = (client as any).id;
 
@@ -300,10 +298,9 @@ const Dashboard = () => {
             </TableHeader>
             <TableBody>
               {displayInvestors.map((inv) => {
-                const isDb = hasDbInvestors;
-                const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
-                const capital = isDb ? (inv as any).capital : (inv as any).capital;
-                const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+                const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
+                const capital = (inv as any).capital;
+                const profitPct = (inv as any).monthly_profit_percent;
                 const reinvest = (inv as any).reinvest;
                 const id = (inv as any).id;
 
@@ -321,10 +318,9 @@ const Dashboard = () => {
         </div>
         <div className="sm:hidden divide-y divide-border">
           {displayInvestors.map((inv) => {
-            const isDb = hasDbInvestors;
-            const name = isDb ? (lang === "bn" ? (inv as any).name_bn : (inv as any).name_en) : (lang === "bn" ? (inv as any).nameBn : (inv as any).nameEn);
-            const capital = isDb ? (inv as any).capital : (inv as any).capital;
-            const profitPct = isDb ? (inv as any).monthly_profit_percent : (inv as any).monthlyProfitPercent;
+            const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
+            const capital = (inv as any).capital;
+            const profitPct = (inv as any).monthly_profit_percent;
             const reinvest = (inv as any).reinvest;
             const id = (inv as any).id;
 
