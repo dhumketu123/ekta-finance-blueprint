@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { CalendarDays, CheckCircle2, Clock, AlertTriangle, Circle } from "lucide-react";
+import DynamicPtpBadge from "@/components/DynamicPtpBadge";
 
 interface Props {
   loanId: string;
@@ -111,7 +112,14 @@ export default function LoanScheduleTable({ loanId }: Props) {
                       {cfg.label[lang as "en" | "bn"] ?? cfg.label.en}
                     </span>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{row.paid_date ?? "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {row.paid_date ?? "—"}
+                    {!isPaid && row.promised_status === "promised" && row.promised_date && (
+                      <div className="mt-1">
+                        <DynamicPtpBadge promisedDate={row.promised_date} promisedStatus={row.promised_status} />
+                      </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}

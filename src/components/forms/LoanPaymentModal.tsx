@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, ArrowRight, MessageSquare } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, MessageSquare, Phone } from "lucide-react";
 import SecurePaymentDialog from "./SecurePaymentDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import ConfirmExecutionScreen from "@/components/payment/ConfirmExecutionScreen";
@@ -59,6 +59,8 @@ type ModalStep = "form" | "confirm" | "result";
 export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanInfo }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
+  const queryClient = useQueryClient();
+  const [clientName, setClientName] = useState("");
   const suggestedAmount = loanInfo
     ? Number(loanInfo.penalty_amount) + Number(loanInfo.outstanding_interest) + Number(loanInfo.emi_amount)
     : 0;
@@ -160,6 +162,12 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       setStep("result");
       toast.success(bn ? "পেমেন্ট সফল" : "Payment successful");
 
+      // Reactive cache invalidation — auto-refresh all dependent views
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["loan_schedules"] });
+
       try {
         const { data: loanData } = await supabase
           .from("loans")
@@ -171,12 +179,13 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
           const client = (loanData as any).clients;
           if (client?.phone) {
             setClientPhone(client.phone);
-            const clientName = client.name_bn || client.name_en;
+            setClientName(client.name_bn || client.name_en || "");
+            const cName = client.name_bn || client.name_en;
             const remaining = Number(paymentData.new_outstanding);
             const paid = Number(paymentData.total_payment);
             const msgBn = paymentData.loan_closed
-              ? `✅ ${clientName}, আপনার ঋণ ${loanData.loan_id || ""} সম্পূর্ণ পরিশোধিত! ৳${paid.toLocaleString()} গৃহীত। ধন্যবাদ!`
-              : `✅ ${clientName}, ৳${paid.toLocaleString()} পরিশোধ গৃহীত। অবশিষ্ট: ৳${remaining.toLocaleString()}। ধন্যবাদ!`;
+              ? `✅ ${cName}, আপনার ঋণ ${loanData.loan_id || ""} সম্পূর্ণ পরিশোধিত! ৳${paid.toLocaleString()} গৃহীত। ধন্যবাদ!`
+              : `✅ ${cName}, ৳${paid.toLocaleString()} পরিশোধ গৃহীত। অবশিষ্ট: ৳${remaining.toLocaleString()}। ধন্যবাদ!`;
             const msgEn = paymentData.loan_closed
               ? `✅ ${client.name_en}, your loan ${loanData.loan_id || ""} is fully paid! ৳${paid.toLocaleString()} received. Thank you!`
               : `✅ ${client.name_en}, ৳${paid.toLocaleString()} payment received. Remaining: ৳${remaining.toLocaleString()}. Thank you!`;
@@ -263,19 +272,42 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                 <span>৳{Number(result.new_outstanding).toLocaleString()}</span>
               </div>
             </div>
-            <div className="flex gap-3 w-full mt-6 pt-4 border-t border-border">
-              <Button variant="outline" className="flex-1 text-xs" onClick={resetAndClose}>
+            {clientPhone && result && (() => {
+              const normalizedPhone = (clientPhone || "")
+                .replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)))
+                .replace(/[^\d]/g, "");
+              const last10 = normalizedPhone.slice(-10);
+              const intlPhone = `880${last10}`;
+              const paid = Number(result.total_payment).toLocaleString("en-US");
+              const remaining = Number(result.new_outstanding).toLocaleString("en-US");
+              const waMsg = encodeURIComponent(
+                `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ${paid} ৳ সফলভাবে জমা হয়েছে।\n${result.loan_closed ? "আপনার ঋণ সম্পূর্ণ পরিশোধিত!" : `বর্তমান বকেয়া: ৳${remaining}`}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
+              );
+              return (
+                <div className="flex gap-2 w-full mt-4 pt-3 border-t border-border">
+                  <a
+                    href={`https://wa.me/${intlPhone}?text=${waMsg}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all active:scale-[0.97]"
+                  >
+                    <Phone className="w-4 h-4" />
+                    WhatsApp
+                  </a>
+                  <Button
+                    className="flex-1 text-xs gap-2 bg-sky-600 hover:bg-sky-700 text-white shadow-md transition-all active:scale-[0.97]"
+                    onClick={handleSendSMS}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    SMS
+                  </Button>
+                </div>
+              );
+            })()}
+            <div className="mt-3">
+              <Button variant="outline" className="w-full text-xs" onClick={resetAndClose}>
                 {bn ? "বন্ধ করুন" : "Close"}
               </Button>
-              {clientPhone && (
-                <Button
-                  className="flex-1 text-xs gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all"
-                  onClick={handleSendSMS}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  {bn ? "SMS পাঠান" : "Send SMS"}
-                </Button>
-              )}
             </div>
           </div>
         ) : (
