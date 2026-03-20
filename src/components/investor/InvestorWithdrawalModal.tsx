@@ -208,8 +208,8 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
           {phase === "confirm" && (
             <motion.div key="confirm" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
               <DrawerBody>
-                <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-6">
-                  <div className="text-center space-y-1">
+                <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-5 flex flex-col items-center gap-4">
+                  <div className="text-center space-y-0.5">
                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                       {bn ? "চূড়ান্ত নিশ্চিতকরণ" : "Final Confirmation"}
                     </p>
@@ -223,19 +223,17 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
                       {bn ? `অবশিষ্ট: ৳${(capital - amt).toLocaleString()}` : `Remaining: ৳${(capital - amt).toLocaleString()}`}
                     </p>
                   </div>
-                  <div className="flex flex-col items-center gap-3">
-                    <ArcReactorButton
-                      onConfirmed={handleExecute}
-                      holdDuration={2500}
-                      size={110}
-                      disabled={submitting}
-                      label={bn ? "উত্তোলন নিশ্চিত করতে ধরে রাখুন" : "Hold to confirm withdrawal"}
-                      sublabel={bn ? "ধরুন" : "HOLD"}
-                    />
-                    <p className="text-xs text-muted-foreground text-center">
-                      {bn ? "নিশ্চিত করতে বোতাম ধরে রাখুন" : "Hold the button to confirm"}
-                    </p>
-                  </div>
+                  <ArcReactorButton
+                    onConfirmed={handleExecute}
+                    holdDuration={2500}
+                    size={110}
+                    disabled={submitting}
+                    label={bn ? "উত্তোলন নিশ্চিত করতে ধরে রাখুন" : "Hold to confirm withdrawal"}
+                    sublabel={bn ? "ধরুন" : "HOLD"}
+                  />
+                  <p className="text-xs text-muted-foreground text-center">
+                    {bn ? "নিশ্চিত করতে বোতাম ধরে রাখুন" : "Hold the button to confirm"}
+                  </p>
                 </div>
               </DrawerBody>
               <DrawerFooter>
