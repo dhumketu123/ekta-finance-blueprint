@@ -162,6 +162,17 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       setStep("result");
       toast.success(bn ? "পেমেন্ট সফল" : "Payment successful");
 
+      // AUTO-KILL PTP: Clear promise fields on paid schedules
+      try {
+        await supabase
+          .from("loan_schedules")
+          .update({ promised_date: null, promised_status: "none", is_penalty_frozen: false } as any)
+          .eq("loan_id", pending.loan_id)
+          .eq("promised_status", "promised");
+      } catch (ptpErr) {
+        console.error("PTP auto-clear error:", ptpErr);
+      }
+
       // Reactive cache invalidation — auto-refresh all dependent views
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["loans"] });
