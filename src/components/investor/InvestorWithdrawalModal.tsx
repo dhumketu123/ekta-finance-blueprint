@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle,
+  ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare,
 } from "lucide-react";
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
@@ -233,21 +233,28 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
               </motion.div>
               <p className="text-lg font-bold text-success">{bn ? "উত্তোলন সফল!" : "Withdrawal Complete!"}</p>
               <p className="text-sm text-muted-foreground">৳{amt.toLocaleString()}</p>
-              <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
-                <Button
-                  className="gap-2 bg-success hover:bg-success/90 text-success-foreground w-full"
-                  onClick={() => {
-                    const name = investor.name_bn || investor.name_en || "";
-                    const phone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\s/g, "").replace(/^0/, "880");
-                    const remaining = capital - amt;
-                    const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
-                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4" /> WhatsApp রসিদ পাঠান
-                </Button>
-                <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
-              </div>
+              {(() => {
+                const name = investor.name_bn || investor.name_en || "";
+                const rawPhone = (investor.phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
+                const cleanPhone = rawPhone.slice(-10);
+                const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
+                const remaining = capital - amt;
+                const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+                const encoded = encodeURIComponent(msg);
+                return (
+                  <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+                    <div className="flex gap-2 w-full">
+                      <Button className="flex-1 gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                        <MessageCircle className="w-4 h-4" /> WhatsApp
+                      </Button>
+                      <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                        <MessageSquare className="w-4 h-4" /> SMS
+                      </Button>
+                    </div>
+                    <Button variant="ghost" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
         </AnimatePresence>
