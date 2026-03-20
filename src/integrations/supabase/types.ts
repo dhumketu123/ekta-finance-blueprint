@@ -2798,16 +2798,25 @@ export type Database = {
         Args: { p_data: Json }
         Returns: string
       }
-      create_ledger_entry: {
-        Args: {
-          _branch_id: string
-          _created_by?: string
-          _entries: Json
-          _reference_id: string
-          _reference_type: string
-        }
-        Returns: Json
-      }
+      create_ledger_entry:
+        | {
+            Args: {
+              _branch_id: string
+              _created_by?: string
+              _entries: Json
+              _reference_id: string
+              _reference_type: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_entries: Json
+              p_reference_id: string
+              p_reference_type: string
+            }
+            Returns: Json
+          }
       create_or_update_transaction_pin: {
         Args: { _new_pin: string }
         Returns: Json
