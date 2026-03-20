@@ -224,7 +224,9 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
         console.error("Payment notification error:", notifErr);
       }
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || (bn ? "পেমেন্ট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" : "Payment failed. Please try again."));
+      setStep("form");
+      setPendingTransaction(null);
     } finally {
       setLoading(false);
       isProcessingRef.current = false;
