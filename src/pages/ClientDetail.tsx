@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
-  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon
+  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon, Phone
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -839,7 +839,26 @@ const ClientDetail = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <DetailField label={bn ? "নমিনির নাম" : "Nominee Name"} value={c.nominee_name || "—"} />
               <DetailField label={bn ? "সম্পর্ক" : "Relation"} value={c.nominee_relation || "—"} />
-              <DetailField label={bn ? "নমিনির ফোন" : "Nominee Phone"} value={c.nominee_phone || "—"} />
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{bn ? "নমিনির ফোন" : "Nominee Phone"}</p>
+                {(() => {
+                  const safePhone = (c.nominee_phone || "").replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d+]/g, "");
+                  return (
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-medium text-foreground">{c.nominee_phone || "—"}</p>
+                      {safePhone.length >= 7 && (
+                        <a
+                          href={`tel:${safePhone}`}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white active:scale-95 transition-all duration-200 shadow-sm"
+                          title={bn ? "কল করুন" : "Call"}
+                        >
+                          <Phone className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
               <DetailField label={bn ? "নমিনির NID" : "Nominee NID"} value={c.nominee_nid || "—"} />
             </div>
           </div>
