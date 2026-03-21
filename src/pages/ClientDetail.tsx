@@ -173,8 +173,8 @@ const ClientDetail = () => {
     enabled: !!id && showSettled,
   });
 
-  // Transaction history for this client (also used for export)
-  const { data: clientTransactions } = useQuery({
+  // Transaction history for this client (merged from both tables)
+  const { data: finTxnRaw } = useQuery({
     queryKey: ["client_financial_txns", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -188,6 +188,50 @@ const ClientDetail = () => {
     },
     enabled: !!id,
   });
+
+  // Legacy transactions table (loan payments go here)
+  const { data: legacyTxnRaw } = useQuery({
+    queryKey: ["client_legacy_txns", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions" as any)
+        .select("*")
+        .eq("client_id", id!)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!id,
+  });
+
+  // Merge both transaction sources into unified format
+  const clientTransactions = useMemo(() => {
+    const fin = (finTxnRaw ?? []).map((tx: any) => ({ ...tx, _source: "fin" }));
+    const legacy = (legacyTxnRaw ?? [])
+      .filter((tx: any) => !["loan_disbursement"].includes(tx.type)) // exclude disbursements from history
+      .map((tx: any) => ({
+        id: tx.id,
+        created_at: tx.created_at,
+        transaction_type: tx.type === "loan_principal" ? "loan_repayment"
+          : tx.type === "loan_interest" ? "loan_repayment"
+          : tx.type === "loan_penalty" ? "loan_repayment"
+          : tx.type,
+        amount: tx.amount,
+        approval_status: tx.status === "paid" ? "approved" : tx.status,
+        reference_id: tx.reference_id,
+        receipt_number: null,
+        notes: tx.notes,
+        _source: "legacy",
+      }));
+    // Deduplicate by reference_id where possible
+    const finRefIds = new Set(fin.filter((t: any) => t.reference_id).map((t: any) => t.reference_id));
+    const dedupedLegacy = legacy.filter((t: any) => !t.reference_id || !finRefIds.has(t.reference_id));
+    return [...fin, ...dedupedLegacy].sort((a: any, b: any) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [finTxnRaw, legacyTxnRaw]);
 
   if (isLoading) {
     return (
