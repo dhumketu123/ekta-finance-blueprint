@@ -672,9 +672,14 @@ const ClientDetail = () => {
       {/* ── Financial Journey Chart & Health Gauge ── */}
       {hasActiveLoans && (() => {
         const stats = allScheduleStats ?? {};
+        const totalAmount = Object.values(stats).reduce((s: number, v: any) => s + (v.totalAmount || 0), 0);
+        const paidAmount = Object.values(stats).reduce((s: number, v: any) => s + (v.paidAmount || 0), 0);
         const totalInst = Object.values(stats).reduce((s: number, v: any) => s + v.total, 0);
         const paidInst = Object.values(stats).reduce((s: number, v: any) => s + v.paid, 0);
-        const punctPct = totalInst > 0 ? Math.round((paidInst / totalInst) * 100) : 0;
+        const partialInst = Object.values(stats).reduce((s: number, v: any) => s + (v.partial || 0), 0);
+        // Punctuality: paid + proportional partial credit
+        const punctPct = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+        const effectivePaid = paidInst + (partialInst * 0.5); // partial counts as half
         const rLvl = (() => {
           let rs = 0;
           if (punctPct < 50) rs += 3; else if (punctPct < 75) rs += 1;
@@ -690,7 +695,7 @@ const ClientDetail = () => {
             <PaymentHealthGauge
               punctualityPct={punctPct}
               riskLevel={rLvl}
-              paidInstallments={paidInst}
+              paidInstallments={Math.round(effectivePaid)}
               totalInstallments={totalInst}
             />
           </div>
