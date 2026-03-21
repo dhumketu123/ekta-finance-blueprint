@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { CalendarDays, CheckCircle2, Clock, AlertTriangle, Circle } from "lucide-react";
@@ -102,7 +103,7 @@ export default function LoanScheduleTable({ loanId }: Props) {
                   className={isPaid ? "opacity-60" : row.status === "overdue" ? "bg-destructive/5" : ""}
                 >
                   <TableCell className="text-center text-xs font-mono text-muted-foreground">{row.installment_number}</TableCell>
-                  <TableCell className="text-xs font-medium">{row.due_date}</TableCell>
+                  <TableCell className="text-xs font-medium">{formatLocalDate(row.due_date, lang, { short: true })}</TableCell>
                   <TableCell className="text-xs text-right">৳{Number(row.principal_due).toLocaleString()}</TableCell>
                   <TableCell className="text-xs text-right text-warning">৳{Number(row.interest_due).toLocaleString()}</TableCell>
                   <TableCell className="text-xs text-right font-bold">৳{Number(row.total_due ?? (Number(row.principal_due) + Number(row.interest_due))).toLocaleString()}</TableCell>
@@ -113,7 +114,7 @@ export default function LoanScheduleTable({ loanId }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {row.paid_date ?? "—"}
+                    {row.paid_date ? formatLocalDate(row.paid_date, lang, { short: true }) : "—"}
                     {!isPaid && row.promised_status === "promised" && row.promised_date && (
                       <div className="mt-1">
                         <DynamicPtpBadge promisedDate={row.promised_date} promisedStatus={row.promised_status} />

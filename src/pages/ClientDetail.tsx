@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
@@ -93,14 +93,17 @@ const ClientDetail = () => {
       const ids = activeLoans.map(l => l.id);
       const { data, error } = await supabase
         .from("loan_schedules")
-        .select("loan_id, status")
+        .select("loan_id, status, principal_due, interest_due, principal_paid, interest_paid")
         .in("loan_id", ids);
       if (error) throw error;
-      const stats: Record<string, { total: number; paid: number; remaining: number }> = {};
+      const stats: Record<string, { total: number; paid: number; partial: number; remaining: number; paidAmount: number; totalAmount: number }> = {};
       for (const row of data ?? []) {
-        if (!stats[row.loan_id]) stats[row.loan_id] = { total: 0, paid: 0, remaining: 0 };
+        if (!stats[row.loan_id]) stats[row.loan_id] = { total: 0, paid: 0, partial: 0, remaining: 0, paidAmount: 0, totalAmount: 0 };
         stats[row.loan_id].total++;
+        stats[row.loan_id].totalAmount += Number(row.principal_due) + Number(row.interest_due);
+        stats[row.loan_id].paidAmount += Number(row.principal_paid) + Number(row.interest_paid);
         if (row.status === "paid") stats[row.loan_id].paid++;
+        else if (row.status === "partial") stats[row.loan_id].partial++;
         else stats[row.loan_id].remaining++;
       }
       return stats;
@@ -402,7 +405,7 @@ const ClientDetail = () => {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateFrom && "text-muted-foreground")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {chartDateFrom ? format(chartDateFrom, "dd MMM yyyy") : (bn ? "শুরুর তারিখ" : "From")}
+              {chartDateFrom ? formatLocalDate(chartDateFrom, lang, { short: true }) : (bn ? "শুরুর তারিখ" : "From")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -414,7 +417,7 @@ const ClientDetail = () => {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateTo && "text-muted-foreground")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {chartDateTo ? format(chartDateTo, "dd MMM yyyy") : (bn ? "শেষ তারিখ" : "To")}
+              {chartDateTo ? formatLocalDate(chartDateTo, lang, { short: true }) : (bn ? "শেষ তারিখ" : "To")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -545,7 +548,7 @@ const ClientDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরবর্তী কিস্তি" : "Next Due"}</p>
-                <p className={`text-sm font-bold ${isOverdue ? "text-destructive" : isDueSoon ? "text-warning" : "text-primary"}`}>{loan.next_due_date ?? "—"}</p>
+                <p className={`text-sm font-bold ${isOverdue ? "text-destructive" : isDueSoon ? "text-warning" : "text-primary"}`}>{formatLocalDate(loan.next_due_date, lang, { short: true })}</p>
               </div>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground">{bn ? "পরিশোধিত" : "Paid"}</p>
@@ -557,7 +560,7 @@ const ClientDetail = () => {
               </div>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরিপক্কতা" : "Maturity"}</p>
-                <p className="text-sm font-bold">{loan.maturity_date ?? "—"}</p>
+                <p className="text-sm font-bold">{formatLocalDate(loan.maturity_date, lang, { short: true })}</p>
               </div>
             </div>
 
@@ -669,9 +672,14 @@ const ClientDetail = () => {
       {/* ── Financial Journey Chart & Health Gauge ── */}
       {hasActiveLoans && (() => {
         const stats = allScheduleStats ?? {};
+        const totalAmount = Object.values(stats).reduce((s: number, v: any) => s + (v.totalAmount || 0), 0);
+        const paidAmount = Object.values(stats).reduce((s: number, v: any) => s + (v.paidAmount || 0), 0);
         const totalInst = Object.values(stats).reduce((s: number, v: any) => s + v.total, 0);
         const paidInst = Object.values(stats).reduce((s: number, v: any) => s + v.paid, 0);
-        const punctPct = totalInst > 0 ? Math.round((paidInst / totalInst) * 100) : 0;
+        const partialInst = Object.values(stats).reduce((s: number, v: any) => s + (v.partial || 0), 0);
+        // Punctuality: paid + proportional partial credit
+        const punctPct = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+        const effectivePaid = paidInst + (partialInst * 0.5); // partial counts as half
         const rLvl = (() => {
           let rs = 0;
           if (punctPct < 50) rs += 3; else if (punctPct < 75) rs += 1;
@@ -687,7 +695,7 @@ const ClientDetail = () => {
             <PaymentHealthGauge
               punctualityPct={punctPct}
               riskLevel={rLvl}
-              paidInstallments={paidInst}
+              paidInstallments={Math.round(effectivePaid)}
               totalInstallments={totalInst}
             />
           </div>
@@ -838,7 +846,7 @@ const ClientDetail = () => {
               <DetailField label={bn ? "পিতা/স্বামী" : "Father / Husband"} value={c.father_or_husband_name || "—"} />
               <DetailField label={bn ? "মাতার নাম" : "Mother Name"} value={c.mother_name || "—"} />
               <DetailField label={bn ? "NID নম্বর" : "NID Number"} value={c.nid_number || "—"} />
-              <DetailField label={bn ? "জন্ম তারিখ" : "Date of Birth"} value={c.date_of_birth || "—"} />
+              <DetailField label={bn ? "জন্ম তারিখ" : "Date of Birth"} value={formatLocalDate(c.date_of_birth, lang)} />
               <DetailField label={bn ? "বৈবাহিক অবস্থা" : "Marital Status"} value={maritalMap[c.marital_status] || "—"} />
               <DetailField label={bn ? "পেশা" : "Occupation"} value={c.occupation || "—"} />
             </div>
@@ -916,7 +924,7 @@ const ClientDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <DetailField label={t("table.savings")} value={savingsType} />
               <DetailField label={t("detail.frequency")} value={frequency} />
-              <DetailField label={t("detail.nextDeposit")} value={nextPaymentDate || "—"} />
+              <DetailField label={t("detail.nextDeposit")} value={formatLocalDate(nextPaymentDate, lang)} />
             </div>
           </div>
         </div>
@@ -1028,7 +1036,7 @@ const ClientDetail = () => {
                       return (
                         <tr key={tx.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                           <td className="p-3 text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleDateString(bn ? "bn-BD" : "en-US", { day: "2-digit", month: "short", year: "2-digit" })}
+                            {formatShortDate(tx.created_at, lang)}
                           </td>
                           <td className="p-3">
                             <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
@@ -1165,7 +1173,7 @@ const ClientDetail = () => {
                   return (
                     <div key={tx.id} className="flex items-center justify-between py-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{new Date(tx.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short" })}</span>
+                        <span className="text-muted-foreground">{formatShortDate(tx.created_at, lang)}</span>
                         <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
                       </div>
                       <span className="font-bold">৳{Number(tx.amount).toLocaleString()}</span>

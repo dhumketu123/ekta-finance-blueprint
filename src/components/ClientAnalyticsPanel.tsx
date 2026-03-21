@@ -21,7 +21,7 @@ interface LoanData {
 }
 
 interface ScheduleStats {
-  [loanId: string]: { total: number; paid: number; remaining: number };
+  [loanId: string]: { total: number; paid: number; partial?: number; remaining: number; paidAmount?: number; totalAmount?: number };
 }
 
 interface TxData {
@@ -43,10 +43,13 @@ export default function ClientAnalyticsPanel({ loans, scheduleStats, transaction
   const bn = lang === "bn";
 
   const analytics = useMemo(() => {
-    // Payment Punctuality: % of installments paid on time
+    // Payment Punctuality: based on actual amounts paid vs due
+    const totalAmount = Object.values(scheduleStats).reduce((s, v) => s + (v.totalAmount || v.total), 0);
+    const paidAmount = Object.values(scheduleStats).reduce((s, v) => s + (v.paidAmount || v.paid), 0);
     const totalInstallments = Object.values(scheduleStats).reduce((s, v) => s + v.total, 0);
     const paidInstallments = Object.values(scheduleStats).reduce((s, v) => s + v.paid, 0);
-    const punctualityPct = totalInstallments > 0 ? Math.round((paidInstallments / totalInstallments) * 100) : 0;
+    const partialInstallments = Object.values(scheduleStats).reduce((s, v) => s + (v.partial || 0), 0);
+    const punctualityPct = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
 
     // Overdue loans (next_due_date in the past)
     const now = Date.now();
@@ -95,6 +98,7 @@ export default function ClientAnalyticsPanel({ loans, scheduleStats, transaction
       punctualityPct,
       totalInstallments,
       paidInstallments,
+      partialInstallments,
       overdueLoans,
       highRiskLoans,
       totalRepaid,
@@ -144,7 +148,7 @@ export default function ClientAnalyticsPanel({ loans, scheduleStats, transaction
             {analytics.punctualityPct}%
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {analytics.paidInstallments}/{analytics.totalInstallments} {bn ? "কিস্তি" : "installments"}
+            {analytics.paidInstallments}{analytics.partialInstallments ? `+${analytics.partialInstallments}` : ""}/{analytics.totalInstallments} {bn ? "কিস্তি" : "installments"}
           </p>
         </div>
 
