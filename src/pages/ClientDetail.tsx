@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
@@ -93,14 +93,17 @@ const ClientDetail = () => {
       const ids = activeLoans.map(l => l.id);
       const { data, error } = await supabase
         .from("loan_schedules")
-        .select("loan_id, status")
+        .select("loan_id, status, principal_due, interest_due, principal_paid, interest_paid")
         .in("loan_id", ids);
       if (error) throw error;
-      const stats: Record<string, { total: number; paid: number; remaining: number }> = {};
+      const stats: Record<string, { total: number; paid: number; partial: number; remaining: number; paidAmount: number; totalAmount: number }> = {};
       for (const row of data ?? []) {
-        if (!stats[row.loan_id]) stats[row.loan_id] = { total: 0, paid: 0, remaining: 0 };
+        if (!stats[row.loan_id]) stats[row.loan_id] = { total: 0, paid: 0, partial: 0, remaining: 0, paidAmount: 0, totalAmount: 0 };
         stats[row.loan_id].total++;
+        stats[row.loan_id].totalAmount += Number(row.principal_due) + Number(row.interest_due);
+        stats[row.loan_id].paidAmount += Number(row.principal_paid) + Number(row.interest_paid);
         if (row.status === "paid") stats[row.loan_id].paid++;
+        else if (row.status === "partial") stats[row.loan_id].partial++;
         else stats[row.loan_id].remaining++;
       }
       return stats;
@@ -402,7 +405,7 @@ const ClientDetail = () => {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateFrom && "text-muted-foreground")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {chartDateFrom ? format(chartDateFrom, "dd MMM yyyy") : (bn ? "শুরুর তারিখ" : "From")}
+              {chartDateFrom ? formatLocalDate(chartDateFrom, lang, { short: true }) : (bn ? "শুরুর তারিখ" : "From")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -414,7 +417,7 @@ const ClientDetail = () => {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs rounded-lg h-8", !chartDateTo && "text-muted-foreground")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {chartDateTo ? format(chartDateTo, "dd MMM yyyy") : (bn ? "শেষ তারিখ" : "To")}
+              {chartDateTo ? formatLocalDate(chartDateTo, lang, { short: true }) : (bn ? "শেষ তারিখ" : "To")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
