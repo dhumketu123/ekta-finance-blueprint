@@ -548,7 +548,7 @@ const ClientDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-2 border-t border-border">
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরবর্তী কিস্তি" : "Next Due"}</p>
-                <p className={`text-sm font-bold ${isOverdue ? "text-destructive" : isDueSoon ? "text-warning" : "text-primary"}`}>{loan.next_due_date ?? "—"}</p>
+                <p className={`text-sm font-bold ${isOverdue ? "text-destructive" : isDueSoon ? "text-warning" : "text-primary"}`}>{formatLocalDate(loan.next_due_date, lang, { short: true })}</p>
               </div>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground">{bn ? "পরিশোধিত" : "Paid"}</p>
@@ -560,7 +560,7 @@ const ClientDetail = () => {
               </div>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarDays className="w-3 h-3" />{bn ? "পরিপক্কতা" : "Maturity"}</p>
-                <p className="text-sm font-bold">{loan.maturity_date ?? "—"}</p>
+                <p className="text-sm font-bold">{formatLocalDate(loan.maturity_date, lang, { short: true })}</p>
               </div>
             </div>
 
@@ -846,7 +846,7 @@ const ClientDetail = () => {
               <DetailField label={bn ? "পিতা/স্বামী" : "Father / Husband"} value={c.father_or_husband_name || "—"} />
               <DetailField label={bn ? "মাতার নাম" : "Mother Name"} value={c.mother_name || "—"} />
               <DetailField label={bn ? "NID নম্বর" : "NID Number"} value={c.nid_number || "—"} />
-              <DetailField label={bn ? "জন্ম তারিখ" : "Date of Birth"} value={c.date_of_birth || "—"} />
+              <DetailField label={bn ? "জন্ম তারিখ" : "Date of Birth"} value={formatLocalDate(c.date_of_birth, lang)} />
               <DetailField label={bn ? "বৈবাহিক অবস্থা" : "Marital Status"} value={maritalMap[c.marital_status] || "—"} />
               <DetailField label={bn ? "পেশা" : "Occupation"} value={c.occupation || "—"} />
             </div>
@@ -924,7 +924,7 @@ const ClientDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <DetailField label={t("table.savings")} value={savingsType} />
               <DetailField label={t("detail.frequency")} value={frequency} />
-              <DetailField label={t("detail.nextDeposit")} value={nextPaymentDate || "—"} />
+              <DetailField label={t("detail.nextDeposit")} value={formatLocalDate(nextPaymentDate, lang)} />
             </div>
           </div>
         </div>
@@ -1036,7 +1036,7 @@ const ClientDetail = () => {
                       return (
                         <tr key={tx.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                           <td className="p-3 text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleDateString(bn ? "bn-BD" : "en-US", { day: "2-digit", month: "short", year: "2-digit" })}
+                            {formatShortDate(tx.created_at, lang)}
                           </td>
                           <td className="p-3">
                             <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
@@ -1173,7 +1173,7 @@ const ClientDetail = () => {
                   return (
                     <div key={tx.id} className="flex items-center justify-between py-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{new Date(tx.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short" })}</span>
+                        <span className="text-muted-foreground">{formatShortDate(tx.created_at, lang)}</span>
                         <span className="font-medium">{bn ? typeLabel?.bn : typeLabel?.en}</span>
                       </div>
                       <span className="font-bold">৳{Number(tx.amount).toLocaleString()}</span>
