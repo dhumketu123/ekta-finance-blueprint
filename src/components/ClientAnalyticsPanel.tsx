@@ -98,6 +98,7 @@ export default function ClientAnalyticsPanel({ loans, scheduleStats, transaction
       punctualityPct,
       totalInstallments,
       paidInstallments,
+      partialInstallments,
       overdueLoans,
       highRiskLoans,
       totalRepaid,
