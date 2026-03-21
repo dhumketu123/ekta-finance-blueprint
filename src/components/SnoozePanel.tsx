@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSnoozeInstallment } from "@/hooks/useSnooze";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -110,7 +111,7 @@ const SnoozePanel = ({ schedule, onClose }: SnoozePanelProps) => {
               <p className="text-xs text-muted-foreground mb-1">
                 {bn ? "মূল কিস্তির তারিখ" : "Original Due Date"}
               </p>
-              <p className="text-sm font-bold">{schedule.due_date}</p>
+              <p className="text-sm font-bold">{formatLocalDate(schedule.due_date, lang)}</p>
             </div>
 
             <div>
