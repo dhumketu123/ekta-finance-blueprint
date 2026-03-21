@@ -147,7 +147,7 @@ export default function ClientAnalyticsPanel({ loans, scheduleStats, transaction
             {analytics.punctualityPct}%
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {analytics.paidInstallments}/{analytics.totalInstallments} {bn ? "কিস্তি" : "installments"}
+            {analytics.paidInstallments}{analytics.partialInstallments ? `+${analytics.partialInstallments}` : ""}/{analytics.totalInstallments} {bn ? "কিস্তি" : "installments"}
           </p>
         </div>
 
