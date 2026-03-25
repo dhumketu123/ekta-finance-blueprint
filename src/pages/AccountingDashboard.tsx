@@ -8,6 +8,14 @@ import {
   FileSpreadsheet,
   ArrowLeft,
   Sparkles,
+  BookOpen,
+  Network,
+  PiggyBank,
+  Lock,
+  ShieldCheck,
+  Settings,
+  Eye,
+  Play,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
