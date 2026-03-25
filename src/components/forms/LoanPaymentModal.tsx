@@ -274,7 +274,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       : format(new Date(), "dd/MM/yyyy");
     return result.loan_closed
       ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 পরিশোধিত: ৳${paid}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ৳${paid} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${paid}\n📊 বর্তমান বকেয়া: ৳${remaining}\n📅 পরবর্তী কিস্তির তারিখ: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ৳${paid} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${paid}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
   }, [result, clientName, nextDueDate]);
 
   const normalizePhone = (phone: string) => {
