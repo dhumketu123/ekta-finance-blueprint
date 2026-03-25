@@ -202,13 +202,7 @@ const AccountingDashboard = () => {
     setPinModalOpen(true);
   }, []);
 
-  const handlePinAuthorized = useCallback(() => {
-    if (pendingLockAction.current) {
-      lockMutation.mutate(pendingLockAction.current);
-      pendingLockAction.current = null;
-    }
-    setPinModalOpen(false);
-  }, []);
+  // handlePinAuthorized defined after lockMutation below
 
   // ═══════════════════════════════════════
   // STEP B — CORE ACCOUNTING RPC QUERIES
