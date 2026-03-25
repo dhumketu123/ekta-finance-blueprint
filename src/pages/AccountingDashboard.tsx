@@ -464,7 +464,16 @@ const AccountingDashboard = () => {
     },
   });
 
-  // Delete journal rule (soft-delete)
+  // PIN-gated period lock handler (defined after lockMutation)
+  const handlePinAuthorized = useCallback(() => {
+    if (pendingLockAction.current) {
+      lockMutation.mutate(pendingLockAction.current);
+      pendingLockAction.current = null;
+    }
+    setPinModalOpen(false);
+  }, [lockMutation]);
+
+
   const deleteRuleMutation = useMutation({
     mutationFn: async (ruleId: string) => {
       const { error } = await supabase
