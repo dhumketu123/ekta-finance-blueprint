@@ -56,9 +56,10 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
       if (loanErr) throw loanErr;
       setTestLoanId(loan.id);
 
+      const testPerformer = "00000000-0000-0000-0000-000000000000";
       // TEST 1: Partial payment (should pay penalty first)
       const { data: r1, error: e1 } = await supabase.rpc("apply_loan_payment", {
-        _loan_id: loan.id, _amount: 100, _reference_id: "test_partial_" + Date.now(),
+        _loan_id: loan.id, _amount: 100, _performed_by: testPerformer, _reference_id: "test_partial_" + Date.now(),
       });
       if (e1) {
         addResult({ label: "Partial Payment", status: "fail", detail: e1.message });
