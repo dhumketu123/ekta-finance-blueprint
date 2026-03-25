@@ -107,12 +107,11 @@ const Loans = () => {
               <TableHeader className="table-header-premium">
                 <TableRow>
                   <TableHead>{t("table.product")}</TableHead>
-                  <TableHead>{t("table.interest")}</TableHead>
+                  <TableHead>{lang === "bn" ? "সুদ / ফ্রিকোয়েন্সি" : "Interest / Freq."}</TableHead>
                   <TableHead>{t("table.tenure")}</TableHead>
-                  <TableHead>{t("table.paymentType")}</TableHead>
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
-                  <TableHead>{t("table.maxConcurrent")}</TableHead>
+                  <TableHead>{lang === "bn" ? "MFI নিয়ম" : "MFI Rules"}</TableHead>
                   {canEditLoans && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
@@ -120,12 +119,35 @@ const Loans = () => {
                 {filtered.map((lp: any) => (
                   <TableRow key={lp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/loans/${lp.id}`)}>
                     <TableCell><p className="text-xs font-medium">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p></TableCell>
-                    <TableCell className="text-xs font-semibold">{lp.interest_rate}%</TableCell>
+                    <TableCell className="text-xs">
+                      <span className="font-semibold">{lp.interest_rate}%</span>
+                      <span className="text-muted-foreground"> / {lp.payment_frequency || "Monthly"}</span>
+                    </TableCell>
                     <TableCell className="text-xs">{lp.tenure_months} {t("table.months")}</TableCell>
-                    <TableCell className="text-xs capitalize">{String(lp.payment_type).replace("_", " ")}</TableCell>
                     <TableCell className="text-xs">৳{Number(lp.min_amount).toLocaleString()}</TableCell>
                     <TableCell className="text-xs">৳{Number(lp.max_amount).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs text-center">{lp.max_concurrent}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(lp.upfront_savings_pct > 0 || lp.compulsory_savings_amount > 0) ? (
+                          <>
+                            {lp.upfront_savings_pct > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                                {lp.upfront_savings_pct}% Upfront
+                              </span>
+                            )}
+                            {lp.compulsory_savings_amount > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20">
+                                +৳{Number(lp.compulsory_savings_amount).toLocaleString()}/Inst.
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            Standard
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     {canEditLoans && (
                       <TableCell>
                         <div className="flex gap-1">

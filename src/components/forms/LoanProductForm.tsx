@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateRecord, useUpdateRecord } from "@/hooks/useCrudOperations";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Landmark } from "lucide-react";
 
 const schema = z.object({
   product_name_en: z.string().trim().min(1, "Product name is required").max(100),
@@ -17,6 +18,9 @@ const schema = z.object({
   min_amount: z.coerce.number().min(0),
   max_amount: z.coerce.number().min(0),
   max_concurrent: z.coerce.number().int().min(1).default(1),
+  payment_frequency: z.string().default("Monthly"),
+  upfront_savings_pct: z.coerce.number().min(0).max(100).default(0),
+  compulsory_savings_amount: z.coerce.number().min(0).default(0),
 });
 
 interface Props {
@@ -40,6 +44,9 @@ export default function LoanProductForm({ open, onClose, editData }: Props) {
     min_amount: editData?.min_amount ?? 0,
     max_amount: editData?.max_amount ?? 0,
     max_concurrent: editData?.max_concurrent ?? 1,
+    payment_frequency: editData?.payment_frequency ?? "Monthly",
+    upfront_savings_pct: editData?.upfront_savings_pct ?? 0,
+    compulsory_savings_amount: editData?.compulsory_savings_amount ?? 0,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,13 +71,14 @@ export default function LoanProductForm({ open, onClose, editData }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm font-bold">
             {isEdit ? (lang === "bn" ? "ঋণ পণ্য সম্পাদনা" : "Edit Loan Product") : (lang === "bn" ? "নতুন ঋণ পণ্য" : "New Loan Product")}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Basic Info */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Name (English) *</Label>
@@ -119,6 +127,65 @@ export default function LoanProductForm({ open, onClose, editData }: Props) {
               <Input type="number" value={form.max_amount} onChange={(e) => setForm({ ...form, max_amount: Number(e.target.value) })} className="text-sm" />
             </div>
           </div>
+
+          {/* MFI / NGO Rules Section */}
+          <div className="relative rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 via-slate-900/20 to-transparent p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-300">
+                  {lang === "bn" ? "MFI / NGO নিয়ম (BRAC/গ্রামীণ মডেল)" : "MFI / NGO Rules (BRAC/Grameen Model)"}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">{lang === "bn" ? "পেমেন্ট ফ্রিকোয়েন্সি" : "Payment Frequency"}</Label>
+              <Select value={form.payment_frequency} onValueChange={(v) => setForm({ ...form, payment_frequency: v })}>
+                <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Weekly">{lang === "bn" ? "সাপ্তাহিক" : "Weekly"}</SelectItem>
+                  <SelectItem value="Monthly">{lang === "bn" ? "মাসিক" : "Monthly"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs">{lang === "bn" ? "অগ্রিম সঞ্চয় প্রয়োজন (%)" : "Upfront Savings Required (%)"}</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.upfront_savings_pct || ""}
+                placeholder="0"
+                onChange={(e) => setForm({ ...form, upfront_savings_pct: Number(e.target.value) })}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {lang === "bn"
+                  ? "ঋণ বিতরণের আগে ক্লায়েন্টের সঞ্চয়ে ঋণের এই শতাংশ থাকতে হবে।"
+                  : "Client must have this % of loan amount in savings before disbursement."}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs">{lang === "bn" ? "বাধ্যতামূলক সঞ্চয় / DPS (৳)" : "Compulsory Savings / DPS (৳)"}</Label>
+              <Input
+                type="number"
+                value={form.compulsory_savings_amount || ""}
+                placeholder="0"
+                onChange={(e) => setForm({ ...form, compulsory_savings_amount: Number(e.target.value) })}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {lang === "bn"
+                  ? "প্রতিটি কিস্তির সাথে স্বয়ংক্রিয়ভাবে সংগ্রহ করা নির্দিষ্ট সঞ্চয়ের পরিমাণ।"
+                  : "Fixed savings amount collected automatically with every installment."}
+              </p>
+            </div>
+          </div>
+
           <Button onClick={handleSubmit} disabled={isPending} className="w-full text-xs">
             {isPending ? "..." : isEdit ? "Update" : "Create"}
           </Button>
