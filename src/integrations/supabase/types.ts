@@ -1359,6 +1359,7 @@ export type Database = {
       }
       loan_products: {
         Row: {
+          compulsory_savings_amount: number | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -1366,13 +1367,16 @@ export type Database = {
           max_amount: number
           max_concurrent: number
           min_amount: number
+          payment_frequency: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
           product_name_bn: string
           product_name_en: string
           tenure_months: number
           updated_at: string
+          upfront_savings_pct: number | null
         }
         Insert: {
+          compulsory_savings_amount?: number | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1380,13 +1384,16 @@ export type Database = {
           max_amount?: number
           max_concurrent?: number
           min_amount?: number
+          payment_frequency?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"]
           product_name_bn?: string
           product_name_en: string
           tenure_months?: number
           updated_at?: string
+          upfront_savings_pct?: number | null
         }
         Update: {
+          compulsory_savings_amount?: number | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1394,11 +1401,13 @@ export type Database = {
           max_amount?: number
           max_concurrent?: number
           min_amount?: number
+          payment_frequency?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"]
           product_name_bn?: string
           product_name_en?: string
           tenure_months?: number
           updated_at?: string
+          upfront_savings_pct?: number | null
         }
         Relationships: []
       }
