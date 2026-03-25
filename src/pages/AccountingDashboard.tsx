@@ -275,13 +275,13 @@ const AccountingDashboard = () => {
     queryKey: ["chart-of-accounts-tree"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("chart_of_accounts" as any)
+        const { data, error } = await (supabase as any)
+          .from("chart_of_accounts")
           .select("id, code, name, name_bn, account_type, parent_id")
           .eq("is_active", true)
           .order("code");
         if (error) throw error;
-        return (data || []) as Omit<CoaNode, "children">[];
+        return (data || []) as unknown as Omit<CoaNode, "children">[];
       } catch (err) {
         console.error("Failed to fetch CoA:", err);
         return [];
