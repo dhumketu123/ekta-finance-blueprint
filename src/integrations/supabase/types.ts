@@ -2732,7 +2732,7 @@ export type Database = {
         Args: {
           _amount: number
           _loan_id: string
-          _performed_by?: string
+          _performed_by: string
           _reference_id?: string
         }
         Returns: Json
