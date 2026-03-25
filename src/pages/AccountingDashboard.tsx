@@ -4,6 +4,7 @@ import {
   FileSpreadsheet, ArrowLeft, Sparkles, BookOpen, Network, PiggyBank,
   Lock, ShieldCheck, Settings, Eye, Play, ChevronRight, ChevronDown,
   Plus, Trash2, LockOpen, Clock, User, Loader2, AlertCircle,
+  Brain, AlertTriangle, Info, CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -211,6 +212,7 @@ const AccountingDashboard = () => {
   // 1. Trial Balance (LIVE RPC)
   const { data: trialData, isLoading: trialLoading, error: trialError, refetch: refetchTrial } = useQuery({
     queryKey: ["trial-balance-dashboard"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await supabase.rpc("get_trial_balance" as any);
@@ -226,6 +228,7 @@ const AccountingDashboard = () => {
   // 2. Profit & Loss (LIVE RPC)
   const { data: pnlData, isLoading: pnlLoading, error: pnlError, refetch: refetchPnl } = useQuery({
     queryKey: ["profit-loss-dashboard"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await supabase.rpc("get_profit_loss" as any, {
@@ -244,6 +247,7 @@ const AccountingDashboard = () => {
   // 3. Balance Sheet (LIVE RPC)
   const { data: bsData, isLoading: bsLoading, error: bsError, refetch: refetchBs } = useQuery({
     queryKey: ["balance-sheet-dashboard"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await supabase.rpc("get_balance_sheet" as any, {
@@ -329,6 +333,7 @@ const AccountingDashboard = () => {
   // Journal Rules
   const { data: rulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["journal-rules"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await (supabase as any)
@@ -376,6 +381,7 @@ const AccountingDashboard = () => {
   // Chart of Accounts (Tree)
   const { data: coaData, isLoading: coaLoading } = useQuery({
     queryKey: ["chart-of-accounts-tree"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await (supabase as any)
@@ -398,6 +404,7 @@ const AccountingDashboard = () => {
   // Accounting Periods
   const { data: periodsData, isLoading: periodsLoading } = useQuery({
     queryKey: ["accounting-periods"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await (supabase as any)
@@ -419,6 +426,7 @@ const AccountingDashboard = () => {
   // Audit Logs (last 10)
   const { data: auditData, isLoading: auditLoading } = useQuery({
     queryKey: ["audit-logs-recent"],
+    refetchInterval: 30000,
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -561,7 +569,7 @@ const AccountingDashboard = () => {
     <div className="relative min-h-screen overflow-hidden">
       {/* Animated gradient mesh background */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #0052D4 0%, #4364F7 40%, #6FB1FC 70%, #0052D4 100%)", backgroundSize: "400% 400%", animation: "meshMove 30s ease infinite" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(270deg, #0f172a, #1e293b, #0f172a)", backgroundSize: "600% 600%", animation: "meshMove 30s ease infinite" }} />
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, rgba(72,255,115,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(99,102,241,0.2) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(72,255,115,0.1) 0%, transparent 50%)" }} />
       </div>
       <style>{`@keyframes meshMove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}`}</style>
@@ -602,6 +610,59 @@ const AccountingDashboard = () => {
             </GlassCard>
           ))}
         </div>
+
+        {/* AI Smart Insights Banner */}
+        {!coreLoading && !coreError && (
+          <div className="mb-8">
+            <GlassCard className="!p-4 sm:!p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-lg bg-white/[0.08] border border-white/[0.1]">
+                  <Brain className="w-4 h-4 text-[#48FF73]" />
+                </div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">AI Smart Insights</h3>
+                <span className="ml-auto text-[9px] text-white/30 font-mono">auto-refresh 30s</span>
+              </div>
+              <div className="space-y-2">
+                {netProfit < 0 && (
+                  <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-400/20 rounded-xl px-3.5 py-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-red-300">🚨 Financial Alert</p>
+                      <p className="text-[10px] text-red-300/70 leading-relaxed">The business is currently operating at a net loss ({fmt(netProfit)} negative profit).</p>
+                    </div>
+                  </div>
+                )}
+                {totalAssets > 0 && totalAssets < totalLiabEq && (
+                  <div className="flex items-start gap-2.5 bg-yellow-500/10 border border-yellow-400/20 rounded-xl px-3.5 py-2.5">
+                    <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-yellow-300">⚠️ Risk Warning</p>
+                      <p className="text-[10px] text-yellow-300/70 leading-relaxed">Total Liabilities & Equity ({fmt(totalLiabEq)}) currently exceed Total Assets ({fmt(totalAssets)}). Check Trial Balance.</p>
+                    </div>
+                  </div>
+                )}
+                {rules.length < 3 && (
+                  <div className="flex items-start gap-2.5 bg-blue-500/10 border border-blue-400/20 rounded-xl px-3.5 py-2.5">
+                    <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-blue-300">ℹ️ Automation Weak</p>
+                      <p className="text-[10px] text-blue-300/70 leading-relaxed">Only {rules.length} active Journal Rules found. Add more rules to fully automate double-entry bookkeeping.</p>
+                    </div>
+                  </div>
+                )}
+                {netProfit >= 0 && (totalAssets === 0 || totalAssets >= totalLiabEq) && rules.length >= 3 && (
+                  <div className="flex items-start gap-2.5 bg-[#48FF73]/10 border border-[#48FF73]/20 rounded-xl px-3.5 py-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#48FF73] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-[#48FF73]">✅ System Healthy</p>
+                      <p className="text-[10px] text-[#48FF73]/70 leading-relaxed">Financials are balanced, profitable, and fully automated. All systems operational.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+          </div>
+        )}
 
         {/* Main accounting sections (LIVE RPC DATA) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
