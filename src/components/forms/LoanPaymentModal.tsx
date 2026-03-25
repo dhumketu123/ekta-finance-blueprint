@@ -54,6 +54,7 @@ interface PaymentResult {
   principal_paid: number;
   new_outstanding: number;
   loan_closed: boolean;
+  dps_collected?: number;
 }
 
 export interface PendingTransaction {
@@ -264,14 +265,17 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   // Build receipt message
   const buildReceiptMsg = useCallback(() => {
     if (!result) return "";
-    const paid = Number(result.total_payment).toLocaleString();
+    const dps = Number(result.dps_collected || 0);
+    const loanPaid = Number(result.total_payment);
+    const totalInput = dps + loanPaid;
     const remaining = Number(result.new_outstanding).toLocaleString();
     const nextDateStr = nextDueDate
       ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
       : format(new Date(), "dd/MM/yyyy");
+    const dpsLine = dps > 0 ? `\n🏦 বাধ্যতামূলক সঞ্চয় (DPS): ৳${dps.toLocaleString()}\n💳 ঋণ পরিশোধ: ৳${loanPaid.toLocaleString()}` : "";
     return result.loan_closed
-      ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 পরিশোধিত: ৳${paid}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ৳${paid} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${paid}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+      ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 মোট জমা: ৳${totalInput.toLocaleString()}${dpsLine}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
+      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি বাবদ মোট ৳${totalInput.toLocaleString()} সফলভাবে জমা হয়েছে।${dpsLine}\n\n💰 ঋণে জমা: ৳${loanPaid.toLocaleString()}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
   }, [result, clientName, nextDueDate]);
 
   const normalizePhone = (phone: string) => {
@@ -507,25 +511,37 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                       </div>
                     </div>
 
-                    {/* Payment Breakdown */}
-                    <div className="space-y-2">
-                      {Number(result.penalty_paid) > 0 && (
-                        <div className="flex justify-between p-2.5 rounded-lg bg-destructive/5 border border-destructive/10 text-xs">
-                          <span>{bn ? "জরিমানা প্রদান" : "Penalty Paid"}</span>
-                          <span className="font-bold text-destructive">৳{Number(result.penalty_paid).toLocaleString()}</span>
-                        </div>
-                      )}
-                      {Number(result.interest_paid) > 0 && (
-                        <div className="flex justify-between p-2.5 rounded-lg bg-warning/5 border border-warning/10 text-xs">
-                          <span>{bn ? "সুদ প্রদান" : "Interest Paid"}</span>
-                          <span className="font-bold text-warning">৳{Number(result.interest_paid).toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between p-2.5 rounded-lg bg-success/5 border border-success/10 text-xs">
-                        <span>{bn ? "আসল প্রদান" : "Principal Paid"}</span>
-                        <span className="font-bold text-success">৳{Number(result.principal_paid).toLocaleString()}</span>
-                      </div>
-                    </div>
+                    {/* Payment Breakdown with DPS Split */}
+                     <div className="space-y-2">
+                       {Number(result.dps_collected || 0) > 0 && (
+                         <div className="flex justify-between p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/10 text-xs">
+                           <span className="flex items-center gap-1.5">🏦 {bn ? "বাধ্যতামূলক সঞ্চয় (DPS)" : "Compulsory Savings (DPS)"}</span>
+                           <span className="font-bold text-blue-600">৳{Number(result.dps_collected).toLocaleString()}</span>
+                         </div>
+                       )}
+                       {Number(result.penalty_paid) > 0 && (
+                         <div className="flex justify-between p-2.5 rounded-lg bg-destructive/5 border border-destructive/10 text-xs">
+                           <span>{bn ? "জরিমানা প্রদান" : "Penalty Paid"}</span>
+                           <span className="font-bold text-destructive">৳{Number(result.penalty_paid).toLocaleString()}</span>
+                         </div>
+                       )}
+                       {Number(result.interest_paid) > 0 && (
+                         <div className="flex justify-between p-2.5 rounded-lg bg-warning/5 border border-warning/10 text-xs">
+                           <span>{bn ? "সুদ প্রদান" : "Interest Paid"}</span>
+                           <span className="font-bold text-warning">৳{Number(result.interest_paid).toLocaleString()}</span>
+                         </div>
+                       )}
+                       <div className="flex justify-between p-2.5 rounded-lg bg-success/5 border border-success/10 text-xs">
+                         <span>{bn ? "আসল প্রদান" : "Principal Paid"}</span>
+                         <span className="font-bold text-success">৳{Number(result.principal_paid).toLocaleString()}</span>
+                       </div>
+                       {Number(result.dps_collected || 0) > 0 && (
+                         <div className="flex justify-between p-2.5 rounded-lg bg-muted/60 border border-border/40 text-xs font-semibold">
+                           <span>{bn ? "মোট প্রদান" : "Total Paid"}</span>
+                           <span className="text-primary">৳{(Number(result.total_payment) + Number(result.dps_collected || 0)).toLocaleString()}</span>
+                         </div>
+                       )}
+                     </div>
 
                     {/* Remaining balance */}
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
