@@ -94,6 +94,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [nextDueDate, setNextDueDate] = useState<string | null>(null);
 
   // PIN state
   const [pin, setPin] = useState(["", "", "", ""]);
