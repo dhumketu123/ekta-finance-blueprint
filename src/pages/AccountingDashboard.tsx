@@ -969,6 +969,13 @@ const AccountingDashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* PIN Verification Modal for Period Lock */}
+      <TransactionAuthModal
+        open={pinModalOpen}
+        onClose={() => { setPinModalOpen(false); pendingLockAction.current = null; }}
+        onAuthorized={handlePinAuthorized}
+      />
     </div>
   );
 };
