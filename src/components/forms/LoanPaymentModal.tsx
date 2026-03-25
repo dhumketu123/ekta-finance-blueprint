@@ -212,11 +212,11 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["loan_schedules"] });
 
-      // Fetch client info for receipt
+      // Fetch client info + next installment date for receipt
       try {
         const { data: loanData } = await supabase
           .from("loans")
-          .select("loan_id, client_id, clients!loans_client_id_fkey(name_en, name_bn, phone)")
+          .select("loan_id, client_id, installment_day, clients!loans_client_id_fkey(name_en, name_bn, phone)")
           .eq("id", form.loan_id)
           .single();
         if (loanData) {
@@ -225,6 +225,17 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             setClientPhone(client.phone || "");
             setClientName(client.name_bn || client.name_en || "");
           }
+        }
+        // Get the next pending installment due_date (locked to loan's anchor day)
+        const { data: nextSched } = await supabase
+          .from("loan_schedules")
+          .select("due_date")
+          .eq("loan_id", form.loan_id)
+          .in("status", ["pending", "partial", "overdue"])
+          .order("installment_number", { ascending: true })
+          .limit(1);
+        if (nextSched?.[0]?.due_date) {
+          setNextDueDate(nextSched[0].due_date);
         }
       } catch { /* non-critical */ }
 
