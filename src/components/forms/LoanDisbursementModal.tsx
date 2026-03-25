@@ -12,7 +12,8 @@ import { useLoanProducts, useClients } from "@/hooks/useSupabaseData";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp, ShieldCheck, Send } from "lucide-react";
+import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp, ShieldCheck, Send, MessageCircle, MessageSquare } from "lucide-react";
+import { format } from "date-fns";
 import { useBusinessRules, validateLoanAmount, shouldUseMakerChecker } from "@/hooks/useBusinessRules";
 
 const schema = z.object({
@@ -241,6 +242,19 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
           </div>
         ) : result ? (
           /* ── DIRECT DISBURSEMENT SUCCESS (Admin) ── */
+          (() => {
+            const selectedClient = (clients as any[]).find((c) => c.id === form.client_id);
+            const cName = selectedClient ? (bn ? (selectedClient.name_bn || selectedClient.name_en) : selectedClient.name_en) : "";
+            const cPhone = selectedClient?.phone || "";
+            const normalizePhone = (phone: string) => {
+              const raw = phone.replace(/[০-৯]/g, (d: string) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
+              const last10 = raw.slice(-10);
+              return last10.length === 10 ? "880" + last10 : "";
+            };
+            const finalPhone = normalizePhone(cPhone);
+            const disbMsg = `সম্মানিত ${cName},\n\nআপনার ঋণ সফলভাবে বিতরণ করা হয়েছে। ✅\n\n📋 ঋণ নং: ${result.loan_ref}\n💰 আসল: ৳${Number(result.principal).toLocaleString()}\n📊 মোট সুদ: ৳${Number(result.total_interest).toLocaleString()}\n💵 কিস্তি: ৳${Number(result.emi_amount).toLocaleString()} (${paymentTypeLabel(result.payment_type)})\n📅 মেয়াদ: ${result.maturity_date}\n📅 বিতরণ: ${format(new Date(), "dd/MM/yyyy")}\n\nসময়মতো কিস্তি পরিশোধ করুন।\n\n— একতা ফাইন্যান্স`;
+            const encoded = encodeURIComponent(disbMsg);
+            return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-success">
               <CheckCircle2 className="w-5 h-5" />
@@ -278,10 +292,25 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
                 <span className="font-bold capitalize">{paymentTypeLabel(result.payment_type)}</span>
               </div>
             </div>
-            <Button onClick={resetAndClose} className="w-full text-xs">
+
+            {/* WhatsApp + SMS Buttons */}
+            {finalPhone && (
+              <div className="flex gap-2 w-full">
+                <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg text-xs" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                  <MessageCircle className="w-4 h-4" /> WhatsApp
+                </Button>
+                <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                  <MessageSquare className="w-4 h-4" /> SMS
+                </Button>
+              </div>
+            )}
+
+            <Button onClick={resetAndClose} variant="outline" className="w-full text-xs">
               {bn ? "বন্ধ করুন" : "Close"}
             </Button>
           </div>
+            );
+          })()
         ) : (
           /* ── FORM ── */
           <div className="space-y-3">
