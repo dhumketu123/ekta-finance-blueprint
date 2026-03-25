@@ -2930,6 +2930,10 @@ export type Database = {
         }
         Returns: Json
       }
+      seed_default_chart_of_accounts: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
       send_sms: {
         Args: {
           p_message: string
@@ -3012,7 +3016,7 @@ export type Database = {
         Args: { p_setting_key: string; p_setting_value: Json }
         Returns: undefined
       }
-      validate_ledger_balance: { Args: { _tx_id: string }; Returns: boolean }
+      validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
       validate_ledger_v2_balance: {
         Args: { _txn_group_id: string }
         Returns: boolean
