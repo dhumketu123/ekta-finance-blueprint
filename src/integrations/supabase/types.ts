@@ -286,6 +286,60 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_of_accounts: {
+        Row: {
+          account_type: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string
+          parent_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_type: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string
+          parent_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string
+          parent_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_of_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_risk: {
         Row: {
           client_id: string
@@ -719,6 +773,7 @@ export type Database = {
           account_id: string
           account_type: string
           balance_after: number
+          coa_id: string | null
           created_at: string
           created_by: string
           credit: number
@@ -734,6 +789,7 @@ export type Database = {
           account_id: string
           account_type: string
           balance_after?: number
+          coa_id?: string | null
           created_at?: string
           created_by: string
           credit?: number
@@ -749,6 +805,7 @@ export type Database = {
           account_id?: string
           account_type?: string
           balance_after?: number
+          coa_id?: string | null
           created_at?: string
           created_by?: string
           credit?: number
@@ -761,6 +818,13 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "double_entry_ledger_coa_id_fkey"
+            columns: ["coa_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "double_entry_ledger_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -2857,10 +2921,32 @@ export type Database = {
       generate_receipt_number: { Args: never; Returns: string }
       generate_weekly_intelligence_summary: { Args: never; Returns: Json }
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
+      get_balance_sheet: {
+        Args: { p_as_of?: string; p_tenant_id?: string }
+        Returns: {
+          account_type: string
+          balance: number
+          coa_id: string
+          code: string
+          name: string
+          name_bn: string
+        }[]
+      }
       get_branch_risk_summary: { Args: never; Returns: Json }
       get_dashboard_summary_metrics: {
         Args: { p_tenant_id: string }
         Returns: Json
+      }
+      get_profit_loss: {
+        Args: { p_from?: string; p_tenant_id?: string; p_to?: string }
+        Returns: {
+          account_type: string
+          amount: number
+          coa_id: string
+          code: string
+          name: string
+          name_bn: string
+        }[]
       }
       get_server_time: { Args: never; Returns: Json }
       get_subscription_status: {
@@ -2875,6 +2961,19 @@ export type Database = {
         }[]
       }
       get_super_admin_dashboard: { Args: never; Returns: Json }
+      get_trial_balance: {
+        Args: { p_tenant_id?: string }
+        Returns: {
+          account_type: string
+          balance: number
+          coa_id: string
+          code: string
+          name: string
+          name_bn: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       get_user_role: { Args: never; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
@@ -2898,6 +2997,15 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
       lock_expired_subscriptions: { Args: never; Returns: undefined }
+      map_transaction_to_journal: {
+        Args: {
+          p_amount: number
+          p_ref_id: string
+          p_tenant_id: string
+          p_type: string
+        }
+        Returns: Json
+      }
       mark_schedule_payment: {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
