@@ -228,32 +228,32 @@ const AccountingDashboard = () => {
     queryKey: ["journal-rules"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("journal_rules" as any)
+        const { data, error } = await (supabase as any)
+          .from("journal_rules")
           .select("id, trigger_type, description, is_active, debit_coa_id, credit_coa_id")
           .eq("is_active", true)
           .order("trigger_type");
         if (error) throw error;
 
-        // Resolve CoA codes for display
+        const rows = (data || []) as any[];
         const coaIds = new Set<string>();
-        for (const r of (data || [])) {
+        for (const r of rows) {
           if (r.debit_coa_id) coaIds.add(r.debit_coa_id);
           if (r.credit_coa_id) coaIds.add(r.credit_coa_id);
         }
 
         let coaMap: Record<string, string> = {};
         if (coaIds.size > 0) {
-          const { data: coaData } = await supabase
-            .from("chart_of_accounts" as any)
+          const { data: coaD } = await (supabase as any)
+            .from("chart_of_accounts")
             .select("id, code")
             .in("id", Array.from(coaIds));
-          if (coaData) {
-            coaMap = Object.fromEntries((coaData as any[]).map((c: any) => [c.id, c.code]));
+          if (coaD) {
+            coaMap = Object.fromEntries((coaD as any[]).map((c: any) => [c.id, c.code]));
           }
         }
 
-        return (data || []).map((r: any) => ({
+        return rows.map((r: any) => ({
           id: r.id,
           trigger_type: r.trigger_type,
           description: r.description,
