@@ -13,56 +13,37 @@ import { toast } from "@/hooks/use-toast";
 const fmt = (n: number) => `৳${Math.abs(n).toLocaleString("en-IN")}`;
 
 // ═══════════════════════════════════════
-// STATIC FALLBACK DATA (for top 3 sections)
-// ═══════════════════════════════════════
-
-const metrics = [
-  { label: "Total Assets", value: 1250000, icon: Landmark, change: "+12.4%" },
-  { label: "Total Liabilities", value: 420000, icon: TrendingDown, change: "-3.1%" },
-  { label: "Net Profit", value: 230000, icon: TrendingUp, change: "+18.7%" },
-  { label: "Cash Balance", value: 310000, icon: Wallet, change: "+5.2%" },
-];
-
-const trialRows = [
-  { name: "Cash", debit: 300000, credit: 0 },
-  { name: "Loans Receivable", debit: 500000, credit: 0 },
-  { name: "Equipment", debit: 150000, credit: 0 },
-  { name: "Investor Capital", debit: 0, credit: 400000 },
-  { name: "Owner Equity", debit: 0, credit: 320000 },
-  { name: "Revenue", debit: 0, credit: 230000 },
-];
-
-const incomeRows = [
-  { name: "Loan Interest", amount: 150000 },
-  { name: "Processing Fees", amount: 30000 },
-  { name: "Penalty Income", amount: 25000 },
-  { name: "Other Income", amount: 25000 },
-];
-
-const expenseRows = [
-  { name: "Staff Salary", amount: 50000 },
-  { name: "Office Rent", amount: 20000 },
-  { name: "Utilities", amount: 8000 },
-  { name: "Marketing", amount: 12000 },
-];
-
-const assetRows = [
-  { name: "Cash & Bank", amount: 310000 },
-  { name: "Loans Receivable", amount: 500000 },
-  { name: "Equipment", amount: 150000 },
-  { name: "Other Assets", amount: 290000 },
-];
-
-const liabEqRows = [
-  { name: "Investor Capital", amount: 400000 },
-  { name: "Owner Equity", amount: 320000 },
-  { name: "Retained Earnings", amount: 230000 },
-  { name: "Accounts Payable", amount: 300000 },
-];
-
-// ═══════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════
+
+interface TrialRow {
+  coa_id: string;
+  code: string;
+  name: string;
+  name_bn: string;
+  account_type: string;
+  total_debit: number;
+  total_credit: number;
+  balance: number;
+}
+
+interface PnlRow {
+  coa_id: string;
+  code: string;
+  name: string;
+  name_bn: string;
+  account_type: string;
+  amount: number;
+}
+
+interface BsRow {
+  coa_id: string;
+  code: string;
+  name: string;
+  name_bn: string;
+  account_type: string;
+  balance: number;
+}
 
 interface CoaNode {
   id: string;
@@ -72,15 +53,6 @@ interface CoaNode {
   account_type: string;
   parent_id: string | null;
   children: CoaNode[];
-}
-
-interface JournalRuleRow {
-  id: string;
-  trigger_type: string;
-  description: string;
-  is_active: boolean;
-  debit_coa: { code: string } | null;
-  credit_coa: { code: string } | null;
 }
 
 interface AuditRow {
@@ -195,6 +167,16 @@ const EmptyState = ({ text }: { text: string }) => (
   </div>
 );
 
+const ErrorState = ({ onRetry }: { onRetry?: () => void }) => (
+  <div className="flex flex-col items-center justify-center py-8 gap-3">
+    <AlertCircle className="w-6 h-6 text-red-400/60" />
+    <span className="text-xs text-red-300/70">Something went wrong. Please try again.</span>
+    {onRetry && (
+      <button onClick={onRetry} className="text-[10px] font-bold text-[#48FF73] hover:underline">Retry</button>
+    )}
+  </div>
+);
+
 // ═══════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════
@@ -210,20 +192,129 @@ const AccountingDashboard = () => {
   const [showPeriods, setShowPeriods] = useState(false);
   const [showRetained, setShowRetained] = useState(false);
 
-  // ── Static section calculations ──
-  const totalDebit = trialRows.reduce((s, r) => s + r.debit, 0);
-  const totalCredit = trialRows.reduce((s, r) => s + r.credit, 0);
-  const totalIncome = incomeRows.reduce((s, r) => s + r.amount, 0);
-  const totalExpense = expenseRows.reduce((s, r) => s + r.amount, 0);
-  const netProfit = totalIncome - totalExpense;
-  const totalAssets = assetRows.reduce((s, r) => s + r.amount, 0);
-  const totalLiabEq = liabEqRows.reduce((s, r) => s + r.amount, 0);
-
   // ═══════════════════════════════════════
-  // SUPABASE QUERIES — Intelligence Layer
+  // STEP B — CORE ACCOUNTING RPC QUERIES
   // ═══════════════════════════════════════
 
-  // 1. Journal Rules
+  // 1. Trial Balance (LIVE RPC)
+  const { data: trialData, isLoading: trialLoading, error: trialError, refetch: refetchTrial } = useQuery({
+    queryKey: ["trial-balance-dashboard"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_trial_balance" as any);
+        if (error) throw error;
+        return (data || []) as TrialRow[];
+      } catch (err) {
+        console.error("Trial balance RPC failed:", err);
+        throw err;
+      }
+    },
+  });
+
+  // 2. Profit & Loss (LIVE RPC)
+  const { data: pnlData, isLoading: pnlLoading, error: pnlError, refetch: refetchPnl } = useQuery({
+    queryKey: ["profit-loss-dashboard"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_profit_loss" as any, {
+          p_from: null,
+          p_to: null,
+        });
+        if (error) throw error;
+        return (data || []) as PnlRow[];
+      } catch (err) {
+        console.error("Profit & Loss RPC failed:", err);
+        throw err;
+      }
+    },
+  });
+
+  // 3. Balance Sheet (LIVE RPC)
+  const { data: bsData, isLoading: bsLoading, error: bsError, refetch: refetchBs } = useQuery({
+    queryKey: ["balance-sheet-dashboard"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_balance_sheet" as any, {
+          p_as_of: null,
+        });
+        if (error) throw error;
+        return (data || []) as BsRow[];
+      } catch (err) {
+        console.error("Balance sheet RPC failed:", err);
+        throw err;
+      }
+    },
+  });
+
+  // ═══════════════════════════════════════
+  // STEP C — DERIVED CALCULATIONS (REAL DATA)
+  // ═══════════════════════════════════════
+
+  const totalDebit = useMemo(() => {
+    try { return trialData?.reduce((s, r) => s + Number(r.total_debit), 0) || 0; } catch { return 0; }
+  }, [trialData]);
+
+  const totalCredit = useMemo(() => {
+    try { return trialData?.reduce((s, r) => s + Number(r.total_credit), 0) || 0; } catch { return 0; }
+  }, [trialData]);
+
+  const incomeRows = useMemo(() => {
+    try { return pnlData?.filter(r => r.account_type === "income") || []; } catch { return []; }
+  }, [pnlData]);
+
+  const expenseRows = useMemo(() => {
+    try { return pnlData?.filter(r => r.account_type === "expense") || []; } catch { return []; }
+  }, [pnlData]);
+
+  const totalIncome = useMemo(() => {
+    try { return incomeRows.reduce((s, r) => s + Number(r.amount), 0); } catch { return 0; }
+  }, [incomeRows]);
+
+  const totalExpense = useMemo(() => {
+    try { return expenseRows.reduce((s, r) => s + Number(r.amount), 0); } catch { return 0; }
+  }, [expenseRows]);
+
+  const netProfit = useMemo(() => {
+    try { return totalIncome - totalExpense; } catch { return 0; }
+  }, [totalIncome, totalExpense]);
+
+  const assetRows = useMemo(() => {
+    try { return bsData?.filter(r => r.account_type === "asset") || []; } catch { return []; }
+  }, [bsData]);
+
+  const liabEqRows = useMemo(() => {
+    try { return bsData?.filter(r => r.account_type !== "asset") || []; } catch { return []; }
+  }, [bsData]);
+
+  const totalAssets = useMemo(() => {
+    try { return assetRows.reduce((s, r) => s + Number(r.balance), 0); } catch { return 0; }
+  }, [assetRows]);
+
+  const totalLiabEq = useMemo(() => {
+    try { return liabEqRows.reduce((s, r) => s + Number(r.balance), 0); } catch { return 0; }
+  }, [liabEqRows]);
+
+  // STEP D — Retained Earnings (derived from netProfit, no RPC call)
+  const retainedEarnings = useMemo(() => {
+    try { return netProfit; } catch { return 0; }
+  }, [netProfit]);
+
+  // Top metrics (all derived from live data)
+  const metrics = useMemo(() => [
+    { label: "Total Assets", value: totalAssets, icon: Landmark },
+    { label: "Total Liabilities", value: totalLiabEq, icon: TrendingDown },
+    { label: "Net Profit", value: netProfit, icon: TrendingUp },
+    { label: "Cash Balance", value: totalAssets - totalLiabEq, icon: Wallet },
+  ], [totalAssets, totalLiabEq, netProfit]);
+
+  const coreLoading = trialLoading || pnlLoading || bsLoading;
+  const coreError = trialError || pnlError || bsError;
+
+  // ═══════════════════════════════════════
+  // INTELLIGENCE LAYER QUERIES
+  // ═══════════════════════════════════════
+
+  // Journal Rules
   const { data: rulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["journal-rules"],
     queryFn: async () => {
@@ -270,7 +361,7 @@ const AccountingDashboard = () => {
 
   const rules = rulesData || [];
 
-  // 2. Chart of Accounts (Tree)
+  // Chart of Accounts (Tree)
   const { data: coaData, isLoading: coaLoading } = useQuery({
     queryKey: ["chart-of-accounts-tree"],
     queryFn: async () => {
@@ -292,7 +383,7 @@ const AccountingDashboard = () => {
   const coaTree = useMemo(() => buildTree(coaData || []), [coaData]);
   const coaCount = coaData?.length || 0;
 
-  // 3. Accounting Periods
+  // Accounting Periods
   const { data: periodsData, isLoading: periodsLoading } = useQuery({
     queryKey: ["accounting-periods"],
     queryFn: async () => {
@@ -313,7 +404,7 @@ const AccountingDashboard = () => {
   const periods = periodsData || [];
   const lockedCount = periods.filter((p) => p.is_locked).length;
 
-  // 4. Audit Logs (last 10)
+  // Audit Logs (last 10)
   const { data: auditData, isLoading: auditLoading } = useQuery({
     queryKey: ["audit-logs-recent"],
     queryFn: async () => {
@@ -333,29 +424,6 @@ const AccountingDashboard = () => {
   });
 
   const auditEntries = auditData || [];
-
-  // 5. Retained Earnings (live via RPC)
-  const { data: retainedData, isLoading: retainedLoading } = useQuery({
-    queryKey: ["retained-earnings"],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase.rpc("run_retained_earnings_closure" as any);
-        if (error) throw error;
-        return data as {
-          total_income: number;
-          total_expense: number;
-          net_profit: number;
-          previous_retained: number;
-          new_retained: number;
-        };
-      } catch (err) {
-        console.error("Failed to fetch retained earnings:", err);
-        return { total_income: 0, total_expense: 0, net_profit: 0, previous_retained: 0, new_retained: 0 };
-      }
-    },
-  });
-
-  const retained = retainedData || { total_income: 0, total_expense: 0, net_profit: 0, previous_retained: 0, new_retained: 0 };
 
   // ═══════════════════════════════════════
   // MUTATIONS
@@ -384,7 +452,7 @@ const AccountingDashboard = () => {
     },
   });
 
-  // Delete journal rule
+  // Delete journal rule (soft-delete)
   const deleteRuleMutation = useMutation({
     mutationFn: async (ruleId: string) => {
       const { error } = await supabase
@@ -396,6 +464,39 @@ const AccountingDashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journal-rules"] });
       toast({ title: "Rule deactivated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Create journal rule
+  const createRuleMutation = useMutation({
+    mutationFn: async (payload: { trigger_type: string; debit_coa_id: string; credit_coa_id: string; description: string; tenant_id: string }) => {
+      const { error } = await supabase.from("journal_rules" as any).insert(payload as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["journal-rules"] });
+      toast({ title: "Rule created" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Update journal rule
+  const updateRuleMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const { error } = await supabase
+        .from("journal_rules" as any)
+        .update(data as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["journal-rules"] });
+      toast({ title: "Rule updated" });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -414,7 +515,6 @@ const AccountingDashboard = () => {
     try { return lockedCount > 0 ? "locked" : "active"; } catch { return "active"; }
   }, [lockedCount]);
 
-  // Available months for period lock (current year up to current month)
   const availableMonths = useMemo(() => {
     try {
       const now = new Date();
@@ -458,24 +558,31 @@ const AccountingDashboard = () => {
             <span className="text-[11px] font-semibold text-white/80 uppercase tracking-widest">Accounting Engine</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Accounting Engine</h1>
-          <p className="text-sm text-white/60 mt-2">Real-time financial intelligence</p>
+          <p className="text-sm text-white/60 mt-2">Real-time financial intelligence — Live Data</p>
         </div>
 
-        {/* Top metrics */}
+        {/* Global error state */}
+        {coreError && !coreLoading && (
+          <ErrorState onRetry={() => { refetchTrial(); refetchPnl(); refetchBs(); }} />
+        )}
+
+        {/* Top metrics (LIVE) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {metrics.map((m, i) => (
             <GlassCard key={i} className="!p-4 sm:!p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 rounded-xl bg-white/[0.08] border border-white/[0.1]"><m.icon className="w-4 h-4 text-[#48FF73]" /></div>
-                <span className="text-[10px] font-bold text-[#48FF73]">{m.change}</span>
+                {coreLoading && <Loader2 className="w-3 h-3 text-[#48FF73]/40 animate-spin" />}
               </div>
               <p className="text-[11px] text-white/50 mb-1">{m.label}</p>
-              <p className="text-lg sm:text-xl font-extrabold text-white font-mono">{fmt(m.value)}</p>
+              <p className="text-lg sm:text-xl font-extrabold text-white font-mono">
+                {coreLoading ? "—" : fmt(m.value)}
+              </p>
             </GlassCard>
           ))}
         </div>
 
-        {/* Main accounting sections */}
+        {/* Main accounting sections (LIVE RPC DATA) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
           {/* Trial Balance */}
           <GlassCard>
@@ -483,32 +590,38 @@ const AccountingDashboard = () => {
               <Scale className="w-4 h-4 text-[#48FF73]" />
               <h2 className="text-sm font-bold text-white">Trial Balance</h2>
             </div>
-            <div className="space-y-0">
-              <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-wider pb-2 border-b border-white/10 mb-1">
-                <span>Account</span>
-                <div className="flex gap-6"><span>Debit</span><span>Credit</span></div>
-              </div>
-              {trialRows.map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
-                  <span className="text-[12px] text-white/80">{r.name}</span>
+            {trialLoading ? <MiniLoader /> : trialError ? <ErrorState onRetry={() => refetchTrial()} /> : (
+              <>
+                <div className="space-y-0">
+                  <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-wider pb-2 border-b border-white/10 mb-1">
+                    <span>Account</span>
+                    <div className="flex gap-6"><span>Debit</span><span>Credit</span></div>
+                  </div>
+                  {(trialData || []).length === 0 ? <EmptyState text="No trial balance data" /> : (
+                    (trialData || []).map((r) => (
+                      <div key={r.coa_id} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
+                        <span className="text-[12px] text-white/80 truncate max-w-[120px]">{r.name}</span>
+                        <div className="flex gap-4">
+                          <span className="text-[12px] font-mono font-semibold text-white/90 w-20 text-right">{Number(r.total_debit) ? fmt(Number(r.total_debit)) : "—"}</span>
+                          <span className="text-[12px] font-mono font-semibold text-white/90 w-20 text-right">{Number(r.total_credit) ? fmt(Number(r.total_credit)) : "—"}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
+                  <span className="text-xs font-bold text-white">Total</span>
                   <div className="flex gap-4">
-                    <span className="text-[12px] font-mono font-semibold text-white/90 w-20 text-right">{r.debit ? fmt(r.debit) : "—"}</span>
-                    <span className="text-[12px] font-mono font-semibold text-white/90 w-20 text-right">{r.credit ? fmt(r.credit) : "—"}</span>
+                    <span className="text-xs font-mono font-extrabold text-[#48FF73] w-20 text-right">{fmt(totalDebit)}</span>
+                    <span className="text-xs font-mono font-extrabold text-[#48FF73] w-20 text-right">{fmt(totalCredit)}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
-              <span className="text-xs font-bold text-white">Total</span>
-              <div className="flex gap-4">
-                <span className="text-xs font-mono font-extrabold text-[#48FF73] w-20 text-right">{fmt(totalDebit)}</span>
-                <span className="text-xs font-mono font-extrabold text-[#48FF73] w-20 text-right">{fmt(totalCredit)}</span>
-              </div>
-            </div>
-            {totalDebit === totalCredit && (
-              <div className="mt-3 flex items-center gap-2 bg-[#48FF73]/10 text-[#48FF73] text-[10px] font-bold px-3 py-1.5 rounded-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#48FF73] animate-pulse" /> Balanced ✓
-              </div>
+                {Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0 && (
+                  <div className="mt-3 flex items-center gap-2 bg-[#48FF73]/10 text-[#48FF73] text-[10px] font-bold px-3 py-1.5 rounded-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#48FF73] animate-pulse" /> Balanced ✓
+                  </div>
+                )}
+              </>
             )}
           </GlassCard>
 
@@ -518,28 +631,40 @@ const AccountingDashboard = () => {
               <BarChart3 className="w-4 h-4 text-[#48FF73]" />
               <h2 className="text-sm font-bold text-white">Profit & Loss</h2>
             </div>
-            <div className="mb-4">
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Income</p>
-              {incomeRows.map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
-                  <span className="text-[12px] text-white/80">{r.name}</span>
-                  <span className="text-[12px] font-mono font-semibold text-[#48FF73]">{fmt(r.amount)}</span>
+            {pnlLoading ? <MiniLoader /> : pnlError ? <ErrorState onRetry={() => refetchPnl()} /> : (
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Income</p>
+                  {incomeRows.length === 0 ? (
+                    <p className="text-[11px] text-white/30 px-2 py-1">No income accounts</p>
+                  ) : (
+                    incomeRows.map((r) => (
+                      <div key={r.coa_id} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
+                        <span className="text-[12px] text-white/80 truncate">{r.name}</span>
+                        <span className="text-[12px] font-mono font-semibold text-[#48FF73]">{fmt(Number(r.amount))}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-            <div className="mb-4">
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Expenses</p>
-              {expenseRows.map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
-                  <span className="text-[12px] text-white/80">{r.name}</span>
-                  <span className="text-[12px] font-mono font-semibold text-red-300">{fmt(r.amount)}</span>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Expenses</p>
+                  {expenseRows.length === 0 ? (
+                    <p className="text-[11px] text-white/30 px-2 py-1">No expense accounts</p>
+                  ) : (
+                    expenseRows.map((r) => (
+                      <div key={r.coa_id} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
+                        <span className="text-[12px] text-white/80 truncate">{r.name}</span>
+                        <span className="text-[12px] font-mono font-semibold text-red-300">{fmt(Number(r.amount))}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-            <div className="pt-3 border-t border-white/10 flex justify-between items-center px-2">
-              <span className="text-xs font-bold text-white">Net Profit</span>
-              <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(netProfit)}</span>
-            </div>
+                <div className="pt-3 border-t border-white/10 flex justify-between items-center px-2">
+                  <span className="text-xs font-bold text-white">Net Profit</span>
+                  <span className={`text-sm font-mono font-extrabold ${netProfit >= 0 ? "text-[#48FF73]" : "text-red-300"}`}>{netProfit < 0 ? "-" : ""}{fmt(netProfit)}</span>
+                </div>
+              </>
+            )}
           </GlassCard>
 
           {/* Balance Sheet */}
@@ -548,38 +673,50 @@ const AccountingDashboard = () => {
               <FileSpreadsheet className="w-4 h-4 text-[#48FF73]" />
               <h2 className="text-sm font-bold text-white">Balance Sheet</h2>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Assets</p>
-                {assetRows.map((r, i) => (
-                  <div key={i} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
-                    <span className="text-[12px] text-white/80">{r.name}</span>
-                    <span className="text-[12px] font-mono font-semibold text-white/90">{fmt(r.amount)}</span>
+            {bsLoading ? <MiniLoader /> : bsError ? <ErrorState onRetry={() => refetchBs()} /> : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Assets</p>
+                    {assetRows.length === 0 ? (
+                      <p className="text-[11px] text-white/30 px-2 py-1">No assets</p>
+                    ) : (
+                      assetRows.map((r) => (
+                        <div key={r.coa_id} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
+                          <span className="text-[12px] text-white/80 truncate">{r.name}</span>
+                          <span className="text-[12px] font-mono font-semibold text-white/90">{fmt(Number(r.balance))}</span>
+                        </div>
+                      ))
+                    )}
+                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
+                      <span className="text-xs font-bold text-white">Total</span>
+                      <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(totalAssets)}</span>
+                    </div>
                   </div>
-                ))}
-                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
-                  <span className="text-xs font-bold text-white">Total</span>
-                  <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(totalAssets)}</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Liabilities + Equity</p>
-                {liabEqRows.map((r, i) => (
-                  <div key={i} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
-                    <span className="text-[12px] text-white/80">{r.name}</span>
-                    <span className="text-[12px] font-mono font-semibold text-white/90">{fmt(r.amount)}</span>
+                  <div>
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Liabilities + Equity</p>
+                    {liabEqRows.length === 0 ? (
+                      <p className="text-[11px] text-white/30 px-2 py-1">No liabilities</p>
+                    ) : (
+                      liabEqRows.map((r) => (
+                        <div key={r.coa_id} className="flex justify-between items-center py-1.5 hover:bg-white/5 rounded-lg px-2 transition-colors duration-200">
+                          <span className="text-[12px] text-white/80 truncate">{r.name}</span>
+                          <span className="text-[12px] font-mono font-semibold text-white/90">{fmt(Number(r.balance))}</span>
+                        </div>
+                      ))
+                    )}
+                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
+                      <span className="text-xs font-bold text-white">Total</span>
+                      <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(totalLiabEq)}</span>
+                    </div>
                   </div>
-                ))}
-                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center px-2">
-                  <span className="text-xs font-bold text-white">Total</span>
-                  <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(totalLiabEq)}</span>
                 </div>
-              </div>
-            </div>
-            {totalAssets === totalLiabEq && (
-              <div className="mt-5 flex items-center gap-2 bg-[#48FF73]/10 text-[#48FF73] text-xs font-bold px-3 py-2 rounded-lg">
-                <span className="w-2 h-2 rounded-full bg-[#48FF73] animate-pulse" /> Assets = Liabilities + Equity ✓
-              </div>
+                {Math.abs(totalAssets - totalLiabEq) < 0.01 && totalAssets > 0 && (
+                  <div className="mt-5 flex items-center gap-2 bg-[#48FF73]/10 text-[#48FF73] text-xs font-bold px-3 py-2 rounded-lg">
+                    <span className="w-2 h-2 rounded-full bg-[#48FF73] animate-pulse" /> Assets = Liabilities + Equity ✓
+                  </div>
+                )}
+              </>
             )}
           </GlassCard>
         </div>
@@ -667,42 +804,36 @@ const AccountingDashboard = () => {
               </button>
             </GlassCard>
 
-            {/* ─── 3. Retained Earnings Control (LIVE) ─── */}
+            {/* ─── 3. Retained Earnings Control (LIVE — derived) ─── */}
             <GlassCard>
               <div className="flex items-start justify-between mb-4">
                 <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
                   <PiggyBank className="w-5 h-5 text-[#48FF73]" />
                 </div>
-                <StatusBadgeIntel status={retained.new_retained > 0 ? "active" : "warning"} />
+                <StatusBadgeIntel status={retainedEarnings > 0 ? "active" : retainedEarnings < 0 ? "warning" : "active"} />
               </div>
               <h3 className="text-base font-bold text-white mb-1">Retained Earnings Control</h3>
               <p className="text-xs text-white/50 leading-relaxed mb-1">
-                Live from <code className="text-[#48FF73]/70">run_retained_earnings_closure</code> RPC.
+                Derived from P&L live data. No separate RPC needed.
               </p>
 
               {showRetained && (
                 <div className="mt-3 space-y-2">
-                  {retainedLoading ? <MiniLoader /> : (
+                  {pnlLoading ? <MiniLoader /> : (
                     <>
                       <div className="flex justify-between items-center bg-white/[0.05] rounded-lg px-3 py-2.5 border border-white/[0.08]">
                         <span className="text-[11px] text-white/60">Total Income</span>
-                        <span className="text-xs font-mono font-bold text-[#48FF73]">{fmt(retained.total_income)}</span>
+                        <span className="text-xs font-mono font-bold text-[#48FF73]">{fmt(totalIncome)}</span>
                       </div>
                       <div className="flex justify-between items-center bg-white/[0.05] rounded-lg px-3 py-2.5 border border-white/[0.08]">
                         <span className="text-[11px] text-white/60">– Total Expense</span>
-                        <span className="text-xs font-mono font-bold text-red-300">{fmt(retained.total_expense)}</span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/[0.05] rounded-lg px-3 py-2.5 border border-white/[0.08]">
-                        <span className="text-[11px] text-white/60">= Net Profit</span>
-                        <span className="text-xs font-mono font-bold text-white/80">{fmt(retained.net_profit)}</span>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/[0.05] rounded-lg px-3 py-2.5 border border-white/[0.08]">
-                        <span className="text-[11px] text-white/60">Previous Retained</span>
-                        <span className="text-xs font-mono font-bold text-white/60">{fmt(retained.previous_retained)}</span>
+                        <span className="text-xs font-mono font-bold text-red-300">{fmt(totalExpense)}</span>
                       </div>
                       <div className="flex justify-between items-center bg-[#48FF73]/10 rounded-lg px-3 py-3 border border-[#48FF73]/20">
-                        <span className="text-xs font-bold text-white">= New Retained Earnings</span>
-                        <span className="text-sm font-mono font-extrabold text-[#48FF73]">{fmt(retained.new_retained)}</span>
+                        <span className="text-xs font-bold text-white">= Retained Earnings</span>
+                        <span className={`text-sm font-mono font-extrabold ${retainedEarnings >= 0 ? "text-[#48FF73]" : "text-red-300"}`}>
+                          {retainedEarnings < 0 ? "-" : ""}{fmt(retainedEarnings)}
+                        </span>
                       </div>
                     </>
                   )}
