@@ -297,12 +297,12 @@ const AccountingDashboard = () => {
     queryKey: ["accounting-periods"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("accounting_periods" as any)
+        const { data, error } = await (supabase as any)
+          .from("accounting_periods")
           .select("id, period_month, is_locked, locked_at")
           .order("period_month");
         if (error) throw error;
-        return (data || []) as PeriodRow[];
+        return (data || []) as unknown as PeriodRow[];
       } catch (err) {
         console.error("Failed to fetch periods:", err);
         return [];
