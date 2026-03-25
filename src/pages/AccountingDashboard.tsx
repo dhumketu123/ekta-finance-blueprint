@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   Landmark, TrendingUp, TrendingDown, Wallet, Scale, BarChart3,
   FileSpreadsheet, ArrowLeft, Sparkles, BookOpen, Network, PiggyBank,
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const fmt = (n: number) => `৳${Math.abs(n).toLocaleString("en-IN")}`;
 
@@ -191,6 +192,17 @@ const AccountingDashboard = () => {
   const [showAudit, setShowAudit] = useState(false);
   const [showPeriods, setShowPeriods] = useState(false);
   const [showRetained, setShowRetained] = useState(false);
+
+  // PIN verification state for period lock
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const pendingLockAction = useRef<{ month: string; lock: boolean } | null>(null);
+
+  const handlePeriodLockClick = useCallback((month: string, lock: boolean) => {
+    pendingLockAction.current = { month, lock };
+    setPinModalOpen(true);
+  }, []);
+
+  
 
   // ═══════════════════════════════════════
   // STEP B — CORE ACCOUNTING RPC QUERIES
@@ -452,7 +464,16 @@ const AccountingDashboard = () => {
     },
   });
 
-  // Delete journal rule (soft-delete)
+  // PIN-gated period lock handler (defined after lockMutation)
+  const handlePinAuthorized = useCallback(() => {
+    if (pendingLockAction.current) {
+      lockMutation.mutate(pendingLockAction.current);
+      pendingLockAction.current = null;
+    }
+    setPinModalOpen(false);
+  }, [lockMutation]);
+
+
   const deleteRuleMutation = useMutation({
     mutationFn: async (ruleId: string) => {
       const { error } = await supabase
@@ -871,7 +892,7 @@ const AccountingDashboard = () => {
                             <span className="text-xs font-mono text-white/80">{formatMonth(month)}</span>
                           </div>
                           <button
-                            onClick={() => lockMutation.mutate({ month, lock: !locked })}
+                            onClick={() => handlePeriodLockClick(month, !locked)}
                             disabled={lockMutation.isPending}
                             className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full transition-all duration-200 ${
                               locked ? "bg-red-400/15 text-red-300 hover:bg-red-400/25" : "bg-[#48FF73]/15 text-[#48FF73] hover:bg-[#48FF73]/25"
@@ -951,6 +972,13 @@ const AccountingDashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* PIN Verification Modal for Period Lock */}
+      <TransactionAuthModal
+        open={pinModalOpen}
+        onClose={() => { setPinModalOpen(false); pendingLockAction.current = null; }}
+        onAuthorized={handlePinAuthorized}
+      />
     </div>
   );
 };
