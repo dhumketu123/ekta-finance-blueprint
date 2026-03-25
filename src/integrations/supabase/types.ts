@@ -59,6 +59,47 @@ export type Database = {
           },
         ]
       }
+      accounting_periods: {
+        Row: {
+          created_at: string
+          id: string
+          is_locked: boolean
+          locked_at: string | null
+          locked_by: string | null
+          period_month: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          period_month: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          period_month?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_periods_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_code: string
@@ -1173,6 +1214,64 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "investors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_rules: {
+        Row: {
+          created_at: string
+          credit_coa_id: string
+          debit_coa_id: string
+          description: string
+          id: string
+          is_active: boolean
+          tenant_id: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_coa_id: string
+          debit_coa_id: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          tenant_id: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_coa_id?: string
+          debit_coa_id?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          tenant_id?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_rules_credit_coa_id_fkey"
+            columns: ["credit_coa_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_rules_debit_coa_id_fkey"
+            columns: ["debit_coa_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_rules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2996,6 +3095,10 @@ export type Database = {
       is_penalty_suspended: { Args: { _client_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
+      lock_accounting_period: {
+        Args: { p_lock?: boolean; p_month: string }
+        Returns: Json
+      }
       lock_expired_subscriptions: { Args: never; Returns: undefined }
       map_transaction_to_journal: {
         Args: {
@@ -3038,7 +3141,12 @@ export type Database = {
         }
         Returns: Json
       }
+      run_retained_earnings_closure: { Args: never; Returns: Json }
       seed_default_chart_of_accounts: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
+      seed_default_journal_rules: {
         Args: { p_tenant_id: string }
         Returns: undefined
       }
