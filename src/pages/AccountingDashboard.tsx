@@ -8,6 +8,14 @@ import {
   FileSpreadsheet,
   ArrowLeft,
   Sparkles,
+  BookOpen,
+  Network,
+  PiggyBank,
+  Lock,
+  ShieldCheck,
+  Settings,
+  Eye,
+  Play,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -377,6 +385,145 @@ const AccountingDashboard = () => {
               </div>
             )}
           </GlassCard>
+        </div>
+
+        {/* ═══════════════════════════════════════ */}
+        {/* FINANCIAL INTELLIGENCE LAYER            */}
+        {/* ═══════════════════════════════════════ */}
+        <div className="mt-12 sm:mt-16">
+          {/* Section Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 bg-white/[0.08] backdrop-blur-xl border border-white/[0.15] rounded-full px-5 py-2 mb-4">
+              <ShieldCheck className="w-4 h-4 text-[#48FF73]" />
+              <span className="text-[11px] font-semibold text-white/80 uppercase tracking-widest">
+                Intelligence Layer
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Financial Intelligence Layer
+            </h2>
+            <p className="text-sm text-white/60 mt-2 max-w-md mx-auto">
+              Autonomous Control & Audit System
+            </p>
+          </div>
+
+          {/* Intelligence Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* 1. Journal Rules Engine */}
+            <GlassCard>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
+                  <BookOpen className="w-5 h-5 text-[#48FF73]" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-[#48FF73]/15 text-[#48FF73] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#48FF73] animate-pulse" />
+                  Active
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">
+                Journal Rules Engine
+              </h3>
+              <p className="text-xs text-white/50 leading-relaxed mb-5">
+                Automated double-entry mapping for every transaction type. Rules auto-classify debits & credits based on CoA structure.
+              </p>
+              <button className="w-full flex items-center justify-center gap-2 bg-[#48FF73] text-black font-bold text-xs px-4 py-2.5 rounded-full hover:scale-[0.97] active:scale-[0.94] transition-transform duration-200 shadow-[0_0_20px_rgba(72,255,115,0.2)]">
+                <Settings className="w-3.5 h-3.5" />
+                Configure
+              </button>
+            </GlassCard>
+
+            {/* 2. Account Hierarchy Tree */}
+            <GlassCard>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
+                  <Network className="w-5 h-5 text-[#48FF73]" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-[#48FF73]/15 text-[#48FF73] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#48FF73] animate-pulse" />
+                  Active
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">
+                Account Hierarchy Tree
+              </h3>
+              <p className="text-xs text-white/50 leading-relaxed mb-5">
+                Chart of Accounts with parent-child relationships. 15 default accounts across Asset, Liability, Equity, Income & Expense.
+              </p>
+              <button className="w-full flex items-center justify-center gap-2 bg-[#48FF73] text-black font-bold text-xs px-4 py-2.5 rounded-full hover:scale-[0.97] active:scale-[0.94] transition-transform duration-200 shadow-[0_0_20px_rgba(72,255,115,0.2)]">
+                <Eye className="w-3.5 h-3.5" />
+                View
+              </button>
+            </GlassCard>
+
+            {/* 3. Retained Earnings Control */}
+            <GlassCard>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
+                  <PiggyBank className="w-5 h-5 text-[#48FF73]" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-yellow-400/15 text-yellow-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+                  Warning
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">
+                Retained Earnings Control
+              </h3>
+              <p className="text-xs text-white/50 leading-relaxed mb-5">
+                Track accumulated net income after distributions. Auto-calculates from P&L close and owner dividend payouts.
+              </p>
+              <button className="w-full flex items-center justify-center gap-2 bg-[#48FF73] text-black font-bold text-xs px-4 py-2.5 rounded-full hover:scale-[0.97] active:scale-[0.94] transition-transform duration-200 shadow-[0_0_20px_rgba(72,255,115,0.2)]">
+                <Play className="w-3.5 h-3.5" />
+                Run
+              </button>
+            </GlassCard>
+
+            {/* 4. Period Lock System */}
+            <GlassCard>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
+                  <Lock className="w-5 h-5 text-[#48FF73]" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-red-400/15 text-red-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-300" />
+                  Locked
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">
+                Period Lock System
+              </h3>
+              <p className="text-xs text-white/50 leading-relaxed mb-5">
+                Freeze closed accounting periods to prevent retroactive modifications. Ensures regulatory compliance & audit integrity.
+              </p>
+              <button className="w-full flex items-center justify-center gap-2 bg-[#48FF73] text-black font-bold text-xs px-4 py-2.5 rounded-full hover:scale-[0.97] active:scale-[0.94] transition-transform duration-200 shadow-[0_0_20px_rgba(72,255,115,0.2)]">
+                <Settings className="w-3.5 h-3.5" />
+                Configure
+              </button>
+            </GlassCard>
+
+            {/* 5. Audit Trail Monitor */}
+            <GlassCard className="md:col-span-2">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-white/[0.08] border border-white/[0.1]">
+                  <ShieldCheck className="w-5 h-5 text-[#48FF73]" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-[#48FF73]/15 text-[#48FF73] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#48FF73] animate-pulse" />
+                  Active
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">
+                Audit Trail Monitor
+              </h3>
+              <p className="text-xs text-white/50 leading-relaxed mb-5">
+                SHA-256 hash-chained, append-only ledger with full tamper detection. Every entry is cryptographically linked to its predecessor for bank-grade integrity.
+              </p>
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#48FF73] text-black font-bold text-xs px-6 py-2.5 rounded-full hover:scale-[0.97] active:scale-[0.94] transition-transform duration-200 shadow-[0_0_20px_rgba(72,255,115,0.2)]">
+                <Eye className="w-3.5 h-3.5" />
+                View Audit Log
+              </button>
+            </GlassCard>
+          </div>
         </div>
 
         {/* Footer CTA */}
