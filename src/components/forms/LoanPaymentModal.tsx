@@ -94,6 +94,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [nextDueDate, setNextDueDate] = useState<string | null>(null);
 
   // PIN state
   const [pin, setPin] = useState(["", "", "", ""]);
@@ -212,11 +213,11 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["loan_schedules"] });
 
-      // Fetch client info for receipt
+      // Fetch client info + next installment date for receipt
       try {
         const { data: loanData } = await supabase
           .from("loans")
-          .select("loan_id, client_id, clients!loans_client_id_fkey(name_en, name_bn, phone)")
+          .select("loan_id, client_id, installment_day, clients!loans_client_id_fkey(name_en, name_bn, phone)")
           .eq("id", form.loan_id)
           .single();
         if (loanData) {
@@ -225,6 +226,17 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             setClientPhone(client.phone || "");
             setClientName(client.name_bn || client.name_en || "");
           }
+        }
+        // Get the next pending installment due_date (locked to loan's anchor day)
+        const { data: nextSched } = await supabase
+          .from("loan_schedules")
+          .select("due_date")
+          .eq("loan_id", form.loan_id)
+          .in("status", ["pending", "partial", "overdue"])
+          .order("installment_number", { ascending: true })
+          .limit(1);
+        if (nextSched?.[0]?.due_date) {
+          setNextDueDate(nextSched[0].due_date);
         }
       } catch { /* non-critical */ }
 
@@ -247,6 +259,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     setResult(null);
     setClientName("");
     setClientPhone("");
+    setNextDueDate(null);
     resetPin();
     onClose();
   }, [onClose, prefilledLoanId, resetPin, isLocked]);
@@ -256,10 +269,13 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     if (!result) return "";
     const paid = Number(result.total_payment).toLocaleString();
     const remaining = Number(result.new_outstanding).toLocaleString();
+    const nextDateStr = nextDueDate
+      ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
+      : format(new Date(), "dd/MM/yyyy");
     return result.loan_closed
       ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 পরিশোধিত: ৳${paid}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ৳${paid} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${paid}\n📊 বর্তমান বকেয়া: ৳${remaining}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
-  }, [result, clientName]);
+      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি/বকেয়া বাবদ ৳${paid} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${paid}\n📊 বর্তমান বকেয়া: ৳${remaining}\n📅 পরবর্তী কিস্তির তারিখ: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+  }, [result, clientName, nextDueDate]);
 
   const normalizePhone = (phone: string) => {
     const raw = phone.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
