@@ -182,7 +182,7 @@ function buildTree(flat: Omit<CoaNode, "children">[]): CoaNode[] {
     for (const item of flat) {
       map.set(item.id, { ...item, children: [] });
     }
-    for (const node of map.values()) {
+    for (const node of Array.from(map.values())) {
       if (node.parent_id && map.has(node.parent_id)) {
         map.get(node.parent_id)!.children.push(node);
       } else {
