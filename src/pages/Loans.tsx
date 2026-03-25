@@ -107,12 +107,11 @@ const Loans = () => {
               <TableHeader className="table-header-premium">
                 <TableRow>
                   <TableHead>{t("table.product")}</TableHead>
-                  <TableHead>{t("table.interest")}</TableHead>
+                  <TableHead>{lang === "bn" ? "সুদ / ফ্রিকোয়েন্সি" : "Interest / Freq."}</TableHead>
                   <TableHead>{t("table.tenure")}</TableHead>
-                  <TableHead>{t("table.paymentType")}</TableHead>
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
-                  <TableHead>{t("table.maxConcurrent")}</TableHead>
+                  <TableHead>{lang === "bn" ? "MFI নিয়ম" : "MFI Rules"}</TableHead>
                   {canEditLoans && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
