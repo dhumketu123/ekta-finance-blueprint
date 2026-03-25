@@ -182,10 +182,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     setSubmitting(true);
     setPhase("executing");
     try {
-      // PRE-FLIGHT AUTO-REPAIR
-      if (loanInfo && Number(loanInfo.outstanding_principal) > 0) {
-        await supabase.from("loans").update({ status: "active" }).eq("id", form.loan_id).eq("status", "closed");
-      }
+      // Auto-repair now handled atomically inside the RPC
 
       const { data, error } = await supabase.rpc("apply_loan_payment", {
         _loan_id: form.loan_id,

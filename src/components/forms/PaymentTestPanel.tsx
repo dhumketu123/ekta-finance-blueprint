@@ -56,9 +56,10 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
       if (loanErr) throw loanErr;
       setTestLoanId(loan.id);
 
+      const testPerformer = "00000000-0000-0000-0000-000000000000";
       // TEST 1: Partial payment (should pay penalty first)
       const { data: r1, error: e1 } = await supabase.rpc("apply_loan_payment", {
-        _loan_id: loan.id, _amount: 100, _reference_id: "test_partial_" + Date.now(),
+        _loan_id: loan.id, _amount: 100, _performed_by: testPerformer, _reference_id: "test_partial_" + Date.now(),
       });
       if (e1) {
         addResult({ label: "Partial Payment", status: "fail", detail: e1.message });
@@ -73,7 +74,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
 
       // TEST 2: Full remaining payment
       const { data: r2, error: e2 } = await supabase.rpc("apply_loan_payment", {
-        _loan_id: loan.id, _amount: 11300, _reference_id: "test_full_" + Date.now(),
+        _loan_id: loan.id, _amount: 11300, _performed_by: testPerformer, _reference_id: "test_full_" + Date.now(),
       });
       if (e2) {
         addResult({ label: "Full Payment", status: "fail", detail: e2.message });
@@ -88,7 +89,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
 
       // TEST 3: Payment on closed loan (should fail)
       const { error: e3 } = await supabase.rpc("apply_loan_payment", {
-        _loan_id: loan.id, _amount: 100, _reference_id: "test_closed_" + Date.now(),
+        _loan_id: loan.id, _amount: 100, _performed_by: testPerformer, _reference_id: "test_closed_" + Date.now(),
       });
       addResult({
         label: "Closed Loan Rejection",
@@ -103,8 +104,8 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
       }).eq("id", loan.id);
       
       const ref = "test_dup_" + Date.now();
-      await supabase.rpc("apply_loan_payment", { _loan_id: loan.id, _amount: 50, _reference_id: ref });
-      const { error: e4 } = await supabase.rpc("apply_loan_payment", { _loan_id: loan.id, _amount: 50, _reference_id: ref });
+      await supabase.rpc("apply_loan_payment", { _loan_id: loan.id, _amount: 50, _performed_by: testPerformer, _reference_id: ref });
+      const { error: e4 } = await supabase.rpc("apply_loan_payment", { _loan_id: loan.id, _amount: 50, _performed_by: testPerformer, _reference_id: ref });
       addResult({
         label: "Duplicate Reference Rejection",
         status: e4 ? "pass" : "fail",
@@ -113,7 +114,7 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
 
       // TEST 5: Overpayment (should fail)
       const { error: e5 } = await supabase.rpc("apply_loan_payment", {
-        _loan_id: loan.id, _amount: 999999, _reference_id: "test_over_" + Date.now(),
+        _loan_id: loan.id, _amount: 999999, _performed_by: testPerformer, _reference_id: "test_over_" + Date.now(),
       });
       addResult({
         label: "Overpayment Rejection",
