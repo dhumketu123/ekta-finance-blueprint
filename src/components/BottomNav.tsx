@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Wallet, TrendingUp, Menu } from "lucide-react";
 import { useSidebarState } from "@/contexts/SidebarContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const navItemClass = "flex flex-col items-center justify-center gap-1 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95 relative";
 
@@ -11,6 +12,8 @@ const ActiveDot = () => (
 const BottomNav = () => {
   const location = useLocation();
   const { open } = useSidebarState();
+  const { lang } = useLanguage();
+  const bn = lang === "bn";
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
@@ -27,7 +30,7 @@ const BottomNav = () => {
           className={`${navItemClass} ${isActive("/") ? "text-primary" : "text-muted-foreground"}`}
         >
           <LayoutDashboard className="w-6 h-6" />
-          <span className="text-[11px] font-medium leading-tight">হোম</span>
+          <span className="text-[11px] font-medium leading-tight">{bn ? "হোম" : "Home"}</span>
           {isActive("/") && <ActiveDot />}
         </Link>
 
@@ -37,7 +40,7 @@ const BottomNav = () => {
           className={`${navItemClass} ${isActive("/clients") ? "text-primary" : "text-muted-foreground"}`}
         >
           <Users className="w-6 h-6" />
-          <span className="text-[11px] font-medium leading-tight">গ্রাহক</span>
+          <span className="text-[11px] font-medium leading-tight">{bn ? "গ্রাহক" : "Clients"}</span>
           {isActive("/clients") && <ActiveDot />}
         </Link>
 
@@ -57,7 +60,7 @@ const BottomNav = () => {
           className={`${navItemClass} ${isActive("/savings") ? "text-primary" : "text-muted-foreground"}`}
         >
           <TrendingUp className="w-6 h-6" />
-          <span className="text-[11px] font-medium leading-tight">সঞ্চয়</span>
+          <span className="text-[11px] font-medium leading-tight">{bn ? "সঞ্চয়" : "Savings"}</span>
           {isActive("/savings") && <ActiveDot />}
         </Link>
 
@@ -67,7 +70,7 @@ const BottomNav = () => {
           className={`${navItemClass} text-muted-foreground`}
         >
           <Menu className="w-6 h-6" />
-          <span className="text-[11px] font-medium leading-tight">মেনু</span>
+          <span className="text-[11px] font-medium leading-tight">{bn ? "মেনু" : "Menu"}</span>
         </button>
       </div>
     </nav>
