@@ -14,20 +14,22 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
-// Lazy imports — heavy pages split into separate chunks
-const Index = React.lazy(() => import("./pages/Index"));
-const Clients = React.lazy(() => import("./pages/Clients"));
-const ClientDetail = React.lazy(() => import("./pages/ClientDetail"));
+// Static imports — core high-frequency pages (instant navigation)
+import Index from "./pages/Index";
+import Clients from "./pages/Clients";
+import ClientDetail from "./pages/ClientDetail";
+import Loans from "./pages/Loans";
+import LoanDetail from "./pages/LoanDetail";
+import Savings from "./pages/Savings";
+import SavingsDetail from "./pages/SavingsDetail";
+
+// Lazy imports — secondary/heavy pages
 const Investors = React.lazy(() => import("./pages/Investors"));
 const InvestorDetail = React.lazy(() => import("./pages/InvestorDetail"));
 const Owners = React.lazy(() => import("./pages/Owners"));
 const OwnerDetail = React.lazy(() => import("./pages/OwnerDetail"));
 const FieldOfficers = React.lazy(() => import("./pages/FieldOfficers"));
 const OfficerDetail = React.lazy(() => import("./pages/OfficerDetail"));
-const Loans = React.lazy(() => import("./pages/Loans"));
-const LoanDetail = React.lazy(() => import("./pages/LoanDetail"));
-const Savings = React.lazy(() => import("./pages/Savings"));
-const SavingsDetail = React.lazy(() => import("./pages/SavingsDetail"));
 const Notifications = React.lazy(() => import("./pages/Notifications"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 const Approvals = React.lazy(() => import("./pages/Approvals"));
