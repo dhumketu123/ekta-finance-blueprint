@@ -202,12 +202,7 @@ const ClientProfileHeaderInner = React.memo(({
 
 ClientProfileHeaderInner.displayName = "ClientProfileHeader";
 
-/* ── Export with error boundary wrapper ── */
-const ClientProfileHeader = (props: ClientProfileHeaderProps) => (
-  <HeaderErrorBoundary>
-    <ClientProfileHeaderInner {...props} />
-  </HeaderErrorBoundary>
-);
+const ClientProfileHeader = ClientProfileHeaderInner;
 
 export default ClientProfileHeader;
 
