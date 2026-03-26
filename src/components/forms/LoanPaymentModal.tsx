@@ -55,6 +55,9 @@ interface PaymentResult {
   new_outstanding: number;
   loan_closed: boolean;
   dps_collected?: number;
+  points_earned?: number;
+  new_score?: number;
+  new_tier?: string;
 }
 
 export interface PendingTransaction {

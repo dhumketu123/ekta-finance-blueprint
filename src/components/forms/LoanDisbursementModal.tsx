@@ -359,6 +359,30 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               {errors.loan_product_id && <p className="text-xs text-destructive mt-1">{errors.loan_product_id}</p>}
             </div>
 
+            {/* Trust Tier Hint for selected client */}
+            {form.client_id && (() => {
+              const selectedClient = (clients as any[]).find((c) => c.id === form.client_id);
+              const tier = selectedClient?.trust_tier || 'Standard';
+              const score = selectedClient?.trust_score || 0;
+              if (tier === 'Standard') return null;
+              const isElite = tier === 'Gold' || tier === 'Platinum';
+              const tierBn: Record<string, string> = { Silver: 'সিলভার', Gold: 'গোল্ড', Platinum: 'প্লাটিনাম' };
+              return (
+                <div className={`rounded-xl border p-3 text-xs backdrop-blur-md ${
+                  isElite
+                    ? 'border-amber-300/40 bg-amber-50/60 dark:bg-amber-950/20'
+                    : 'border-border/40 bg-muted/40'
+                }`}>
+                  <p className="font-bold">
+                    {isElite ? '🏆' : '🌟'}{' '}
+                    {bn
+                      ? `${tierBn[tier] || tier} মেম্বার (পয়েন্ট: ${score})। ${isElite ? 'দুর্দান্ত রেকর্ড! আপনি চাইলে এখানে ম্যানুয়ালি সুদে বিশেষ ছাড় দিতে পারেন।' : 'ভালো পেমেন্ট ইতিহাস। সুদে ছাড় বিবেচনা করতে পারেন।'}`
+                      : `${tier} Member (Score: ${score}). ${isElite ? 'Excellent track record. You may manually offer a special interest rate discount here.' : 'Good payment history. Consider an interest discount.'}`}
+                  </p>
+                </div>
+              );
+            })()}
+
             {selectedProduct && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs grid grid-cols-3 gap-2">
                 <div className="text-center">
