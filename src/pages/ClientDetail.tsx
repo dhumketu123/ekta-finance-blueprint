@@ -41,6 +41,7 @@ import SnoozePanel from "@/components/SnoozePanel";
 import ClientProfileHeader from "@/components/ClientProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import QuickActionGrid from "@/components/QuickActionGrid";
+import TrustTierHeroCard from "@/components/TrustTierHeroCard";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {
@@ -372,6 +373,9 @@ const ClientDetail = () => {
           onExport={() => setExportOpen(true)}
         />
       )}
+
+      {/* ── Trust Tier Emotional Card ── */}
+      <TrustTierHeroCard trustTier={c.trust_tier} trustScore={c.trust_score} />
 
       {/* ── Date Range Filter ── */}
       <div className="flex items-center gap-2 flex-wrap animate-slide-up overflow-hidden" style={{ animationDelay: "0.06s" }}>
