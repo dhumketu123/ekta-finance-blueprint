@@ -40,6 +40,7 @@ import CommunicationHub from "@/components/CommunicationHub";
 import SnoozePanel from "@/components/SnoozePanel";
 import ClientProfileHeader from "@/components/ClientProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
+import QuickActionGrid from "@/components/QuickActionGrid";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {
@@ -325,38 +326,6 @@ const ClientDetail = () => {
       <PageHeader
         title={name}
         description={`${t("detail.client")} — ${maskedMemberId}`}
-        actions={
-          isAdmin || canEditClients ? (
-            <div className="flex gap-2 flex-wrap items-center">
-              {!hasActiveLoans && (
-                <Button size="sm" className="gap-1.5 text-xs rounded-lg bg-primary text-primary-foreground" onClick={() => setDisburseOpen(true)}>
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  {bn ? "ঋণ বিতরণ" : "Disburse Loan"}
-                </Button>
-              )}
-              {hasActiveLoans && (
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => openPayment(activeLoans![0].id)}>
-                  <Banknote className="w-3.5 h-3.5" />
-                  {bn ? "পেমেন্ট" : "Payment"}
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}>
-                <PiggyBank className="w-3.5 h-3.5" />
-                {bn ? "সঞ্চয়" : "Savings"}
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setSmartTxOpen(true)}>
-                <Receipt className="w-3.5 h-3.5" />
-                {bn ? "ফি/অন্যান্য" : "Fee/Other"}
-              </Button>
-              {canExport && (
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => setExportOpen(true)}>
-                  <Download className="w-3.5 h-3.5" />
-                  {bn ? "এক্সপোর্ট" : "Export"}
-                </Button>
-              )}
-            </div>
-          ) : null
-        }
       />
 
       {/* ── Unified Client Profile Header ── */}
@@ -367,6 +336,24 @@ const ClientDetail = () => {
         activeLoans={activeLoans}
         maskedMemberId={maskedMemberId}
       />
+
+      {/* ── Quick Action Grid ── */}
+      {(isAdmin || canEditClients) && (
+        <QuickActionGrid
+          hasActiveLoans={hasActiveLoans}
+          canExport={canExport}
+          onPaymentOrDisburse={() => {
+            if (hasActiveLoans) {
+              openPayment(activeLoans![0].id);
+            } else {
+              setDisburseOpen(true);
+            }
+          }}
+          onSavings={() => { setSavingsTxType("savings_deposit"); setSavingsTxOpen(true); }}
+          onFeeOther={() => setSmartTxOpen(true)}
+          onExport={() => setExportOpen(true)}
+        />
+      )}
 
       {/* ── Date Range Filter ── */}
       <div className="flex items-center gap-2 flex-wrap animate-slide-up overflow-hidden" style={{ animationDelay: "0.06s" }}>
