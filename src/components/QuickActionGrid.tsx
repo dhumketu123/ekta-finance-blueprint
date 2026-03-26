@@ -1,4 +1,4 @@
-import { Banknote, PiggyBank, Receipt, Download } from "lucide-react";
+import { Banknote, PiggyBank, Receipt, Download, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +24,10 @@ const QuickActionGrid = ({
 
   const actions = [
     {
-      icon: Banknote,
-      label: bn ? "পেমেন্ট" : "Payment",
+      icon: hasActiveLoans ? Banknote : TrendingUp,
+      label: hasActiveLoans
+        ? (bn ? "পেমেন্ট" : "Payment")
+        : (bn ? "ঋণ বিতরণ" : "Disburse"),
       onClick: onPaymentOrDisburse,
       enabled: true,
     },
@@ -58,22 +60,21 @@ const QuickActionGrid = ({
         WebkitBackdropFilter: "blur(12px) saturate(1.3)",
       }}
     >
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-3">
         {actions.map((action) => (
           <button
             key={action.label}
-            onClick={action.onClick}
+            onClick={action.enabled ? action.onClick : undefined}
             disabled={!action.enabled}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg",
-              "text-[11px] font-medium transition-colors",
-              "active:scale-95 transition-transform duration-100",
+              "flex flex-col items-center justify-center gap-1.5 min-h-[88px] rounded-lg",
+              "text-[11px] font-medium transition-all duration-100",
               action.enabled
-                ? "text-foreground hover:bg-muted/60 active:bg-muted"
-                : "text-muted-foreground/40 cursor-not-allowed"
+                ? "text-foreground active:scale-95"
+                : "opacity-40 pointer-events-none"
             )}
           >
-            <action.icon className="w-5 h-5 opacity-80" strokeWidth={1.8} />
+            <action.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.8} />
             <span className="truncate max-w-full px-0.5">{action.label}</span>
           </button>
         ))}
