@@ -118,10 +118,10 @@ export default function EarlySettlementCalculator({ open, onClose, preselectedLo
                 </div>
 
                 {/* Manual Discount Input */}
-                <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                <div className="p-3 rounded-xl border border-warning/30 bg-warning/5 space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                    <ShieldCheck className="w-3.5 h-3.5 text-warning" />
+                    <span className="text-xs font-bold text-warning">
                       {bn ? "বিশেষ প্রশাসনিক ছাড় (ঐচ্ছিক)" : "Special Admin Discount (Optional)"}
                     </span>
                   </div>
