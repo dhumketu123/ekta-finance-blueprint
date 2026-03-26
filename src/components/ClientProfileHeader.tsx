@@ -6,7 +6,9 @@ import ClientPhotoUpload from "@/components/ClientPhotoUpload";
 import StatusBadge from "@/components/StatusBadge";
 import CommunicationHub from "@/components/CommunicationHub";
 
-const TIER_ACCENT: Record<string, {
+type TrustTier = "Standard" | "Silver" | "Gold" | "Platinum";
+
+const TIER_ACCENT: Record<TrustTier, {
   ring: string;
   badge: string;
   glow: string;
@@ -38,7 +40,7 @@ const TIER_ACCENT: Record<string, {
   },
 };
 
-const TIER_BN: Record<string, string> = {
+const TIER_BN: Record<TrustTier, string> = {
   Standard: "সাধারণ",
   Silver: "সিলভার",
   Gold: "গোল্ড",
@@ -65,7 +67,10 @@ const ClientProfileHeader = ({
 
   const c = client;
   const name = bn ? (c.name_bn || c.name_en) : c.name_en;
-  const tier = c.trust_tier && TIER_ACCENT[c.trust_tier] ? c.trust_tier : "Standard";
+  const tier: TrustTier =
+    (["Standard", "Silver", "Gold", "Platinum"] as const).includes(c.trust_tier)
+      ? (c.trust_tier as TrustTier)
+      : "Standard";
   const accent = TIER_ACCENT[tier];
   const score = c.trust_score ?? 0;
   const tierLabel = bn ? TIER_BN[tier] : tier;
