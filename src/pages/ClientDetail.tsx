@@ -359,49 +359,14 @@ const ClientDetail = () => {
         }
       />
 
-      {/* ── Trust-Tier Hero Card ── */}
-      <TrustTierHeroCard trustTier={c.trust_tier} trustScore={c.trust_score} />
-
-      {/* ── Hero card (Glass-morphic) ── */}
-      <div className="relative overflow-hidden rounded-xl border border-border/40 p-4 sm:p-6 border-l-4 border-l-primary animate-slide-up" style={{ background: "hsl(var(--card) / 0.85)", backdropFilter: "blur(16px) saturate(1.4)", WebkitBackdropFilter: "blur(16px) saturate(1.4)", boxShadow: "0 8px 32px -8px hsl(var(--primary) / 0.12), var(--shadow-card)" }}>
-        {/* Subtle gradient accent */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }} />
-        <div className="relative flex items-center gap-3 sm:gap-5">
-          <ProfileCompletionRing client={c} size={112} strokeWidth={5}>
-            <ClientPhotoUpload clientId={client.id} currentPhotoUrl={c.photo_url} canEdit={canEditClients} />
-          </ProfileCompletionRing>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{c.name_bn || ""}</p>
-            <div className="flex items-center gap-3 mt-2 flex-wrap">
-              {c.member_id ? (
-                <span className="text-xs font-mono font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20 tracking-wider" title={c.member_id}>
-                  {maskedMemberId}
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground font-mono">{client.id.slice(0, 8)}</span>
-              )}
-              <StatusBadge status={c.status as any} />
-              <CommunicationHub
-                clientId={client.id}
-                clientPhone={c.phone}
-                clientName={name}
-                loanId={activeLoans?.[0]?.id}
-              />
-            </div>
-            {c.occupation && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {bn ? "পেশা:" : "Occupation:"} <span className="text-foreground font-medium">{c.occupation}</span>
-              </p>
-            )}
-          </div>
-        </div>
-        {canEditClients && (
-          <p className="text-[10px] text-muted-foreground mt-3 italic">
-            {bn ? "ছবির উপর হোভার করুন প্রোফাইল ছবি পরিবর্তন করতে" : "Hover over photo to update profile picture"}
-          </p>
-        )}
-      </div>
+      {/* ── Unified Client Profile Header ── */}
+      <ClientProfileHeader
+        client={c}
+        clientId={client.id}
+        canEditClients={canEditClients}
+        activeLoans={activeLoans}
+        maskedMemberId={maskedMemberId}
+      />
 
       {/* ── Date Range Filter ── */}
       <div className="flex items-center gap-2 flex-wrap animate-slide-up overflow-hidden" style={{ animationDelay: "0.06s" }}>
