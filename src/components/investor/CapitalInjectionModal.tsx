@@ -311,7 +311,7 @@ export const CapitalInjectionModal = ({
       const fallback = bn
         ? "মূলধন জমা ব্যর্থ হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
         : "Failed to add capital. Please check your connection and try again.";
-      toast.error(err?.message || fallback);
+      toast.error(errMsg || fallback);
       setPhase("confirm");
     } finally {
       setIsSubmitting(false);

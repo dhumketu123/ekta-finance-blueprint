@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -160,4 +160,4 @@ export const MetricCard = ({
   );
 };
 
-export default MetricCard;
+export default React.memo(MetricCard);

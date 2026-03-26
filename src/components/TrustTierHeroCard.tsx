@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -174,4 +174,4 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
   );
 };
 
-export default TrustTierHeroCard;
+export default React.memo(TrustTierHeroCard);
