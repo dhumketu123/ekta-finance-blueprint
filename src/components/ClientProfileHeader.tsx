@@ -1,5 +1,6 @@
+import React, { useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Shield, Star, Phone } from "lucide-react";
+import { Shield, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProfileCompletionRing from "@/components/ProfileCompletionRing";
 import ClientPhotoUpload from "@/components/ClientPhotoUpload";
@@ -7,6 +8,8 @@ import StatusBadge from "@/components/StatusBadge";
 import CommunicationHub from "@/components/CommunicationHub";
 
 type TrustTier = "Standard" | "Silver" | "Gold" | "Platinum";
+
+const VALID_TIERS: readonly TrustTier[] = ["Standard", "Silver", "Gold", "Platinum"] as const;
 
 const TIER_ACCENT: Record<TrustTier, {
   ring: string;
@@ -47,33 +50,90 @@ const TIER_BN: Record<TrustTier, string> = {
   Platinum: "প্লাটিনাম",
 };
 
-interface ClientProfileHeaderProps {
-  client: Record<string, any>;
+/* ── Skeleton loader ── */
+const ClientProfileHeaderSkeleton = () => (
+  <div
+    className="relative overflow-hidden rounded-xl border border-border/40 p-4 sm:p-5 animate-pulse"
+    style={{ background: "hsl(var(--card) / 0.88)" }}
+  >
+    <div className="flex items-center gap-3 sm:gap-4">
+      <div className="w-[96px] h-[96px] rounded-full bg-muted" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="h-5 bg-muted rounded w-2/3" />
+        <div className="h-3 bg-muted rounded w-1/3" />
+        <div className="h-4 bg-muted rounded w-1/2" />
+      </div>
+    </div>
+    <div className="mt-3 flex items-center gap-2">
+      <div className="h-7 bg-muted rounded-full w-40" />
+      <div className="flex-1" />
+      <div className="h-7 bg-muted rounded w-20" />
+    </div>
+  </div>
+);
+
+/* ── Lightweight error boundary ── */
+class HeaderErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-xl border border-destructive/30 p-4 text-center">
+          <p className="text-sm text-muted-foreground">Unable to render profile header.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export interface ClientProfileHeaderProps {
+  client: Record<string, any> | null | undefined;
   clientId: string;
   canEditClients: boolean;
   activeLoans?: any[];
   maskedMemberId: string;
+  isLoading?: boolean;
 }
 
-const ClientProfileHeader = ({
+const ClientProfileHeaderInner = React.memo(({
   client,
   clientId,
   canEditClients,
   activeLoans,
   maskedMemberId,
+  isLoading,
 }: ClientProfileHeaderProps) => {
   const { lang } = useLanguage();
   const bn = lang === "bn";
 
+  // Loading skeleton
+  if (isLoading) return <ClientProfileHeaderSkeleton />;
+
+  // Safe fallback for undefined/null client
+  if (!client) {
+    return (
+      <div className="rounded-xl border border-border/40 p-4 text-center" style={{ background: "hsl(var(--card) / 0.88)" }}>
+        <p className="text-sm text-muted-foreground">{bn ? "ক্লায়েন্ট তথ্য পাওয়া যায়নি" : "Client data unavailable"}</p>
+      </div>
+    );
+  }
+
+  // All derived values wrapped in useMemo-equivalent (component is memo'd, so these only recompute on prop change)
   const c = client;
   const name = bn ? (c.name_bn || c.name_en) : c.name_en;
-  const tier: TrustTier =
-    (["Standard", "Silver", "Gold", "Platinum"] as const).includes(c.trust_tier)
-      ? (c.trust_tier as TrustTier)
-      : "Standard";
+  const tier: TrustTier = VALID_TIERS.includes(c.trust_tier) ? (c.trust_tier as TrustTier) : "Standard";
   const accent = TIER_ACCENT[tier];
-  const score = c.trust_score ?? 0;
+  const score: number = c.trust_score ?? 0;
   const tierLabel = bn ? TIER_BN[tier] : tier;
+  const firstLoanId = activeLoans?.[0]?.id;
+  const shortId = clientId.slice(0, 8);
 
   return (
     <div
@@ -101,13 +161,11 @@ const ClientProfileHeader = ({
         </ProfileCompletionRing>
 
         <div className="min-w-0 flex-1">
-          {/* Name */}
           <h2 className="text-lg font-bold text-foreground truncate leading-tight">{name}</h2>
           {c.name_bn && c.name_bn !== name && (
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.name_bn}</p>
           )}
 
-          {/* Badges row */}
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {c.member_id ? (
               <span
@@ -117,12 +175,11 @@ const ClientProfileHeader = ({
                 {maskedMemberId}
               </span>
             ) : (
-              <span className="text-[11px] text-muted-foreground font-mono">{clientId.slice(0, 8)}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{shortId}</span>
             )}
             <StatusBadge status={c.status as any} />
           </div>
 
-          {/* Occupation */}
           {c.occupation && (
             <p className="text-[11px] text-muted-foreground mt-1 truncate">
               {bn ? "পেশা:" : "Occ:"}{" "}
@@ -134,7 +191,6 @@ const ClientProfileHeader = ({
 
       {/* Row 2: Trust tier strip + Communication */}
       <div className="relative mt-3 flex items-center justify-between gap-2 flex-wrap">
-        {/* Trust tier pill */}
         <div className={cn(
           "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-border/30",
           accent.badge
@@ -147,16 +203,14 @@ const ClientProfileHeader = ({
           <span className="opacity-60 text-[10px]">{bn ? "পয়েন্ট" : "pts"}</span>
         </div>
 
-        {/* Communication hub */}
         <CommunicationHub
           clientId={clientId}
           clientPhone={c.phone}
           clientName={name}
-          loanId={activeLoans?.[0]?.id}
+          loanId={firstLoanId}
         />
       </div>
 
-      {/* Photo hint */}
       {canEditClients && (
         <p className="text-[10px] text-muted-foreground mt-2.5 italic opacity-70">
           {bn ? "ছবির উপর হোভার করুন প্রোফাইল ছবি পরিবর্তন করতে" : "Hover over photo to update profile picture"}
@@ -164,6 +218,17 @@ const ClientProfileHeader = ({
       )}
     </div>
   );
-};
+});
+
+ClientProfileHeaderInner.displayName = "ClientProfileHeader";
+
+/* ── Export with error boundary wrapper ── */
+const ClientProfileHeader = (props: ClientProfileHeaderProps) => (
+  <HeaderErrorBoundary>
+    <ClientProfileHeaderInner {...props} />
+  </HeaderErrorBoundary>
+);
 
 export default ClientProfileHeader;
+
+export { ClientProfileHeaderSkeleton };
