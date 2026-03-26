@@ -374,6 +374,9 @@ const ClientDetail = () => {
         />
       )}
 
+      {/* ── Trust Tier Emotional Card ── */}
+      <TrustTierHeroCard trustTier={c.trust_tier} trustScore={c.trust_score} />
+
       {/* ── Date Range Filter ── */}
       <div className="flex items-center gap-2 flex-wrap animate-slide-up overflow-hidden" style={{ animationDelay: "0.06s" }}>
         <Popover>
