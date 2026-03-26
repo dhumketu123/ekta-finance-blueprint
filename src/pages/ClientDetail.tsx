@@ -239,30 +239,9 @@ const ClientDetail = () => {
     );
   }, [finTxnRaw, legacyTxnRaw]);
 
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <PageHeader title="..." />
-        <div className="space-y-4">
-          <div className="card-elevated p-8 animate-pulse"><div className="h-4 bg-muted rounded w-1/3 mx-auto" /></div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (!client) {
-    return (
-      <AppLayout>
-        <PageHeader title={t("detail.notFound")} />
-        <div className="card-elevated p-8 text-center">
-          <p className="text-sm text-muted-foreground">{t("detail.notFoundDesc")}</p>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  const c = client as any;
-  const name = bn ? (c.name_bn || c.name_en) : c.name_en;
+  // ─── ALL HOOKS MUST BE BEFORE ANY EARLY RETURN (React Rules of Hooks) ───
+  const c = (client as any) ?? {};
+  const name = bn ? (c.name_bn || c.name_en || "") : (c.name_en || "");
   const hasActiveLoans = !!activeLoans?.length;
 
   const totalRepaid = useMemo(() =>
@@ -318,7 +297,6 @@ const ClientDetail = () => {
     [activeLoans]
   );
 
-
   const filteredTxns = useMemo(() =>
     clientTransactions?.filter((tx: any) => {
       if (historyFilter === "all") return true;
@@ -342,6 +320,29 @@ const ClientDetail = () => {
     setScheduleLoanId(loanId);
     setActiveTab("schedule");
   }, []);
+
+  // ─── EARLY RETURNS (safe now — all hooks above) ───
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <PageHeader title="..." />
+        <div className="space-y-4">
+          <div className="card-elevated p-8 animate-pulse"><div className="h-4 bg-muted rounded w-1/3 mx-auto" /></div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!client) {
+    return (
+      <AppLayout>
+        <PageHeader title={t("detail.notFound")} />
+        <div className="card-elevated p-8 text-center">
+          <p className="text-sm text-muted-foreground">{t("detail.notFoundDesc")}</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

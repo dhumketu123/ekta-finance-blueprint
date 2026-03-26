@@ -12,9 +12,7 @@ class RouteErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error("[RouteErrorBoundary]", error, info.componentStack);
-    }
+    console.error("[RouteErrorBoundary] CRASH:", error?.message, error?.stack?.slice(0, 500), "Component:", info.componentStack?.slice(0, 300));
   }
 
   render() {
