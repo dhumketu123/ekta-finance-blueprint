@@ -41,6 +41,7 @@ import SnoozePanel from "@/components/SnoozePanel";
 import ClientProfileHeader from "@/components/ClientProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import QuickActionGrid from "@/components/QuickActionGrid";
+import TrustTierHeroCard from "@/components/TrustTierHeroCard";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {

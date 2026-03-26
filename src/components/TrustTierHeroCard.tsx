@@ -1,5 +1,4 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Shield, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrustTierHeroCardProps {
@@ -7,49 +6,53 @@ interface TrustTierHeroCardProps {
   trustScore?: number | null;
 }
 
-const TIER_CONFIG: Record<string, {
+type Tier = "Standard" | "Silver" | "Gold" | "Platinum";
+
+const VALID_TIERS: readonly Tier[] = ["Standard", "Silver", "Gold", "Platinum"] as const;
+
+const TIER_CONFIG: Record<Tier, {
   gradient: string;
-  textColor: string;
+  text: string;
   border: string;
   shadow: string;
-  badgeBg: string;
-  icon: string;
+  emoji: string;
+  scoreBadge: string;
 }> = {
   Standard: {
-    gradient: "from-slate-50 to-slate-100",
-    textColor: "text-slate-800",
+    gradient: "bg-gradient-to-r from-slate-50 to-slate-100",
+    text: "text-slate-800",
     border: "border-slate-200",
     shadow: "",
-    badgeBg: "bg-slate-200/60 text-slate-700",
-    icon: "text-slate-500",
+    emoji: "🛡️",
+    scoreBadge: "bg-slate-200/60 text-slate-700",
   },
   Silver: {
-    gradient: "from-gray-100 via-slate-200 to-gray-300",
-    textColor: "text-gray-900",
+    gradient: "bg-gradient-to-br from-gray-100 via-slate-200 to-gray-300",
+    text: "text-gray-900",
     border: "border-gray-300",
-    shadow: "shadow-[0_0_15px_rgba(156,163,175,0.4)]",
-    badgeBg: "bg-white/40 text-gray-800",
-    icon: "text-gray-500",
+    shadow: "shadow-[0_4px_15px_rgba(156,163,175,0.3)]",
+    emoji: "🛡️",
+    scoreBadge: "bg-white/40 text-gray-800",
   },
   Gold: {
-    gradient: "from-amber-100 via-yellow-300 to-amber-500",
-    textColor: "text-amber-950",
+    gradient: "bg-gradient-to-br from-amber-100 via-yellow-200 to-amber-400",
+    text: "text-amber-950",
     border: "border-amber-300",
-    shadow: "shadow-[0_0_20px_rgba(251,191,36,0.3)]",
-    badgeBg: "bg-white/30 text-amber-900",
-    icon: "text-amber-600",
+    shadow: "shadow-[0_4px_20px_rgba(251,191,36,0.25)]",
+    emoji: "🏆",
+    scoreBadge: "bg-white/30 text-amber-900",
   },
   Platinum: {
-    gradient: "from-slate-900 via-slate-800 to-black",
-    textColor: "text-white",
+    gradient: "bg-gradient-to-br from-slate-900 via-slate-800 to-black",
+    text: "text-white",
     border: "border-slate-700",
-    shadow: "shadow-[0_0_25px_rgba(255,255,255,0.1)]",
-    badgeBg: "bg-white/15 text-white/90",
-    icon: "text-white/80",
+    shadow: "shadow-[0_4px_25px_rgba(0,0,0,0.4)]",
+    emoji: "🌟",
+    scoreBadge: "bg-white/15 text-white/90",
   },
 };
 
-const TIER_BN: Record<string, string> = {
+const TIER_BN: Record<Tier, string> = {
   Standard: "সাধারণ",
   Silver: "সিলভার",
   Gold: "গোল্ড",
@@ -60,7 +63,9 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
   const { lang } = useLanguage();
   const bn = lang === "bn";
 
-  const tier = trustTier && TIER_CONFIG[trustTier] ? trustTier : "Standard";
+  const tier: Tier = (trustTier && VALID_TIERS.includes(trustTier as Tier))
+    ? (trustTier as Tier)
+    : "Standard";
   const config = TIER_CONFIG[tier];
   const score = trustScore ?? 0;
   const tierLabel = bn ? TIER_BN[tier] : tier;
@@ -68,41 +73,41 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-5 sm:p-6 mb-4 animate-slide-up",
-        "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4",
-        `bg-gradient-to-br ${config.gradient} ${config.textColor} ${config.border} ${config.shadow}`
+        "relative overflow-hidden rounded-2xl border p-5 mt-4 animate-slide-up",
+        "flex items-center gap-4",
+        config.gradient, config.text, config.border, config.shadow
       )}
     >
-      {/* Decorative shimmer overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.07]"
+      {/* Shimmer overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.06]"
         style={{ background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)" }}
       />
 
-      {/* Left side */}
+      {/* Emotional anchor emoji */}
+      <div className="relative z-10 flex-shrink-0 text-4xl select-none" aria-hidden="true">
+        {config.emoji}
+      </div>
+
+      {/* Text block */}
       <div className="relative z-10 min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Shield className={cn("w-5 h-5", config.icon)} />
-          <span className="text-xl sm:text-2xl font-bold tracking-tight">
-            {bn ? `ট্রাস্ট মেম্বারশিপ: ${tierLabel}` : `Trust Tier: ${tier}`}
-          </span>
-        </div>
-        <p className={cn("text-sm opacity-80 leading-relaxed max-w-md", config.textColor)}>
+        <h3 className="text-base sm:text-lg font-bold tracking-tight leading-tight">
+          {bn ? `ট্রাস্ট মেম্বারশিপ: ${tierLabel}` : `Trust Tier: ${tier}`}
+        </h3>
+        <p className="text-xs sm:text-sm opacity-80 leading-relaxed mt-0.5 max-w-md">
           {bn
             ? "সঠিক সময়ে কিস্তি পরিশোধ করে প্রিমিয়াম সুবিধা ও জিরো-গ্যারান্টার লোন আনলক করুন।"
             : "On-time payments unlock premium benefits & zero-guarantor loans."}
         </p>
       </div>
 
-      {/* Right side — Score badge */}
+      {/* Score badge */}
       <div className="relative z-10 flex-shrink-0">
         <div className={cn(
-          "flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-md",
-          config.badgeBg, "border border-white/20"
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md text-xs sm:text-sm font-bold tabular-nums",
+          config.scoreBadge, "border border-white/20"
         )}>
-          <Star className="w-4 h-4" />
-          <span className="text-lg sm:text-xl font-bold tabular-nums">
-            {bn ? `ট্রাস্ট পয়েন্ট: ${score}` : `Trust Score: ${score}`}
-          </span>
+          <span>{bn ? `${score} পয়েন্ট` : `${score} pts`}</span>
         </div>
       </div>
     </div>
