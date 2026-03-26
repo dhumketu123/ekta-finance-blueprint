@@ -286,8 +286,18 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{bn ? "মেয়াদোত্তীর্ণ তারিখ" : "Maturity"}</span>
-                <span className="font-bold">{result.maturity_date}</span>
+                <span className="font-bold">{formatLocalDate(result.maturity_date, lang)}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{bn ? "বিতরণ তারিখ" : "Disbursement"}</span>
+                <span className="font-bold">{formatLocalDate(result.disbursement_date, lang)}</span>
+              </div>
+              {(result as any).next_due_date && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bn ? "প্রথম কিস্তি" : "First Installment"}</span>
+                  <span className="font-bold text-primary">{formatLocalDate((result as any).next_due_date, lang)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{bn ? "পরিশোধ ধরন" : "Payment Type"}</span>
                 <span className="font-bold capitalize">{paymentTypeLabel(result.payment_type)}</span>
