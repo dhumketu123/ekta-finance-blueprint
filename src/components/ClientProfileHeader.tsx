@@ -72,26 +72,6 @@ const ClientProfileHeaderSkeleton = () => (
   </div>
 );
 
-/* ── Lightweight error boundary ── */
-class HeaderErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="rounded-xl border border-destructive/30 p-4 text-center">
-          <p className="text-sm text-muted-foreground">Unable to render profile header.</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 export interface ClientProfileHeaderProps {
   client: Record<string, any> | null | undefined;
