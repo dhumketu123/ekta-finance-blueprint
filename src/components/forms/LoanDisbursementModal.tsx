@@ -252,7 +252,8 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
               return last10.length === 10 ? "880" + last10 : "";
             };
             const finalPhone = normalizePhone(cPhone);
-            const disbMsg = `সম্মানিত ${cName},\n\nআপনার ঋণ সফলভাবে বিতরণ করা হয়েছে। ✅\n\n📋 ঋণ নং: ${result.loan_ref}\n💰 আসল: ৳${Number(result.principal).toLocaleString()}\n📊 মোট সুদ: ৳${Number(result.total_interest).toLocaleString()}\n💵 কিস্তি: ৳${Number(result.emi_amount).toLocaleString()} (${paymentTypeLabel(result.payment_type)})\n📅 মেয়াদ: ${result.maturity_date}\n📅 বিতরণ: ${format(new Date(), "dd/MM/yyyy")}\n\nসময়মতো কিস্তি পরিশোধ করুন।\n\n— একতা ফাইন্যান্স`;
+            const nextDue = (result as any).next_due_date ? formatLocalDate((result as any).next_due_date, "bn") : "";
+            const disbMsg = `সম্মানিত ${cName},\n\nআপনার ঋণ সফলভাবে বিতরণ করা হয়েছে। ✅\n\n📋 ঋণ নং: ${result.loan_ref}\n💰 আসল: ৳${Number(result.principal).toLocaleString()}\n📊 মোট সুদ: ৳${Number(result.total_interest).toLocaleString()}\n💵 কিস্তি: ৳${Number(result.emi_amount).toLocaleString()} (${paymentTypeLabel(result.payment_type)})\n📅 মেয়াদ: ${formatLocalDate(result.maturity_date, "bn")}\n📅 বিতরণ: ${formatLocalDate(result.disbursement_date, "bn")}${nextDue ? `\n📅 প্রথম কিস্তি: ${nextDue}` : ""}\n\nসময়মতো কিস্তি পরিশোধ করুন।\n\n— একতা ফাইন্যান্স`;
             const encoded = encodeURIComponent(disbMsg);
             return (
           <div className="space-y-4">
