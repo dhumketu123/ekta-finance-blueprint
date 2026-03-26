@@ -465,6 +465,8 @@ export type Database = {
           serial_number: number | null
           status: Database["public"]["Enums"]["client_status"]
           tenant_id: string
+          trust_score: number | null
+          trust_tier: string | null
           union_name: string | null
           upazila: string | null
           updated_at: string
@@ -500,6 +502,8 @@ export type Database = {
           serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
           tenant_id: string
+          trust_score?: number | null
+          trust_tier?: string | null
           union_name?: string | null
           upazila?: string | null
           updated_at?: string
@@ -535,6 +539,8 @@ export type Database = {
           serial_number?: number | null
           status?: Database["public"]["Enums"]["client_status"]
           tenant_id?: string
+          trust_score?: number | null
+          trust_tier?: string | null
           union_name?: string | null
           upazila?: string | null
           updated_at?: string
