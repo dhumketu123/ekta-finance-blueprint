@@ -359,6 +359,9 @@ const ClientDetail = () => {
         }
       />
 
+      {/* ── Trust-Tier Hero Card ── */}
+      <TrustTierHeroCard trustTier={c.trust_tier} trustScore={c.trust_score} />
+
       {/* ── Hero card (Glass-morphic) ── */}
       <div className="relative overflow-hidden rounded-xl border border-border/40 p-4 sm:p-6 border-l-4 border-l-primary animate-slide-up" style={{ background: "hsl(var(--card) / 0.85)", backdropFilter: "blur(16px) saturate(1.4)", WebkitBackdropFilter: "blur(16px) saturate(1.4)", boxShadow: "0 8px 32px -8px hsl(var(--primary) / 0.12), var(--shadow-card)" }}>
         {/* Subtle gradient accent */}
