@@ -1,0 +1,195 @@
+CREATE OR REPLACE FUNCTION public.apply_loan_payment(
+  _loan_id uuid,
+  _amount numeric,
+  _performed_by uuid,
+  _reference_id text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _loan record;
+  _dps_due numeric := 0;
+  _dps_paid numeric := 0;
+  _savings_account_id uuid;
+  _penalty_paid numeric := 0;
+  _interest_paid numeric := 0;
+  _principal_paid numeric := 0;
+  _remaining numeric;
+  _total_outstanding numeric;
+  _total_payable numeric;
+  _new_next_due date;
+  _sched record;
+  _sched_int_alloc numeric;
+  _sched_pri_alloc numeric;
+  _alloc_remaining numeric;
+  _ft_id uuid;
+  _loan_should_close boolean;
+  _receipt_num text;
+  _result jsonb;
+  _base_points integer;
+  _points_earned integer;
+  _current_score integer;
+  _new_score integer;
+  _new_tier text;
+BEGIN
+  SELECT * INTO _loan FROM public.loans WHERE id = _loan_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'ঋণ খুঁজে পাওয়া যায়নি (Loan not found)'; END IF;
+
+  IF _loan.status = 'closed' AND (_loan.outstanding_principal + _loan.outstanding_interest + _loan.penalty_amount) > 0 THEN
+    UPDATE public.loans SET status = 'active'::loan_status, updated_at = now() WHERE id = _loan_id;
+    _loan.status := 'active';
+  END IF;
+
+  IF _loan.status NOT IN ('active', 'default') THEN
+    RAISE EXCEPTION 'এই ঋণে পেমেন্ট গ্রহণযোগ্য নয়। শুধুমাত্র সক্রিয়/বকেয়া ঋণে পেমেন্ট নেওয়া যায়।';
+  END IF;
+
+  _total_outstanding := _loan.outstanding_principal + _loan.outstanding_interest + _loan.penalty_amount;
+
+  -- DPS calculation for max payable
+  SELECT COALESCE(compulsory_savings_amount, 0) INTO _dps_due FROM public.loan_products WHERE id = _loan.loan_product_id;
+  _total_payable := _total_outstanding + _dps_due;
+
+  -- OVERPAYMENT GUARD: Reject if amount exceeds total payable (outstanding + DPS)
+  IF _amount > _total_payable THEN
+    RAISE EXCEPTION 'অতিরিক্ত পরিশোধ: প্রদত্ত পরিমাণ (৳%) সর্বোচ্চ পরিশোধযোগ্য পরিমাণ (৳%) অতিক্রম করেছে। অনুগ্রহ করে সঠিক পরিমাণ প্রদান করুন।', _amount, _total_payable;
+  END IF;
+
+  _remaining := _amount;
+
+  _receipt_num := 'RCP-' || to_char(now(), 'YYYYMMDD-HH24MISS-MS') || '-' || substr(gen_random_uuid()::text, 1, 4);
+
+  IF _reference_id IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM public.transactions WHERE reference_id = _reference_id) OR
+       EXISTS (SELECT 1 FROM public.financial_transactions WHERE reference_id = _reference_id) THEN
+      RAISE EXCEPTION 'ডুপ্লিকেট রেফারেন্স: এই রেফারেন্স নম্বরে ইতোমধ্যে একটি লেনদেন বিদ্যমান। অনুগ্রহ করে একটি ইউনিক রেফারেন্স ব্যবহার করুন।';
+    END IF;
+  END IF;
+
+  -- DPS collection (already fetched _dps_due above)
+  IF _dps_due > 0 AND _remaining > 0 THEN
+    _dps_paid := LEAST(_remaining, _dps_due);
+    _remaining := _remaining - _dps_paid;
+
+    SELECT id INTO _savings_account_id FROM public.savings_accounts
+    WHERE client_id = _loan.client_id AND status = 'active'
+    ORDER BY created_at ASC LIMIT 1;
+
+    IF _savings_account_id IS NULL THEN
+      RAISE EXCEPTION 'সতর্কতা: গ্রাহকের কোনো সক্রিয় সঞ্চয় অ্যাকাউন্ট নেই। বাধ্যতামূলক সঞ্চয় জমা দেওয়ার জন্য প্রথমে একটি সঞ্চয় অ্যাকাউন্ট খুলুন।';
+    END IF;
+
+    UPDATE public.savings_accounts SET balance = balance + _dps_paid, updated_at = now() WHERE id = _savings_account_id;
+
+    INSERT INTO public.financial_transactions (member_id, account_id, transaction_type, amount, created_by, approval_status, reference_id, notes, receipt_number)
+    VALUES (_loan.client_id, _savings_account_id, 'savings_deposit', _dps_paid, _performed_by, 'approved', _reference_id, 'স্বয়ংক্রিয় বাধ্যতামূলক সঞ্চয় (DPS) — ঋণের কিস্তি থেকে কর্তন', _receipt_num || '-DPS');
+  END IF;
+
+  IF _remaining <= 0 THEN
+    RETURN jsonb_build_object('success', true, 'dps_collected', _dps_paid, 'total_payment', 0, 'penalty_paid', 0, 'interest_paid', 0, 'principal_paid', 0, 'new_outstanding', _total_outstanding, 'loan_closed', false);
+  END IF;
+
+  IF _remaining > 0 AND _loan.penalty_amount > 0 THEN
+    _penalty_paid := LEAST(_remaining, _loan.penalty_amount);
+    _remaining := _remaining - _penalty_paid;
+  END IF;
+
+  IF _remaining > 0 AND _loan.outstanding_interest > 0 THEN
+    _interest_paid := LEAST(_remaining, _loan.outstanding_interest);
+    _remaining := _remaining - _interest_paid;
+  END IF;
+
+  IF _remaining > 0 AND _loan.outstanding_principal > 0 THEN
+    _principal_paid := LEAST(_remaining, _loan.outstanding_principal);
+    _remaining := _remaining - _principal_paid;
+  END IF;
+
+  _loan_should_close := ((_total_outstanding - (_penalty_paid + _interest_paid + _principal_paid)) <= 0);
+
+  IF _loan_should_close THEN _new_next_due := NULL;
+  ELSE
+    SELECT MIN(due_date) INTO _new_next_due FROM public.loan_schedules WHERE loan_id = _loan_id AND status IN ('pending', 'partial', 'overdue');
+  END IF;
+
+  UPDATE public.loans SET
+    penalty_amount = penalty_amount - _penalty_paid,
+    outstanding_interest = outstanding_interest - _interest_paid,
+    outstanding_principal = outstanding_principal - _principal_paid,
+    next_due_date = _new_next_due,
+    updated_at = now()
+  WHERE id = _loan_id;
+
+  _alloc_remaining := _interest_paid + _principal_paid;
+  FOR _sched IN
+    SELECT * FROM public.loan_schedules
+    WHERE loan_id = _loan_id AND status IN ('pending', 'partial', 'overdue')
+    ORDER BY installment_number ASC
+  LOOP
+    EXIT WHEN _alloc_remaining <= 0;
+    _sched_int_alloc := LEAST(_alloc_remaining, GREATEST(0, _sched.interest_due - _sched.interest_paid));
+    _alloc_remaining := _alloc_remaining - _sched_int_alloc;
+    _sched_pri_alloc := LEAST(_alloc_remaining, GREATEST(0, _sched.principal_due - _sched.principal_paid));
+    _alloc_remaining := _alloc_remaining - _sched_pri_alloc;
+
+    UPDATE public.loan_schedules SET
+      interest_paid = interest_paid + _sched_int_alloc,
+      principal_paid = principal_paid + _sched_pri_alloc,
+      status = CASE WHEN (interest_paid + _sched_int_alloc) >= interest_due AND (principal_paid + _sched_pri_alloc) >= principal_due THEN 'paid' WHEN (interest_paid + _sched_int_alloc + principal_paid + _sched_pri_alloc) > 0 THEN 'partial' ELSE status END,
+      paid_date = CASE WHEN (interest_paid + _sched_int_alloc) >= interest_due AND (principal_paid + _sched_pri_alloc) >= principal_due THEN CURRENT_DATE ELSE paid_date END,
+      updated_at = now()
+    WHERE id = _sched.id;
+  END LOOP;
+
+  INSERT INTO public.financial_transactions (member_id, account_id, transaction_type, amount, created_by, approval_status, reference_id, notes, allocation_breakdown, receipt_number)
+  VALUES (_loan.client_id, _loan_id, 'loan_repayment', (_penalty_paid + _interest_paid + _principal_paid), _performed_by, 'approved', _reference_id, 'কিস্তি পরিশোধ', jsonb_build_object('penalty', _penalty_paid, 'interest', _interest_paid, 'principal', _principal_paid, 'dps_auto_deducted', _dps_paid), _receipt_num) RETURNING id INTO _ft_id;
+
+  IF _loan_should_close THEN UPDATE public.loans SET status = 'closed'::loan_status, updated_at = now() WHERE id = _loan_id; END IF;
+
+  UPDATE public.clients SET next_payment_date = _new_next_due, updated_at = now() WHERE id = _loan.client_id;
+
+  -- TRUST SCORE ENGINE
+  _base_points := FLOOR((_principal_paid + _interest_paid) / 1000);
+
+  IF _penalty_paid > 0 THEN
+    _points_earned := -(_base_points * 2);
+  ELSE
+    _points_earned := _base_points + 2;
+  END IF;
+
+  IF _loan_should_close AND _penalty_paid = 0 AND (_loan.penalty_amount - _penalty_paid) <= 0 THEN
+    _points_earned := _points_earned + 200;
+  END IF;
+
+  SELECT COALESCE(trust_score, 0) INTO _current_score FROM public.clients WHERE id = _loan.client_id;
+  _new_score := GREATEST(0, _current_score + _points_earned);
+
+  IF _new_score >= 10000 THEN _new_tier := 'Platinum';
+  ELSIF _new_score >= 5000 THEN _new_tier := 'Gold';
+  ELSIF _new_score >= 2000 THEN _new_tier := 'Silver';
+  ELSE _new_tier := 'Standard';
+  END IF;
+
+  UPDATE public.clients SET trust_score = _new_score, trust_tier = _new_tier, updated_at = now() WHERE id = _loan.client_id;
+
+  _result := jsonb_build_object(
+    'success', true,
+    'dps_collected', _dps_paid,
+    'total_payment', (_penalty_paid + _interest_paid + _principal_paid),
+    'penalty_paid', _penalty_paid,
+    'interest_paid', _interest_paid,
+    'principal_paid', _principal_paid,
+    'remaining_balance', GREATEST(0, _total_outstanding - (_penalty_paid + _interest_paid + _principal_paid)),
+    'new_outstanding', GREATEST(0, _total_outstanding - (_penalty_paid + _interest_paid + _principal_paid)),
+    'loan_closed', _loan_should_close,
+    'ft_id', _ft_id,
+    'points_earned', _points_earned,
+    'new_score', _new_score,
+    'new_tier', _new_tier
+  );
+
+  RETURN _result;
+END;
+$$;
