@@ -24,28 +24,34 @@ const QuickActionGrid = ({
 
   const actions = [
     {
+      id: "payment",
       icon: hasActiveLoans ? Banknote : TrendingUp,
-      label: hasActiveLoans
-        ? (bn ? "পেমেন্ট" : "Payment")
-        : (bn ? "ঋণ বিতরণ" : "Disburse"),
+      label_bn: hasActiveLoans ? "পেমেন্ট" : "ঋণ বিতরণ",
+      label_en: hasActiveLoans ? "Payment" : "Disburse",
       onClick: onPaymentOrDisburse,
       enabled: true,
     },
     {
+      id: "savings",
       icon: PiggyBank,
-      label: bn ? "সঞ্চয়" : "Savings",
+      label_bn: "সঞ্চয়",
+      label_en: "Savings",
       onClick: onSavings,
       enabled: true,
     },
     {
+      id: "fee",
       icon: Receipt,
-      label: bn ? "ফি/অন্যান্য" : "Fee/Other",
+      label_bn: "ফি/অন্যান্য",
+      label_en: "Fee/Other",
       onClick: onFeeOther,
       enabled: true,
     },
     {
+      id: "export",
       icon: Download,
-      label: bn ? "এক্সপোর্ট" : "Export",
+      label_bn: "এক্সপোর্ট",
+      label_en: "Export",
       onClick: onExport,
       enabled: canExport,
     },
@@ -63,19 +69,20 @@ const QuickActionGrid = ({
       <div className="grid grid-cols-4 gap-3">
         {actions.map((action) => (
           <button
-            key={action.label}
+            key={action.id}
+            type="button"
+            aria-label={bn ? action.label_bn : action.label_en}
             onClick={action.enabled ? action.onClick : undefined}
             disabled={!action.enabled}
             className={cn(
-              "flex flex-col items-center justify-center gap-1.5 min-h-[88px] rounded-lg",
-              "text-[11px] font-medium transition-all duration-100",
-              action.enabled
-                ? "text-foreground active:scale-95"
-                : "opacity-40 pointer-events-none"
+              "relative flex flex-col items-center justify-center gap-1.5 min-h-[88px] rounded-xl p-4",
+              "text-[11px] font-medium transition-all duration-200 active:scale-95",
+              "focus:ring-2 focus:ring-primary focus:outline-none",
+              !action.enabled && "opacity-40 pointer-events-none"
             )}
           >
             <action.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.8} />
-            <span className="truncate max-w-full px-0.5">{action.label}</span>
+            <span className="truncate max-w-full px-0.5">{bn ? action.label_bn : action.label_en}</span>
           </button>
         ))}
       </div>
