@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
@@ -262,64 +262,83 @@ const ClientDetail = () => {
 
   const c = client as any;
   const name = bn ? (c.name_bn || c.name_en) : c.name_en;
-  const loanAmount = c.loan_amount ?? 0;
-  const nextPaymentDate = c.next_payment_date;
   const hasActiveLoans = !!activeLoans?.length;
 
-  const totalRepaid = txns
-    ?.filter((tx: any) => ["loan_repayment", "loan_principal", "loan_interest"].includes(tx.type) && tx.status === "paid")
-    .reduce((s: number, tx: any) => s + tx.amount, 0) ?? 0;
+  const totalRepaid = useMemo(() =>
+    txns
+      ?.filter((tx: any) => ["loan_repayment", "loan_principal", "loan_interest"].includes(tx.type) && tx.status === "paid")
+      .reduce((s: number, tx: any) => s + tx.amount, 0) ?? 0,
+    [txns]
+  );
 
   const loanProduct = c.loan_products;
+  const loanAmount = c.loan_amount ?? 0;
   const interestRate = loanProduct?.interest_rate;
   const tenure = loanProduct?.tenure_months;
   const paymentType = loanProduct?.payment_type;
   const totalOwed = loanAmount > 0 && interestRate ? loanAmount + (loanAmount * interestRate / 100) : loanAmount;
+  const nextPaymentDate = c.next_payment_date;
 
   const savingsProduct = c.savings_products;
   const savingsType = savingsProduct?.product_name_en ?? "—";
   const frequency = savingsProduct?.frequency ?? "—";
 
-  // Mask member_id for privacy: show first 4 + last 2 chars
-  const maskMemberId = (mid: string | null) => {
+  const maskedMemberId = useMemo(() => {
+    const mid = c.member_id;
     if (!mid || mid.length <= 6) return mid || "—";
     return mid.slice(0, 4) + "••••" + mid.slice(-2);
-  };
-  const maskedMemberId = maskMemberId(c.member_id);
+  }, [c.member_id]);
 
-  const maritalMap: Record<string, string> = {
+  const maritalMap: Record<string, string> = useMemo(() => ({
     unmarried: bn ? "অবিবাহিত" : "Unmarried",
     married: bn ? "বিবাহিত" : "Married",
     widowed: bn ? "বিধবা/বিপত্নীক" : "Widowed",
     divorced: bn ? "তালাকপ্রাপ্ত" : "Divorced",
-  };
+  }), [bn]);
 
-  const totalSavingsBalance = savingsAccounts?.reduce((s, a) => s + Number(a.balance), 0) ?? 0;
+  const totalSavingsBalance = useMemo(() =>
+    savingsAccounts?.reduce((s, a) => s + Number(a.balance), 0) ?? 0,
+    [savingsAccounts]
+  );
 
-  // Aggregate loan metrics
-  const allLoansForStats = [...(activeLoans ?? []), ...(settledLoans ?? [])];
-  const aggTotalOutstanding = (activeLoans ?? []).reduce((s, l) => s + Number(l.outstanding_principal) + Number(l.outstanding_interest) + Number(l.penalty_amount), 0);
-  const aggTotalPaid = (activeLoans ?? []).reduce((s, l) => s + (Number(l.total_principal) + Number(l.total_interest)) - (Number(l.outstanding_principal) + Number(l.outstanding_interest)), 0);
-  const aggTotalPenalty = (activeLoans ?? []).reduce((s, l) => s + Number(l.penalty_amount), 0);
+  const aggTotalOutstanding = useMemo(() =>
+    (activeLoans ?? []).reduce((s, l) => s + Number(l.outstanding_principal) + Number(l.outstanding_interest) + Number(l.penalty_amount), 0),
+    [activeLoans]
+  );
+  const aggTotalPaid = useMemo(() =>
+    (activeLoans ?? []).reduce((s, l) => s + (Number(l.total_principal) + Number(l.total_interest)) - (Number(l.outstanding_principal) + Number(l.outstanding_interest)), 0),
+    [activeLoans]
+  );
+  const aggTotalPenalty = useMemo(() =>
+    (activeLoans ?? []).reduce((s, l) => s + Number(l.penalty_amount), 0),
+    [activeLoans]
+  );
 
-  // Filtered transactions for history tab
-  const filteredTxns = clientTransactions?.filter((tx: any) => {
-    if (historyFilter === "all") return true;
-    return tx.transaction_type === historyFilter;
-  }) ?? [];
+  const canExport = isAdmin || isTreasurer || isOwner;
+
+  const filteredTxns = useMemo(() =>
+    clientTransactions?.filter((tx: any) => {
+      if (historyFilter === "all") return true;
+      return tx.transaction_type === historyFilter;
+    }) ?? [],
+    [clientTransactions, historyFilter]
+  );
 
   const historyTotalPages = Math.ceil(filteredTxns.length / HISTORY_PER_PAGE);
-  const paginatedTxns = filteredTxns.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE);
+  const paginatedTxns = useMemo(() =>
+    filteredTxns.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE),
+    [filteredTxns, historyPage]
+  );
 
-  const openPayment = (loanId: string) => {
+  const openPayment = useCallback((loanId: string) => {
     setPaymentLoanId(loanId);
     setPaymentOpen(true);
-  };
+  }, []);
 
-  const openSchedule = (loanId: string) => {
+  const openSchedule = useCallback((loanId: string) => {
     setScheduleLoanId(loanId);
     setActiveTab("schedule");
-  };
+  }, []);
 
   return (
     <AppLayout>
