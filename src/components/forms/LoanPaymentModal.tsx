@@ -546,6 +546,29 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                        )}
                      </div>
 
+                    {/* Trust Points Gamification Badge */}
+                    {result.points_earned !== undefined && result.points_earned !== 0 && (
+                      <div className={`rounded-xl p-3 text-center text-xs border ${
+                        result.points_earned > 0
+                          ? 'border-success/30 bg-success/10'
+                          : 'border-destructive/30 bg-destructive/5'
+                      }`}>
+                        {result.points_earned > 0 ? (
+                          <p className="font-bold text-success">
+                            🎉 {bn
+                              ? `অভিনন্দন! আপনি ${result.points_earned} ট্রাস্ট পয়েন্ট অর্জন করেছেন! (বর্তমান পয়েন্ট: ${result.new_score ?? 0})`
+                              : `Congratulations! You earned ${result.points_earned} Trust Points! (Current: ${result.new_score ?? 0})`}
+                          </p>
+                        ) : (
+                          <p className="font-medium text-destructive">
+                            ⚠️ {bn
+                              ? `বিলম্বের কারণে ${Math.abs(result.points_earned)} ট্রাস্ট পয়েন্ট কাটা হয়েছে। (বর্তমান পয়েন্ট: ${result.new_score ?? 0})`
+                              : `${Math.abs(result.points_earned)} Trust Points deducted due to late payment. (Current: ${result.new_score ?? 0})`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Remaining balance */}
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
                       <p className="text-xs text-muted-foreground">{bn ? "অবশিষ্ট বকেয়া" : "Remaining Balance"}</p>
