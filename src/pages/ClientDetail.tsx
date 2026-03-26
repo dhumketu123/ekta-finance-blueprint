@@ -314,7 +314,6 @@ const ClientDetail = () => {
     [activeLoans]
   );
 
-  const canExport = isAdmin || isTreasurer || isOwner;
 
   const filteredTxns = useMemo(() =>
     clientTransactions?.filter((tx: any) => {
