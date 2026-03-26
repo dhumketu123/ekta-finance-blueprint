@@ -55,6 +55,9 @@ interface PaymentResult {
   new_outstanding: number;
   loan_closed: boolean;
   dps_collected?: number;
+  points_earned?: number;
+  new_score?: number;
+  new_tier?: string;
 }
 
 export interface PendingTransaction {
@@ -273,9 +276,15 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
       : format(new Date(), "dd/MM/yyyy");
     const dpsLine = dps > 0 ? `\n🏦 বাধ্যতামূলক সঞ্চয় (DPS): ৳${dps.toLocaleString()}\n💳 ঋণ পরিশোধ: ৳${loanPaid.toLocaleString()}` : "";
+    const pointsEarned = result.points_earned ?? 0;
+    const pointsLine = pointsEarned > 0
+      ? `\n⭐ ট্রাস্ট পয়েন্ট অর্জিত: +${pointsEarned} (বর্তমান: ${result.new_score ?? 0})`
+      : pointsEarned < 0
+        ? `\n⚠️ ট্রাস্ট পয়েন্ট কর্তন: ${pointsEarned} (বর্তমান: ${result.new_score ?? 0})`
+        : "";
     return result.loan_closed
-      ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 মোট জমা: ৳${totalInput.toLocaleString()}${dpsLine}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি বাবদ মোট ৳${totalInput.toLocaleString()} সফলভাবে জমা হয়েছে।${dpsLine}\n\n💰 ঋণে জমা: ৳${loanPaid.toLocaleString()}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+      ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 মোট জমা: ৳${totalInput.toLocaleString()}${dpsLine}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}${pointsLine}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
+      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি বাবদ মোট ৳${totalInput.toLocaleString()} সফলভাবে জমা হয়েছে।${dpsLine}\n\n💰 ঋণে জমা: ৳${loanPaid.toLocaleString()}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}${pointsLine}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
   }, [result, clientName, nextDueDate]);
 
   const normalizePhone = (phone: string) => {
@@ -542,6 +551,29 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                          </div>
                        )}
                      </div>
+
+                    {/* Trust Points Gamification Badge */}
+                    {result.points_earned !== undefined && result.points_earned !== 0 && (
+                      <div className={`rounded-xl p-3 text-center text-xs border ${
+                        result.points_earned > 0
+                          ? 'border-success/30 bg-success/10'
+                          : 'border-destructive/30 bg-destructive/5'
+                      }`}>
+                        {result.points_earned > 0 ? (
+                          <p className="font-bold text-success">
+                            🎉 {bn
+                              ? `অভিনন্দন! আপনি ${result.points_earned} ট্রাস্ট পয়েন্ট অর্জন করেছেন! (বর্তমান পয়েন্ট: ${result.new_score ?? 0})`
+                              : `Congratulations! You earned ${result.points_earned} Trust Points! (Current: ${result.new_score ?? 0})`}
+                          </p>
+                        ) : (
+                          <p className="font-medium text-destructive">
+                            ⚠️ {bn
+                              ? `বিলম্বের কারণে ${Math.abs(result.points_earned)} ট্রাস্ট পয়েন্ট কাটা হয়েছে। (বর্তমান পয়েন্ট: ${result.new_score ?? 0})`
+                              : `${Math.abs(result.points_earned)} Trust Points deducted due to late payment. (Current: ${result.new_score ?? 0})`}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Remaining balance */}
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
