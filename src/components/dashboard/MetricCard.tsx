@@ -160,4 +160,4 @@ export const MetricCard = ({
   );
 };
 
-export default MetricCard;
+export default React.memo(MetricCard);

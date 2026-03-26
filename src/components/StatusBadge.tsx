@@ -28,4 +28,4 @@ const StatusBadge = ({ status, labelBn }: StatusBadgeProps) => {
   );
 };
 
-export default StatusBadge;
+export default React.memo(StatusBadge);

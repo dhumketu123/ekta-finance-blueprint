@@ -31,7 +31,7 @@ export const useTenantId = () => {
       }
 
       // Step 3: Auto-resolve via SECURITY DEFINER RPC
-      console.log("[useTenantId] tenant_id is NULL, calling auto_resolve_user_tenant...");
+      
       const { data: resolvedId, error: rpcError } = await supabase.rpc(
         "auto_resolve_user_tenant"
       );
@@ -41,7 +41,7 @@ export const useTenantId = () => {
         throw rpcError;
       }
 
-      console.log("[useTenantId] Auto-resolved tenant_id:", resolvedId);
+      
 
       // Invalidate dependent caches so they refetch with the new tenant_id
       queryClient.invalidateQueries({ queryKey: ["investors"] });

@@ -174,4 +174,4 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
   );
 };
 
-export default TrustTierHeroCard;
+export default React.memo(TrustTierHeroCard);
