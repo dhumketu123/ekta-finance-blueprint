@@ -244,8 +244,9 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "পেমেন্ট সফল ✅" : "Payment successful ✅");
       setPhase("success");
-    } catch (err: any) {
-      toast.error(err.message || (bn ? "পেমেন্ট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" : "Payment failed. Please try again."));
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || (bn ? "পেমেন্ট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" : "Payment failed. Please try again."));
       setPhase("form");
     } finally {
       setSubmitting(false);

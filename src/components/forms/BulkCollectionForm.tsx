@@ -138,8 +138,9 @@ export default function BulkCollectionForm({ open, onClose }: Props) {
         ? `${validRows.length}টি লেনদেন অনুমোদনের জন্য জমা দেওয়া হয়েছে`
         : `${validRows.length} transactions submitted for approval`);
       resetAndClose();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }

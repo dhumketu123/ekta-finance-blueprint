@@ -72,8 +72,9 @@ export default function TenantBrandingSettings() {
 
       // Save immediately
       await updateMut.mutateAsync({ logo_url: logoUrl });
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || "Upload failed");
     } finally {
       setUploading(false);
     }

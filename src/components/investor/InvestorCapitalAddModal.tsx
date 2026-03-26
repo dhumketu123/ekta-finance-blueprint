@@ -134,8 +134,9 @@ export function InvestorCapitalAddModal({ open, onClose, investor, capital }: Pr
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "মূলধন যোগ সফল ✅" : "Capital added ✅");
       setPhase("success");
-    } catch (err: any) {
-      toast.error(err.message || "Error");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || "Error");
       setPhase("confirm");
     } finally { setSubmitting(false); }
   }, [user, capitalAmount, feeAmount, capital, investor, bn, queryClient, submitting]);

@@ -134,8 +134,9 @@ export default function UserProfileForm({ open, onClose, role, editData }: Props
       } else {
         await handleCreateUser();
       }
-    } catch (err: any) {
-      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: errMsg, variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -104,8 +104,9 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
       setLocalUrl(publicUrl);
       await queryClient.invalidateQueries({ queryKey: ["clients", clientId] });
       toast({ title: "✅ ছবি আপলোড সফল!" });
-    } catch (err: any) {
-      toast({ title: "আপলোড ব্যর্থ", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "আপলোড ব্যর্থ", description: errMsg, variant: "destructive" });
     } finally {
       setUploading(false);
     }

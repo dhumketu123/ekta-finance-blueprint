@@ -106,8 +106,9 @@ const OwnerProfitDistribution = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["owner_profit_distributions"] });
       queryClient.invalidateQueries({ queryKey: ["owner_profit_shares"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
     } finally {
       setCalculating(false);
     }
