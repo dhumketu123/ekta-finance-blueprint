@@ -160,9 +160,10 @@ export async function logPdfToLedger(params: {
     });
 
     return { success: true, chainHash };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
     console.error("Ledger logging failed after retries:", err);
-    return { success: false, error: err.message };
+    return { success: false, error: errMsg };
   }
 }
 
@@ -201,8 +202,9 @@ export async function verifyPdfHash(
     }
 
     return { valid: hashMatch, chainIntact };
-  } catch (err: any) {
-    return { valid: false, chainIntact: false, error: err.message };
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+    return { valid: false, chainIntact: false, error: errMsg };
   }
 }
 

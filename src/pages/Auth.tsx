@@ -134,12 +134,13 @@ const Auth = () => {
       if (mode === "login") await handleLogin();
       else if (mode === "signup") await handleSignup();
       else await handleForgotPassword();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
       triggerShake();
       if (mode === "login") startLoginCooldown();
       toast({
         title: lang === "bn" ? "ত্রুটি" : "Error",
-        description: error.message,
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

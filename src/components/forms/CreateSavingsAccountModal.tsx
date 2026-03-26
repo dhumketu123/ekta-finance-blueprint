@@ -202,8 +202,9 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
       qc.invalidateQueries({ queryKey: ["client_savings_modal"] });
 
       toast.success(bn ? "সঞ্চয় অ্যাকাউন্ট সফলভাবে খোলা হয়েছে! 🎉" : "Savings account opened successfully! 🎉");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create account");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || "Failed to create account");
       setExecuting(false);
     }
   }, [selectedProduct, user, clientId, collectFirstDeposit, depositAmount, bn, qc]);

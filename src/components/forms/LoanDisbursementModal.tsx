@@ -165,8 +165,9 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
         qc.invalidateQueries({ queryKey: ["pending_transactions"] });
         toast.success(lang === "bn" ? "ঋণ বিতরণ অনুমোদনের জন্য জমা দেওয়া হয়েছে" : "Disbursement submitted for approval");
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }

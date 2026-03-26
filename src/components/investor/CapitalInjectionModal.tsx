@@ -305,7 +305,8 @@ export const CapitalInjectionModal = ({
         bn ? "মূলধন সফলভাবে জমা হয়েছে" : "Capital added successfully"
       );
       setPhase("success");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
       console.error("Capital injection error:", err);
       const fallback = bn
         ? "মূলধন জমা ব্যর্থ হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"

@@ -127,8 +127,9 @@ export default function PaymentTestPanel({ open, onClose }: Props) {
       await (supabase.from("clients") as any).update({ deleted_at: new Date().toISOString() }).eq("id", client.id);
 
       toast.success("All tests completed");
-    } catch (err: any) {
-      toast.error("Test setup failed: " + err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error("Test setup failed: " + errMsg);
     } finally {
       setRunning(false);
     }

@@ -211,8 +211,9 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? (isDeposit ? "জমা সফল ✅" : "উত্তোলন সফল ✅") : (isDeposit ? "Deposit successful ✅" : "Withdrawal successful ✅"));
       setPhase("success");
-    } catch (err: any) {
-      toast.error(err.message || (bn ? "লেনদেন ব্যর্থ। আবার চেষ্টা করুন।" : "Transaction failed. Try again."));
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || (bn ? "লেনদেন ব্যর্থ। আবার চেষ্টা করুন।" : "Transaction failed. Try again."));
       setPhase("form");
     } finally { setSubmitting(false); }
   }, [user, submitting, isDeposit, selectedAccount, numAmount, savingsId, txType, clientId, notes, clients, bn, queryClient]);

@@ -163,8 +163,9 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "লভ্যাংশ প্রদান সফল ✅" : "Dividend paid successfully ✅");
       setPhase("success");
-    } catch (err: any) {
-      toast.error(err.message || "Error");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg || "Error");
       setPhase("confirm");
     } finally {
       setSubmitting(false);

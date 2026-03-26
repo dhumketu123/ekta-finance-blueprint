@@ -38,8 +38,9 @@ const FieldOfficers = () => {
       await supabase.from("user_roles").delete().eq("user_id", deleteTarget.id).eq("role", "field_officer");
       toast({ title: lang === "bn" ? "ফিল্ড অফিসার সরানো হয়েছে" : "Field officer removed" });
       queryClient.invalidateQueries({ queryKey: ["field_officers"] });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
     } finally {
       setDeleteLoading(false);
       setDeleteTarget(null);

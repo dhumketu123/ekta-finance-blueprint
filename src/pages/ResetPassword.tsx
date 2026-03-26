@@ -53,8 +53,9 @@ const ResetPassword = () => {
       if (error) throw error;
       toast({ title: lang === "bn" ? "সফল! 🎉" : "Success! 🎉", description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।" : "Password updated successfully." });
       navigate("/auth");
-    } catch (error: any) {
-      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
+      toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: errorMsg, variant: "destructive" });
     } finally {
       setLoading(false);
     }

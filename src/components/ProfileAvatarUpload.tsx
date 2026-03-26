@@ -65,8 +65,9 @@ const ProfileAvatarUpload = forwardRef<HTMLInputElement>((_, ref) => {
       await queryClient.invalidateQueries({ queryKey: ["profile-avatar"] });
       toast({ title: "✅ Profile photo updated!" });
       setDialogOpen(false);
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "Upload failed", description: errMsg, variant: "destructive" });
     } finally {
       setUploading(false);
       if (previewUrl) URL.revokeObjectURL(previewUrl);

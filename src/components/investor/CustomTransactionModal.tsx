@@ -141,8 +141,9 @@ export function CustomTransactionModal({ investorId, investorName, open, onClose
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "লেনদেন সফল!" : "Transaction completed!");
       setPhase("success");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errMsg);
       setPhase("confirm");
     } finally { setSubmitting(false); }
   }, [submitting, type, amount, notes, investorId, bn, queryClient]);
