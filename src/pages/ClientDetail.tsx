@@ -38,7 +38,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import CommunicationHub from "@/components/CommunicationHub";
 import SnoozePanel from "@/components/SnoozePanel";
-import TrustTierHeroCard from "@/components/TrustTierHeroCard";
+import ClientProfileHeader from "@/components/ClientProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
