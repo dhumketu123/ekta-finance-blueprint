@@ -13,8 +13,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import { CheckCircle2, AlertCircle, Calculator, CalendarDays, TrendingUp, ShieldCheck, Send, MessageCircle, MessageSquare } from "lucide-react";
-import { format } from "date-fns";
 import { useBusinessRules, validateLoanAmount, shouldUseMakerChecker } from "@/hooks/useBusinessRules";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const schema = z.object({
   client_id:         z.string().uuid("গ্রাহক নির্বাচন করুন"),
