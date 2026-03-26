@@ -73,8 +73,9 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-5 mt-4 animate-slide-up",
-        "flex items-center gap-4",
+        "group relative overflow-hidden rounded-2xl border p-5 mt-4 animate-slide-up",
+        "flex items-center gap-4 cursor-default",
+        "transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl",
         config.gradient, config.text, config.border, config.shadow
       )}
     >
@@ -85,7 +86,7 @@ const TrustTierHeroCard = ({ trustTier, trustScore }: TrustTierHeroCardProps) =>
       />
 
       {/* Emotional anchor emoji */}
-      <div className="relative z-10 flex-shrink-0 text-4xl select-none" aria-hidden="true">
+      <div className="relative z-10 flex-shrink-0 text-4xl select-none transition-transform duration-300 group-hover:scale-110" aria-hidden="true">
         {config.emoji}
       </div>
 

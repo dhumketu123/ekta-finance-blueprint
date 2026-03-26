@@ -75,14 +75,18 @@ const QuickActionGrid = ({
             onClick={action.enabled ? action.onClick : undefined}
             disabled={!action.enabled}
             className={cn(
-              "relative flex flex-col items-center justify-center gap-1.5 min-h-[88px] rounded-xl p-4",
-              "text-[11px] font-medium transition-all duration-200 active:scale-95",
+              "relative flex flex-col items-center justify-center gap-1 min-h-[88px] rounded-xl p-2 sm:p-4",
+              "text-[10px] md:text-xs font-medium touch-manipulation",
+              "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+              "active:scale-90 hover:-translate-y-1 hover:shadow-lg hover:bg-accent/50",
               "focus:ring-2 focus:ring-primary focus:outline-none",
               !action.enabled && "opacity-40 pointer-events-none"
             )}
           >
-            <action.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.8} />
-            <span className="truncate max-w-full px-0.5">{bn ? action.label_bn : action.label_en}</span>
+            <span className="flex items-center justify-center p-2.5 rounded-xl bg-muted/60 shadow-sm mb-1">
+              <action.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.8} />
+            </span>
+            <span className="truncate max-w-full px-0.5 leading-tight">{bn ? action.label_bn : action.label_en}</span>
           </button>
         ))}
       </div>
