@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 
 // Static imports — critical auth paths (must load instantly)
 import Auth from "./pages/Auth";
@@ -84,7 +85,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
-              <Routes>
+              <RouteErrorBoundary>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><Index /></ProtectedRoute>} />
@@ -122,7 +123,7 @@ const App = () => (
                 <Route path="/accounting" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><AccountingDashboard /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
+              </RouteErrorBoundary>
           </BrowserRouter>
           </TenantBrandingProvider>
         </AuthProvider>
