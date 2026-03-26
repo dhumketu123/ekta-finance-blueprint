@@ -272,17 +272,20 @@ const ClientDetail = () => {
     [txns]
   );
 
-  const loanProduct = c.loan_products;
+  // Defensive: join data may be object/array/null — always extract scalars safely
+  const loanProduct = (typeof c.loan_products === "object" && c.loan_products !== null && !Array.isArray(c.loan_products))
+    ? c.loan_products : null;
   const loanAmount = c.loan_amount ?? 0;
   const interestRate = loanProduct?.interest_rate;
   const tenure = loanProduct?.tenure_months;
-  const paymentType = loanProduct?.payment_type;
+  const paymentType = loanProduct?.payment_type ? String(loanProduct.payment_type) : undefined;
   const totalOwed = loanAmount > 0 && interestRate ? loanAmount + (loanAmount * interestRate / 100) : loanAmount;
   const nextPaymentDate = c.next_payment_date;
 
-  const savingsProduct = c.savings_products;
-  const savingsType = savingsProduct?.product_name_en ?? "—";
-  const frequency = savingsProduct?.frequency ?? "—";
+  const savingsProduct = (typeof c.savings_products === "object" && c.savings_products !== null && !Array.isArray(c.savings_products))
+    ? c.savings_products : null;
+  const savingsType: string = savingsProduct?.product_name_en ? String(savingsProduct.product_name_en) : "—";
+  const frequency: string = savingsProduct?.frequency ? String(savingsProduct.frequency) : "—";
 
   const maskedMemberId = useMemo(() => {
     const mid = c.member_id;
@@ -611,14 +614,21 @@ const ClientDetail = () => {
         </div>
         {savingsAccounts && savingsAccounts.length > 0 ? (
           <>
-            {savingsAccounts.map((sa: any) => (
+            {savingsAccounts.map((sa: any) => {
+              // Defensive: ensure join data is never rendered as raw object
+              const spData = (typeof sa.savings_products === "object" && sa.savings_products !== null && !Array.isArray(sa.savings_products))
+                ? sa.savings_products : null;
+              const spName = spData?.[bn ? "product_name_bn" : "product_name_en"];
+              const displayName = (typeof spName === "string" && spName) ? spName : sa.id?.slice(0, 8) ?? "—";
+              return (
               <div key={sa.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div>
-                  <p className="text-xs font-medium">{sa.savings_products?.[bn ? "product_name_bn" : "product_name_en"] || sa.id.slice(0, 8)}</p>
+                  <p className="text-xs font-medium">{displayName}</p>
                 </div>
                 <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
               </div>
-            ))}
+              );
+            })}
             <div className="flex justify-between mt-3 pt-2 border-t border-border">
               <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
               <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
