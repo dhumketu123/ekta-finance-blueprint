@@ -86,6 +86,7 @@ const App = () => (
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <RouteErrorBoundary>
+              <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><Index /></ProtectedRoute>} />
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </RouteErrorBoundary>
+            </Suspense>
           </BrowserRouter>
           </TenantBrandingProvider>
         </AuthProvider>
