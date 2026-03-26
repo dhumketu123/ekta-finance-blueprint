@@ -627,7 +627,8 @@ const ClientDetail = () => {
                 </div>
                 <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
               </div>
-            ))}
+              );
+            })}
             <div className="flex justify-between mt-3 pt-2 border-t border-border">
               <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
               <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
