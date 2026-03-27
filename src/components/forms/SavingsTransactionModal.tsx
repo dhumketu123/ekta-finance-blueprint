@@ -454,8 +454,10 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
           {/* ═══ PHASE 5: Success + Receipt ═══ */}
           {phase === "success" && successData && (() => {
             const finalPhone = normalizePhone(successData.clientPhone);
+            const mockTarget = successData.newBalance === 0 ? 10000 : Math.ceil(successData.newBalance / 50000) * 50000 + 10000;
+            const remaining = Math.max(0, mockTarget - successData.newBalance);
             const receiptMsg = isDeposit
-              ? `সম্মানিত ${successData.clientName},\n\nআপনার সঞ্চয় অ্যাকাউন্টে ৳${successData.amount.toLocaleString()} সফলভাবে জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${successData.amount.toLocaleString()}\n💼 বর্তমান ব্যালেন্স: ৳${successData.newBalance.toLocaleString()}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
+              ? `সম্মানিত গ্রাহক, অভিনন্দন! 🎉\nআপনার 'ভবিষ্যত স্বপ্ন' ফান্ডে ৳${successData.amount.toLocaleString()} জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${successData.amount.toLocaleString()}\n💼 মোট সঞ্চয়: ৳${successData.newBalance.toLocaleString()}\n🎯 আপনার স্বপ্ন পূরণের আর মাত্র ৳${remaining.toLocaleString()} টাকা বাকি! 🚀\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\n— একতা ফাইন্যান্স`
               : `সম্মানিত ${successData.clientName},\n\nআপনার সঞ্চয় অ্যাকাউন্ট থেকে ৳${successData.amount.toLocaleString()} সফলভাবে উত্তোলন করা হয়েছে।\n\n💸 উত্তোলিত: ৳${successData.amount.toLocaleString()}\n💼 অবশিষ্ট ব্যালেন্স: ৳${successData.newBalance.toLocaleString()}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
             const encoded = encodeURIComponent(receiptMsg);
             return (
@@ -481,7 +483,7 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
                       {finalPhone && (
                         <div className="flex gap-2 w-full">
                           <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
-                            <MessageCircle className="w-4 h-4" /> WhatsApp
+                            <MessageCircle className="w-4 h-4" /> {bn ? "💬 স্মার্ট রসিদ" : "💬 Smart Receipt"}
                           </Button>
                           <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
                             <MessageSquare className="w-4 h-4" /> SMS

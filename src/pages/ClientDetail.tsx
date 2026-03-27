@@ -42,6 +42,7 @@ import ClientProfileHeader from "@/components/ClientProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import TrustTierHeroCard from "@/components/TrustTierHeroCard";
+import DreamVaultCard from "@/components/DreamVaultCard";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
 
 const ClientDetail = () => {
@@ -615,25 +616,7 @@ const ClientDetail = () => {
         </div>
         {savingsAccounts && savingsAccounts.length > 0 ? (
           <>
-            {savingsAccounts.map((sa: any) => {
-              // Defensive: ensure join data is never rendered as raw object
-              const spData = (typeof sa.savings_products === "object" && sa.savings_products !== null && !Array.isArray(sa.savings_products))
-                ? sa.savings_products : null;
-              const spName = spData?.[bn ? "product_name_bn" : "product_name_en"];
-              const displayName = (typeof spName === "string" && spName) ? spName : sa.id?.slice(0, 8) ?? "—";
-              return (
-              <div key={sa.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div>
-                  <p className="text-xs font-medium">{displayName}</p>
-                </div>
-                <p className="text-sm font-bold text-success">৳{Number(sa.balance).toLocaleString()}</p>
-              </div>
-              );
-            })}
-            <div className="flex justify-between mt-3 pt-2 border-t border-border">
-              <span className="text-xs font-semibold text-muted-foreground">{bn ? "মোট ব্যালেন্স" : "Total Balance"}</span>
-              <span className="text-sm font-bold text-success">৳{totalSavingsBalance.toLocaleString()}</span>
-            </div>
+            <DreamVaultCard savingsAccounts={savingsAccounts as any} bn={bn} />
             {totalSavingsBalance < 1000 && (
               <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
