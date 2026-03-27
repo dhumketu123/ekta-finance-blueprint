@@ -78,7 +78,7 @@ const QuickActionGrid = ({
               "relative flex flex-col items-center justify-center gap-1 min-h-[88px] rounded-xl p-2 sm:p-4",
               "text-[10px] md:text-xs font-medium touch-manipulation",
               "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
-              "active:scale-90 hover:-translate-y-1 hover:shadow-lg hover:bg-accent/50",
+              "active:scale-95 hover:-translate-y-1 hover:shadow-lg hover:bg-accent/50",
               "focus:ring-2 focus:ring-primary focus:outline-none",
               !action.enabled && "opacity-40 pointer-events-none"
             )}
