@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Banknote, PiggyBank, Receipt, Download, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ const QuickActionGrid = ({
   const { lang } = useLanguage();
   const bn = lang === "bn";
 
-  const actions = [
+  const actions = useMemo(() => [
     {
       id: "payment",
       icon: hasActiveLoans ? Banknote : TrendingUp,
@@ -55,7 +56,7 @@ const QuickActionGrid = ({
       onClick: onExport,
       enabled: canExport,
     },
-  ];
+  ], [hasActiveLoans, canExport, onPaymentOrDisburse, onSavings, onFeeOther, onExport]);
 
   return (
     <div
