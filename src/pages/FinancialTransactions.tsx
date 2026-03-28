@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
+import ExpenseEntryModal from "@/components/expenses/ExpenseEntryModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,6 +57,7 @@ const FinancialTransactionsPage = () => {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [smartOpen, setSmartOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [receiptView, setReceiptView] = useState<FinancialTransaction | null>(null);
@@ -114,6 +116,9 @@ const FinancialTransactionsPage = () => {
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setSettlementOpen(true)}>
               <Calculator className="w-3.5 h-3.5" /> {lang === "bn" ? "তাড়াতাড়ি পরিশোধ" : "Early Settlement"}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => setExpenseOpen(true)}>
+              <FileText className="w-3.5 h-3.5" /> {lang === "bn" ? "ব্যয় এন্ট্রি" : "Log Expense"}
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setCreateOpen(true)}>
               <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "ক্লাসিক এন্ট্রি" : "Classic Entry"}
@@ -399,6 +404,9 @@ const FinancialTransactionsPage = () => {
       
       {/* Early Settlement Calculator */}
       <EarlySettlementCalculator open={settlementOpen} onClose={() => setSettlementOpen(false)} />
+
+      {/* Expense Entry Modal */}
+      <ExpenseEntryModal open={expenseOpen} onClose={() => setExpenseOpen(false)} />
     </AppLayout>
   );
 };

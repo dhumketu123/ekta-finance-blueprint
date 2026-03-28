@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import RecoveryMatrix from "@/components/RecoveryMatrix";
 import CashflowOracleWidget from "@/components/CashflowOracleWidget";
 import SmartCollectionAssistant from "@/components/SmartCollectionAssistant";
@@ -11,14 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock } from "lucide-react";
+import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock, Minus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
+import ExpenseEntryModal from "@/components/expenses/ExpenseEntryModal";
 
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+  const [expenseOpen, setExpenseOpen] = useState(false);
 
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
   const { data: dbClients, isLoading: clientsLoading } = useClients();
@@ -63,6 +66,15 @@ const Dashboard = () => {
           <>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth" onClick={() => navigate("/notifications")}>
               <Send className="w-3.5 h-3.5" /> {t("dashboard.sendNotification")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => setExpenseOpen(true)}
+            >
+              <Minus className="w-3.5 h-3.5" />
+              {lang === "bn" ? "ব্যয় এন্ট্রি" : "Log Expense"}
             </Button>
             <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 btn-depth" onClick={() => navigate("/clients")}>
               <Plus className="w-3.5 h-3.5" /> {t("dashboard.newClient")}
@@ -345,6 +357,7 @@ const Dashboard = () => {
           })}
         </div>
       </div>
+      <ExpenseEntryModal open={expenseOpen} onClose={() => setExpenseOpen(false)} />
     </AppLayout>
   );
 };
