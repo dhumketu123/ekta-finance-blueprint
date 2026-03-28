@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
-import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound, Sparkles, Link2, CheckCircle2 } from "lucide-react";
 
-type AuthMode = "login" | "signup" | "forgot";
+type AuthMode = "login" | "signup" | "forgot" | "magic";
 type LoginMethod = "email" | "phone";
 
 const LOGIN_COOLDOWN_MS = 3000;
@@ -28,6 +28,8 @@ const Auth = () => {
   const [shakeError, setShakeError] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [magicCooldown, setMagicCooldown] = useState(false);
   const failCountRef = useRef(0);
   const { toast } = useToast();
   const { lang } = useLanguage();
@@ -120,8 +122,37 @@ const Auth = () => {
     toast({
       title: lang === "bn" ? "লিংক পাঠানো হয়েছে ✉️" : "Link Sent ✉️",
       description: lang === "bn"
-        ? "যদি এই ইমেইলে অ্যাকাউন্ট থাকে, রিসেট লিংক পাঠানো হয়েছে।"
-        : "If an account exists with this email, a reset link has been sent.",
+        ? "পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে। অনুগ্রহ করে ইমেইল চেক করুন।"
+        : "A password reset link has been sent to your email. Please check your inbox.",
+    });
+  };
+
+  const handleMagicLink = async () => {
+    if (magicCooldown) return;
+    if (!email || !email.includes("@")) {
+      toast({
+        title: lang === "bn" ? "ত্রুটি" : "Error",
+        description: lang === "bn" ? "অনুগ্রহ করে একটি বৈধ ইমেইল দিন।" : "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) throw error;
+
+    setMagicLinkSent(true);
+    setMagicCooldown(true);
+    setTimeout(() => setMagicCooldown(false), RESET_COOLDOWN_MS);
+
+    toast({
+      title: lang === "bn" ? "ম্যাজিক লিংক পাঠানো হয়েছে ✨" : "Magic Link Sent ✨",
+      description: lang === "bn"
+        ? "আপনার ইমেইলে একটি সুরক্ষিত লগইন লিংক পাঠানো হয়েছে। লিংকে ক্লিক করলেই সরাসরি লগইন হয়ে যাবে।"
+        : "A secure login link has been sent to your email. Click it to sign in instantly.",
     });
   };
 
@@ -132,6 +163,7 @@ const Auth = () => {
     try {
       if (mode === "login") await handleLogin();
       else if (mode === "signup") await handleSignup();
+      else if (mode === "magic") await handleMagicLink();
       else await handleForgotPassword();
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
@@ -151,12 +183,14 @@ const Auth = () => {
     loading ||
     loginCooldown ||
     (mode === "signup" && isSignupDisabled) ||
-    (mode === "forgot" && resetCooldown);
+    (mode === "forgot" && resetCooldown) ||
+    (mode === "magic" && magicCooldown);
 
-  const friendlyCopy = {
+  const friendlyCopy: Record<AuthMode, string> = {
     login: lang === "bn" ? "স্বাগতম! আপনার ফাইন্যান্স ওয়ার্ল্ডে প্রবেশ করুন ✨" : "Welcome back, your finance world awaits ✨",
     signup: lang === "bn" ? "আজই যোগ দিন এবং আর্থিক সুরক্ষা নিশ্চিত করুন 🚀" : "Join today and secure your financial future 🚀",
     forgot: lang === "bn" ? "চিন্তা নেই! আমরা আপনাকে সাহায্য করবো 🔐" : "No worries! We'll help you get back in 🔐",
+    magic: lang === "bn" ? "পাসওয়ার্ড ছাড়াই নিরাপদে প্রবেশ করুন 🔗" : "Sign in securely without a password 🔗",
   };
 
   return (
@@ -184,10 +218,44 @@ const Auth = () => {
               {mode === "login" && (lang === "bn" ? "আপনার অ্যাকাউন্টে লগইন করুন" : "Sign in to your account")}
               {mode === "signup" && (lang === "bn" ? "নতুন অ্যাকাউন্ট তৈরি করুন" : "Create a new account")}
               {mode === "forgot" && (lang === "bn" ? "পাসওয়ার্ড রিসেট করুন" : "Reset your password")}
+              {mode === "magic" && (lang === "bn" ? "ম্যাজিক লিংকে লগইন" : "Sign in with Magic Link")}
             </h2>
           </CardHeader>
           <CardContent className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              {/* Magic Link Success State */}
+              {mode === "magic" && magicLinkSent && (
+                <div className="flex flex-col items-center gap-4 py-4 animate-fade-in">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-white/90 font-medium font-bangla">
+                      {lang === "bn" ? "ম্যাজিক লিংক পাঠানো হয়েছে!" : "Magic link sent!"}
+                    </p>
+                    <p className="text-white/50 text-sm font-bangla leading-relaxed">
+                      {lang === "bn"
+                        ? `${email} এ একটি সুরক্ষিত লগইন লিংক পাঠানো হয়েছে। ইমেইল খুলে লিংকে ক্লিক করুন — সরাসরি লগইন হয়ে যাবে।`
+                        : `A secure login link has been sent to ${email}. Open your email and click the link to sign in instantly.`}
+                    </p>
+                    <p className="text-white/30 text-xs mt-3">
+                      {lang === "bn" ? "স্প্যাম/জাঙ্ক ফোল্ডারও চেক করুন।" : "Also check your spam/junk folder."}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-2 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white rounded-xl text-sm"
+                    onClick={() => { setMagicLinkSent(false); setMagicCooldown(false); }}
+                    disabled={magicCooldown}
+                  >
+                    {magicCooldown
+                      ? (lang === "bn" ? "পুনরায় পাঠাতে অপেক্ষা করুন..." : "Wait to resend...")
+                      : (lang === "bn" ? "পুনরায় পাঠান" : "Resend")}
+                  </Button>
+                </div>
+              )}
+
               {/* Login method toggle */}
               {mode === "login" && (
                 <div className="flex rounded-xl overflow-hidden border border-white/20" role="tablist" aria-label="Login method">
@@ -236,21 +304,34 @@ const Auth = () => {
                 </>
               )}
 
+              {/* Magic Link — email input only */}
+              {mode === "magic" && !magicLinkSent && (
+                <div>
+                  <label htmlFor="magicEmail" className="auth-label">{lang === "bn" ? "আপনার ইমেইল ঠিকানা" : "Your email address"}</label>
+                  <Input id="magicEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" required maxLength={255} className="auth-input" aria-required="true" />
+                  <p className="text-white/35 text-xs mt-2 font-bangla">
+                    {lang === "bn"
+                      ? "আপনার ইমেইলে একটি সুরক্ষিত লগইন লিংক পাঠানো হবে। পাসওয়ার্ড লাগবে না।"
+                      : "A secure login link will be sent to your email. No password required."}
+                  </p>
+                </div>
+              )}
+
               {/* Email or phone */}
-              {mode !== "forgot" && mode === "login" && loginMethod === "phone" ? (
+              {mode !== "forgot" && mode !== "magic" && mode === "login" && loginMethod === "phone" ? (
                 <div>
                   <label htmlFor="loginPhone" className="auth-label">{lang === "bn" ? "ফোন নম্বর" : "Phone Number"}</label>
                   <Input id="loginPhone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+8801XXXXXXXXX" required maxLength={15} className="auth-input" aria-required="true" />
                 </div>
-              ) : (
+              ) : mode !== "magic" ? (
                 <div>
                   <label htmlFor="email" className="auth-label">{lang === "bn" ? "ইমেইল" : "Email"}</label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" required maxLength={255} className="auth-input" aria-required="true" />
                 </div>
-              )}
+              ) : null}
 
               {/* Password */}
-              {mode !== "forgot" && (
+              {mode !== "forgot" && mode !== "magic" && (
                 <div>
                   <label htmlFor="password" className="auth-label">{lang === "bn" ? "পাসওয়ার্ড" : "Password"}</label>
                   <div className="relative">
@@ -286,7 +367,11 @@ const Auth = () => {
 
               {/* Forgot password link */}
               {mode === "login" && (
-                <div className="text-right">
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => { setMode("magic"); setMagicLinkSent(false); }} className="text-xs text-emerald-400/80 hover:text-emerald-300 transition-colors font-bangla focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40 rounded flex items-center gap-1">
+                    <Link2 size={12} />
+                    {lang === "bn" ? "ম্যাজিক লিংকে লগইন" : "Magic Link Login"}
+                  </button>
                   <button type="button" onClick={() => setMode("forgot")} className="text-xs text-white/60 hover:text-white transition-colors font-bangla focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded">
                     {lang === "bn" ? "পাসওয়ার্ড ভুলে গেছেন?" : "Forgot password?"}
                   </button>
@@ -294,32 +379,62 @@ const Auth = () => {
               )}
 
               {/* Submit */}
-              <Button type="submit" className="w-full auth-submit-btn group" disabled={isSubmitDisabled} aria-busy={loading}>
-                {loading ? (
-                  <span className="animate-spin mr-2">⏳</span>
-                ) : loginCooldown ? (
-                  <span className="mr-2">🔒</span>
-                ) : mode === "login" ? (
-                  <LogIn size={16} className="mr-2 group-hover:translate-x-0.5 transition-transform" />
-                ) : mode === "signup" ? (
-                  <UserPlus size={16} className="mr-2 group-hover:scale-110 transition-transform" />
-                ) : (
-                  <KeyRound size={16} className="mr-2" />
-                )}
-                {loginCooldown
-                  ? (lang === "bn" ? "অপেক্ষা করুন..." : "Please wait...")
-                  : mode === "login"
-                    ? (lang === "bn" ? "লগইন" : "Sign In")
-                    : mode === "signup"
-                      ? (lang === "bn" ? "রেজিস্ট্রেশন" : "Sign Up")
-                      : resetCooldown
-                        ? (lang === "bn" ? "ইতিমধ্যে পাঠানো হয়েছে" : "Already sent")
-                        : (lang === "bn" ? "রিসেট লিংক পাঠান" : "Send Reset Link")}
-              </Button>
+              {!(mode === "magic" && magicLinkSent) && (
+                <Button type="submit" className="w-full auth-submit-btn group" disabled={isSubmitDisabled} aria-busy={loading}>
+                  {loading ? (
+                    <span className="animate-spin mr-2">⏳</span>
+                  ) : loginCooldown ? (
+                    <span className="mr-2">🔒</span>
+                  ) : mode === "login" ? (
+                    <LogIn size={16} className="mr-2 group-hover:translate-x-0.5 transition-transform" />
+                  ) : mode === "signup" ? (
+                    <UserPlus size={16} className="mr-2 group-hover:scale-110 transition-transform" />
+                  ) : mode === "magic" ? (
+                    <Sparkles size={16} className="mr-2" />
+                  ) : (
+                    <KeyRound size={16} className="mr-2" />
+                  )}
+                  {loginCooldown
+                    ? (lang === "bn" ? "অপেক্ষা করুন..." : "Please wait...")
+                    : mode === "login"
+                      ? (lang === "bn" ? "লগইন" : "Sign In")
+                      : mode === "signup"
+                        ? (lang === "bn" ? "রেজিস্ট্রেশন" : "Sign Up")
+                        : mode === "magic"
+                          ? (magicCooldown
+                              ? (lang === "bn" ? "ইতিমধ্যে পাঠানো হয়েছে" : "Already sent")
+                              : (lang === "bn" ? "ম্যাজিক লিংক পাঠান" : "Send Magic Link"))
+                          : resetCooldown
+                            ? (lang === "bn" ? "ইতিমধ্যে পাঠানো হয়েছে" : "Already sent")
+                            : (lang === "bn" ? "রিসেট লিংক পাঠান" : "Send Reset Link")}
+                </Button>
+              )}
             </form>
 
+            {/* Magic Link option on forgot screen */}
+            {mode === "forgot" && (
+              <div className="mt-5">
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/15" /></div>
+                  <div className="relative flex justify-center text-xs"><span className="bg-white/5 backdrop-blur-sm px-3 text-white/40 rounded-full">{lang === "bn" ? "অথবা" : "or"}</span></div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full bg-emerald-500/10 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/20 hover:text-emerald-200 h-11 rounded-xl font-medium transition-all duration-300"
+                  onClick={() => { setMode("magic"); setMagicLinkSent(false); }}
+                >
+                  <Sparkles size={16} className="mr-2" />
+                  {lang === "bn" ? "পাসওয়ার্ড ছাড়া ম্যাজিক লিংকে লগইন করুন" : "Login with Magic Link (no password)"}
+                </Button>
+                <p className="text-white/30 text-xs text-center mt-2 font-bangla">
+                  {lang === "bn" ? "ইমেইলে একটি ক্লিকেই সরাসরি লগইন। পাসওয়ার্ড মনে না থাকলে এটি ব্যবহার করুন।" : "One-click login via email. Use this if you can't remember your password."}
+                </p>
+              </div>
+            )}
+
             {/* Google Sign In */}
-            {mode !== "forgot" && (
+            {mode !== "forgot" && mode !== "magic" && (
               <>
                 <div className="relative my-5">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/15" /></div>
@@ -364,8 +479,8 @@ const Auth = () => {
 
             {/* Mode switch */}
             <div className="mt-6 text-center space-y-2">
-              {mode === "forgot" ? (
-                <button type="button" onClick={() => setMode("login")} className="text-sm text-white/60 hover:text-white transition-colors font-bangla flex items-center justify-center gap-1 mx-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-2 py-1">
+              {(mode === "forgot" || mode === "magic") ? (
+                <button type="button" onClick={() => { setMode("login"); setMagicLinkSent(false); }} className="text-sm text-white/60 hover:text-white transition-colors font-bangla flex items-center justify-center gap-1 mx-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-2 py-1">
                   <ArrowLeft size={14} />
                   {lang === "bn" ? "লগইনে ফিরে যান" : "Back to login"}
                 </button>

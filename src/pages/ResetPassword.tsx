@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
-import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound, CheckCircle2, ArrowLeft } from "lucide-react";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -15,6 +15,7 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
   const { lang } = useLanguage();
   const navigate = useNavigate();
@@ -51,8 +52,9 @@ const ResetPassword = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast({ title: lang === "bn" ? "সফল! 🎉" : "Success! 🎉", description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।" : "Password updated successfully." });
-      navigate("/auth");
+      setIsSuccess(true);
+      toast({ title: lang === "bn" ? "সফল! 🎉" : "Success! 🎉", description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন।" : "Password updated successfully. You can now sign in with your new password." });
+      setTimeout(() => navigate("/auth"), 3000);
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
       toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: errorMsg, variant: "destructive" });
@@ -68,9 +70,16 @@ const ResetPassword = () => {
         <div className="auth-orb auth-orb-2" aria-hidden="true" />
         <div className="auth-grid" aria-hidden="true" />
         <Card className="auth-glass-card border-0 !bg-transparent w-full max-w-md relative z-20">
-          <CardContent className="p-8 text-center">
-            <p className="text-white/70 font-bangla">{lang === "bn" ? "অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক।" : "Invalid or expired reset link."}</p>
-            <Button onClick={() => navigate("/auth")} className="mt-4 auth-submit-btn">{lang === "bn" ? "লগইনে ফিরে যান" : "Back to Login"}</Button>
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/15 flex items-center justify-center">
+              <KeyRound className="w-7 h-7 text-amber-400" />
+            </div>
+            <p className="text-white/80 font-bangla font-medium">{lang === "bn" ? "অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক" : "Invalid or expired reset link"}</p>
+            <p className="text-white/40 text-sm font-bangla">{lang === "bn" ? "অনুগ্রহ করে পুনরায় পাসওয়ার্ড রিসেট করুন অথবা ম্যাজিক লিংক ব্যবহার করুন।" : "Please request a new reset link or use Magic Link login."}</p>
+            <Button onClick={() => navigate("/auth")} className="auth-submit-btn w-full">
+              <ArrowLeft size={16} className="mr-2" />
+              {lang === "bn" ? "লগইনে ফিরে যান" : "Back to Login"}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -92,6 +101,22 @@ const ResetPassword = () => {
         </div>
         <Card className="auth-glass-card border-0 !bg-transparent" role="form" aria-label="Reset password form">
           <CardContent className="px-8 py-8">
+            {isSuccess ? (
+              <div className="flex flex-col items-center gap-4 py-6 animate-fade-in">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center animate-scale-in">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <p className="text-white/90 font-semibold font-bangla text-lg">
+                  {lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!" : "Password updated successfully!"}
+                </p>
+                <p className="text-white/50 text-sm font-bangla">
+                  {lang === "bn" ? "লগইন পেজে রিডাইরেক্ট হচ্ছে..." : "Redirecting to login..."}
+                </p>
+                <div className="w-32 h-1 rounded-full bg-white/10 overflow-hidden mt-2">
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ animation: "shrink-bar 3s linear forwards", width: "100%" }} />
+                </div>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               <div>
                 <label htmlFor="newPassword" className="auth-label">{lang === "bn" ? "নতুন পাসওয়ার্ড" : "New Password"}</label>
@@ -124,6 +149,7 @@ const ResetPassword = () => {
                 {lang === "bn" ? "পাসওয়ার্ড আপডেট করুন" : "Update Password"}
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>
