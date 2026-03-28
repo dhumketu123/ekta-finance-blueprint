@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
-import { lovable } from "@/integrations/lovable/index";
 
 type AuthMode = "login" | "signup" | "forgot";
 type LoginMethod = "email" | "phone";
@@ -72,7 +71,7 @@ const Auth = () => {
         .maybeSingle();
 
       const role = roleData?.role;
-      if (role === "investor") navigate("/investors");
+      if (role === "investor") navigate("/wallet");
       else if (role === "field_officer") navigate("/clients");
       else navigate("/");
     }
@@ -331,8 +330,9 @@ const Auth = () => {
                   variant="outline"
                   className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-11 rounded-xl font-medium transition-all duration-300"
                   onClick={async () => {
-                    const { error } = await lovable.auth.signInWithOAuth("google", {
-                      redirect_uri: window.location.origin,
+                    const { error } = await supabase.auth.signInWithOAuth({
+                      provider: "google",
+                      options: { redirectTo: window.location.origin },
                     });
                     if (error) {
                       toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: error.message, variant: "destructive" });
@@ -347,8 +347,9 @@ const Auth = () => {
                   variant="outline"
                   className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-11 rounded-xl font-medium transition-all duration-300 mt-3"
                   onClick={async () => {
-                    const { error } = await lovable.auth.signInWithOAuth("apple", {
-                      redirect_uri: window.location.origin,
+                    const { error } = await supabase.auth.signInWithOAuth({
+                      provider: "apple",
+                      options: { redirectTo: window.location.origin },
                     });
                     if (error) {
                       toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: error.message, variant: "destructive" });
