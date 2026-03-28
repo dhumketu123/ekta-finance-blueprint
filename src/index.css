@@ -246,19 +246,27 @@
   }
 
   .status-paid {
-    @apply bg-success/15 text-success font-semibold;
+    background-color: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+    @apply font-semibold;
   }
 
   .status-pending {
-    @apply bg-warning/15 text-warning font-semibold;
+    background-color: hsl(var(--warning) / 0.15);
+    color: hsl(var(--warning));
+    @apply font-semibold;
   }
 
   .status-overdue {
-    @apply bg-destructive/15 text-destructive font-semibold;
+    background-color: hsl(var(--destructive) / 0.15);
+    color: hsl(var(--destructive));
+    @apply font-semibold;
   }
 
   .status-active {
-    @apply bg-success/15 text-success font-semibold;
+    background-color: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+    @apply font-semibold;
   }
 
   .status-inactive {
@@ -266,7 +274,9 @@
   }
 
   .status-closed {
-    @apply bg-closed/15 text-closed-foreground font-medium;
+    background-color: hsl(var(--closed) / 0.15);
+    color: hsl(var(--closed-foreground));
+    @apply font-medium;
   }
 
   /* Premium table header */
