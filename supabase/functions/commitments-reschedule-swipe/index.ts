@@ -183,7 +183,8 @@ Deno.serve(async (req) => {
       rescheduled: updated,
       new_commitment: newCommitment,
     }, 200);
-  } catch (error) {
-    return json({ error: error.message }, 500);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return json({ error: msg }, 500);
   }
 });
