@@ -87,9 +87,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[Ledger Audit] Error:", err);
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

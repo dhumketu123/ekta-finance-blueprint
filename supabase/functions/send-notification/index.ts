@@ -50,8 +50,8 @@ async function sendSmsApi(phone: string, message: string): Promise<DeliveryResul
       return { success: true, channel: "sms" };
     }
     return { success: false, channel: "sms", error: result?.error_message || "Unknown SMS error" };
-  } catch (err: any) {
-    return { success: false, channel: "sms", error: err.message };
+  } catch (err: unknown) {
+    return { success: false, channel: "sms", error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -72,8 +72,8 @@ async function sendViaWebhook(phone: string, message: string, eventType: string,
     }
     const body = await resp.text().catch(() => "");
     return { success: false, channel: "webhook", error: `HTTP ${resp.status}: ${body.substring(0, 100)}` };
-  } catch (err: any) {
-    return { success: false, channel: "webhook", error: err.message };
+  } catch (err: unknown) {
+    return { success: false, channel: "webhook", error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -262,8 +262,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, ...results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
