@@ -121,7 +121,10 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
           src={photoUrl}
           alt="Client photo"
           loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover rounded-full"
+          style={{ aspectRatio: "1/1" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
       ) : (
         <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
