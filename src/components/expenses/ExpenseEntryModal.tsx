@@ -1,10 +1,13 @@
-import { useState, useCallback, memo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useCallback, useRef, useEffect, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
+  DrawerBody, DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -13,9 +16,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Receipt, Loader2, Zap } from "lucide-react";
-import TransactionAuthModal from "@/components/security/TransactionAuthModal";
+import {
+  Receipt, Loader2, Zap, ShieldCheck, Lock, AlertTriangle,
+  CheckCircle2, X,
+} from "lucide-react";
+import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
+import confetti from "canvas-confetti";
 
 // ── Expense category definitions ─────────────────────────────────────────────
 export const EXPENSE_CATEGORIES = [
@@ -43,12 +50,18 @@ function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-type SubmitPhase = "form" | "pin" | "hold" | "submitting";
+type Phase = "form" | "pin" | "confirm" | "executing" | "success";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
+
+const vaultTransition = {
+  initial: { opacity: 0, x: 40, scale: 0.92 },
+  animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.3, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] } },
+  exit: { opacity: 0, x: -40, scale: 0.92, transition: { duration: 0.25, ease: [0.65, 0, 0.35, 1] as [number, number, number, number] } },
+};
 
 function ExpenseEntryModalInner({ open, onClose }: Props) {
   const { lang } = useLanguage();
@@ -56,12 +69,85 @@ function ExpenseEntryModalInner({ open, onClose }: Props) {
   const qc = useQueryClient();
   const bn = lang === "bn";
 
-  const [date, setDate]           = useState(todayISO());
-  const [category, setCategory]   = useState<ExpenseCategoryKey | "">("");
-  const [amount, setAmount]       = useState("");
+  // Form state
+  const [date, setDate] = useState(todayISO());
+  const [category, setCategory] = useState<ExpenseCategoryKey | "">("");
+  const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [receiptUrl, setReceiptUrl]   = useState("");
-  const [phase, setPhase]         = useState<SubmitPhase>("form");
+  const [receiptUrl, setReceiptUrl] = useState("");
+  const [phase, setPhase] = useState<Phase>("form");
+  const [submitting, setSubmitting] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState("");
+
+  // PIN state
+  const [pin, setPin] = useState(["", "", "", ""]);
+  const [pinVerifying, setPinVerifying] = useState(false);
+  const [pinShake, setPinShake] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [lockedUntil, setLockedUntil] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const numAmount = parseFloat(amount) || 0;
+  const isFormValid = !!category && numAmount > 0;
+  const isLocked = phase === "executing" || submitting;
+  const catMeta = EXPENSE_CATEGORIES.find((c) => c.key === category);
+
+  // ── PIN Lock Countdown ──
+  useEffect(() => {
+    if (!lockedUntil) { setCountdown(0); return; }
+    const calc = () => {
+      const diff = Math.max(0, Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 1000));
+      setCountdown(diff);
+      if (diff <= 0) { setLockedUntil(null); setRemainingAttempts(null); }
+    };
+    calc();
+    const iv = setInterval(calc, 1000);
+    return () => clearInterval(iv);
+  }, [lockedUntil]);
+
+  // Focus first PIN input
+  useEffect(() => {
+    if (phase === "pin") { resetPin(); setTimeout(() => pinRefs.current[0]?.focus(), 150); }
+  }, [phase]);
+
+  const resetPin = useCallback(() => {
+    setPin(["", "", "", ""]); setPinVerifying(false); setPinShake(false);
+    setRemainingAttempts(null); setLockedUntil(null); setCountdown(0);
+  }, []);
+
+  const triggerPinShake = useCallback(() => {
+    setPinShake(true); setPin(["", "", "", ""]);
+    setTimeout(() => { setPinShake(false); pinRefs.current[0]?.focus(); }, 500);
+  }, []);
+
+  const handlePinDigit = useCallback((index: number, value: string) => {
+    if (pinVerifying || countdown > 0) return;
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...pin]; next[index] = digit; setPin(next);
+    if (digit && index < 3) pinRefs.current[index + 1]?.focus();
+    if (digit && index === 3 && next.every((d) => d)) verifyPinAndProceed(next.join(""));
+  }, [pin, pinVerifying, countdown]);
+
+  const handlePinKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !pin[index] && index > 0) pinRefs.current[index - 1]?.focus();
+  }, [pin]);
+
+  const verifyPinAndProceed = async (fullPin: string) => {
+    setPinVerifying(true);
+    try {
+      const res = await verifyTransactionPin(fullPin);
+      if (res.status === "success") setPhase("confirm");
+      else if (res.status === "locked") { setLockedUntil(res.locked_until); setRemainingAttempts(0); triggerPinShake(); }
+      else if (res.status === "invalid") { setRemainingAttempts(res.remaining_attempts); triggerPinShake(); }
+      else if (res.status === "no_pin") {
+        toast.error(bn ? "প্রথমে সেটিংস থেকে ট্রানজেকশন PIN সেট করুন" : "Set Transaction PIN in Settings first");
+        setPhase("form");
+      }
+    } catch { triggerPinShake(); } finally { setPinVerifying(false); }
+  };
+
+  const formatCountdownTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   const applyPreset = useCallback((preset: (typeof QUICK_PRESETS)[number]) => {
     setCategory(preset.category as ExpenseCategoryKey);
@@ -76,45 +162,42 @@ function ExpenseEntryModalInner({ open, onClose }: Props) {
     setDescription("");
     setReceiptUrl("");
     setPhase("form");
-  }, []);
+    setSubmitting(false);
+    setReceiptNumber("");
+    resetPin();
+  }, [resetPin]);
 
-  // ── Step 1: Validate form → open PIN ───────────────────────────────────────
-  const handleInitiateSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Phase 1: Validate form → open PIN ──
+  const handleNextStep = useCallback(() => {
     if (!category) {
       toast.error(bn ? "ব্যয়ের ধরন নির্বাচন করুন" : "Please select an expense category");
       return;
     }
-    const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
       toast.error(bn ? "সঠিক পরিমাণ দিন" : "Please enter a valid amount");
       return;
     }
     setPhase("pin");
-  }, [category, amount, bn]);
+  }, [category, numAmount, bn]);
 
-  // ── Step 2: PIN verified → show Hold-to-Confirm ────────────────────────────
-  const handlePinAuthorized = useCallback(() => {
-    setPhase("hold");
-  }, []);
-
-  // ── Step 3: Hold confirmed → submit to DB ──────────────────────────────────
-  const handleFinalSubmit = useCallback(async () => {
-    setPhase("submitting");
+  // ── Phase 3 (Hold confirmed) → Execute DB submission ──
+  const handleExecute = useCallback(async () => {
+    if (!user || submitting) return;
+    setSubmitting(true);
+    setPhase("executing");
     try {
-      const numAmount = parseFloat(amount);
-      const catMeta = EXPENSE_CATEGORIES.find((c) => c.key === category);
-      const receiptNum = `EXP-${Date.now().toString(36).toUpperCase()}`;
+      const rcpt = `EXP-${Date.now().toString(36).toUpperCase()}`;
+      setReceiptNumber(rcpt);
 
       const { error } = await supabase
         .from("financial_transactions" as any)
         .insert([{
           transaction_type: "adjustment_entry",
           amount: numAmount,
-          created_by: user?.id,
+          created_by: user.id,
           approval_status: "pending",
           manual_flag: true,
-          receipt_number: receiptNum,
+          receipt_number: rcpt,
           notes: description || null,
           allocation_breakdown: {
             is_operational_expense: true,
@@ -133,137 +216,112 @@ function ExpenseEntryModalInner({ open, onClose }: Props) {
       qc.invalidateQueries({ queryKey: ["operational_expenses"] });
       qc.invalidateQueries({ queryKey: ["profit-loss"] });
 
-      toast.success(
-        bn
-          ? `✅ ব্যয় এন্ট্রি (${receiptNum}) অনুমোদনের জন্য জমা দেওয়া হয়েছে`
-          : `✅ Expense (${receiptNum}) submitted for approval`,
-      );
-      resetForm();
-      onClose();
+      confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
+      toast.success(bn ? "ব্যয় এন্ট্রি সফল ✅" : "Expense logged successfully ✅");
+      setPhase("success");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Unknown error");
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(errMsg);
       setPhase("form");
+    } finally {
+      setSubmitting(false);
     }
-  }, [amount, category, date, description, receiptUrl, user?.id, qc, bn, resetForm, onClose]);
+  }, [user, submitting, numAmount, category, date, description, receiptUrl, catMeta, qc, bn]);
 
-  const isLocked = phase === "submitting";
+  const handleClose = useCallback(() => {
+    if (isLocked) return;
+    resetForm();
+    onClose();
+  }, [onClose, resetForm, isLocked]);
 
   return (
-    <>
-      <Dialog
-        open={open}
-        onOpenChange={(v) => {
-          if (isLocked) return;
-          if (!v) { resetForm(); onClose(); }
-        }}
+    <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
+      <DrawerContent
+        onInteractOutside={(e) => { if (isLocked) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (isLocked) e.preventDefault(); }}
       >
-        <DialogContent
-          className="max-w-md w-full p-0 overflow-hidden border border-border/60 shadow-2xl flex flex-col"
-          style={{ background: "hsl(var(--card))", maxHeight: "90vh" }}
-          onPointerDownOutside={(e) => { if (isLocked) e.preventDefault(); }}
-          onEscapeKeyDown={(e) => { if (isLocked) e.preventDefault(); }}
-        >
-          {/* ── Sticky Header ── */}
-          <div
-            className="flex-shrink-0 px-6 pt-6 pb-4"
-            style={{
-              background: "linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.08))",
-              borderBottom: "1px solid hsl(var(--border) / 0.5)",
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-base font-bold text-card-foreground">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <Receipt className="w-4 h-4 text-primary" />
-                </div>
-                {bn ? "অপারেশনাল ব্যয় এন্ট্রি" : "Log Operational Expense"}
-              </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                {bn
-                  ? "পেন্ডিং অনুমোদনের জন্য মেকার-চেকার ওয়ার্কফ্লোতে যাবে"
-                  : "Submitted for maker-checker approval workflow"}
-              </p>
-            </DialogHeader>
-          </div>
+        <DrawerHeader className="border-b border-border/40">
+          <DrawerTitle className="flex items-center gap-2 text-primary">
+            <Receipt className="w-5 h-5" />
+            {bn ? "অপারেশনাল ব্যয় এন্ট্রি" : "Log Operational Expense"}
+          </DrawerTitle>
+          <DrawerDescription>
+            {phase === "pin" ? (bn ? "নিরাপত্তা যাচাই করুন" : "Verify your identity")
+              : phase === "confirm" ? (bn ? "চূড়ান্ত নিশ্চিতকরণ" : "Final confirmation")
+              : phase === "success" ? (bn ? "ব্যয় এন্ট্রি সম্পন্ন" : "Expense logged")
+              : (bn ? "প্রতিষ্ঠানের পরিচালন ব্যয় রেকর্ড করুন" : "Record organizational expenses")}
+          </DrawerDescription>
+        </DrawerHeader>
 
-          {/* ── Scrollable Body ── */}
-          <ScrollArea className="flex-1 min-h-0">
-            <form id="expense-form" onSubmit={handleInitiateSubmit} className="px-6 pb-2 pt-4 space-y-4">
-              {/* Quick-tap macro bar */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Zap className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {bn ? "দ্রুত এন্ট্রি" : "Quick Tap"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_PRESETS.map((p) => (
-                    <button
-                      key={p.category + p.amount}
-                      type="button"
-                      onClick={() => applyPreset(p)}
-                      disabled={isLocked}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
-                      style={{
-                        background: "hsl(var(--primary) / 0.06)",
-                        borderColor: "hsl(var(--primary) / 0.2)",
-                        color: "hsl(var(--primary))",
-                      }}
-                    >
-                      <span>{p.emoji}</span>
-                      <span>{bn ? p.bn : p.en}</span>
-                      <span className="text-muted-foreground font-mono">৳{p.amount}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Date + Category row */}
-              <div className="grid grid-cols-2 gap-3">
+        <AnimatePresence mode="wait">
+          {/* ═══ PHASE 1: Form ═══ */}
+          {phase === "form" && (
+            <motion.div key="form" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
+              <DrawerBody className="space-y-4">
+                {/* Quick-tap macro bar */}
                 <div>
-                  <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
-                    {bn ? "তারিখ" : "Date"}
-                  </Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    max={todayISO()}
-                    className="h-9 text-sm"
-                    disabled={isLocked}
-                    required
-                  />
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Zap className="w-3.5 h-3.5 text-accent" />
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {bn ? "দ্রুত এন্ট্রি" : "Quick Tap"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_PRESETS.map((p) => (
+                      <button
+                        key={p.category + p.amount}
+                        type="button"
+                        onClick={() => applyPreset(p)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 bg-primary/5 border-primary/20 text-primary"
+                      >
+                        <span>{p.emoji}</span>
+                        <span>{bn ? p.bn : p.en}</span>
+                        <span className="text-muted-foreground font-mono">৳{p.amount}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
-                    {bn ? "ব্যয়ের ধরন" : "Category"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategoryKey)} disabled={isLocked}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={bn ? "নির্বাচন করুন" : "Select"} />
-                    </SelectTrigger>
-                    <SelectContent className="z-[200]">
-                      {EXPENSE_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.key} value={cat.key}>
-                          <span className="flex items-center gap-2">
-                            <span>{cat.emoji}</span>
-                            <span className={bn ? "font-bangla" : ""}>{bn ? cat.bn : cat.en}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              {/* Amount */}
-              <div>
-                <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
-                  {bn ? "পরিমাণ (৳)" : "Amount (৳)"} <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+                {/* Date + Category row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-bold">{bn ? "তারিখ" : "Date"}</Label>
+                    <Input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      max={todayISO()}
+                      className="mt-1.5 h-9 text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold">
+                      {bn ? "ব্যয়ের ধরন" : "Category"} <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategoryKey)}>
+                      <SelectTrigger className="mt-1.5 h-9 text-sm">
+                        <SelectValue placeholder={bn ? "নির্বাচন করুন" : "Select"} />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        {EXPENSE_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.key} value={cat.key}>
+                            <span className="flex items-center gap-2">
+                              <span>{cat.emoji}</span>
+                              <span>{bn ? cat.bn : cat.en}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <Label className="text-xs font-bold">
+                    {bn ? "পরিমাণ (৳)" : "Amount (৳)"} <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     type="number"
                     min="1"
@@ -271,122 +329,216 @@ function ExpenseEntryModalInner({ open, onClose }: Props) {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="h-9 pl-7 text-sm font-mono"
-                    disabled={isLocked}
-                    required
+                    className="mt-1.5 text-lg font-bold font-mono"
                   />
                 </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
-                  {bn ? "বিবরণ" : "Description"}
-                </Label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={bn ? "ব্যয়ের বিস্তারিত..." : "Details about this expense..."}
-                  rows={2}
-                  className="text-sm resize-none"
-                  maxLength={300}
-                  disabled={isLocked}
-                />
-              </div>
+                {/* Description */}
+                <div>
+                  <Label className="text-xs font-bold">{bn ? "বিবরণ (ঐচ্ছিক)" : "Description (Optional)"}</Label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={bn ? "ব্যয়ের বিস্তারিত..." : "Details about this expense..."}
+                    rows={2}
+                    className="mt-1.5 text-sm resize-none"
+                    maxLength={300}
+                  />
+                </div>
 
-              {/* Receipt URL */}
-              <div>
-                <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
-                  {bn ? "রিসিট লিংক / মেমো" : "Receipt URL / Memo"}
-                  <span className="ml-1 text-[10px] text-muted-foreground/60">({bn ? "ঐচ্ছিক" : "optional"})</span>
-                </Label>
-                <Input
-                  type="url"
-                  value={receiptUrl}
-                  onChange={(e) => setReceiptUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="h-9 text-sm"
-                  disabled={isLocked}
-                />
-              </div>
+                {/* Receipt URL */}
+                <div>
+                  <Label className="text-xs font-bold">
+                    {bn ? "রিসিট লিংক (ঐচ্ছিক)" : "Receipt URL (Optional)"}
+                  </Label>
+                  <Input
+                    type="url"
+                    value={receiptUrl}
+                    onChange={(e) => setReceiptUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="mt-1.5 h-9 text-sm"
+                  />
+                </div>
 
-              {/* Approval note */}
-              <div
-                className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs"
-                style={{
-                  background: "hsl(var(--warning) / 0.08)",
-                  border: "1px solid hsl(var(--warning) / 0.2)",
-                  color: "hsl(var(--warning))",
-                }}
-              >
-                <span className="mt-0.5">⏳</span>
-                <span className={bn ? "font-bangla" : ""}>
-                  {bn
-                    ? "এই ব্যয় প্রথমে পেন্ডিং অবস্থায় থাকবে। CEO/অ্যাডমিন অনুমোদনের পর P&L-এ যোগ হবে।"
-                    : "This expense will be pending until CEO/Admin approves it in the maker-checker workflow."}
-                </span>
-              </div>
-            </form>
-          </ScrollArea>
-
-          {/* ── Sticky Footer ── */}
-          <div
-            className="flex-shrink-0 px-6 py-4 border-t"
-            style={{ borderColor: "hsl(var(--border) / 0.5)" }}
-          >
-            {phase === "hold" ? (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  {bn ? "ব্যয় নিশ্চিত করতে চেপে ধরুন" : "Hold to confirm expense"}
-                </p>
-                <ArcReactorButton
-                  onConfirmed={handleFinalSubmit}
-                  holdDuration={1500}
-                  size={88}
-                  label={bn ? "ব্যয় নিশ্চিতকরণ" : "Confirm Expense"}
-                  sublabel={`৳${parseFloat(amount || "0").toLocaleString()}`}
-                />
-              </div>
-            ) : phase === "submitting" ? (
-              <div className="flex items-center justify-center gap-2 py-3">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground">
-                  {bn ? "জমা হচ্ছে..." : "Submitting..."}
-                </span>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 h-9 text-sm"
-                  onClick={() => { resetForm(); onClose(); }}
-                  disabled={isLocked}
-                >
-                  {bn ? "বাতিল" : "Cancel"}
+                {/* Info banner */}
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                  <span className="mt-0.5">⏳</span>
+                  <span>
+                    {bn
+                      ? "এই ব্যয় পেন্ডিং থাকবে। CEO/অ্যাডমিন অনুমোদনের পর P&L-এ যোগ হবে।"
+                      : "Expense will be pending until CEO/Admin approves via maker-checker workflow."}
+                  </span>
+                </div>
+              </DrawerBody>
+              <DrawerFooter className="flex-row gap-2">
+                <Button variant="ghost" onClick={handleClose} className="flex-1">{bn ? "বাতিল" : "Cancel"}</Button>
+                <Button onClick={handleNextStep} disabled={!isFormValid} className="flex-1 gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> {bn ? "পিন যাচাই করুন" : "Verify PIN"}
                 </Button>
-                <Button
-                  type="submit"
-                  form="expense-form"
-                  className="flex-1 h-9 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={isLocked}
-                >
-                  <Receipt className="w-3.5 h-3.5 mr-1.5" />
-                  {bn ? "পিন যাচাই করুন" : "Verify PIN & Submit"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              </DrawerFooter>
+            </motion.div>
+          )}
 
-      {/* PIN Auth Modal */}
-      <TransactionAuthModal
-        open={phase === "pin"}
-        onClose={() => setPhase("form")}
-        onAuthorized={handlePinAuthorized}
-      />
-    </>
+          {/* ═══ PHASE 2: PIN ═══ */}
+          {phase === "pin" && (
+            <motion.div key="pin" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
+              <DrawerBody className="flex flex-col items-center justify-center gap-5 py-8">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <ShieldCheck className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-bold">{bn ? "ট্রানজেকশন PIN" : "Transaction PIN"}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{bn ? "আপনার ৪-সংখ্যার PIN দিন" : "Enter your 4-digit PIN"}</p>
+                </div>
+                <motion.div className="flex gap-3" animate={pinShake ? { x: [0, -12, 12, -8, 8, -4, 4, 0] } : {}} transition={{ duration: 0.4 }}>
+                  {pin.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { pinRefs.current[i] = el; }}
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handlePinDigit(i, e.target.value)}
+                      onKeyDown={(e) => handlePinKeyDown(i, e)}
+                      disabled={pinVerifying || countdown > 0}
+                      className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-border bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-40"
+                      autoComplete="off"
+                    />
+                  ))}
+                </motion.div>
+                {countdown > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+                    <Lock className="w-3.5 h-3.5" /> {bn ? `লক — ${formatCountdownTime(countdown)}` : `Locked — ${formatCountdownTime(countdown)}`}
+                  </div>
+                )}
+                {remainingAttempts !== null && remainingAttempts > 0 && countdown === 0 && (
+                  <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 px-3 py-2 rounded-lg">
+                    <AlertTriangle className="w-3.5 h-3.5" /> {bn ? `ভুল PIN — ${remainingAttempts} বার বাকি` : `Wrong PIN — ${remainingAttempts} left`}
+                  </div>
+                )}
+                {pinVerifying && <p className="text-xs text-muted-foreground animate-pulse">{bn ? "যাচাই হচ্ছে..." : "Verifying..."}</p>}
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="ghost" onClick={() => { resetPin(); setPhase("form"); }}>{bn ? "পেছনে যান" : "Go Back"}</Button>
+              </DrawerFooter>
+            </motion.div>
+          )}
+
+          {/* ═══ PHASE 3: Hold-to-Confirm (Arc Reactor) ═══ */}
+          {phase === "confirm" && (
+            <motion.div key="confirm" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
+              <DrawerBody>
+                <div className="rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-md border border-border/50 p-6 flex flex-col items-center gap-6">
+                  <div className="text-center space-y-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                      {bn ? "ব্যয় নিশ্চিতকরণ" : "Expense Confirmation"}
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      ৳{numAmount.toLocaleString()}
+                    </p>
+                    {catMeta && (
+                      <p className="text-sm text-muted-foreground">
+                        {catMeta.emoji} {bn ? catMeta.bn : catMeta.en}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{date}</p>
+                  </div>
+                  <div className="flex flex-col items-center gap-3">
+                    <ArcReactorButton
+                      onConfirmed={handleExecute}
+                      holdDuration={2500}
+                      size={110}
+                      disabled={submitting}
+                      label={bn ? "ব্যয় নিশ্চিত করতে ধরে রাখুন" : "Hold to confirm expense"}
+                      sublabel={bn ? "ধরুন" : "HOLD"}
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      {bn ? "নিশ্চিত করতে বোতাম ধরে রাখুন" : "Hold the button to confirm"}
+                    </p>
+                  </div>
+                </div>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="outline" onClick={() => setPhase("form")} disabled={submitting} className="w-full gap-2">
+                  <X className="w-4 h-4" />
+                  {bn ? "ফিরে যান" : "Go Back"}
+                </Button>
+              </DrawerFooter>
+            </motion.div>
+          )}
+
+          {/* ═══ PHASE 4: Executing ═══ */}
+          {phase === "executing" && (
+            <motion.div key="executing" {...vaultTransition} className="flex-1 min-h-0 px-6 py-12 flex flex-col items-center justify-center gap-4">
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}>
+                <Loader2 className="w-10 h-10 text-primary" />
+              </motion.div>
+              <p className="text-sm font-medium text-muted-foreground">{bn ? "ব্যয় এন্ট্রি প্রক্রিয়াকরণ হচ্ছে..." : "Processing expense..."}</p>
+            </motion.div>
+          )}
+
+          {/* ═══ PHASE 5: Success ═══ */}
+          {phase === "success" && (
+            <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
+              <DrawerBody>
+                <div className="space-y-5 py-3">
+                  {/* Success icon */}
+                  <div className="flex flex-col items-center justify-center text-center space-y-3">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }} className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-success" />
+                    </motion.div>
+                    <div>
+                      <p className="text-lg font-semibold text-foreground">
+                        {bn ? "ব্যয় এন্ট্রি সফল!" : "Expense Logged!"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {bn ? "অনুমোদনের জন্য পেন্ডিং আছে" : "Pending approval"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Breakdown */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-xs">
+                      <span>{bn ? "পরিমাণ" : "Amount"}</span>
+                      <span className="font-bold text-primary">৳{numAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between p-2.5 rounded-lg bg-muted/50 border border-border/40 text-xs">
+                      <span>{bn ? "ক্যাটাগরি" : "Category"}</span>
+                      <span className="font-semibold">{catMeta?.emoji} {bn ? catMeta?.bn : catMeta?.en}</span>
+                    </div>
+                    <div className="flex justify-between p-2.5 rounded-lg bg-muted/50 border border-border/40 text-xs">
+                      <span>{bn ? "তারিখ" : "Date"}</span>
+                      <span className="font-mono font-semibold">{date}</span>
+                    </div>
+                    {receiptNumber && (
+                      <div className="flex justify-between p-2.5 rounded-lg bg-muted/50 border border-border/40 text-xs">
+                        <span>{bn ? "রিসিট নং" : "Receipt #"}</span>
+                        <span className="font-mono font-semibold text-primary">{receiptNumber}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status badge */}
+                  <div className="bg-warning/10 border border-warning/20 rounded-xl p-3 text-center text-xs">
+                    <p className="font-bold text-warning">
+                      ⏳ {bn ? "অনুমোদনের অপেক্ষায়" : "Awaiting Approval"}
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      {bn ? "CEO/অ্যাডমিন অনুমোদনের পর P&L-এ যোগ হবে" : "Will be added to P&L after CEO/Admin approval"}
+                    </p>
+                  </div>
+                </div>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="outline" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+              </DrawerFooter>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
