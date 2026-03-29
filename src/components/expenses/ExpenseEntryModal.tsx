@@ -393,5 +393,3 @@ function ExpenseEntryModalInner({ open, onClose }: Props) {
 const ExpenseEntryModal = memo(ExpenseEntryModalInner);
 ExpenseEntryModal.displayName = "ExpenseEntryModal";
 export default ExpenseEntryModal;
-
-export { EXPENSE_CATEGORIES, type ExpenseCategoryKey };
