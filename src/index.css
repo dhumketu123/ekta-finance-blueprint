@@ -118,15 +118,15 @@
     --shadow-card-hover: 0 8px 24px -4px hsla(210, 30%, 5%, 0.5);
     --shadow-metric: 0 4px 20px -4px hsla(210, 30%, 5%, 0.45);
 
-    --sidebar-background: 210 18% 8%;
-    --sidebar-foreground: 0 0% 90%;
+    --sidebar-background: 180 100% 10%;
+    --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 51 100% 50%;
     --sidebar-primary-foreground: 51 100% 10%;
-    --sidebar-accent: 210 14% 16%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 12% 22%;
+    --sidebar-accent: 180 80% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 180 60% 18%;
     --sidebar-ring: 51 100% 50%;
-    --sidebar-muted: 210 8% 55%;
+    --sidebar-muted: 180 15% 55%;
 
     --header-background: 180 80% 12%;
     --header-foreground: 0 0% 100%;
