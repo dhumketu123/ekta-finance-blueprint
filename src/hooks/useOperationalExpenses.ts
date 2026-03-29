@@ -36,7 +36,7 @@ export const useOperationalExpenses = (statusFilter?: "pending" | "approved" | "
       if (error) throw error;
 
       // Filter in JS to those with the operational expense flag in JSONB
-      return ((data ?? []) as OperationalExpense[]).filter(
+      return ((data ?? []) as unknown as OperationalExpense[]).filter(
         (row) => row.allocation_breakdown?.is_operational_expense === true,
       );
     },
@@ -56,7 +56,7 @@ export const useApprovedExpensesByCategory = () =>
 
       if (error) throw error;
 
-      const rows = ((data ?? []) as Pick<OperationalExpense, "amount" | "allocation_breakdown">[])
+      const rows = ((data ?? []) as unknown as Pick<OperationalExpense, "amount" | "allocation_breakdown">[])
         .filter((row) => row.allocation_breakdown?.is_operational_expense === true);
 
       // Group by category
