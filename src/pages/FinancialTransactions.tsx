@@ -333,12 +333,14 @@ const FinancialTransactionsPage = () => {
                       <div className="flex gap-1.5 pt-1">
                         {tx.approval_status === "pending" && canApprove && (
                           <>
-                            <Button size="sm" className="h-7 text-xs flex-1 bg-success hover:bg-success/90"
+                            <Button size="sm" className="h-8 text-xs flex-1 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-700/30 font-semibold"
                               onClick={() => handleApprove(tx.id, tx.manual_flag)} disabled={approveMut.isPending}>
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                               {lang === "bn" ? "অনুমোদন" : "Approve"}
                             </Button>
-                            <Button size="sm" variant="destructive" className="h-7 text-xs flex-1"
+                            <Button size="sm" className="h-8 text-xs flex-1 bg-red-500 text-white hover:bg-red-600 shadow-sm border border-red-600/30 font-semibold"
                               onClick={() => setRejectTarget(tx.id)}>
+                              <XCircle className="w-3.5 h-3.5 mr-1" />
                               {lang === "bn" ? "প্রত্যাখ্যান" : "Reject"}
                             </Button>
                           </>

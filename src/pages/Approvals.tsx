@@ -163,12 +163,12 @@ const Approvals = () => {
                         </TableCell>
                         {canApproveTransactions && tab === "pending" && (
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="h-7 text-xs text-success border-success/30 hover:bg-success/10"
+                            <div className="flex gap-1.5">
+                              <Button size="sm" className="h-8 text-xs bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm font-semibold"
                                 onClick={() => { setReviewTx(tx); setReviewAction("approve"); setReason(""); }}>
                                 <CheckCircle2 className="w-3 h-3 mr-1" />{bn ? "অনুমোদন" : "Approve"}
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                              <Button size="sm" className="h-8 text-xs bg-red-500 text-white hover:bg-red-600 shadow-sm font-semibold"
                                 onClick={() => { setReviewTx(tx); setReviewAction("reject"); setReason(""); }}>
                                 <XCircle className="w-3 h-3 mr-1" />{bn ? "প্রত্যাখ্যান" : "Reject"}
                               </Button>
