@@ -115,32 +115,24 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
   const photoUrl = localUrl ?? currentPhotoUrl;
 
   return (
-    <div className="relative group w-full h-full">
+    <div className="relative group w-full h-full rounded-full overflow-hidden">
       {photoUrl ? (
         <img
           src={photoUrl}
           alt="Client photo"
           loading="lazy"
           decoding="async"
-          className="w-full h-full rounded-full ring-2 ring-border/30 shadow-sm"
-          style={{ aspectRatio: "1/1", objectFit: "cover", minWidth: "100%", minHeight: "100%" }}
-          onError={(e) => {
-            const img = e.target as HTMLImageElement;
-            img.style.display = "none";
-            const fallback = img.nextElementSibling as HTMLElement;
-            if (fallback) fallback.style.display = "flex";
-          }}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setLocalUrl(null)}
         />
-      ) : null}
-      <div
-        className={`w-full h-full rounded-full bg-primary/10 items-center justify-center ${photoUrl ? "hidden" : "flex"}`}
-        style={{ aspectRatio: "1/1", minWidth: "100%", minHeight: "100%" }}
-      >
-        <User className="w-1/2 h-1/2 text-primary/60" />
-      </div>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/10">
+          <User className="w-1/2 h-1/2 text-primary/60" />
+        </div>
+      )}
 
       {uploading && (
-        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
           <Loader2 className="w-5 h-5 text-white animate-spin" />
         </div>
       )}
@@ -149,7 +141,7 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
         <>
           <button
             onClick={() => inputRef.current?.click()}
-            className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+            className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
             aria-label="ছবি পরিবর্তন করুন"
             type="button"
           >
