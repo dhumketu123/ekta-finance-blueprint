@@ -115,25 +115,32 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
   const photoUrl = localUrl ?? currentPhotoUrl;
 
   return (
-    <div className="relative group">
+    <div className="relative group w-full h-full">
       {photoUrl ? (
         <img
           src={photoUrl}
           alt="Client photo"
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover rounded-full"
-          style={{ aspectRatio: "1/1" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          className="w-full h-full rounded-full ring-2 ring-border/30 shadow-sm"
+          style={{ aspectRatio: "1/1", objectFit: "cover", minWidth: "100%", minHeight: "100%" }}
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.style.display = "none";
+            const fallback = img.nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = "flex";
+          }}
         />
-      ) : (
-        <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="w-1/2 h-1/2 text-primary/60" />
-        </div>
-      )}
+      ) : null}
+      <div
+        className={`w-full h-full rounded-full bg-primary/10 items-center justify-center ${photoUrl ? "hidden" : "flex"}`}
+        style={{ aspectRatio: "1/1", minWidth: "100%", minHeight: "100%" }}
+      >
+        <User className="w-1/2 h-1/2 text-primary/60" />
+      </div>
 
       {uploading && (
-        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
           <Loader2 className="w-5 h-5 text-white animate-spin" />
         </div>
       )}
@@ -142,10 +149,11 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
         <>
           <button
             onClick={() => inputRef.current?.click()}
-            className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
+            className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
             aria-label="ছবি পরিবর্তন করুন"
+            type="button"
           >
-            <Camera className="w-5 h-5 text-white drop-shadow" />
+            <Camera className="w-5 h-5 text-white drop-shadow-lg" />
           </button>
           <input
             ref={inputRef}
@@ -153,7 +161,7 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
             accept={ACCEPTED.join(",")}
             onChange={handleFile}
             className="hidden"
-            aria-hidden
+            aria-hidden="true"
           />
         </>
       )}
