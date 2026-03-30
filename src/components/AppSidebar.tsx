@@ -111,7 +111,8 @@ export const AppSidebar = () => {
       {isOpen && <div className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-300" onClick={close} />}
       <aside
         ref={sidebarRef}
-        className={`fixed left-0 top-0 h-screen w-64 bg-sidebar flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ backgroundColor: "hsl(180 100% 15%)", color: "hsl(0 0% 95%)" }}
       >
         {/* Brand */}
         <div className="p-5 border-b border-sidebar-border">
