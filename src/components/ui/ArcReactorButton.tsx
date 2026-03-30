@@ -112,12 +112,13 @@ export default function ArcReactorButton({
   const pctDisplay = Math.round(progress * 100);
 
   // Inner + outer glow layers for vault-grade lighting (uses success token hsl(152,55%,42%) → rgb ~56,163,112)
+  // Neon Lime (#48FF73) glow ramp
   const glowShadow =
     state === "holding"
-      ? `0 0 ${10 + progress * 20}px hsla(152,55%,42%,${0.25 + progress * 0.4}), 0 0 ${25 + progress * 40}px hsla(152,55%,42%,${0.15 + progress * 0.35})`
+      ? `0 0 ${10 + progress * 25}px rgba(72,255,115,${0.3 + progress * 0.5}), 0 0 ${25 + progress * 50}px rgba(72,255,115,${0.15 + progress * 0.4})`
       : state === "done"
-        ? "0 0 20px hsla(152,55%,42%,0.7), 0 0 50px hsla(152,55%,42%,0.4)"
-        : "0 0 10px hsla(152,55%,42%,0.15), 0 0 25px hsla(152,55%,42%,0.08)";
+        ? "0 0 24px rgba(72,255,115,0.8), 0 0 60px rgba(72,255,115,0.45)"
+        : "0 0 12px rgba(72,255,115,0.2), 0 0 30px rgba(72,255,115,0.1)";
 
   return (
     <motion.button
@@ -142,7 +143,7 @@ export default function ArcReactorButton({
       }}
       className={cn(
         "relative select-none touch-none cursor-pointer rounded-full flex items-center justify-center",
-        "bg-gradient-to-br from-success to-primary",
+        "bg-gradient-to-br from-[#48FF73] to-[#00C853]",
         "transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         disabled && "opacity-40 cursor-not-allowed",
         className
@@ -169,12 +170,12 @@ export default function ArcReactorButton({
           strokeWidth={5}
           fill="none"
         />
-        {/* Progress arc with premium easing */}
+        {/* Progress arc — neon lime ring */}
         <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="white"
+          stroke="#48FF73"
           strokeWidth={5}
           fill="none"
           strokeLinecap="round"
@@ -190,7 +191,7 @@ export default function ArcReactorButton({
       </svg>
 
       {/* Center content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-white">
+      <div className="relative z-10 flex flex-col items-center justify-center text-black font-bold">
         {state === "done" ? (
           <motion.span
             initial={{ scale: 0 }}
