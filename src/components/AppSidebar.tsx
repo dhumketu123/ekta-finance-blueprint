@@ -184,7 +184,7 @@ export const AppSidebar = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 space-y-3" style={{ borderTop: "1px solid hsl(180 60% 22%)" }}>
+        <div className="p-4 space-y-3" style={{ borderTop: "1px solid hsl(180 60% 22%)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px) + 80px)" }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" style={{ backgroundColor: "hsl(51 100% 50%)", color: "hsl(51 100% 10%)" }}>
               {user?.email?.charAt(0).toUpperCase() || "U"}
