@@ -31,6 +31,7 @@ const translations: Record<string, { bn: string; en: string }> = {
   "nav.superAdmin": { bn: "সুপার অ্যাডমিন", en: "Super Admin" },
   "nav.commitmentAnalytics": { bn: "কমিটমেন্ট অ্যানালিটিক্স", en: "Commitment Analytics" },
   "nav.wallet": { bn: "আমার ওয়ালেট", en: "My Wallet" },
+  "nav.dayClose": { bn: "দিন বন্ধ", en: "Day Close" },
 
   // Header
   "header.tagline": { bn: "সমবায় ক্ষুদ্রঋণ ব্যবস্থাপনা", en: "Cooperative Microfinance Management" },
