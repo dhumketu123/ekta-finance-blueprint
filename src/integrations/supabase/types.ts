@@ -815,6 +815,74 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_user_close: {
+        Row: {
+          close_date: string
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          declared_cash: number | null
+          expected_cash: number
+          id: string
+          internal_transfer: number
+          note: string | null
+          opening_balance: number
+          status: string
+          tenant_id: string
+          total_collection: number
+          total_expense: number
+          updated_at: string
+          user_id: string
+          variance: number | null
+        }
+        Insert: {
+          close_date: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          declared_cash?: number | null
+          expected_cash?: number
+          id?: string
+          internal_transfer?: number
+          note?: string | null
+          opening_balance?: number
+          status?: string
+          tenant_id: string
+          total_collection?: number
+          total_expense?: number
+          updated_at?: string
+          user_id: string
+          variance?: number | null
+        }
+        Update: {
+          close_date?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          declared_cash?: number | null
+          expected_cash?: number
+          id?: string
+          internal_transfer?: number
+          note?: string | null
+          opening_balance?: number
+          status?: string
+          tenant_id?: string
+          total_collection?: number
+          total_expense?: number
+          updated_at?: string
+          user_id?: string
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_user_close_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       double_entry_ledger: {
         Row: {
           account_id: string
@@ -2140,6 +2208,60 @@ export type Database = {
           },
         ]
       }
+      reopen_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          close_id: string
+          created_at: string
+          id: string
+          reason: string
+          requested_at: string
+          requested_by: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          close_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          requested_at?: string
+          requested_by: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          close_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          requested_at?: string
+          requested_by?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reopen_requests_close_id_fkey"
+            columns: ["close_id"]
+            isOneToOne: false
+            referencedRelation: "daily_user_close"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reopen_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       risk_events: {
         Row: {
           branch_id: string | null
@@ -2915,6 +3037,7 @@ export type Database = {
         }
         Returns: Json
       }
+      approve_day_reopen: { Args: { p_request_id: string }; Returns: Json }
       approve_financial_transaction: {
         Args: { _approver_id: string; _reason?: string; _tx_id: string }
         Returns: Json
@@ -3051,6 +3174,7 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: Json
       }
+      get_day_close_summary: { Args: { p_date: string }; Returns: Json }
       get_profit_loss: {
         Args: { p_from?: string; p_tenant_id?: string; p_to?: string }
         Returns: {
@@ -3146,6 +3270,10 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      request_day_reopen: {
+        Args: { p_close_id: string; p_reason: string }
+        Returns: Json
+      }
       reset_sms_quota: { Args: { p_tenant_id: string }; Returns: undefined }
       resolve_anomaly_alert: { Args: { p_event_id: string }; Returns: boolean }
       reverse_ledger_transaction: {
@@ -3176,6 +3304,10 @@ export type Database = {
       }
       snooze_installment: {
         Args: { p_promised_date: string; p_schedule_id: string }
+        Returns: Json
+      }
+      submit_day_close: {
+        Args: { p_date: string; p_declared_cash: number; p_note?: string }
         Returns: Json
       }
       suspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
