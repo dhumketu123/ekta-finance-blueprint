@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
   { path: "/notifications", icon: Bell, labelKey: "nav.notifications", roles: ["admin", "owner"] },
   { path: "/monitoring", icon: Monitor, labelKey: "nav.monitoring", roles: ["admin", "owner"] },
   { path: "/commitment-analytics", icon: Activity, labelKey: "nav.commitmentAnalytics", roles: ["admin", "owner", "treasurer"] },
+  { path: "/day-close", icon: Lock, labelKey: "nav.dayClose", roles: ["admin", "owner", "field_officer", "treasurer"] },
   { path: "/settings", icon: Settings, labelKey: "nav.settings", roles: ["admin", "owner"] },
   { path: "/super-admin", icon: ShieldCheck, labelKey: "nav.superAdmin", roles: ["admin"] },
 ];
