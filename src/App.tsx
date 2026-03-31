@@ -50,6 +50,7 @@ const RiskHeatmap = React.lazy(() => import("./pages/RiskHeatmap"));
 const LedgerAudit = React.lazy(() => import("./pages/LedgerAudit"));
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
 const AccountingDashboard = React.lazy(() => import("./pages/AccountingDashboard"));
+const DayClose = React.lazy(() => import("./pages/DayClose"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
