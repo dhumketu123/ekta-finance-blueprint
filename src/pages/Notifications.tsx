@@ -143,6 +143,7 @@ const Notifications = () => {
       <PageHeader
         title={bn ? "বিজ্ঞপ্তি লগ" : "Notification Logs"}
         description={bn ? "সকল বিজ্ঞপ্তি, ডেলিভারি স্ট্যাটাস ও রিট্রাই" : "All notifications, delivery status & retry"}
+        badge={bn ? "🔔 নোটিফিকেশন সেন্টার" : "🔔 Notification Center"}
         actions={
           <div className="flex items-center gap-2">
             {gateway && (

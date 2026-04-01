@@ -103,7 +103,7 @@ const Approvals = () => {
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-2">
-        <PageHeader title={bn ? "অনুমোদন সারি" : "Approval Queue"} description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"} />
+        <PageHeader title={bn ? "অনুমোদন সারি" : "Approval Queue"} description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"} badge={bn ? "✅ অনুমোদন কেন্দ্র" : "✅ Approval Center"} />
         {canRecordPayments && (
           <div className="flex gap-2">
             <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
