@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ function getFounderTier(inv: Investor): { key: string; label_en: string; label_b
 
 export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: Props) {
   const { lang } = useLanguage();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
   const today = new Date();
@@ -317,7 +319,10 @@ export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: 
                       <div className="flex items-center gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="text-sm font-medium truncate">{name}</p>
+                            <p 
+                              className="text-sm font-medium truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                              onClick={() => navigate(`/owners/${inv.id}`)}
+                            >{name}</p>
                             <Badge variant="outline" className={`text-[9px] px-1.5 py-0 leading-4 ${tier.className}`}>
                               {bn ? tier.label_bn : tier.label_en}
                             </Badge>
