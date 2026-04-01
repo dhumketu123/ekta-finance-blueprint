@@ -29,6 +29,9 @@ import { ResponsiveContainer, Tooltip as RechartsTooltip, Area, AreaChart } from
 import { InvestorDividendModal } from "@/components/investor/InvestorDividendModal";
 import { InvestorCapitalAddModal } from "@/components/investor/InvestorCapitalAddModal";
 import { InvestorWithdrawalModal } from "@/components/investor/InvestorWithdrawalModal";
+import InvestorForm from "@/components/forms/InvestorForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 /* ─── Tier Badge Logic ─── */
 const getTier = (capital: number, bn: boolean) => {
