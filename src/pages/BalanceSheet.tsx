@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,11 +39,20 @@ const SECTION_META: Record<AccountSection, { icon: typeof Landmark; labelBn: str
   equity: { icon: Landmark, labelBn: "মালিকানা স্বত্ব (Equity)", labelEn: "Equity", color: "text-violet-600" },
 };
 
-const fmtAmt = (n: number): string => {
-  const abs = Math.abs(Number(n) || 0);
-  // Round to 2 decimals to avoid floating point display errors
+/**
+ * Bangladesh-compliant currency formatter.
+ * - Prefix: ৳
+ * - Indian digit grouping (en-IN locale)
+ * - Always 2 decimal places
+ * - Negative values shown in accounting bracket style: (৳1,000.00)
+ */
+const fmtAmt = (n: number, useBrackets = true): string => {
+  const num = Number(n) || 0;
+  const abs = Math.abs(num);
   const rounded = Math.round(abs * 100) / 100;
-  return `৳${rounded.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatted = `৳${rounded.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (num < 0 && useBrackets) return `(${formatted})`;
+  return formatted;
 };
 
 // ── Runtime shape validator ───────────────────────────────────────────────────
@@ -84,17 +93,128 @@ async function logPageVisit() {
   }
 }
 
+// ── Section Table Component ───────────────────────────────────────────────────
+const SectionTable = ({
+  type, items, total, bn,
+}: {
+  type: AccountSection;
+  items: BsRow[];
+  total: number;
+  bn: boolean;
+}) => {
+  const meta = SECTION_META[type];
+  const Icon = meta.icon;
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Icon className={cn("w-4 h-4", meta.color)} aria-hidden="true" />
+          {bn ? meta.labelBn : meta.labelEn}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40">
+              <TableHead className="text-[11px]">{bn ? "হিসাব" : "Account"}</TableHead>
+              <TableHead className="text-[11px] hidden sm:table-cell">{bn ? "কোড" : "Code"}</TableHead>
+              <TableHead className="text-[11px] text-right">{bn ? "ব্যালেন্স (৳)" : "Balance (৳)"}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-xs text-center text-muted-foreground py-6">
+                  {bn ? "নির্বাচিত তারিখে কোনো লেজার ডেটা নেই" : "No ledger data for selected date"}
+                </TableCell>
+              </TableRow>
+            )}
+            {items.map((r) => (
+              <TableRow key={r.coa_id}>
+                <TableCell className="text-xs font-medium">{bn ? (r.name_bn || r.name) : r.name}</TableCell>
+                <TableCell className="text-[11px] font-mono text-muted-foreground hidden sm:table-cell">{r.code}</TableCell>
+                <TableCell className="text-xs text-right font-mono font-semibold">{fmtAmt(r.balance)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
+              <TableCell className="text-xs" colSpan={2}>{bn ? "মোট" : "Total"}</TableCell>
+              <TableCell className={cn("text-xs text-right font-mono font-extrabold", meta.color)}>{fmtAmt(total)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ── Equation Banner Component ─────────────────────────────────────────────────
+const EquationBanner = ({
+  totalAssets, totalLiabilities, totalEquity, difference, balanced, bn,
+}: {
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  difference: number;
+  balanced: boolean;
+  bn: boolean;
+}) => (
+  <Card
+    className="overflow-hidden"
+    style={{
+      background: balanced
+        ? "linear-gradient(135deg, hsl(142 70% 45% / 0.08), hsl(142 70% 45% / 0.03))"
+        : "linear-gradient(135deg, hsl(0 84% 60% / 0.08), hsl(0 84% 60% / 0.03))",
+      borderColor: balanced
+        ? "hsl(142 70% 45% / 0.3)"
+        : "hsl(0 84% 60% / 0.3)",
+    }}
+  >
+    <CardContent className="py-5 px-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {bn ? "অ্যাকাউন্টিং সমীকরণ" : "Accounting Equation"}
+          </p>
+          <p className="text-xs text-muted-foreground font-mono">
+            {fmtAmt(totalAssets)} = {fmtAmt(totalLiabilities)} + {fmtAmt(totalEquity)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {bn ? "সম্পদ = দায় + মালিকানা স্বত্ব" : "Assets = Liabilities + Equity"}
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <Badge
+            variant={balanced ? "default" : "destructive"}
+            className="text-sm px-4 py-1.5"
+          >
+            {balanced
+              ? (bn ? "✅ ব্যালেন্স সঠিক" : "✅ Balanced")
+              : (bn ? `⚠️ অমিল — পার্থক্য: ${fmtAmt(difference)}` : `⚠️ Diff: ${fmtAmt(difference)}`)}
+          </Badge>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 const BalanceSheetPage = () => {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const [asOfDate, setAsOfDate] = useState<Date | undefined>(undefined);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+  const dateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Log page visit once
   useEffect(() => { logPageVisit(); }, []);
 
-  // Effective date: selected or today end-of-day
+  // Debounced date setter
+  const handleDateSelect = useCallback((date: Date | undefined) => {
+    if (dateDebounceRef.current) clearTimeout(dateDebounceRef.current);
+    dateDebounceRef.current = setTimeout(() => setAsOfDate(date), 150);
+  }, []);
+
+  // Effective date: selected or today end-of-day (ISO safe)
   const effectiveDate = useMemo(() => {
     if (asOfDate) return asOfDate;
     const today = new Date();
@@ -102,8 +222,10 @@ const BalanceSheetPage = () => {
     return today;
   }, [asOfDate]);
 
+  const effectiveDateKey = asOfDate ? format(asOfDate, "yyyy-MM-dd") : "latest";
+
   const { data: rows, isLoading } = useQuery({
-    queryKey: ["balance-sheet", asOfDate ? format(asOfDate, "yyyy-MM-dd") : "latest"],
+    queryKey: ["balance-sheet", effectiveDateKey],
     queryFn: async () => {
       setValidationWarning(null);
       const { data, error } = await supabase.rpc("get_balance_sheet", {
@@ -129,6 +251,7 @@ const BalanceSheetPage = () => {
       }
       return validated;
     },
+    refetchOnWindowFocus: false,
   });
 
   const computed = useMemo(() => {
@@ -136,7 +259,6 @@ const BalanceSheetPage = () => {
     for (const r of rows ?? []) {
       if (sections[r.account_type]) sections[r.account_type].push(r);
     }
-    // Sort each section by code ascending
     for (const sec of VALID_SECTIONS) {
       sections[sec].sort((a, b) => a.code.localeCompare(b.code));
     }
@@ -148,7 +270,7 @@ const BalanceSheetPage = () => {
     return { sections, totalAssets, totalLiabilities, totalEquity, difference, balanced };
   }, [rows]);
 
-  // ── Export: CSV ─────────────────────────────────────────────────────────────
+  // ── Export: CSV (blocked on imbalance) ─────────────────────────────────────
   const exportCSV = useCallback(() => {
     if (!rows?.length) return;
     const header = "Section,Code,Account,Balance\n";
@@ -177,7 +299,7 @@ const BalanceSheetPage = () => {
     if (!printWindow) return;
     const dateLabel = formatLocalDate(effectiveDate, lang);
 
-    const sectionHTML = (VALID_SECTIONS).map((sec) => {
+    const sectionHTML = VALID_SECTIONS.map((sec) => {
       const meta = SECTION_META[sec];
       const items = computed.sections[sec];
       const total = sec === "asset" ? computed.totalAssets : sec === "liability" ? computed.totalLiabilities : computed.totalEquity;
@@ -186,7 +308,9 @@ const BalanceSheetPage = () => {
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="background:#f3f4f6;"><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "হিসাব" : "Account"}</th><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "কোড" : "Code"}</th><th style="text-align:right;padding:6px 8px;border:1px solid #ddd;">${bn ? "ব্যালেন্স" : "Balance"}</th></tr></thead>
           <tbody>
-            ${items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${bn ? (r.name_bn || r.name) : r.name}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${r.code}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">${fmtAmt(r.balance)}</td></tr>`).join("")}
+            ${items.length === 0
+              ? `<tr><td colspan="3" style="text-align:center;padding:12px;color:#999;">${bn ? "ডেটা নেই" : "No data"}</td></tr>`
+              : items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${bn ? (r.name_bn || r.name) : r.name}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${r.code}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">${fmtAmt(r.balance)}</td></tr>`).join("")}
             <tr style="background:#f9fafb;font-weight:700;"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;">${bn ? "মোট" : "Total"}</td><td style="text-align:right;padding:6px 8px;border:1px solid #ddd;font-family:monospace;">${fmtAmt(total)}</td></tr>
           </tbody>
         </table>`;
@@ -207,54 +331,6 @@ const BalanceSheetPage = () => {
     printWindow.print();
   }, [computed, effectiveDate, bn, lang]);
 
-  // ── Section renderer ────────────────────────────────────────────────────────
-  const renderSection = (type: AccountSection, total: number) => {
-    const meta = SECTION_META[type];
-    const items = computed.sections[type];
-    const Icon = meta.icon;
-    return (
-      <Card key={type} className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Icon className={cn("w-4 h-4", meta.color)} />
-            {bn ? meta.labelBn : meta.labelEn}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40">
-                <TableHead className="text-[11px]">{bn ? "হিসাব" : "Account"}</TableHead>
-                <TableHead className="text-[11px] hidden sm:table-cell">{bn ? "কোড" : "Code"}</TableHead>
-                <TableHead className="text-[11px] text-right">{bn ? "ব্যালেন্স (৳)" : "Balance (৳)"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-xs text-center text-muted-foreground py-6">
-                    {bn ? "নির্বাচিত তারিখে কোনো লেজার ডেটা নেই" : "No ledger data for selected date"}
-                  </TableCell>
-                </TableRow>
-              )}
-              {items.map((r) => (
-                <TableRow key={r.coa_id}>
-                  <TableCell className="text-xs font-medium">{bn ? (r.name_bn || r.name) : r.name}</TableCell>
-                  <TableCell className="text-[11px] font-mono text-muted-foreground hidden sm:table-cell">{r.code}</TableCell>
-                  <TableCell className="text-xs text-right font-mono font-semibold">{fmtAmt(r.balance)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
-                <TableCell className="text-xs" colSpan={2}>{bn ? "মোট" : "Total"}</TableCell>
-                <TableCell className={cn("text-xs text-right font-mono font-extrabold", meta.color)}>{fmtAmt(total)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
     <AppLayout>
       <PageHeader
@@ -269,7 +345,7 @@ const BalanceSheetPage = () => {
             variant={computed.balanced ? "default" : "destructive"}
             className="gap-1.5 text-xs py-1 px-3"
           >
-            {computed.balanced ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+            {computed.balanced ? <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> : <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />}
             {computed.balanced
               ? "A = L + E ✓"
               : (bn ? `অমিল ৳${Math.abs(computed.difference).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : `Imbalance ${fmtAmt(computed.difference)}`)}
@@ -279,8 +355,8 @@ const BalanceSheetPage = () => {
 
       {/* ── Validation warning ── */}
       {validationWarning && (
-        <div className="mb-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <div className="mb-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2" role="alert">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {validationWarning}
         </div>
       )}
@@ -289,8 +365,13 @@ const BalanceSheetPage = () => {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("gap-2 text-xs", !asOfDate && "text-muted-foreground")}>
-              <CalendarIcon className="w-3.5 h-3.5" />
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("gap-2 text-xs", !asOfDate && "text-muted-foreground")}
+              aria-label={bn ? "তারিখ নির্বাচন করুন" : "Select date"}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" aria-hidden="true" />
               {asOfDate ? formatLocalDate(asOfDate, lang) : (bn ? "তারিখ নির্বাচন করুন" : "Select date")}
             </Button>
           </PopoverTrigger>
@@ -298,7 +379,7 @@ const BalanceSheetPage = () => {
             <Calendar
               mode="single"
               selected={asOfDate}
-              onSelect={setAsOfDate}
+              onSelect={handleDateSelect}
               disabled={(date) => date > new Date()}
               initialFocus
               className="p-3 pointer-events-auto"
@@ -307,18 +388,32 @@ const BalanceSheetPage = () => {
         </Popover>
 
         {asOfDate && (
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setAsOfDate(undefined)}>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setAsOfDate(undefined)} aria-label={bn ? "তারিখ রিসেট" : "Reset date"}>
             {bn ? "রিসেট" : "Reset"}
           </Button>
         )}
 
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportCSV} disabled={!rows?.length}>
-            <FileSpreadsheet className="w-3.5 h-3.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={exportCSV}
+            disabled={!rows?.length}
+            aria-label={bn ? "CSV ডাউনলোড" : "Download CSV"}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden="true" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportPDF} disabled={!rows?.length}>
-            <FileText className="w-3.5 h-3.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={exportPDF}
+            disabled={!rows?.length}
+            aria-label={bn ? "PDF ডাউনলোড" : "Download PDF"}
+          >
+            <FileText className="w-3.5 h-3.5" aria-hidden="true" />
             PDF
           </Button>
         </div>
@@ -328,48 +423,18 @@ const BalanceSheetPage = () => {
         <TableSkeleton rows={8} cols={3} />
       ) : (
         <div className="space-y-5">
-          {renderSection("asset", computed.totalAssets)}
-          {renderSection("liability", computed.totalLiabilities)}
-          {renderSection("equity", computed.totalEquity)}
+          <SectionTable type="asset" items={computed.sections.asset} total={computed.totalAssets} bn={bn} />
+          <SectionTable type="liability" items={computed.sections.liability} total={computed.totalLiabilities} bn={bn} />
+          <SectionTable type="equity" items={computed.sections.equity} total={computed.totalEquity} bn={bn} />
 
-          {/* ── Equation validation banner ── */}
-          <Card
-            className="overflow-hidden"
-            style={{
-              background: computed.balanced
-                ? "linear-gradient(135deg, hsl(142 70% 45% / 0.08), hsl(142 70% 45% / 0.03))"
-                : "linear-gradient(135deg, hsl(0 84% 60% / 0.08), hsl(0 84% 60% / 0.03))",
-              borderColor: computed.balanced
-                ? "hsl(142 70% 45% / 0.3)"
-                : "hsl(0 84% 60% / 0.3)",
-            }}
-          >
-            <CardContent className="py-5 px-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {bn ? "অ্যাকাউন্টিং সমীকরণ" : "Accounting Equation"}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {fmtAmt(computed.totalAssets)} = {fmtAmt(computed.totalLiabilities)} + {fmtAmt(computed.totalEquity)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {bn ? "সম্পদ = দায় + মালিকানা স্বত্ব" : "Assets = Liabilities + Equity"}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <Badge
-                    variant={computed.balanced ? "default" : "destructive"}
-                    className="text-sm px-4 py-1.5"
-                  >
-                    {computed.balanced
-                      ? (bn ? "✅ ব্যালেন্স সঠিক" : "✅ Balanced")
-                      : (bn ? `⚠️ অমিল — পার্থক্য: ${fmtAmt(computed.difference)}` : `⚠️ Diff: ${fmtAmt(computed.difference)}`)}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <EquationBanner
+            totalAssets={computed.totalAssets}
+            totalLiabilities={computed.totalLiabilities}
+            totalEquity={computed.totalEquity}
+            difference={computed.difference}
+            balanced={computed.balanced}
+            bn={bn}
+          />
         </div>
       )}
     </AppLayout>
