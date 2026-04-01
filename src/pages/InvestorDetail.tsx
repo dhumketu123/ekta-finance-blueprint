@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
@@ -10,12 +10,14 @@ import AgreementPDFTemplate from "@/components/AgreementPDFTemplate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvestor, useTransactions } from "@/hooks/useSupabaseData";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, Phone, Wallet, Crown, Gem, Award, Star,
   PlusCircle, ArrowDownCircle, Banknote, Calendar, Timer,
-  Download, LineChart as LineChartIcon, Sparkles,
+  Download, LineChart as LineChartIcon, Sparkles, Edit2, Trash2, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +29,9 @@ import { ResponsiveContainer, Tooltip as RechartsTooltip, Area, AreaChart } from
 import { InvestorDividendModal } from "@/components/investor/InvestorDividendModal";
 import { InvestorCapitalAddModal } from "@/components/investor/InvestorCapitalAddModal";
 import { InvestorWithdrawalModal } from "@/components/investor/InvestorWithdrawalModal";
+import InvestorForm from "@/components/forms/InvestorForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 /* ─── Tier Badge Logic ─── */
 const getTier = (capital: number, bn: boolean) => {
@@ -55,16 +60,33 @@ const getProjection = (capital: number, rate: number, bn: boolean) => {
 
 const InvestorDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const bn = lang === "bn";
+  const { canEditInvestors } = usePermissions();
   const { data: dbInvestor, isLoading } = useInvestor(id || "");
   const { data: txns } = useTransactions({ investor_id: id });
+  const softDelete = useSoftDelete("investors");
 
   // Modal states
   const [payDividendOpen, setPayDividendOpen] = useState(false);
   const [addCapitalOpen, setAddCapitalOpen] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [investorFormOpen, setInvestorFormOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+
+  const handleDeleteConfirmed = () => setPinOpen(true);
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSuccess: () => navigate("/investors"),
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   const inv = dbInvestor;
 
@@ -374,6 +396,42 @@ const InvestorDetail = () => {
         onClose={() => setWithdrawalOpen(false)}
         investor={inv}
         capital={capital}
+      />
+
+      {/* ═══ Management Section ═══ */}
+      {canEditInvestors && (
+        <div className="card-elevated p-5 space-y-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "ব্যবস্থাপনা" : "Management"}</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setInvestorFormOpen(true)}>
+              <Edit2 className="w-3.5 h-3.5" /> {bn ? "প্রোফাইল সম্পাদনা" : "Edit Profile"}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(inv)}>
+              <Trash2 className="w-3.5 h-3.5" /> {bn ? "বিনিয়োগকারী মুছুন" : "Delete Investor"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {investorFormOpen && <InvestorForm open={investorFormOpen} onClose={() => setInvestorFormOpen(false)} editData={inv} />}
+
+      {deleteTarget && !pinOpen && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirmed}
+          itemName={bn ? inv.name_bn : inv.name_en}
+          loading={softDelete.isPending}
+        />
+      )}
+
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
+        onAuthorized={handlePinAuthorized}
       />
     </AppLayout>
   );

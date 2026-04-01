@@ -8,23 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, Users, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Users, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useSoftDelete } from "@/hooks/useCrudOperations";
 import ClientForm from "@/components/forms/ClientForm";
-import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Clients = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const { canEditClients, canDeleteClients } = usePermissions();
-  const softDelete = useSoftDelete("clients");
+  const { canEditClients } = usePermissions();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
 
   const { data: clients, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
@@ -40,9 +35,6 @@ const Clients = () => {
     return c.name_en.toLowerCase().includes(q) || c.name_bn.toLowerCase().includes(q) || c.phone?.toLowerCase().includes(q) || c.area?.toLowerCase().includes(q);
   });
 
-  const handleEdit = (e: React.MouseEvent, c: any) => { e.stopPropagation(); setEditData(c); setFormOpen(true); };
-  const handleDelete = (e: React.MouseEvent, c: any) => { e.stopPropagation(); setDeleteTarget(c); };
-
   return (
     <AppLayout>
       <PageHeader
@@ -51,7 +43,7 @@ const Clients = () => {
         badge={lang === "bn" ? "👥 সদস্য ব্যবস্থাপনা" : "👥 Member Management"}
         actions={
           canEditClients ? (
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setFormOpen(true)}>
               <Plus className="w-3.5 h-3.5" /> {t("clients.add")}
             </Button>
           ) : null
@@ -82,7 +74,6 @@ const Clients = () => {
                   <TableHead>{t("table.area")}</TableHead>
                   <TableHead>{t("table.loan")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
-                  {(canEditClients || canDeleteClients) && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -96,14 +87,6 @@ const Clients = () => {
                     <TableCell className="text-xs">{c.area || "—"}</TableCell>
                     <TableCell className="text-xs font-semibold">{c.loan_amount ? `৳${Number(c.loan_amount).toLocaleString()}` : "—"}</TableCell>
                     <TableCell><StatusBadge status={c.status === "overdue" ? "overdue" : c.status === "pending" ? "pending" : c.status === "active" ? "active" : "inactive"} /></TableCell>
-                    {(canEditClients || canDeleteClients) && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {canEditClients && <button onClick={(e) => handleEdit(e, c)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>}
-                          {canDeleteClients && <button onClick={(e) => handleDelete(e, c)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>}
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -135,16 +118,7 @@ const Clients = () => {
         </>
       )}
 
-      {formOpen && <ClientForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
-          itemName={deleteTarget.name_en}
-          loading={softDelete.isPending}
-        />
-      )}
+      {formOpen && <ClientForm open={formOpen} onClose={() => setFormOpen(false)} />}
     </AppLayout>
   );
 };

@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useMemo, useCallback } from "react";
 import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
-  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon, Phone
+  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon, Phone, Edit2, Trash2, Settings
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -44,14 +44,20 @@ import QuickActionGrid from "@/components/QuickActionGrid";
 import TrustTierHeroCard from "@/components/TrustTierHeroCard";
 import DreamVaultCard from "@/components/DreamVaultCard";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
+import ClientForm from "@/components/forms/ClientForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const ClientDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const bn = lang === "bn";
-  const { canEditClients, isAdmin, isTreasurer, isOwner } = usePermissions();
+  const { canEditClients, canDeleteClients, isAdmin, isTreasurer, isOwner } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
+  const softDelete = useSoftDelete("clients");
 
   const [disburseOpen, setDisburseOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -70,7 +76,21 @@ const ClientDetail = () => {
   const [showSettled, setShowSettled] = useState(false);
   const [chartDateFrom, setChartDateFrom] = useState<Date | undefined>(undefined);
   const [chartDateTo, setChartDateTo] = useState<Date | undefined>(undefined);
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen] = useState(false);
   const HISTORY_PER_PAGE = 20;
+
+  const handleDeleteConfirmed = () => setPinOpen(true);
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSuccess: () => navigate("/clients"),
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   // ALL active loans for this client (multi-loan support)
   const { data: activeLoans } = useQuery({
@@ -1228,6 +1248,46 @@ const ClientDetail = () => {
           />
         );
       })()}
+
+      {/* ═══ Management Section ═══ */}
+      {(canEditClients || canDeleteClients) && (
+        <div className="card-elevated p-5 space-y-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "ব্যবস্থাপনা" : "Management"}</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {canEditClients && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setClientFormOpen(true)}>
+                <Edit2 className="w-3.5 h-3.5" /> {bn ? "প্রোফাইল সম্পাদনা" : "Edit Profile"}
+              </Button>
+            )}
+            {canDeleteClients && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(client)}>
+                <Trash2 className="w-3.5 h-3.5" /> {bn ? "গ্রাহক মুছুন" : "Delete Client"}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {clientFormOpen && <ClientForm open={clientFormOpen} onClose={() => setClientFormOpen(false)} editData={client} />}
+
+      {deleteTarget && !pinOpen && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirmed}
+          itemName={bn ? (client as any)?.name_bn || (client as any)?.name_en : (client as any)?.name_en}
+          loading={softDelete.isPending}
+        />
+      )}
+
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
+        onAuthorized={handlePinAuthorized}
+      />
     </AppLayout>
   );
 };
