@@ -1,27 +1,42 @@
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOwner } from "@/hooks/useSupabaseData";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Crown, Phone, Wallet, TrendingUp, PiggyBank, BarChart3,
-  Calendar, CircleDollarSign,
+  Calendar, CircleDollarSign, AlertTriangle, Trash2,
 } from "lucide-react";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, AreaChart, Area, Tooltip as RechartsTooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
+import { toast } from "sonner";
 
 const OwnerDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { role } = useAuth();
+  const queryClient = useQueryClient();
   const bn = lang === "bn";
+  const isSuperAdmin = role === "super_admin";
   const { data: owner, isLoading } = useOwner(id || "");
+
+  // Hard-delete state
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch owner's profit share history
   const { data: profitShares } = useQuery({
@@ -276,6 +291,102 @@ const OwnerDetail = () => {
           </p>
         </div>
       )}
+
+      {/* Super Admin: Hard Delete Management */}
+      {isSuperAdmin && owner && (
+        <div className="card-elevated p-5 space-y-4 border border-destructive/20">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">
+              {bn ? "সিস্টেম রিসেট (সুপার অ্যাডমিন)" : "System Reset (Super Admin)"}
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {bn
+              ? "এই অপশনটি শুধুমাত্র লঞ্চের আগে টেস্ট ডেটা মুছে ফেলার জন্য। এটি স্থায়ীভাবে auth অ্যাকাউন্ট ও সকল সংশ্লিষ্ট ডেটা মুছে ফেলবে।"
+              : "This option is for clearing test data before launch. It will permanently delete the auth account and all associated data."}
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+            onClick={() => setWarningOpen(true)}
+            disabled={deleting}
+          >
+            <Trash2 className="w-4 h-4" />
+            {bn ? "টেস্ট মালিক মুছুন (সিস্টেম রিসেট)" : "Delete Test Owner (System Reset)"}
+          </Button>
+        </div>
+      )}
+
+      {/* Step 1: Critical Warning Modal */}
+      <Dialog open={warningOpen} onOpenChange={setWarningOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              {bn ? "গুরুতর সতর্কতা" : "Critical Warning"}
+            </DialogTitle>
+            <DialogDescription className="text-sm pt-2 space-y-2">
+              <span className="block font-semibold text-destructive">
+                {bn
+                  ? "⚠️ এই অপারেশন অপরিবর্তনীয়!"
+                  : "⚠️ This operation is irreversible!"}
+              </span>
+              <span className="block">
+                {bn
+                  ? "এটি স্থায়ীভাবে এই মালিকের auth অ্যাকাউন্ট, প্রোফাইল, রোল এবং সকল সংশ্লিষ্ট টেস্ট ডেটা মুছে ফেলবে। এই কাজ আর পূর্বাবস্থায় ফেরানো যাবে না।"
+                  : "This will permanently delete this owner's auth account, profile, role assignments, and all associated test data. This action cannot be undone."}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setWarningOpen(false)}>
+              {bn ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setWarningOpen(false);
+                setPinOpen(true);
+              }}
+            >
+              {bn ? "নিশ্চিত, পিন দিন" : "Confirm, Enter PIN"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2: T-PIN Verification */}
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        onAuthorized={async () => {
+          setPinOpen(false);
+          setDeleting(true);
+          try {
+            const { data, error } = await supabase.rpc("secure_delete_owner" as any, {
+              _owner_user_id: id,
+            });
+            if (error) throw new Error(error.message);
+
+            const result = data as unknown as { status: string; message: string };
+            if (result.status === "error") {
+              toast.error(result.message);
+              return;
+            }
+
+            toast.success(bn ? "মালিক স্থায়ীভাবে মুছে ফেলা হয়েছে ✅" : "Owner permanently deleted ✅");
+            queryClient.invalidateQueries({ queryKey: ["owners"] });
+            navigate("/owners");
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Deletion failed";
+            toast.error(message);
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </AppLayout>
   );
 };

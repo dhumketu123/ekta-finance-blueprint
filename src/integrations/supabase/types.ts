@@ -3285,6 +3285,7 @@ export type Database = {
         Returns: Json
       }
       run_retained_earnings_closure: { Args: never; Returns: Json }
+      secure_delete_owner: { Args: { _owner_user_id: string }; Returns: Json }
       seed_default_chart_of_accounts: {
         Args: { p_tenant_id: string }
         Returns: undefined
