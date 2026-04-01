@@ -23,6 +23,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Redirect alumni to their restricted dashboard
+  if (role === "alumni" && allowedRoles && !allowedRoles.includes("alumni")) {
+    return <Navigate to="/alumni" replace />;
+  }
+
   // Redirect investor away from dashboard to wallet
   if (role === "investor" && allowedRoles && !allowedRoles.includes("investor")) {
     return <Navigate to="/wallet" replace />;
