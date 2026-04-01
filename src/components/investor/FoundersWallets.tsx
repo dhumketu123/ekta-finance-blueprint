@@ -89,8 +89,9 @@ export const FoundersWallets = memo(function FoundersWallets({ investors }: Prop
             return (
               <div
                 key={inv.id}
+                onClick={() => navigate(`/owners/${inv.id}`)}
                 className={cn(
-                  "relative flex-shrink-0 w-[180px] p-4 rounded-xl",
+                  "relative flex-shrink-0 w-[180px] p-4 rounded-xl cursor-pointer",
                   "bg-gradient-to-br",
                   tier.gradient,
                   "border border-border/60 backdrop-blur-sm",
