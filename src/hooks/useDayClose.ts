@@ -59,8 +59,13 @@ export const useDayClose = (date: string) => {
       qc.invalidateQueries({ queryKey: ["day-close-summary", date] });
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : "অজানা ত্রুটি";
-      toast.error(msg);
+      console.error("[DayClose:submitClose]", error);
+      const raw = error instanceof Error ? error.message : "";
+      if (raw.includes("violates") || raw.includes("invalid input") || raw.includes("enum")) {
+        toast.error("⚠️ ইনপুট সঠিক নয়, অনুগ্রহ করে চেক করুন।");
+      } else {
+        toast.error("❌ সিস্টেম এরর: ডাটাবেসে তথ্য সংরক্ষণে সমস্যা হয়েছে।");
+      }
     },
   });
 
