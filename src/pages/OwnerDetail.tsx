@@ -294,6 +294,32 @@ const OwnerDetail = () => {
         </div>
       )}
 
+      {/* Owner Exit Protocol — Admin only */}
+      {(role === "admin" || isSuperAdmin) && owner && (
+        <div className="card-elevated p-5 space-y-4 border border-warning/20">
+          <div className="flex items-center gap-2 text-warning">
+            <LogOut className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">
+              {bn ? "মালিক এক্সিট প্রোটোকল" : "Owner Exit Protocol"}
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {bn
+              ? "কর্পোরেট-গ্রেড এক্সিট সেটেলমেন্ট। ভেস্টিং ক্যালকুলেশন, পেনাল্টি/বোনাস, MoU জেনারেশন ও Alumni রোল ট্রানজিশন।"
+              : "Corporate-grade exit settlement with vesting calculation, penalty/bonus, MoU generation & Alumni role transition."}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-warning/30 text-warning hover:bg-warning/5"
+            onClick={() => setExitModalOpen(true)}
+          >
+            <LogOut className="w-4 h-4" />
+            {bn ? "এক্সিট প্রক্রিয়া শুরু করুন" : "Initiate Exit Protocol"}
+          </Button>
+        </div>
+      )}
+
       {/* Super Admin: Hard Delete Management */}
       {isSuperAdmin && owner && (
         <div className="card-elevated p-5 space-y-4 border border-destructive/20">
@@ -304,24 +330,34 @@ const OwnerDetail = () => {
             </h3>
           </div>
           <p className="text-xs text-muted-foreground">
-            {bn
-              ? "এই অপশনটি শুধুমাত্র লঞ্চের আগে টেস্ট ডেটা মুছে ফেলার জন্য। এটি স্থায়ীভাবে auth অ্যাকাউন্ট ও সকল সংশ্লিষ্ট ডেটা মুছে ফেলবে।"
-              : "This option is for clearing test data before launch. It will permanently delete the auth account and all associated data."}
+            {bn ? "শুধুমাত্র টেস্ট ডেটা মুছে ফেলার জন্য।" : "For clearing test data only."}
           </p>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={() => setWarningOpen(true)}
-            disabled={deleting}
-          >
+          <Button variant="destructive" size="sm" className="gap-2" onClick={() => setWarningOpen(true)} disabled={deleting}>
             <Trash2 className="w-4 h-4" />
-            {bn ? "টেস্ট মালিক মুছুন (সিস্টেম রিসেট)" : "Delete Test Owner (System Reset)"}
+            {bn ? "টেস্ট মালিক মুছুন" : "Delete Test Owner"}
           </Button>
         </div>
       )}
 
-      {/* Step 1: Critical Warning Modal */}
+      {/* Exit Protocol Modal */}
+      {owner && (
+        <OwnerExitModal
+          open={exitModalOpen}
+          onClose={() => setExitModalOpen(false)}
+          owner={{
+            id: owner.id,
+            name_en: owner.name_en,
+            name_bn: owner.name_bn,
+            phone: owner.phone || "",
+            created_at: owner.created_at,
+            owner_id: owner.owner_id,
+          }}
+          totalCapital={0}
+          totalProfitEarned={totalProfitEarned}
+        />
+      )}
+
+      {/* Hard Delete Warning Modal */}
       <Dialog open={warningOpen} onOpenChange={setWarningOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -331,35 +367,25 @@ const OwnerDetail = () => {
             </DialogTitle>
             <DialogDescription className="text-sm pt-2 space-y-2">
               <span className="block font-semibold text-destructive">
-                {bn
-                  ? "⚠️ এই অপারেশন অপরিবর্তনীয়!"
-                  : "⚠️ This operation is irreversible!"}
+                {bn ? "⚠️ অপরিবর্তনীয়!" : "⚠️ Irreversible!"}
               </span>
               <span className="block">
                 {bn
-                  ? "এটি স্থায়ীভাবে এই মালিকের auth অ্যাকাউন্ট, প্রোফাইল, রোল এবং সকল সংশ্লিষ্ট টেস্ট ডেটা মুছে ফেলবে। এই কাজ আর পূর্বাবস্থায় ফেরানো যাবে না।"
-                  : "This will permanently delete this owner's auth account, profile, role assignments, and all associated test data. This action cannot be undone."}
+                  ? "এটি স্থায়ীভাবে auth অ্যাকাউন্ট ও সকল ডেটা মুছে ফেলবে।"
+                  : "This will permanently delete the auth account and all data."}
               </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setWarningOpen(false)}>
-              {bn ? "বাতিল" : "Cancel"}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setWarningOpen(false);
-                setPinOpen(true);
-              }}
-            >
+            <Button variant="outline" onClick={() => setWarningOpen(false)}>{bn ? "বাতিল" : "Cancel"}</Button>
+            <Button variant="destructive" onClick={() => { setWarningOpen(false); setPinOpen(true); }}>
               {bn ? "নিশ্চিত, পিন দিন" : "Confirm, Enter PIN"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Step 2: T-PIN Verification */}
+      {/* Hard Delete T-PIN */}
       <TransactionAuthModal
         open={pinOpen}
         onClose={() => setPinOpen(false)}
@@ -367,23 +393,15 @@ const OwnerDetail = () => {
           setPinOpen(false);
           setDeleting(true);
           try {
-            const { data, error } = await supabase.rpc("secure_delete_owner" as any, {
-              _owner_user_id: id,
-            });
+            const { data, error } = await supabase.rpc("secure_delete_owner" as any, { _owner_user_id: id });
             if (error) throw new Error(error.message);
-
             const result = data as unknown as { status: string; message: string };
-            if (result.status === "error") {
-              toast.error(result.message);
-              return;
-            }
-
-            toast.success(bn ? "মালিক স্থায়ীভাবে মুছে ফেলা হয়েছে ✅" : "Owner permanently deleted ✅");
+            if (result.status === "error") { toast.error(result.message); return; }
+            toast.success(bn ? "মালিক মুছে ফেলা হয়েছে ✅" : "Owner deleted ✅");
             queryClient.invalidateQueries({ queryKey: ["owners"] });
             navigate("/owners");
           } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Deletion failed";
-            toast.error(message);
+            toast.error(err instanceof Error ? err.message : "Deletion failed");
           } finally {
             setDeleting(false);
           }
