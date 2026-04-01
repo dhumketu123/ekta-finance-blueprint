@@ -75,11 +75,13 @@ const GridSkeleton = () => (
 
 const Owners = () => {
   const { lang } = useLanguage();
+  const { role } = useAuth();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
   const { data: investors, isLoading } = useInvestors();
   const { tenantId } = useTenantId();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
+  const isSuperAdmin = role === "super_admin";
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
