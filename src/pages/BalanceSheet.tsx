@@ -21,7 +21,7 @@ import { formatLocalDate } from "@/lib/date-utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface BsRow {
-  coa_id: string;
+  id: string;
   code: string;
   name: string;
   name_bn: string | null;
