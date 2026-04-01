@@ -45,6 +45,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
   const [step, setStep] = useState<ExitStep>("overview");
   const [penalty, setPenalty] = useState<number>(0);
   const [bonus, setBonus] = useState<number>(0);
+  const [accruedProfit, setAccruedProfit] = useState<number>(0);
   const [nonCompeteMonths, setNonCompeteMonths] = useState<number>(24);
   const [notes, setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
