@@ -149,6 +149,7 @@ const OwnerProfitDistribution = () => {
         description={lang === "bn"
           ? "মাসিক নিট মুনাফা হিসাব ও মালিকদের মধ্যে বিতরণ"
           : "Monthly net profit calculation and distribution among owners"}
+        badge={lang === "bn" ? "💎 প্রফিট ডিস্ট্রিবিউশন" : "💎 Profit Distribution"}
         actions={
           isAdmin ? (
             <Button

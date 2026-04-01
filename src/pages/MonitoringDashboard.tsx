@@ -137,6 +137,7 @@ const MonitoringDashboard = () => {
       <PageHeader
         title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"}
         description={lang === "bn" ? "ডেলিভারি, ক্রন জব, অ্যানোমালি ইন্টেলিজেন্স" : "Delivery, cron jobs & anomaly intelligence"}
+        badge={lang === "bn" ? "🖥️ সিস্টেম অপস" : "🖥️ System Ops"}
         actions={
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={refetchAll} disabled={isFetching}>
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />

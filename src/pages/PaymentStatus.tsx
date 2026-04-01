@@ -117,6 +117,7 @@ const PaymentStatusPage = () => {
       <PageHeader
         title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস ড্যাশবোর্ড" : "Payment Status Dashboard"}
         description={lang === "bn" ? "সকল কিস্তির পেমেন্ট অবস্থা ও সারাংশ" : "Overview of all installment payment statuses"}
+        badge={lang === "bn" ? "💳 পেমেন্ট ট্র্যাকার" : "💳 Payment Tracker"}
         actions={
           <Button variant="outline" size="sm" onClick={exportCsv} className="gap-2">
             <Download className="w-4 h-4" />

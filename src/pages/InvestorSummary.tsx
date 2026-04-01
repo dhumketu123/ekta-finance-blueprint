@@ -123,6 +123,7 @@ const InvestorSummaryPage = () => {
       <PageHeader
         title={bn ? "বিনিয়োগকারী সারাংশ রিপোর্ট" : "Investor Summary Report"}
         description={bn ? "সকল বিনিয়োগকারীর পোর্টফোলিও, লভ্যাংশ ও পুনর্বিনিয়োগ সারাংশ" : "Portfolio, profit distribution & reinvestment summary for all investors"}
+        badge={bn ? "📈 ইনভেস্টর ইন্টেলিজেন্স" : "📈 Investor Intelligence"}
         actions={
           <Button variant="outline" size="sm" onClick={exportCsv} className="gap-2">
             <Download className="w-4 h-4" />
