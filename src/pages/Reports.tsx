@@ -87,13 +87,14 @@ const ReportsPage = () => {
 
   return (
     <AppLayout>
-      <div className="relative min-h-screen overflow-x-hidden">
-        {/* Animated Mesh Background — z-index: -10 */}
-        <div className="absolute inset-0 -z-10">
+      {/* Full-bleed wrapper: negative margins to escape AppLayout padding, then re-apply our own */}
+      <div className="relative -mx-4 -mt-6 -mb-40 md:-mx-6 md:-mt-8 md:-mb-8 lg:-mx-8 min-h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Animated Mesh Background */}
+        <div className="absolute inset-0">
           <div className="w-full h-full animate-mesh bg-gradient-to-br from-[hsl(217,100%,41%)] via-[hsl(228,92%,62%)] to-[hsl(211,97%,71%)]" />
         </div>
 
-        {/* Page Content — z-index: 10 */}
+        {/* Page Content */}
         <div className="relative z-10 px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-6">
           {/* Title */}
           <div className="space-y-1">
@@ -126,9 +127,8 @@ const ReportsPage = () => {
             })}
           </div>
 
-
           {/* Reports Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-8">
             {reportLinks.map((r) => (
               <Link key={r.path} to={r.path} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-2xl">
                 <GlassCard>
