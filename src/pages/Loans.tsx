@@ -17,6 +17,7 @@ import LoanProductForm from "@/components/forms/LoanProductForm";
 import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
 import PaymentTestPanel from "@/components/forms/PaymentTestPanel";
 import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const Loans = () => {
   const { t, lang } = useLanguage();
@@ -27,6 +28,7 @@ const Loans = () => {
   const [formOpen, setFormOpen]       = useState(false);
   const [editData, setEditData]       = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen]         = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [testOpen, setTestOpen]       = useState(false);
   const [disburseOpen, setDisburseOpen] = useState(false);
@@ -46,6 +48,21 @@ const Loans = () => {
 
   const handleEdit = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setEditData(lp); setFormOpen(true); };
   const handleDelete = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setDeleteTarget(lp); };
+
+  // Step 1: DeleteConfirmDialog confirms → opens PIN
+  const handleDeleteConfirmed = () => {
+    setPinOpen(true);
+  };
+
+  // Step 2: PIN authorized → execute soft delete
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   return (
     <AppLayout>
@@ -171,6 +188,16 @@ const Loans = () => {
                     <span className="capitalize">{String(lp.payment_type).replace("_", " ")}</span>
                   </div>
                 </div>
+                {canEditLoans && (
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={(e) => handleEdit(e, lp)} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Edit">
+                      <Edit2 className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button onClick={(e) => handleDelete(e, lp)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" aria-label="Delete">
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
@@ -182,15 +209,24 @@ const Loans = () => {
       {paymentOpen && <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} />}
       {testOpen && <PaymentTestPanel open={testOpen} onClose={() => setTestOpen(false)} />}
       {disburseOpen && <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} />}
-      {deleteTarget && (
+
+      {/* Step 1: Confirm deletion */}
+      {deleteTarget && !pinOpen && (
         <DeleteConfirmDialog
           open={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
-          itemName={deleteTarget.product_name_en}
+          onConfirm={handleDeleteConfirmed}
+          itemName={lang === "bn" ? deleteTarget.product_name_bn || deleteTarget.product_name_en : deleteTarget.product_name_en}
           loading={softDelete.isPending}
         />
       )}
+
+      {/* Step 2: PIN verification after confirmation */}
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
+        onAuthorized={handlePinAuthorized}
+      />
     </AppLayout>
   );
 };
