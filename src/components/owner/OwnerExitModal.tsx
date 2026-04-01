@@ -79,6 +79,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
         tenureDays,
         totalCapital,
         totalProfitEarned,
+        accruedProfit,
         earlyExitPenalty: penalty,
         loyaltyBonus: bonus,
         finalPayout,
