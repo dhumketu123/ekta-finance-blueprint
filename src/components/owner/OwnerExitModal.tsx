@@ -61,7 +61,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
   const vestingPct = Math.min(100, (tenureDays / VENTURE_DAYS) * 100);
   const vestedCapital = totalCapital * (vestingPct / 100);
 
-  const settlementAmount = totalCapital + totalProfitEarned;
+  const settlementAmount = totalCapital + totalProfitEarned + accruedProfit;
   const finalPayout = Math.max(0, settlementAmount - penalty + bonus);
 
   const handleProcessExit = async () => {
