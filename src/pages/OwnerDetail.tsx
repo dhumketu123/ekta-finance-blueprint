@@ -678,7 +678,7 @@ const OwnerDetail = () => {
                     onClick={async () => {
                       const { data } = await supabase.storage
                         .from("legal-vault")
-                        .createSignedUrl(`${id}/${doc.name}`, 300);
+                        .createSignedUrl(`${ownerRefId}/${doc.name}`, 300);
                       if (data?.signedUrl) window.open(data.signedUrl, "_blank");
                     }}
                   >
