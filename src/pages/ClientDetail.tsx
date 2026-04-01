@@ -51,11 +51,13 @@ import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const ClientDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const bn = lang === "bn";
-  const { canEditClients, isAdmin, isTreasurer, isOwner } = usePermissions();
+  const { canEditClients, canDeleteClients, isAdmin, isTreasurer, isOwner } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
+  const softDelete = useSoftDelete("clients");
 
   const [disburseOpen, setDisburseOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
