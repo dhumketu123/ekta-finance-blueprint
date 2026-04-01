@@ -10,6 +10,7 @@ interface ExitMouData {
   tenureDays: number;
   totalCapital: number;
   totalProfitEarned: number;
+  accruedProfit?: number;
   earlyExitPenalty: number;
   loyaltyBonus: number;
   finalPayout: number;

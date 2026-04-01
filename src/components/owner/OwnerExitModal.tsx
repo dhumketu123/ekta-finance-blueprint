@@ -351,6 +351,16 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
                   </h4>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">{bn ? "মূলধন + মুনাফা" : "Capital + Profit"}</span>
+                      <span className="font-mono">৳{(totalCapital + totalProfitEarned).toLocaleString()}</span>
+                    </div>
+                    {accruedProfit > 0 && (
+                      <div className="flex justify-between text-primary">
+                        <span>(+) {bn ? "জমা মুনাফা" : "Accrued Profit"}</span>
+                        <span className="font-mono">+৳{accruedProfit.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
                       <span className="text-muted-foreground">{bn ? "গ্রস সেটেলমেন্ট" : "Gross Settlement"}</span>
                       <span className="font-mono">৳{settlementAmount.toLocaleString()}</span>
                     </div>
