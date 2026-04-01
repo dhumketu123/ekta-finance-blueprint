@@ -83,11 +83,9 @@ async function logPageVisit() {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const tenantId = (user as Record<string, unknown>)?.app_metadata
-      ? ((user as Record<string, unknown>).app_metadata as Record<string, unknown>)?.tenant_id
-      : undefined;
-    const profileTenantId = tenantId as string | undefined;
-    let resolvedTenantId = profileTenantId;
+    const appMeta = user.app_metadata as Record<string, unknown> | undefined;
+    const tenantId = appMeta?.tenant_id as string | undefined;
+    let resolvedTenantId = tenantId;
     if (!resolvedTenantId) {
       const { data: profile } = await supabase
         .from("profiles" as never)
@@ -101,7 +99,6 @@ async function logPageVisit() {
       entity_type: "report",
       action_type: "view",
       details: { page: "balance_sheet", timestamp: new Date().toISOString() },
-      ...(resolvedTenantId ? {} : {}),
     });
   } catch {
     // silent — audit failure must not block UI
