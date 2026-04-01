@@ -25,9 +25,18 @@ import { toast } from "sonner";
 
 const OwnerDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { role } = useAuth();
+  const queryClient = useQueryClient();
   const bn = lang === "bn";
+  const isSuperAdmin = role === "super_admin";
   const { data: owner, isLoading } = useOwner(id || "");
+
+  // Hard-delete state
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch owner's profit share history
   const { data: profitShares } = useQuery({
