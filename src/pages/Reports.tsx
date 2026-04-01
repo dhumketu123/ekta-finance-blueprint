@@ -3,7 +3,7 @@ import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, CreditCard, Users } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen } from "lucide-react";
 
 const reportLinks = [
   {
@@ -13,6 +13,14 @@ const reportLinks = [
     titleEn: "Trial Balance",
     descBn: "সকল হিসাবের মোট ডেবিট ও ক্রেডিট সারাংশ",
     descEn: "Summary of total debit & credit for all accounts",
+  },
+  {
+    path: "/reports/balance-sheet",
+    icon: BookOpen,
+    titleBn: "ব্যালেন্স শীট",
+    titleEn: "Balance Sheet",
+    descBn: "সম্পদ, দায় ও মালিকানা স্বত্ব — আর্থিক অবস্থান বিবরণী",
+    descEn: "Assets, Liabilities & Equity — Statement of Financial Position",
   },
   {
     path: "/reports/profit-loss",
