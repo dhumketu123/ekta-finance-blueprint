@@ -8,11 +8,13 @@ import { FridayExpressGrid } from "@/components/investor/FridayExpressGrid";
 import { MasterTreasury } from "@/components/investor/MasterTreasury";
 import { FoundersWallets } from "@/components/investor/FoundersWallets";
 import { CapitalInjectionModal } from "@/components/investor/CapitalInjectionModal";
+import TreasuryManagementCard from "@/components/owner/TreasuryManagementCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvestors } from "@/hooks/useSupabaseData";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTenantId } from "@/hooks/useTenantId";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Plus, Briefcase } from "lucide-react";
@@ -73,11 +75,13 @@ const GridSkeleton = () => (
 
 const Owners = () => {
   const { lang } = useLanguage();
+  const { role } = useAuth();
   const { isAdmin, isOwner, isTreasurer } = usePermissions();
   const { data: investors, isLoading } = useInvestors();
   const { tenantId } = useTenantId();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
+  const isSuperAdmin = role === "super_admin";
 
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
@@ -165,6 +169,19 @@ const Owners = () => {
           <FoundersWallets investors={activeInvestors} />
         ) : null}
       </div>
+
+      {/* Treasury Management — Super Admin Only */}
+      {isSuperAdmin && (
+        <div className="mb-8">
+          <SectionHeader
+            title={bn ? "🏛️ ট্রেজারি ম্যানেজমেন্ট" : "🏛️ Treasury Management"}
+            subtitle={bn ? "এক্সিটেড পার্টনারদের ইকুইটি পুনর্বণ্টন" : "Redistribute exited partner equity"}
+          />
+          <div className="mt-4">
+            <TreasuryManagementCard />
+          </div>
+        </div>
+      )}
 
       {/* Business Health Analytics */}
       <SectionHeader

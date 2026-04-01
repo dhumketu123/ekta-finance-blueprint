@@ -1205,6 +1205,7 @@ export type Database = {
           reinvest: boolean
           risk_flag: boolean
           serial_number: number | null
+          share_percentage: number
           source_of_fund: string | null
           status: Database["public"]["Enums"]["investor_status"]
           tenant_id: string
@@ -1240,6 +1241,7 @@ export type Database = {
           reinvest?: boolean
           risk_flag?: boolean
           serial_number?: number | null
+          share_percentage?: number
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
           tenant_id: string
@@ -1275,6 +1277,7 @@ export type Database = {
           reinvest?: boolean
           risk_flag?: boolean
           serial_number?: number | null
+          share_percentage?: number
           source_of_fund?: string | null
           status?: Database["public"]["Enums"]["investor_status"]
           tenant_id?: string
@@ -2843,6 +2846,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          internal_treasury: number
           name: string
           plan: string
           status: string
@@ -2850,6 +2854,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          internal_treasury?: number
           name: string
           plan?: string
           status?: string
@@ -2857,6 +2862,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          internal_treasury?: number
           name?: string
           plan?: string
           status?: string
@@ -3094,6 +3100,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_redistribute_treasury: { Args: { _method: string }; Returns: Json }
       apply_loan_payment: {
         Args: {
           _amount: number
@@ -3329,6 +3336,7 @@ export type Database = {
       process_owner_exit:
         | {
             Args: {
+              _accrued_profit?: number
               _early_exit_penalty?: number
               _legal_doc_url?: string
               _loyalty_bonus?: number
@@ -3336,13 +3344,12 @@ export type Database = {
               _notes?: string
               _owner_user_id: string
               _total_capital: number
-              _total_profit_earned: number
+              _total_profit_earned?: number
             }
             Returns: Json
           }
         | {
             Args: {
-              _accrued_profit?: number
               _early_exit_penalty?: number
               _legal_doc_url?: string
               _loyalty_bonus?: number
