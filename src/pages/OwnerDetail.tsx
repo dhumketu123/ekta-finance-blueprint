@@ -4,7 +4,7 @@ import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useOwner } from "@/hooks/useSupabaseData";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
