@@ -1952,6 +1952,69 @@ export type Database = {
           },
         ]
       }
+      owner_exit_settlements: {
+        Row: {
+          created_at: string
+          early_exit_penalty: number
+          exit_date: string
+          exit_status: string
+          final_payout: number
+          id: string
+          legal_doc_url: string | null
+          loyalty_bonus: number
+          non_compete_months: number
+          notes: string | null
+          owner_id: string
+          processed_by: string | null
+          settlement_amount: number
+          tenant_id: string
+          tenure_days: number
+          total_capital: number
+          total_profit_earned: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          early_exit_penalty?: number
+          exit_date?: string
+          exit_status?: string
+          final_payout?: number
+          id?: string
+          legal_doc_url?: string | null
+          loyalty_bonus?: number
+          non_compete_months?: number
+          notes?: string | null
+          owner_id: string
+          processed_by?: string | null
+          settlement_amount?: number
+          tenant_id: string
+          tenure_days?: number
+          total_capital?: number
+          total_profit_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          early_exit_penalty?: number
+          exit_date?: string
+          exit_status?: string
+          final_payout?: number
+          id?: string
+          legal_doc_url?: string | null
+          loyalty_bonus?: number
+          non_compete_months?: number
+          notes?: string | null
+          owner_id?: string
+          processed_by?: string | null
+          settlement_amount?: number
+          tenant_id?: string
+          tenure_days?: number
+          total_capital?: number
+          total_profit_earned?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       owner_profit_distributions: {
         Row: {
           created_at: string
@@ -3260,6 +3323,19 @@ export type Database = {
         Args: { _investor_id: string }
         Returns: undefined
       }
+      process_owner_exit: {
+        Args: {
+          _early_exit_penalty?: number
+          _legal_doc_url?: string
+          _loyalty_bonus?: number
+          _non_compete_months?: number
+          _notes?: string
+          _owner_user_id: string
+          _total_capital: number
+          _total_profit_earned: number
+        }
+        Returns: Json
+      }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
       reject_financial_transaction: {
@@ -3404,7 +3480,13 @@ export type Database = {
         | "ADJUSTMENT_ACCOUNT"
         | "DISBURSEMENT_OUTFLOW"
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
-      app_role: "admin" | "field_officer" | "owner" | "investor" | "treasurer"
+      app_role:
+        | "admin"
+        | "field_officer"
+        | "owner"
+        | "investor"
+        | "treasurer"
+        | "alumni"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
       commitment_status: "pending" | "fulfilled" | "rescheduled"
@@ -3586,7 +3668,14 @@ export const Constants = {
         "DISBURSEMENT_OUTFLOW",
       ],
       account_type: ["asset", "liability", "income", "expense", "equity"],
-      app_role: ["admin", "field_officer", "owner", "investor", "treasurer"],
+      app_role: [
+        "admin",
+        "field_officer",
+        "owner",
+        "investor",
+        "treasurer",
+        "alumni",
+      ],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
       commitment_status: ["pending", "fulfilled", "rescheduled"],
