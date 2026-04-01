@@ -78,6 +78,13 @@ const GlassCard = ({
 const ReportsPage = () => {
   const { lang } = useLanguage();
 
+  const executiveMetrics = [
+    { title: lang === "bn" ? "মাসিক প্রবৃদ্ধি" : "Monthly Growth", value: "+18.4%", subtitle: lang === "bn" ? "গত মাসের তুলনায়" : "Compared to last month", icon: TrendingUp },
+    { title: lang === "bn" ? "সক্রিয় ক্লায়েন্ট" : "Active Clients", value: "1,284", subtitle: lang === "bn" ? "বর্তমানে সংযুক্ত" : "Currently engaged", icon: Users },
+    { title: lang === "bn" ? "ক্যাশ ফ্লো" : "Cash Flow", value: "৳ 24.6L", subtitle: lang === "bn" ? "এই মাসে নিট প্রবাহ" : "Net inflow this month", icon: DollarSign },
+    { title: lang === "bn" ? "সিস্টেম কার্যক্রম" : "System Activity", value: "92%", subtitle: lang === "bn" ? "অপারেশনাল দক্ষতা" : "Operational efficiency", icon: Activity },
+  ];
+
   return (
     <AppLayout>
       <div className="relative min-h-screen overflow-x-hidden">
