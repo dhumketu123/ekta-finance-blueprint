@@ -85,6 +85,17 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewOwnWallet: false,
     isAdmin: false, isOwner: false, isTreasurer: true, isFieldOfficer: false, isInvestor: false,
   },
+  alumni: {
+    canViewClients: false, canEditClients: false, canDeleteClients: false,
+    canViewInvestors: false, canEditInvestors: false,
+    canViewLoans: false, canEditLoans: false,
+    canViewSavings: false, canEditSavings: false,
+    canViewOwners: false, canViewOfficers: false, canEditOfficers: false,
+    canViewNotifications: false, canViewSettings: false, canViewReports: false,
+    canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
+    canViewOwnWallet: false,
+    isAdmin: false, isOwner: false, isTreasurer: false, isFieldOfficer: false, isInvestor: false,
+  },
 };
 
 const DEFAULT_PERMS: PermissionMatrix = PERMISSION_MAP.field_officer;
