@@ -107,6 +107,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
         _non_compete_months: nonCompeteMonths,
         _notes: notes || null,
         _legal_doc_url: legalDocUrl,
+        _accrued_profit: accruedProfit,
       });
 
       if (error) throw new Error(error.message);
