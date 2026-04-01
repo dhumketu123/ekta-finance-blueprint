@@ -64,6 +64,7 @@ function getFounderTier(inv: Investor): { key: string; label_en: string; label_b
 
 export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: Props) {
   const { lang } = useLanguage();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const bn = lang === "bn";
   const today = new Date();
