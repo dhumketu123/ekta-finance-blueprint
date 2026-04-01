@@ -8,23 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, TrendingUp, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useSoftDelete } from "@/hooks/useCrudOperations";
 import InvestorForm from "@/components/forms/InvestorForm";
-import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Investors = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const { canEditInvestors } = usePermissions();
-  const softDelete = useSoftDelete("investors");
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
 
   const { data: investors, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
@@ -39,9 +34,6 @@ const Investors = () => {
     return inv.name_en.toLowerCase().includes(q) || inv.name_bn.toLowerCase().includes(q) || inv.phone?.toLowerCase().includes(q);
   });
 
-  const handleEdit = (e: React.MouseEvent, inv: any) => { e.stopPropagation(); setEditData(inv); setFormOpen(true); };
-  const handleDelete = (e: React.MouseEvent, inv: any) => { e.stopPropagation(); setDeleteTarget(inv); };
-
   return (
     <AppLayout>
       <PageHeader
@@ -50,7 +42,7 @@ const Investors = () => {
         badge={lang === "bn" ? "📊 বিনিয়োগকারী পোর্টাল" : "📊 Investor Portal"}
         actions={
           canEditInvestors ? (
-            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+            <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setFormOpen(true)}>
               <Plus className="w-3.5 h-3.5" /> {t("investors.add")}
             </Button>
           ) : null
@@ -82,7 +74,6 @@ const Investors = () => {
                   <TableHead>{t("table.monthlyProfit")}</TableHead>
                   <TableHead>{t("table.monthlyProfitAmount")}</TableHead>
                   <TableHead>{t("table.reinvest")}</TableHead>
-                  {canEditInvestors && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,14 +93,6 @@ const Investors = () => {
                       <TableCell className="text-xs">{profitPct}%</TableCell>
                       <TableCell className="text-xs text-success font-semibold">৳{profitAmt.toLocaleString()}</TableCell>
                       <TableCell><StatusBadge status={inv.reinvest ? "active" : "inactive"} /></TableCell>
-                      {canEditInvestors && (
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <button onClick={(e) => handleEdit(e, inv)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                            <button onClick={(e) => handleDelete(e, inv)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                          </div>
-                        </TableCell>
-                      )}
                     </TableRow>
                   );
                 })}
@@ -151,16 +134,7 @@ const Investors = () => {
         </>
       )}
 
-      {formOpen && <InvestorForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
-          itemName={deleteTarget.name_en}
-          loading={softDelete.isPending}
-        />
-      )}
+      {formOpen && <InvestorForm open={formOpen} onClose={() => setFormOpen(false)} />}
     </AppLayout>
   );
 };
