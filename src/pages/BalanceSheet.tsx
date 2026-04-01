@@ -59,8 +59,9 @@ const fmtAmt = (n: number, useBrackets = true): string => {
 function validateBsRow(raw: unknown): BsRow | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
+  const rowId = typeof r.id === "string" ? r.id : typeof r.coa_id === "string" ? r.coa_id : null;
   if (
-    typeof r.coa_id !== "string" ||
+    !rowId ||
     typeof r.code !== "string" ||
     typeof r.name !== "string" ||
     !VALID_SECTIONS.includes(r.account_type as AccountSection)
@@ -68,7 +69,7 @@ function validateBsRow(raw: unknown): BsRow | null {
     return null;
   }
   return {
-    coa_id: r.coa_id,
+    id: rowId,
     code: r.code,
     name: r.name,
     name_bn: typeof r.name_bn === "string" ? r.name_bn : null,
