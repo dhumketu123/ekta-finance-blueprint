@@ -62,6 +62,7 @@ const Dashboard = () => {
       <PageHeader
         title={t("dashboard.title")}
         description={t("dashboard.description")}
+        badge={lang === "bn" ? "🏠 কমান্ড সেন্টার" : "🏠 Command Center"}
         actions={
           <>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm btn-depth" onClick={() => navigate("/notifications")}>
