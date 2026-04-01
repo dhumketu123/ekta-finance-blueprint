@@ -80,13 +80,13 @@ const ReportsPage = () => {
 
   return (
     <AppLayout>
-      {/* ── Animated Mesh Background ── */}
-      <div className="relative min-h-[calc(100vh-80px)] overflow-x-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden rounded-xl">
+      <div className="relative min-h-screen overflow-x-hidden">
+        {/* Animated Mesh Background — z-index: -10 */}
+        <div className="absolute inset-0 -z-10">
           <div className="w-full h-full animate-mesh bg-gradient-to-br from-[hsl(217,100%,41%)] via-[hsl(228,92%,62%)] to-[hsl(211,97%,71%)]" />
         </div>
 
-        {/* ── Page Content ── */}
+        {/* Page Content — z-index: 10 */}
         <div className="relative z-10 px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-6">
           {/* Title */}
           <div className="space-y-1">
@@ -101,9 +101,9 @@ const ReportsPage = () => {
           </div>
 
           {/* Intelligence Widgets — placeholder for BLOCK 2 */}
-          <div id="intelligence-widgets-placeholder" />
+          <div id="intelligence-widgets-placeholder" className="space-y-6" />
 
-          {/* ── Reports Grid ── */}
+          {/* Reports Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {reportLinks.map((r) => (
               <Link key={r.path} to={r.path} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-2xl">
