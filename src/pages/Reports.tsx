@@ -107,8 +107,25 @@ const ReportsPage = () => {
             </p>
           </div>
 
-          {/* Intelligence Widgets — placeholder for BLOCK 2 */}
-          <div id="intelligence-widgets-placeholder" className="space-y-6" />
+          {/* Executive Intelligence Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {executiveMetrics.map((metric, index) => {
+              const Icon = metric.icon;
+              return (
+                <GlassCard key={index}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-white/20">
+                      <Icon className="w-6 h-6 text-white" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm text-white/70 mb-1">{metric.title}</h3>
+                  <p className="text-2xl font-semibold text-white">{metric.value}</p>
+                  <p className="text-xs text-white/60 mt-1">{metric.subtitle}</p>
+                </GlassCard>
+              );
+            })}
+          </div>
+
 
           {/* Reports Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
