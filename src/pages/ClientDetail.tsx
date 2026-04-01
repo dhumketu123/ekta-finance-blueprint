@@ -44,6 +44,10 @@ import QuickActionGrid from "@/components/QuickActionGrid";
 import TrustTierHeroCard from "@/components/TrustTierHeroCard";
 import DreamVaultCard from "@/components/DreamVaultCard";
 import { TX_TYPE_LABELS, type FinTransactionType } from "@/hooks/useFinancialTransactions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
+import ClientForm from "@/components/forms/ClientForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const ClientDetail = () => {
   const { id } = useParams();
