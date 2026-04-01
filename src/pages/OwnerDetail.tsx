@@ -38,6 +38,7 @@ const OwnerDetail = () => {
   const [warningOpen, setWarningOpen] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [exitModalOpen, setExitModalOpen] = useState(false);
 
   // Fetch owner's profit share history
   const { data: profitShares } = useQuery({
