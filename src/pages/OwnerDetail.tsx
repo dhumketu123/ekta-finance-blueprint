@@ -50,73 +50,130 @@ const OwnerDetail = () => {
   const queryClient = useQueryClient();
   const bn = lang === "bn";
   const isSuperAdmin = role === "super_admin";
-  const { data: owner, isLoading } = useOwner(id || "");
+  const ownerLookupId = id || "";
 
   const [warningOpen, setWarningOpen] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
 
-  // Fetch investor record for share_percentage & capital
-  const { data: investorRecord } = useQuery({
-    queryKey: ["owner_investor_record", id],
+  // Resolve investor robustly by either investor.id or investors.user_id
+  const { data: investorRecord, isLoading: investorLoading } = useQuery({
+    queryKey: ["owner_investor_record", ownerLookupId],
+    queryFn: async () => {
+      const byInvestorId = await supabase
+        .from("investors")
+        .select("id, user_id, investor_id, name_en, name_bn, phone, capital, share_percentage, total_weekly_paid, accumulated_profit, weekly_share, status, created_at")
+        .eq("id", ownerLookupId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (byInvestorId.error) throw byInvestorId.error;
+      if (byInvestorId.data) return byInvestorId.data;
+
+      const byUserId = await supabase
+        .from("investors")
+        .select("id, user_id, investor_id, name_en, name_bn, phone, capital, share_percentage, total_weekly_paid, accumulated_profit, weekly_share, status, created_at")
+        .eq("user_id", ownerLookupId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (byUserId.error) throw byUserId.error;
+      return byUserId.data;
+    },
+    enabled: !!ownerLookupId,
+  });
+
+  const profileId = investorRecord?.user_id ?? ownerLookupId;
+
+  const { data: ownerProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ["owner_profile", profileId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("investors")
-        .select("id, capital, share_percentage, total_weekly_paid, accumulated_profit, weekly_share, status, created_at")
-        .eq("user_id", id!)
-        .is("deleted_at", null)
+        .from("profiles")
+        .select("id, name_en, name_bn, phone, owner_id, created_at")
+        .eq("id", profileId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!profileId,
   });
+
+  const owner = useMemo(() => {
+    if (ownerProfile) {
+      return {
+        id: ownerProfile.id,
+        user_id: ownerProfile.id,
+        name_en: ownerProfile.name_en,
+        name_bn: ownerProfile.name_bn,
+        phone: ownerProfile.phone,
+        owner_id: ownerProfile.owner_id ?? investorRecord?.investor_id ?? ownerProfile.id.slice(0, 8),
+        created_at: ownerProfile.created_at,
+      };
+    }
+
+    if (investorRecord) {
+      return {
+        id: investorRecord.id,
+        user_id: investorRecord.user_id,
+        name_en: investorRecord.name_en,
+        name_bn: investorRecord.name_bn,
+        phone: investorRecord.phone,
+        owner_id: investorRecord.investor_id ?? investorRecord.id.slice(0, 8),
+        created_at: investorRecord.created_at,
+      };
+    }
+
+    return null;
+  }, [ownerProfile, investorRecord]);
+
+  const ownerRefId = investorRecord?.user_id ?? investorRecord?.id ?? ownerLookupId;
 
   // Fetch profit share history
   const { data: profitShares } = useQuery({
-    queryKey: ["owner_profit_shares", id],
+    queryKey: ["owner_profit_shares", ownerRefId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("owner_profit_shares")
         .select("*, owner_profit_distributions(period_month, net_profit, distribution_status)")
-        .eq("owner_id", id!)
+        .eq("owner_id", ownerRefId)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!id,
+    enabled: !!ownerRefId,
   });
 
   // Fetch distributions for chart
   const { data: distributions } = useQuery({
-    queryKey: ["owner_distributions_chart", id],
+    queryKey: ["owner_distributions_chart", ownerRefId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("owner_profit_shares")
         .select("share_amount, created_at, payment_status")
-        .eq("owner_id", id!)
+        .eq("owner_id", ownerRefId)
         .order("created_at", { ascending: true })
         .limit(24);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!id,
+    enabled: !!ownerRefId,
   });
 
   // Fetch legal documents from storage
   const { data: legalDocs } = useQuery({
-    queryKey: ["owner_legal_docs", id],
+    queryKey: ["owner_legal_docs", ownerRefId],
     queryFn: async () => {
       const { data, error } = await supabase.storage
         .from("legal-vault")
-        .list(`${id}`, { limit: 20, sortBy: { column: "created_at", order: "desc" } });
+        .list(`${ownerRefId}`, { limit: 20, sortBy: { column: "created_at", order: "desc" } });
       if (error) return [];
       return data ?? [];
     },
-    enabled: !!id,
+    enabled: !!ownerRefId,
   });
+
+  const isLoading = investorLoading || (profileLoading && !investorRecord);
 
   // Loading state
   if (isLoading) {
