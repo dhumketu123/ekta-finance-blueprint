@@ -149,6 +149,7 @@ const QuantumLedger = () => {
       <PageHeader
         title={bn ? "কোয়ান্টাম লেজার" : "Quantum Ledger"}
         description={bn ? "ইভেন্ট সোর্সিং, টাইম-মেশিন, অগ্রিম বাফার ও ক্রেডিট স্কোর" : "Event Sourcing, Time-Machine, Advance Buffer & Credit Scores"}
+        badge={bn ? "⚛️ কোয়ান্টাম ইঞ্জিন" : "⚛️ Quantum Engine"}
       />
 
       <Tabs value={tab} onValueChange={setTab}>

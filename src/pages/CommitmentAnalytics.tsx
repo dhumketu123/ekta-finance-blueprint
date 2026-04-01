@@ -119,6 +119,7 @@ const CommitmentAnalytics = () => {
       <PageHeader
         title={lang === "bn" ? "কমিটমেন্ট অ্যানালিটিক্স" : "Commitment Analytics"}
         description={lang === "bn" ? "এক্সিকিউটিভ ইন্টেলিজেন্স ড্যাশবোর্ড" : "Executive Intelligence Dashboard"}
+        badge={lang === "bn" ? "📊 অ্যানালিটিক্স হাব" : "📊 Analytics Hub"}
       />
 
       {/* Action Buttons */}

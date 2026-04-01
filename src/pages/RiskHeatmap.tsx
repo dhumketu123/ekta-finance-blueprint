@@ -163,6 +163,7 @@ const RiskHeatmap = () => {
       <PageHeader
         title={lang === "bn" ? "ঝুঁকি হিটম্যাপ" : "Risk Heatmap"}
         description={lang === "bn" ? "ক্লায়েন্ট ঝুঁকি গ্রিড ও অগ্রাধিকার তালিকা" : "Client risk grid & priority list"}
+        badge={lang === "bn" ? "🔥 হিটম্যাপ ভিউ" : "🔥 Heatmap View"}
         actions={
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />

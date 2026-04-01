@@ -64,6 +64,7 @@ const TrialBalancePage = () => {
       <PageHeader
         title={lang === "bn" ? "ট্রায়াল ব্যালেন্স" : "Trial Balance"}
         description={lang === "bn" ? "সকল হিসাবের মোট ডেবিট ও ক্রেডিট সারাংশ" : "Summary of total debit & credit for all accounts"}
+        badge={lang === "bn" ? "⚖️ ট্রায়াল ব্যালেন্স" : "⚖️ Trial Balance"}
         actions={
           <Badge variant={trialBalance.balanced ? "default" : "destructive"} className="gap-1.5 text-xs py-1 px-3">
             {trialBalance.balanced ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
