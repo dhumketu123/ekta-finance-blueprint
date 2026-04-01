@@ -1,7 +1,7 @@
 import AppLayout from "@/components/AppLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, DollarSign, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reportLinks = [
