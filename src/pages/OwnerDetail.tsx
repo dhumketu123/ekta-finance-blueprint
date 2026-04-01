@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { TransactionAuthModal } from "@/components/security/TransactionAuthModal";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import { toast } from "sonner";
 
 const OwnerDetail = () => {
