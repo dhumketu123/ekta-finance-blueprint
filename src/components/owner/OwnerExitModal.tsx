@@ -13,7 +13,7 @@ import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import { generateExitMouPdf } from "@/lib/exit-mou-pdf";
 import {
   Shield, AlertTriangle, Calculator, FileText, Clock,
-  TrendingDown, TrendingUp, ArrowRight, CheckCircle2,
+  TrendingDown, TrendingUp, ArrowRight, CheckCircle2, CircleDollarSign,
 } from "lucide-react";
 
 interface OwnerExitModalProps {
