@@ -49,43 +49,35 @@ const Loans = () => {
 
   return (
     <AppLayout>
-      {/* Premium Glassmorphic Hero Card */}
-      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-6 md:p-8 shadow-xl mb-6 border border-slate-700/50">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">
-              {t("loans.title")}
-            </h1>
-            <p className="text-sm md:text-base text-slate-300 max-w-2xl leading-relaxed">
-              {lang === "bn"
-                ? "ঋণ পণ্য কনফিগার ও পরিচালনা করুন। সুদের হার নির্ধারণ, মেয়াদ কাস্টমাইজ এবং স্মার্ট ভ্যালিডেশন নিয়ম প্রয়োগ করুন।"
-                : "Configure and manage loan products. Define interest rates, customize tenures, and enforce smart validation rules for your cooperative."}
-            </p>
-          </div>
+      <PageHeader
+        title={lang === "bn" ? "ঋণ পণ্য" : "Loan Products"}
+        description={lang === "bn" ? "ঋণ পণ্য কনফিগার ও পরিচালনা করুন। সুদের হার নির্ধারণ, মেয়াদ কাস্টমাইজ এবং স্মার্ট ভ্যালিডেশন নিয়ম প্রয়োগ করুন।" : "Configure and manage loan products. Define interest rates, customize tenures, and enforce smart validation rules."}
+        badge={lang === "bn" ? "💳 ঋণ ইঞ্জিন" : "💳 Loan Engine"}
+        actions={
           <div className="flex flex-wrap items-center gap-3">
             {canEditLoans && (
-              <Button size="sm" className="gap-1.5 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all" onClick={() => { setEditData(null); setFormOpen(true); }}>
+              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
                 <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
               </Button>
             )}
             {(isAdmin || canEditLoans) && (
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 transition-all" onClick={() => setDisburseOpen(true)}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm" onClick={() => setDisburseOpen(true)}>
                 <TrendingUp className="w-3.5 h-3.5" /> {lang === "bn" ? "ঋণ বিতরণ" : "Disburse Loan"}
               </Button>
             )}
             {(isAdmin || canEditLoans) && (
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 transition-all" onClick={() => setPaymentOpen(true)}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm" onClick={() => setPaymentOpen(true)}>
                 <Banknote className="w-3.5 h-3.5" /> {lang === "bn" ? "পেমেন্ট" : "Payment"}
               </Button>
             )}
             {isAdmin && (
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all" onClick={() => setTestOpen(true)}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg shadow-sm" onClick={() => setTestOpen(true)}>
                 <FlaskConical className="w-3.5 h-3.5" /> Test
               </Button>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="mb-4">
         <div className="relative max-w-xs">

@@ -92,6 +92,7 @@ const Commitments = () => {
       <PageHeader
         title={lang === "bn" ? "প্রতিশ্রুতি ট্র্যাকার" : "Commitment Tracker"}
         description={lang === "bn" ? "গ্রাহকদের পেমেন্ট প্রতিশ্রুতি ট্র্যাক এবং পরিচালনা করুন" : "Track and manage client payment commitments"}
+        badge={lang === "bn" ? "🤝 প্রতিশ্রুতি ইঞ্জিন" : "🤝 Promise Engine"}
       />
 
       {/* Feature flag + swipe instructions */}

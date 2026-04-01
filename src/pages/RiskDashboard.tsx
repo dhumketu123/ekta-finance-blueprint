@@ -176,7 +176,7 @@ const RiskDashboard = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <PageHeader title={lang === "bn" ? "ঝুঁকি ড্যাশবোর্ড" : "Risk Dashboard"} description={lang === "bn" ? "AI-ভিত্তিক ঋণ ঝুঁকি বিশ্লেষণ" : "AI-Predictive Loan Risk Analysis"} />
+        <PageHeader title={lang === "bn" ? "ঝুঁকি ড্যাশবোর্ড" : "Risk Dashboard"} description={lang === "bn" ? "AI-ভিত্তিক ঋণ ঝুঁকি বিশ্লেষণ" : "AI-Predictive Loan Risk Analysis"} badge={lang === "bn" ? "🛡️ রিস্ক ইন্টেলিজেন্স" : "🛡️ Risk Intelligence"} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
@@ -190,6 +190,7 @@ const RiskDashboard = () => {
       <PageHeader
         title={lang === "bn" ? "ঝুঁকি ড্যাশবোর্ড" : "Risk Dashboard"}
         description={lang === "bn" ? "AI-ভিত্তিক ঋণ ঝুঁকি বিশ্লেষণ ও পূর্বাভাস" : "AI-Predictive Loan Risk Analysis & Forecasting"}
+        badge={lang === "bn" ? "🛡️ রিস্ক ইন্টেলিজেন্স" : "🛡️ Risk Intelligence"}
         actions={
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />

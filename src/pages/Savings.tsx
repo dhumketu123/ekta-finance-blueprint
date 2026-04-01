@@ -50,6 +50,7 @@ const Savings = () => {
       <PageHeader
         title={t("savings.title")}
         description={t("savings.description")}
+        badge={lang === "bn" ? "🏦 সঞ্চয় ইঞ্জিন" : "🏦 Savings Engine"}
         actions={
           <div className="flex gap-2">
             {canEditSavings && (

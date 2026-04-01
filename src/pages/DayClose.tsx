@@ -127,17 +127,16 @@ const DayClose = () => {
     <AppLayout>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            {isClosed ? <Lock className="h-6 w-6 text-primary" /> : <Unlock className="h-6 w-6 text-primary" />}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">দৈনিক ক্যাশ ক্লোজ</h1>
-            <p className="text-xs text-muted-foreground">
-              {format(new Date(), "dd MMMM yyyy")} •{" "}
-              {isClosed ? "🔒 বন্ধ" : isReopened ? "🔓 পুনরায় খোলা" : "🟢 চলমান"}
-            </p>
-          </div>
+        <div className="w-full flex flex-col items-center justify-center text-center py-4 mb-2">
+          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 mb-3">
+            🔐 {isClosed ? "বন্ধ" : isReopened ? "পুনরায় খোলা" : "চলমান"}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+            দৈনিক ক্যাশ ক্লোজ
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2 font-medium">
+            {format(new Date(), "dd MMMM yyyy")}
+          </p>
         </div>
 
         {/* ═══ PULSE DASHBOARD (2x2 Grid) ═══ */}

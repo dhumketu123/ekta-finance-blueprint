@@ -116,6 +116,7 @@ const Owners = () => {
       <PageHeader
         title={bn ? "ফাউন্ডার ও ইকুইটি পার্টনার" : "Founders & Equity Partners"}
         description={bn ? "কোর ফাউন্ডিং মেম্বারদের ইকুইটি, সাপ্তাহিক ইনজেকশন ও সার্বিক পোর্টফোলিও ব্যবস্থাপনা" : "Equity, weekly injections, and portfolio management for core founders"}
+        badge={bn ? "👑 ফাউন্ডার পোর্টাল" : "👑 Founder Portal"}
         actions={
           canManageInvestors ? (
             <div className="flex items-center gap-2 flex-wrap">

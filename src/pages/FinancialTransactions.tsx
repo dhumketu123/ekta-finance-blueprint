@@ -109,6 +109,7 @@ const FinancialTransactionsPage = () => {
       <PageHeader
         title={lang === "bn" ? "আর্থিক লেনদেন" : "Financial Transactions"}
         description={lang === "bn" ? "সকল আর্থিক লেনদেন, রিসিপ্ট ও এসএমএস লগ পরিচালনা" : "Manage all financial transactions, receipts & SMS logs"}
+        badge={lang === "bn" ? "💰 ট্রানজেকশন হাব" : "💰 Transaction Hub"}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" className="gap-1.5 text-xs" onClick={() => setSmartOpen(true)}>
