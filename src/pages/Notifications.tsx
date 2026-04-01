@@ -129,7 +129,7 @@ const Notifications = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <PageHeader title={bn ? "বিজ্ঞপ্তি লগ" : "Notification Logs"} description={bn ? "সকল বিজ্ঞপ্তি ও ডেলিভারি স্ট্যাটাস" : "All notifications & delivery status"} />
+        <PageHeader title={bn ? "বিজ্ঞপ্তি লগ" : "Notification Logs"} description={bn ? "সকল বিজ্ঞপ্তি ও ডেলিভারি স্ট্যাটাস" : "All notifications & delivery status"} badge={bn ? "🔔 নোটিফিকেশন সেন্টার" : "🔔 Notification Center"} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
