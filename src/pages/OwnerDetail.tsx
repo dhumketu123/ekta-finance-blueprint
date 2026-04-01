@@ -838,7 +838,7 @@ const OwnerDetail = () => {
           setPinOpen(false);
           setDeleting(true);
           try {
-            const { data, error } = await supabase.rpc("secure_delete_owner" as any, { _owner_user_id: id });
+            const { data, error } = await supabase.rpc("secure_delete_owner" as any, { _owner_user_id: ownerRefId });
             if (error) throw new Error(error.message);
             const result = data as unknown as { status: string; message: string };
             if (result.status === "error") { toast.error(result.message); return; }
