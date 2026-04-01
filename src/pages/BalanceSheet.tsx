@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import {
   CheckCircle2, AlertTriangle, Landmark, ShieldCheck, Wallet,
-  CalendarIcon, Download, FileText, FileSpreadsheet,
+  CalendarIcon, FileText, FileSpreadsheet,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,12 +24,14 @@ interface BsRow {
   coa_id: string;
   code: string;
   name: string;
-  name_bn: string;
-  account_type: string;
+  name_bn: string | null;
+  account_type: "asset" | "liability" | "equity";
   balance: number;
 }
 
 type AccountSection = "asset" | "liability" | "equity";
+
+const VALID_SECTIONS: AccountSection[] = ["asset", "liability", "equity"];
 
 const SECTION_META: Record<AccountSection, { icon: typeof Landmark; labelBn: string; labelEn: string; color: string }> = {
   asset: { icon: Wallet, labelBn: "সম্পদ (Assets)", labelEn: "Assets", color: "text-primary" },
@@ -37,37 +39,113 @@ const SECTION_META: Record<AccountSection, { icon: typeof Landmark; labelBn: str
   equity: { icon: Landmark, labelBn: "মালিকানা স্বত্ব (Equity)", labelEn: "Equity", color: "text-violet-600" },
 };
 
-const fmtAmt = (n: number) =>
-  `৳${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+const fmtAmt = (n: number): string => {
+  const abs = Math.abs(Number(n) || 0);
+  // Round to 2 decimals to avoid floating point display errors
+  const rounded = Math.round(abs * 100) / 100;
+  return `৳${rounded.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+// ── Runtime shape validator ───────────────────────────────────────────────────
+function validateBsRow(raw: unknown): BsRow | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  if (
+    typeof r.coa_id !== "string" ||
+    typeof r.code !== "string" ||
+    typeof r.name !== "string" ||
+    !VALID_SECTIONS.includes(r.account_type as AccountSection)
+  ) {
+    return null;
+  }
+  return {
+    coa_id: r.coa_id,
+    code: r.code,
+    name: r.name,
+    name_bn: typeof r.name_bn === "string" ? r.name_bn : null,
+    account_type: r.account_type as AccountSection,
+    balance: Number(r.balance) || 0,
+  };
+}
+
+// ── Audit helper ──────────────────────────────────────────────────────────────
+async function logPageVisit() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("audit_logs").insert({
+      user_id: user.id,
+      entity_type: "report",
+      action_type: "view",
+      details: { page: "balance_sheet", timestamp: new Date().toISOString() },
+    });
+  } catch {
+    // silent — audit failure must not block UI
+  }
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 const BalanceSheetPage = () => {
   const { lang } = useLanguage();
   const bn = lang === "bn";
   const [asOfDate, setAsOfDate] = useState<Date | undefined>(undefined);
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
+
+  // Log page visit once
+  useEffect(() => { logPageVisit(); }, []);
+
+  // Effective date: selected or today end-of-day
+  const effectiveDate = useMemo(() => {
+    if (asOfDate) return asOfDate;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return today;
+  }, [asOfDate]);
 
   const { data: rows, isLoading } = useQuery({
-    queryKey: ["balance-sheet", asOfDate?.toISOString()],
+    queryKey: ["balance-sheet", asOfDate ? format(asOfDate, "yyyy-MM-dd") : "latest"],
     queryFn: async () => {
-      const params: Record<string, string> = {};
-      if (asOfDate) params.p_as_of = format(asOfDate, "yyyy-MM-dd");
-      const { data, error } = await supabase.rpc("get_balance_sheet", params);
+      setValidationWarning(null);
+      const { data, error } = await supabase.rpc("get_balance_sheet", {
+        p_as_of: format(effectiveDate, "yyyy-MM-dd"),
+      });
       if (error) throw error;
-      return (data ?? []) as BsRow[];
+      if (!Array.isArray(data)) {
+        setValidationWarning(bn ? "RPC রেসপন্স ফরম্যাট সঠিক নয়" : "Unexpected RPC response format");
+        return [];
+      }
+      const validated: BsRow[] = [];
+      let skipped = 0;
+      for (const item of data) {
+        const row = validateBsRow(item);
+        if (row) validated.push(row);
+        else skipped++;
+      }
+      if (skipped > 0) {
+        setValidationWarning(
+          bn ? `${skipped}টি রেকর্ড ফরম্যাট সমস্যার কারণে বাদ দেওয়া হয়েছে`
+            : `${skipped} record(s) skipped due to format issues`
+        );
+      }
+      return validated;
     },
   });
 
   const computed = useMemo(() => {
     const sections: Record<AccountSection, BsRow[]> = { asset: [], liability: [], equity: [] };
     for (const r of rows ?? []) {
-      const t = r.account_type as AccountSection;
-      if (sections[t]) sections[t].push(r);
+      if (sections[r.account_type]) sections[r.account_type].push(r);
     }
-    const totalAssets = sections.asset.reduce((s, r) => s + Number(r.balance), 0);
-    const totalLiabilities = sections.liability.reduce((s, r) => s + Number(r.balance), 0);
-    const totalEquity = sections.equity.reduce((s, r) => s + Number(r.balance), 0);
-    const balanced = Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
-    return { sections, totalAssets, totalLiabilities, totalEquity, balanced };
+    // Sort each section by code ascending
+    for (const sec of VALID_SECTIONS) {
+      sections[sec].sort((a, b) => a.code.localeCompare(b.code));
+    }
+    const totalAssets = Math.round(sections.asset.reduce((s, r) => s + r.balance, 0) * 100) / 100;
+    const totalLiabilities = Math.round(sections.liability.reduce((s, r) => s + r.balance, 0) * 100) / 100;
+    const totalEquity = Math.round(sections.equity.reduce((s, r) => s + r.balance, 0) * 100) / 100;
+    const difference = Math.round((totalAssets - (totalLiabilities + totalEquity)) * 100) / 100;
+    const balanced = Math.abs(difference) < 0.01;
+    return { sections, totalAssets, totalLiabilities, totalEquity, difference, balanced };
   }, [rows]);
 
   // ── Export: CSV ─────────────────────────────────────────────────────────────
@@ -75,25 +153,31 @@ const BalanceSheetPage = () => {
     if (!rows?.length) return;
     const header = "Section,Code,Account,Balance\n";
     const body = rows
-      .map((r) => `${r.account_type},${r.code},"${bn ? r.name_bn : r.name}",${r.balance}`)
+      .map((r) => `${r.account_type},${r.code},"${bn ? (r.name_bn || r.name) : r.name}",${r.balance}`)
       .join("\n");
-    const totals = `\n\nTotal Assets,,,"${computed.totalAssets}"\nTotal Liabilities,,,"${computed.totalLiabilities}"\nTotal Equity,,,"${computed.totalEquity}"`;
-    const blob = new Blob(["\uFEFF" + header + body + totals], { type: "text/csv;charset=utf-8;" });
+    const totals = [
+      "",
+      `Total Assets,,,"${computed.totalAssets}"`,
+      `Total Liabilities,,,"${computed.totalLiabilities}"`,
+      `Total Equity,,,"${computed.totalEquity}"`,
+      `Balanced,,,"${computed.balanced ? "Yes" : "No"}"`,
+    ].join("\n");
+    const blob = new Blob(["\uFEFF" + header + body + "\n" + totals], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `balance-sheet-${format(asOfDate ?? new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `balance-sheet-${format(effectiveDate, "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [rows, computed, asOfDate, bn]);
+  }, [rows, computed, effectiveDate, bn]);
 
   // ── Export: PDF (print-friendly) ────────────────────────────────────────────
   const exportPDF = useCallback(() => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const dateLabel = asOfDate ? formatLocalDate(asOfDate, lang) : formatLocalDate(new Date(), lang);
+    const dateLabel = formatLocalDate(effectiveDate, lang);
 
-    const sectionHTML = (["asset", "liability", "equity"] as AccountSection[]).map((sec) => {
+    const sectionHTML = (VALID_SECTIONS).map((sec) => {
       const meta = SECTION_META[sec];
       const items = computed.sections[sec];
       const total = sec === "asset" ? computed.totalAssets : sec === "liability" ? computed.totalLiabilities : computed.totalEquity;
@@ -102,23 +186,26 @@ const BalanceSheetPage = () => {
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="background:#f3f4f6;"><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "হিসাব" : "Account"}</th><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "কোড" : "Code"}</th><th style="text-align:right;padding:6px 8px;border:1px solid #ddd;">${bn ? "ব্যালেন্স" : "Balance"}</th></tr></thead>
           <tbody>
-            ${items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${bn ? r.name_bn || r.name : r.name}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${r.code}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">৳${Math.abs(Number(r.balance)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td></tr>`).join("")}
-            <tr style="background:#f9fafb;font-weight:700;"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;">${bn ? "মোট" : "Total"}</td><td style="text-align:right;padding:6px 8px;border:1px solid #ddd;font-family:monospace;">৳${Math.abs(total).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td></tr>
+            ${items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${bn ? (r.name_bn || r.name) : r.name}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${r.code}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">${fmtAmt(r.balance)}</td></tr>`).join("")}
+            <tr style="background:#f9fafb;font-weight:700;"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;">${bn ? "মোট" : "Total"}</td><td style="text-align:right;padding:6px 8px;border:1px solid #ddd;font-family:monospace;">${fmtAmt(total)}</td></tr>
           </tbody>
         </table>`;
     }).join("");
 
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>${bn ? "ব্যালেন্স শীট" : "Balance Sheet"}</title><style>body{font-family:'Hind Siliguri',sans-serif;padding:24px;max-width:800px;margin:auto;}@media print{body{padding:12px;}}</style></head><body>
-      <h1 style="font-size:18px;margin-bottom:4px;">${bn ? "ব্যালেন্স শীট" : "Balance Sheet"}</h1>
-      <p style="color:#666;font-size:12px;margin-bottom:16px;">${bn ? "তারিখ:" : "As of:"} ${dateLabel}</p>
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>${bn ? "ব্যালেন্স শীট" : "Balance Sheet"}</title><style>body{font-family:'Hind Siliguri',sans-serif;padding:24px;max-width:800px;margin:auto;}@media print{body{padding:12px;}.no-print{display:none !important;}}</style></head><body>
+      <h1 style="font-size:18px;margin-bottom:4px;text-align:center;">${bn ? "ব্যালেন্স শীট" : "Balance Sheet"}</h1>
+      <p style="color:#666;font-size:12px;margin-bottom:16px;text-align:center;">${bn ? "তারিখ:" : "As of:"} ${dateLabel}</p>
       ${sectionHTML}
       <div style="margin-top:20px;padding:12px;background:${computed.balanced ? "#ecfdf5" : "#fef2f2"};border-radius:8px;text-align:center;font-size:13px;font-weight:700;">
-        ${computed.balanced ? (bn ? "✅ সম্পদ = দায় + স্বত্ব — ব্যালেন্স সঠিক" : "✅ Assets = Liabilities + Equity — Balanced") : (bn ? "⚠️ অমিল!" : "⚠️ Imbalanced!")}
+        ${computed.balanced
+          ? (bn ? "✅ সম্পদ = দায় + স্বত্ব — ব্যালেন্স সঠিক" : "✅ Assets = Liabilities + Equity — Balanced")
+          : (bn ? `⚠️ অমিল — পার্থক্য: ${fmtAmt(computed.difference)}` : `⚠️ Imbalanced — Diff: ${fmtAmt(computed.difference)}`)}
       </div>
+      <p style="text-align:center;color:#999;font-size:10px;margin-top:24px;">Generated by Ekta Finance System</p>
     </body></html>`);
     printWindow.document.close();
     printWindow.print();
-  }, [computed, asOfDate, bn, lang]);
+  }, [computed, effectiveDate, bn, lang]);
 
   // ── Section renderer ────────────────────────────────────────────────────────
   const renderSection = (type: AccountSection, total: number) => {
@@ -146,7 +233,7 @@ const BalanceSheetPage = () => {
               {items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-xs text-center text-muted-foreground py-6">
-                    {bn ? "কোনো তথ্য নেই" : "No data"}
+                    {bn ? "নির্বাচিত তারিখে কোনো লেজার ডেটা নেই" : "No ledger data for selected date"}
                   </TableCell>
                 </TableRow>
               )}
@@ -172,7 +259,11 @@ const BalanceSheetPage = () => {
     <AppLayout>
       <PageHeader
         title={bn ? "ব্যালেন্স শীট" : "Balance Sheet"}
-        description={bn ? "সম্পদ, দায় ও মালিকানা স্বত্ব — আর্থিক অবস্থান বিবরণী" : "Assets, Liabilities & Equity — Statement of Financial Position"}
+        description={
+          bn
+            ? `তারিখ: ${formatLocalDate(effectiveDate, lang)} — সম্পদ, দায় ও মালিকানা স্বত্ব`
+            : `As of ${formatLocalDate(effectiveDate, lang)} — Assets, Liabilities & Equity`
+        }
         actions={
           <Badge
             variant={computed.balanced ? "default" : "destructive"}
@@ -180,11 +271,19 @@ const BalanceSheetPage = () => {
           >
             {computed.balanced ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
             {computed.balanced
-              ? (bn ? "A = L + E ✓" : "A = L + E ✓")
-              : (bn ? "অমিল!" : "Imbalanced!")}
+              ? "A = L + E ✓"
+              : (bn ? `অমিল ৳${Math.abs(computed.difference).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : `Imbalance ${fmtAmt(computed.difference)}`)}
           </Badge>
         }
       />
+
+      {/* ── Validation warning ── */}
+      {validationWarning && (
+        <div className="mb-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          {validationWarning}
+        </div>
+      )}
 
       {/* ── Toolbar: date + export ── */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -200,6 +299,7 @@ const BalanceSheetPage = () => {
               mode="single"
               selected={asOfDate}
               onSelect={setAsOfDate}
+              disabled={(date) => date > new Date()}
               initialFocus
               className="p-3 pointer-events-auto"
             />
@@ -264,7 +364,7 @@ const BalanceSheetPage = () => {
                   >
                     {computed.balanced
                       ? (bn ? "✅ ব্যালেন্স সঠিক" : "✅ Balanced")
-                      : (bn ? "⚠️ অমিল — পার্থক্য: " : "⚠️ Diff: ") + fmtAmt(computed.totalAssets - computed.totalLiabilities - computed.totalEquity)}
+                      : (bn ? `⚠️ অমিল — পার্থক্য: ${fmtAmt(computed.difference)}` : `⚠️ Diff: ${fmtAmt(computed.difference)}`)}
                   </Badge>
                 </div>
               </div>
