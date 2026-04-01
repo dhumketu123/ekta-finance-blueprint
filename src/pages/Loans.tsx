@@ -7,32 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, CreditCard, Search, Edit2, Trash2, Banknote, FlaskConical, TrendingUp } from "lucide-react";
+import { Plus, CreditCard, Search, Banknote, FlaskConical, TrendingUp } from "lucide-react";
 import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useSoftDelete } from "@/hooks/useCrudOperations";
 import LoanProductForm from "@/components/forms/LoanProductForm";
 import LoanPaymentModal from "@/components/forms/LoanPaymentModal";
 import PaymentTestPanel from "@/components/forms/PaymentTestPanel";
-import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
-import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const Loans = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const { canEditLoans, isAdmin } = usePermissions();
-  const softDelete = useSoftDelete("loan_products");
 
-  const [formOpen, setFormOpen]       = useState(false);
-  const [editData, setEditData]       = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [pinOpen, setPinOpen]         = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [testOpen, setTestOpen]       = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
   const [disburseOpen, setDisburseOpen] = useState(false);
-  const [search, setSearch]           = useState("");
+  const [search, setSearch] = useState("");
 
   const { data: loans, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
     table: "loan_products",
@@ -46,24 +39,6 @@ const Loans = () => {
     return lp.product_name_en.toLowerCase().includes(q) || lp.product_name_bn.toLowerCase().includes(q);
   });
 
-  const handleEdit = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setEditData(lp); setFormOpen(true); };
-  const handleDelete = (e: React.MouseEvent, lp: any) => { e.stopPropagation(); setDeleteTarget(lp); };
-
-  // Step 1: DeleteConfirmDialog confirms → opens PIN
-  const handleDeleteConfirmed = () => {
-    setPinOpen(true);
-  };
-
-  // Step 2: PIN authorized → execute soft delete
-  const handlePinAuthorized = () => {
-    setPinOpen(false);
-    if (deleteTarget) {
-      softDelete.mutate(deleteTarget.id, {
-        onSettled: () => setDeleteTarget(null),
-      });
-    }
-  };
-
   return (
     <AppLayout>
       <PageHeader
@@ -73,7 +48,7 @@ const Loans = () => {
         actions={
           <div className="flex flex-wrap items-center gap-3">
             {canEditLoans && (
-              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setFormOpen(true)}>
                 <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
               </Button>
             )}
@@ -121,7 +96,6 @@ const Loans = () => {
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
                   <TableHead>{lang === "bn" ? "MFI নিয়ম" : "MFI Rules"}</TableHead>
-                  {canEditLoans && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -157,14 +131,6 @@ const Loans = () => {
                         )}
                       </div>
                     </TableCell>
-                    {canEditLoans && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <button onClick={(e) => handleEdit(e, lp)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                          <button onClick={(e) => handleDelete(e, lp)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -188,16 +154,6 @@ const Loans = () => {
                     <span className="capitalize">{String(lp.payment_type).replace("_", " ")}</span>
                   </div>
                 </div>
-                {canEditLoans && (
-                  <div className="flex gap-1 shrink-0">
-                    <button onClick={(e) => handleEdit(e, lp)} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Edit">
-                      <Edit2 className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <button onClick={(e) => handleDelete(e, lp)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" aria-label="Delete">
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
             <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} />
@@ -205,28 +161,10 @@ const Loans = () => {
         </>
       )}
 
-      {formOpen && <LoanProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
+      {formOpen && <LoanProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={null} />}
       {paymentOpen && <LoanPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} />}
       {testOpen && <PaymentTestPanel open={testOpen} onClose={() => setTestOpen(false)} />}
       {disburseOpen && <LoanDisbursementModal open={disburseOpen} onClose={() => setDisburseOpen(false)} />}
-
-      {/* Step 1: Confirm deletion */}
-      {deleteTarget && !pinOpen && (
-        <DeleteConfirmDialog
-          open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={handleDeleteConfirmed}
-          itemName={lang === "bn" ? deleteTarget.product_name_bn || deleteTarget.product_name_en : deleteTarget.product_name_en}
-          loading={softDelete.isPending}
-        />
-      )}
-
-      {/* Step 2: PIN verification after confirmation */}
-      <TransactionAuthModal
-        open={pinOpen}
-        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
-        onAuthorized={handlePinAuthorized}
-      />
     </AppLayout>
   );
 };

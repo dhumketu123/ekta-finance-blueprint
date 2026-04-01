@@ -7,24 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, PiggyBank, Search, Edit2, Trash2, ArrowDownCircle } from "lucide-react";
+import { Plus, PiggyBank, Search, ArrowDownCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useSoftDelete } from "@/hooks/useCrudOperations";
 import SavingsProductForm from "@/components/forms/SavingsProductForm";
 import SavingsTransactionModal from "@/components/forms/SavingsTransactionModal";
-import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 
 const Savings = () => {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const { canEditSavings, canRecordPayments, isAdmin, isOwner } = usePermissions();
-  const softDelete = useSoftDelete("savings_products");
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [txModalOpen, setTxModalOpen] = useState(false);
 
@@ -42,9 +37,6 @@ const Savings = () => {
 
   const canDoSavingsTx = canRecordPayments || isAdmin || isOwner;
 
-  const handleEdit = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setEditData(sp); setFormOpen(true); };
-  const handleDelete = (e: React.MouseEvent, sp: any) => { e.stopPropagation(); setDeleteTarget(sp); };
-
   return (
     <AppLayout>
       <PageHeader
@@ -54,7 +46,7 @@ const Savings = () => {
         actions={
           <div className="flex gap-2">
             {canEditSavings && (
-              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
+              <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setFormOpen(true)}>
                 <Plus className="w-3.5 h-3.5" /> {lang === "bn" ? "নতুন পণ্য" : "New Product"}
               </Button>
             )}
@@ -90,7 +82,6 @@ const Savings = () => {
                   <TableHead>{t("table.frequency")}</TableHead>
                   <TableHead>{t("table.minAmount")}</TableHead>
                   <TableHead>{t("table.maxAmount")}</TableHead>
-                  {canEditSavings && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -100,14 +91,6 @@ const Savings = () => {
                     <TableCell className="text-xs capitalize">{sp.frequency}</TableCell>
                     <TableCell className="text-xs">৳{Number(sp.min_amount).toLocaleString()}</TableCell>
                     <TableCell className="text-xs">৳{Number(sp.max_amount).toLocaleString()}</TableCell>
-                    {canEditSavings && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <button onClick={(e) => handleEdit(e, sp)} className="p-1 rounded hover:bg-muted"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                          <button onClick={(e) => handleDelete(e, sp)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -145,17 +128,8 @@ const Savings = () => {
         </>
       )}
 
-      {formOpen && <SavingsProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditData(null); }} editData={editData} />}
+      {formOpen && <SavingsProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={null} />}
       {txModalOpen && <SavingsTransactionModal open={txModalOpen} onClose={() => setTxModalOpen(false)} />}
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => { softDelete.mutate(deleteTarget.id); setDeleteTarget(null); }}
-          itemName={deleteTarget.product_name_en}
-          loading={softDelete.isPending}
-        />
-      )}
     </AppLayout>
   );
 };

@@ -1,16 +1,41 @@
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoanProduct } from "@/hooks/useSupabaseData";
-import { CreditCard, Settings } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
+import { CreditCard, Settings, Edit2, Trash2 } from "lucide-react";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
+import LoanProductForm from "@/components/forms/LoanProductForm";
+import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
+import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
 const LoanDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const { data: loan, isLoading } = useLoanProduct(id || "");
+  const { canEditLoans } = usePermissions();
+  const softDelete = useSoftDelete("loan_products");
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+
+  const handleDeleteConfirmed = () => setPinOpen(true);
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSuccess: () => navigate("/loans"),
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -93,6 +118,42 @@ const LoanDetail = () => {
           <DetailField label={t("table.maxAmount")} value={`৳${Number(loan.max_amount).toLocaleString()}`} highlight />
         </div>
       </div>
+
+      {/* Management Actions */}
+      {canEditLoans && (
+        <div className="card-elevated p-5 space-y-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setFormOpen(true)}>
+              <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(loan)}>
+              <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {formOpen && <LoanProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={loan} />}
+
+      {deleteTarget && !pinOpen && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirmed}
+          itemName={lang === "bn" ? loan.product_name_bn || loan.product_name_en : loan.product_name_en}
+          loading={softDelete.isPending}
+        />
+      )}
+
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
+        onAuthorized={handlePinAuthorized}
+      />
     </AppLayout>
   );
 };
