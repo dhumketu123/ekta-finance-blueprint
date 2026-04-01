@@ -59,6 +59,7 @@ function getFounderTier(total: number): {
 
 export const FoundersWallets = memo(function FoundersWallets({ investors }: Props) {
   const { lang } = useLanguage();
+  const navigate = useNavigate();
   const bn = lang === "bn";
 
   const activeInvestors = investors.filter(inv => inv.status === "active");
