@@ -166,7 +166,7 @@ const SettingsPage = () => {
 
   return (
     <AppLayout>
-      <PageHeader title={t("settings.title")} description={t("settings.description")} />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} badge={bn ? "⚙️ সিস্টেম কনফিগারেশন" : "⚙️ System Configuration"} />
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="w-full grid grid-cols-5 mb-6 h-12 bg-muted/60 rounded-xl p-1">

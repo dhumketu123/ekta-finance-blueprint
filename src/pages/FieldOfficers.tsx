@@ -52,6 +52,7 @@ const FieldOfficers = () => {
       <PageHeader
         title={t("fieldOfficers.title")}
         description={t("fieldOfficers.description")}
+        badge={lang === "bn" ? "🧑‍💼 মাঠকর্মী ব্যবস্থাপনা" : "🧑‍💼 Field Operations"}
         actions={
           isAdmin ? (
             <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>

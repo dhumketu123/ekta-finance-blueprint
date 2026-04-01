@@ -47,6 +47,7 @@ const Investors = () => {
       <PageHeader
         title={t("investors.title")}
         description={t("investors.description")}
+        badge={lang === "bn" ? "📊 বিনিয়োগকারী পোর্টাল" : "📊 Investor Portal"}
         actions={
           canEditInvestors ? (
             <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>

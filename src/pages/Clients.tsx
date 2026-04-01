@@ -48,6 +48,7 @@ const Clients = () => {
       <PageHeader
         title={t("clients.title")}
         description={t("clients.description")}
+        badge={lang === "bn" ? "👥 সদস্য ব্যবস্থাপনা" : "👥 Member Management"}
         actions={
           canEditClients ? (
             <Button size="sm" className="gap-1.5 text-xs rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setEditData(null); setFormOpen(true); }}>
