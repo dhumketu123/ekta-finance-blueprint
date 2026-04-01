@@ -9,9 +9,10 @@ import { useOwner } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import OwnerExitModal from "@/components/owner/OwnerExitModal";
 import {
   Crown, Phone, Wallet, TrendingUp, PiggyBank, BarChart3,
-  Calendar, CircleDollarSign, AlertTriangle, Trash2,
+  Calendar, CircleDollarSign, AlertTriangle, Trash2, LogOut,
 } from "lucide-react";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, AreaChart, Area, Tooltip as RechartsTooltip, CartesianGrid, XAxis, YAxis } from "recharts";
