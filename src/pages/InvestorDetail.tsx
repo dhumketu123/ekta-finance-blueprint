@@ -60,16 +60,33 @@ const getProjection = (capital: number, rate: number, bn: boolean) => {
 
 const InvestorDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const bn = lang === "bn";
+  const { canEditInvestors } = usePermissions();
   const { data: dbInvestor, isLoading } = useInvestor(id || "");
   const { data: txns } = useTransactions({ investor_id: id });
+  const softDelete = useSoftDelete("investors");
 
   // Modal states
   const [payDividendOpen, setPayDividendOpen] = useState(false);
   const [addCapitalOpen, setAddCapitalOpen] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [investorFormOpen, setInvestorFormOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+
+  const handleDeleteConfirmed = () => setPinOpen(true);
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSuccess: () => navigate("/investors"),
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   const inv = dbInvestor;
 
