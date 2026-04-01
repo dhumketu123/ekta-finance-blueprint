@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, Wallet, Activity } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, Wallet, Activity, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reportLinks = [
@@ -66,23 +66,22 @@ const mockFinanceSnapshot = {
   todaysTransactions: 187,
 };
 
+/* ── KPI variant styles for visual hierarchy ── */
+const kpiVariants = [
+  { border: "border-l-primary", iconBg: "bg-primary/10 text-primary" },
+  { border: "border-l-success", iconBg: "bg-success/10 text-success" },
+  { border: "border-l-warning", iconBg: "bg-warning/10 text-warning" },
+  { border: "border-l-accent", iconBg: "bg-accent text-accent-foreground" },
+] as const;
+
 /* ── Pure KPI Calculation Engine ── */
 const useKpiEngine = () => {
-  return useMemo(() => {
-    const cashFlowHealth =
-      mockFinanceSnapshot.totalCollections - mockFinanceSnapshot.totalOutstanding;
-    const runwayDays = cashFlowHealth > 0 ? Math.round(cashFlowHealth / 20000) : 0;
-    const trustScore =
-      mockFinanceSnapshot.recoveryRate > 90 ? 87 : mockFinanceSnapshot.recoveryRate;
-
-    return {
-      runwayDays,
-      trustScore,
-      weeklyGrowth: mockFinanceSnapshot.weeklyGrowthPercent,
-      activeMembers: mockFinanceSnapshot.activeMembers,
-      todaysTransactions: mockFinanceSnapshot.todaysTransactions,
-    };
-  }, []);
+  return useMemo(() => ({
+    weeklyGrowth: mockFinanceSnapshot.weeklyGrowthPercent,
+    activeMembers: mockFinanceSnapshot.activeMembers,
+    todaysTransactions: mockFinanceSnapshot.todaysTransactions,
+    recoveryRate: mockFinanceSnapshot.recoveryRate,
+  }), []);
 };
 
 /* ── Executive Metrics Builder ── */
@@ -101,15 +100,15 @@ const buildExecutiveMetrics = (kpi: ReturnType<typeof useKpiEngine>, lang: strin
   },
   {
     icon: Wallet,
-    title: lang === "bn" ? "লেনদেন (আজ)" : "Today's Transactions",
+    title: lang === "bn" ? "লেনদেন (আজ)" : "Today's Txns",
     value: `${kpi.todaysTransactions}`,
     subtitle: lang === "bn" ? "আজকের মোট কার্যক্রম" : "Total activity today",
   },
   {
     icon: Activity,
-    title: lang === "bn" ? "সিস্টেম স্থিতি" : "System Stability",
-    value: "Optimal",
-    subtitle: lang === "bn" ? "কোন অস্বাভাবিকতা নেই" : "No anomaly detected",
+    title: lang === "bn" ? "রিকভারি রেট" : "Recovery Rate",
+    value: `${kpi.recoveryRate}%`,
+    subtitle: lang === "bn" ? "সামগ্রিক আদায় হার" : "Overall collection rate",
   },
 ];
 
@@ -133,67 +132,82 @@ const ReportsPage = () => {
           </p>
         </div>
 
-        {/* Executive Intelligence Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {executiveMetrics.map((metric, index) => {
-            const Icon = metric.icon;
-            return (
-              <div
-                key={index}
+        {/* Executive KPI Grid */}
+        <section aria-label={lang === "bn" ? "কর্মক্ষমতা সূচক" : "Key Performance Indicators"}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            {executiveMetrics.map((metric, index) => {
+              const Icon = metric.icon;
+              const variant = kpiVariants[index % kpiVariants.length];
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "group relative overflow-hidden rounded-xl border border-border/60 bg-card p-3.5 md:p-5 border-l-4 transition-all duration-300",
+                    "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]",
+                    variant.border
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">
+                        {metric.title}
+                      </p>
+                      <p className="mt-1 md:mt-2 text-xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
+                        {metric.value}
+                      </p>
+                      <p className="mt-0.5 text-[10px] md:text-xs text-muted-foreground font-medium truncate hidden sm:block">
+                        {metric.subtitle}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      "p-2 md:p-3 rounded-xl shrink-0 transition-all duration-300 group-hover:scale-110",
+                      variant.iconBg
+                    )}>
+                      <Icon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Reports Section */}
+        <section aria-label={lang === "bn" ? "রিপোর্টসমূহ" : "Reports"}>
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              {lang === "bn" ? "অফিসিয়াল রিপোর্টসমূহ" : "Official Reports"}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {reportLinks.map((r) => (
+              <Link
+                key={r.path}
+                to={r.path}
                 className={cn(
                   "group relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 md:p-5 transition-all duration-300",
-                  "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+                  "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest truncate">
-                      {metric.title}
+                <div className="flex items-start gap-3 md:gap-4">
+                  <div className="p-2.5 md:p-3 rounded-xl shrink-0 bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110">
+                    <r.icon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {lang === "bn" ? r.titleBn : r.titleEn}
                     </p>
-                    <p className="mt-1.5 md:mt-2 text-2xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
-                      {metric.value}
-                    </p>
-                    <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground font-medium truncate">
-                      {metric.subtitle}
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {lang === "bn" ? r.descBn : r.descEn}
                     </p>
                   </div>
-                  <div className="p-2.5 md:p-3 rounded-xl shrink-0 bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110 group-hover:shadow-md">
-                    <Icon className="w-5 h-5 md:w-6 md:h-6" aria-hidden="true" />
-                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Reports Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {reportLinks.map((r) => (
-            <Link
-              key={r.path}
-              to={r.path}
-              className={cn(
-                "group relative overflow-hidden rounded-xl border border-border/60 bg-card p-5 transition-all duration-300",
-                "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl shrink-0 bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110">
-                  <r.icon className="w-5 h-5" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-card-foreground">
-                    {lang === "bn" ? r.titleBn : r.titleEn}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    {lang === "bn" ? r.descBn : r.descEn}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </AppLayout>
   );
