@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, DollarSign, Activity } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, Wallet, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reportLinks = [
@@ -55,35 +56,67 @@ const reportLinks = [
   },
 ];
 
-/* ── Reusable Glass Card (local, not exported yet) ── */
-const GlassCard = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => (
-  <div
-    className={cn(
-      "bg-white/10 backdrop-blur-xl border border-white/20",
-      "rounded-2xl shadow-2xl p-5 transition-all duration-300",
-      "hover:scale-[1.02] active:scale-[0.98]",
-      className
-    )}
-  >
-    {children}
-  </div>
-);
+/* ── Mock Finance Snapshot (will be replaced by Supabase) ── */
+const mockFinanceSnapshot = {
+  totalCollections: 1250000,
+  totalOutstanding: 340000,
+  activeMembers: 412,
+  recoveryRate: 94,
+  weeklyGrowthPercent: 12,
+  todaysTransactions: 187,
+};
+
+/* ── Pure KPI Calculation Engine ── */
+const useKpiEngine = () => {
+  return useMemo(() => {
+    const cashFlowHealth =
+      mockFinanceSnapshot.totalCollections - mockFinanceSnapshot.totalOutstanding;
+    const runwayDays = cashFlowHealth > 0 ? Math.round(cashFlowHealth / 20000) : 0;
+    const trustScore =
+      mockFinanceSnapshot.recoveryRate > 90 ? 87 : mockFinanceSnapshot.recoveryRate;
+
+    return {
+      runwayDays,
+      trustScore,
+      weeklyGrowth: mockFinanceSnapshot.weeklyGrowthPercent,
+      activeMembers: mockFinanceSnapshot.activeMembers,
+      todaysTransactions: mockFinanceSnapshot.todaysTransactions,
+    };
+  }, []);
+};
+
+/* ── Executive Metrics Builder ── */
+const buildExecutiveMetrics = (kpi: ReturnType<typeof useKpiEngine>, lang: string) => [
+  {
+    icon: TrendingUp,
+    title: lang === "bn" ? "সাপ্তাহিক প্রবৃদ্ধি" : "Weekly Growth",
+    value: `${kpi.weeklyGrowth}%`,
+    subtitle: lang === "bn" ? "গত ৭ দিনে সংগ্রহ বৃদ্ধি" : "Collection growth (7 days)",
+  },
+  {
+    icon: Users,
+    title: lang === "bn" ? "সক্রিয় সদস্য" : "Active Members",
+    value: `${kpi.activeMembers}`,
+    subtitle: lang === "bn" ? "বর্তমানে সক্রিয় প্রোফাইল" : "Currently active profiles",
+  },
+  {
+    icon: Wallet,
+    title: lang === "bn" ? "লেনদেন (আজ)" : "Today's Transactions",
+    value: `${kpi.todaysTransactions}`,
+    subtitle: lang === "bn" ? "আজকের মোট কার্যক্রম" : "Total activity today",
+  },
+  {
+    icon: Activity,
+    title: lang === "bn" ? "সিস্টেম স্থিতি" : "System Stability",
+    value: "Optimal",
+    subtitle: lang === "bn" ? "কোন অস্বাভাবিকতা নেই" : "No anomaly detected",
+  },
+];
 
 const ReportsPage = () => {
   const { lang } = useLanguage();
-
-  const executiveMetrics = [
-    { title: lang === "bn" ? "মাসিক প্রবৃদ্ধি" : "Monthly Growth", value: "+18.4%", subtitle: lang === "bn" ? "গত মাসের তুলনায়" : "Compared to last month", icon: TrendingUp },
-    { title: lang === "bn" ? "সক্রিয় ক্লায়েন্ট" : "Active Clients", value: "1,284", subtitle: lang === "bn" ? "বর্তমানে সংযুক্ত" : "Currently engaged", icon: Users },
-    { title: lang === "bn" ? "ক্যাশ ফ্লো" : "Cash Flow", value: "৳ 24.6L", subtitle: lang === "bn" ? "এই মাসে নিট প্রবাহ" : "Net inflow this month", icon: DollarSign },
-    { title: lang === "bn" ? "সিস্টেম কার্যক্রম" : "System Activity", value: "92%", subtitle: lang === "bn" ? "অপারেশনাল দক্ষতা" : "Operational efficiency", icon: Activity },
-  ];
+  const kpi = useKpiEngine();
+  const executiveMetrics = buildExecutiveMetrics(kpi, lang);
 
   return (
     <AppLayout>
