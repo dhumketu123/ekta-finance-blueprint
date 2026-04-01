@@ -145,7 +145,7 @@ const SectionTable = ({
               </TableRow>
             )}
             {items.map((r) => (
-              <TableRow key={r.coa_id}>
+              <TableRow key={r.id}>
                 <TableCell className="text-xs font-medium">{bn ? (r.name_bn || r.name) : r.name}</TableCell>
                 <TableCell className="text-[11px] font-mono text-muted-foreground hidden sm:table-cell">{r.code}</TableCell>
                 <TableCell className="text-xs text-right font-mono font-semibold">{fmtAmt(r.balance)}</TableCell>
