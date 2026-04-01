@@ -299,6 +299,23 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
                     </div>
 
                     <div>
+                      <Label className="flex items-center gap-1.5 text-xs mb-1.5">
+                        <CircleDollarSign className="w-3.5 h-3.5 text-primary" />
+                        {bn ? "চলতি মাসের জমা মুনাফা (৳)" : "Current Month Accrued Profit (৳)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={accruedProfit || ""}
+                        onChange={(e) => setAccruedProfit(Number(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {bn
+                          ? "মাসের মাঝে বের হলে অপরিশোধিত প্রো-রাটা মুনাফা যোগ করুন"
+                          : "Add unpaid pro-rata profit if exiting mid-month"}
+                      </p>
+                    </div>
                       <Label className="text-xs mb-1.5 block">
                         {bn ? "নন-কম্পিট সময়কাল (মাস)" : "Non-Compete Period (months)"}
                       </Label>
