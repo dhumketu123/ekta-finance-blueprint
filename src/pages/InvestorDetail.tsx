@@ -10,6 +10,8 @@ import AgreementPDFTemplate from "@/components/AgreementPDFTemplate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvestor, useTransactions } from "@/hooks/useSupabaseData";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useSoftDelete } from "@/hooks/useCrudOperations";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
