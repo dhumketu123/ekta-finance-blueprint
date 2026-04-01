@@ -106,8 +106,8 @@ export const useDayClose = (date: string) => {
       qc.invalidateQueries({ queryKey: ["reopen-requests"] });
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : "অজানা ত্রুটি";
-      toast.error(msg);
+      console.error("[DayClose:approveReopen]", error);
+      toast.error("❌ অনুমোদন প্রক্রিয়ায় সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।");
     },
   });
 
