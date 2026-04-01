@@ -76,7 +76,21 @@ const ClientDetail = () => {
   const [showSettled, setShowSettled] = useState(false);
   const [chartDateFrom, setChartDateFrom] = useState<Date | undefined>(undefined);
   const [chartDateTo, setChartDateTo] = useState<Date | undefined>(undefined);
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [pinOpen, setPinOpen] = useState(false);
   const HISTORY_PER_PAGE = 20;
+
+  const handleDeleteConfirmed = () => setPinOpen(true);
+  const handlePinAuthorized = () => {
+    setPinOpen(false);
+    if (deleteTarget) {
+      softDelete.mutate(deleteTarget.id, {
+        onSuccess: () => navigate("/clients"),
+        onSettled: () => setDeleteTarget(null),
+      });
+    }
+  };
 
   // ALL active loans for this client (multi-loan support)
   const { data: activeLoans } = useQuery({
