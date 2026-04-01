@@ -102,21 +102,25 @@ const Approvals = () => {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-2">
-        <PageHeader title={bn ? "অনুমোদন সারি" : "Approval Queue"} description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"} badge={bn ? "✅ অনুমোদন কেন্দ্র" : "✅ Approval Center"} />
-        {canRecordPayments && (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              {bn ? "সংগ্রহ" : "Collection"}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} className="text-xs">
-              <Users className="w-3.5 h-3.5 mr-1" />
-              {bn ? "বাল্ক সংগ্রহ" : "Bulk Collection"}
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title={bn ? "অনুমোদন সারি" : "Approval Queue"}
+        description={bn ? "Field Officer দের জমা দেওয়া লেনদেন অনুমোদন/প্রত্যাখ্যান করুন" : "Approve/reject transactions submitted by field officers"}
+        badge={bn ? "✅ অনুমোদন কেন্দ্র" : "✅ Approval Center"}
+        actions={
+          canRecordPayments ? (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => setCollectionOpen(true)} className="text-xs">
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                {bn ? "সংগ্রহ" : "Collection"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} className="text-xs">
+                <Users className="w-3.5 h-3.5 mr-1" />
+                {bn ? "বাল্ক সংগ্রহ" : "Bulk Collection"}
+              </Button>
+            </div>
+          ) : null
+        }
+      />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
