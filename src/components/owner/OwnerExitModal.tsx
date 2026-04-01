@@ -135,6 +135,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
     setStep("overview");
     setPenalty(0);
     setBonus(0);
+    setAccruedProfit(0);
     setNotes("");
     onClose();
   };
