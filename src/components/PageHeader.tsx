@@ -6,15 +6,16 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  /** Optional premium pill badge text shown above the title */
+  badge?: string;
 }
 
-const PageHeader = ({ title, description, actions }: PageHeaderProps) => {
+const PageHeader = ({ title, description, actions, badge }: PageHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   const handleBack = useCallback(() => {
-    // For nested routes like /reports/trial-balance, go to parent /reports
     const segments = location.pathname.split("/").filter(Boolean);
     if (segments.length > 1) {
       navigate("/" + segments.slice(0, -1).join("/"));
@@ -26,24 +27,46 @@ const PageHeader = ({ title, description, actions }: PageHeaderProps) => {
   }, [navigate, location.pathname]);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-      <div className="min-w-0 flex items-start gap-3">
-        {!isHome && (
+    <div className="w-full flex flex-col items-center justify-center text-center py-6 md:py-8 mb-4 md:mb-6">
+      {/* Back button — floated top-left */}
+      {!isHome && (
+        <div className="w-full flex justify-start mb-4">
           <button
             type="button"
             onClick={handleBack}
-            className="group mt-0.5 flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 hover:bg-primary hover:shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer relative z-10"
+            className="group flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 hover:bg-primary hover:shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5 text-primary group-hover:text-primary-foreground transition-colors duration-200" />
           </button>
-        )}
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-card-foreground tracking-tight truncate">{title}</h1>
-          {description && <p className="mt-1 text-sm sm:text-base text-muted-foreground font-medium">{description}</p>}
         </div>
-      </div>
-      {actions && <div className="flex gap-2 flex-shrink-0 flex-wrap">{actions}</div>}
+      )}
+
+      {/* Badge */}
+      {badge && (
+        <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 mb-3">
+          {badge}
+        </span>
+      )}
+
+      {/* Title */}
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+        {title}
+      </h1>
+
+      {/* Description */}
+      {description && (
+        <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-lg mx-auto font-medium">
+          {description}
+        </p>
+      )}
+
+      {/* Actions */}
+      {actions && (
+        <div className="flex gap-2 flex-shrink-0 flex-wrap justify-center mt-4">
+          {actions}
+        </div>
+      )}
     </div>
   );
 };
