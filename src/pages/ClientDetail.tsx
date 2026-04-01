@@ -1248,6 +1248,46 @@ const ClientDetail = () => {
           />
         );
       })()}
+
+      {/* ═══ Management Section ═══ */}
+      {(canEditClients || canDeleteClients) && (
+        <div className="card-elevated p-5 space-y-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Settings className="w-4 h-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">{bn ? "ব্যবস্থাপনা" : "Management"}</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {canEditClients && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setClientFormOpen(true)}>
+                <Edit2 className="w-3.5 h-3.5" /> {bn ? "প্রোফাইল সম্পাদনা" : "Edit Profile"}
+              </Button>
+            )}
+            {canDeleteClients && (
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(client)}>
+                <Trash2 className="w-3.5 h-3.5" /> {bn ? "গ্রাহক মুছুন" : "Delete Client"}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {clientFormOpen && <ClientForm open={clientFormOpen} onClose={() => setClientFormOpen(false)} editData={client} />}
+
+      {deleteTarget && !pinOpen && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirmed}
+          itemName={bn ? (client as any)?.name_bn || (client as any)?.name_en : (client as any)?.name_en}
+          loading={softDelete.isPending}
+        />
+      )}
+
+      <TransactionAuthModal
+        open={pinOpen}
+        onClose={() => { setPinOpen(false); setDeleteTarget(null); }}
+        onAuthorized={handlePinAuthorized}
+      />
     </AppLayout>
   );
 };
