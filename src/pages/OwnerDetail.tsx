@@ -1,21 +1,27 @@
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import DetailField from "@/components/DetailField";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOwner } from "@/hooks/useSupabaseData";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Crown, Phone, Wallet, TrendingUp, PiggyBank, BarChart3,
-  Calendar, CircleDollarSign,
+  Calendar, CircleDollarSign, AlertTriangle, Trash2,
 } from "lucide-react";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, AreaChart, Area, Tooltip as RechartsTooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { TransactionAuthModal } from "@/components/security/TransactionAuthModal";
+import { toast } from "sonner";
 
 const OwnerDetail = () => {
   const { id } = useParams();
