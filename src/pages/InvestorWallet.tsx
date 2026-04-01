@@ -139,6 +139,7 @@ const InvestorWallet = () => {
         description={bn
           ? `${investor.name_bn} — ${investor.investment_model === "profit_plus_principal" ? "লাভ + মূলধন" : "শুধু লাভ"}`
           : `${investor.name_en} — ${investor.investment_model === "profit_plus_principal" ? "Profit + Principal" : "Profit Only"}`}
+        badge={bn ? "💰 ইনভেস্টর ওয়ালেট" : "💰 Investor Wallet"}
       />
 
       <InvestorMetrics

@@ -130,6 +130,7 @@ const ProfitLossPage = () => {
         description={bn
           ? "সকল আয়, পরিচালন ব্যয় ও নিট মুনাফার সার-সংক্ষেপ"
           : "Complete P&L with revenue, operational expenses & true net profit"}
+        badge={bn ? "📋 আয়-ব্যয় বিবরণী" : "📋 P&L Statement"}
       />
 
       {/* ── KPI Summary Row ── */}
