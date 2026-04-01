@@ -1954,6 +1954,7 @@ export type Database = {
       }
       owner_exit_settlements: {
         Row: {
+          accrued_profit: number
           created_at: string
           early_exit_penalty: number
           exit_date: string
@@ -1974,6 +1975,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accrued_profit?: number
           created_at?: string
           early_exit_penalty?: number
           exit_date?: string
@@ -1994,6 +1996,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accrued_profit?: number
           created_at?: string
           early_exit_penalty?: number
           exit_date?: string
@@ -3323,19 +3326,34 @@ export type Database = {
         Args: { _investor_id: string }
         Returns: undefined
       }
-      process_owner_exit: {
-        Args: {
-          _early_exit_penalty?: number
-          _legal_doc_url?: string
-          _loyalty_bonus?: number
-          _non_compete_months?: number
-          _notes?: string
-          _owner_user_id: string
-          _total_capital: number
-          _total_profit_earned: number
-        }
-        Returns: Json
-      }
+      process_owner_exit:
+        | {
+            Args: {
+              _early_exit_penalty?: number
+              _legal_doc_url?: string
+              _loyalty_bonus?: number
+              _non_compete_months?: number
+              _notes?: string
+              _owner_user_id: string
+              _total_capital: number
+              _total_profit_earned: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _accrued_profit?: number
+              _early_exit_penalty?: number
+              _legal_doc_url?: string
+              _loyalty_bonus?: number
+              _non_compete_months?: number
+              _notes?: string
+              _owner_user_id: string
+              _total_capital: number
+              _total_profit_earned: number
+            }
+            Returns: Json
+          }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
       reject_financial_transaction: {

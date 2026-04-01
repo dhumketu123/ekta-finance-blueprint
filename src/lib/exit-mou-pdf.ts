@@ -10,6 +10,7 @@ interface ExitMouData {
   tenureDays: number;
   totalCapital: number;
   totalProfitEarned: number;
+  accruedProfit?: number;
   earlyExitPenalty: number;
   loyaltyBonus: number;
   finalPayout: number;
@@ -82,7 +83,10 @@ export const generateExitMouPdf = async (data: ExitMouData): Promise<Blob> => {
   y += 1;
   addKeyValue("Total Capital:", `BDT ${data.totalCapital.toLocaleString()}`);
   addKeyValue("Total Profit Earned:", `BDT ${data.totalProfitEarned.toLocaleString()}`);
-  addKeyValue("Gross Settlement:", `BDT ${(data.totalCapital + data.totalProfitEarned).toLocaleString()}`);
+  if (data.accruedProfit && data.accruedProfit > 0) {
+    addKeyValue("Accrued Profit (Pro-Rata):", `BDT ${data.accruedProfit.toLocaleString()}`);
+  }
+  addKeyValue("Gross Settlement:", `BDT ${(data.totalCapital + data.totalProfitEarned + (data.accruedProfit || 0)).toLocaleString()}`);
 
   if (data.earlyExitPenalty > 0) {
     doc.setTextColor(180, 50, 50);

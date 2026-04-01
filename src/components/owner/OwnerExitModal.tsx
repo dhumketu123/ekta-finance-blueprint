@@ -13,7 +13,7 @@ import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 import { generateExitMouPdf } from "@/lib/exit-mou-pdf";
 import {
   Shield, AlertTriangle, Calculator, FileText, Clock,
-  TrendingDown, TrendingUp, ArrowRight, CheckCircle2,
+  TrendingDown, TrendingUp, ArrowRight, CheckCircle2, CircleDollarSign,
 } from "lucide-react";
 
 interface OwnerExitModalProps {
@@ -45,6 +45,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
   const [step, setStep] = useState<ExitStep>("overview");
   const [penalty, setPenalty] = useState<number>(0);
   const [bonus, setBonus] = useState<number>(0);
+  const [accruedProfit, setAccruedProfit] = useState<number>(0);
   const [nonCompeteMonths, setNonCompeteMonths] = useState<number>(24);
   const [notes, setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -60,7 +61,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
   const vestingPct = Math.min(100, (tenureDays / VENTURE_DAYS) * 100);
   const vestedCapital = totalCapital * (vestingPct / 100);
 
-  const settlementAmount = totalCapital + totalProfitEarned;
+  const settlementAmount = totalCapital + totalProfitEarned + accruedProfit;
   const finalPayout = Math.max(0, settlementAmount - penalty + bonus);
 
   const handleProcessExit = async () => {
@@ -78,6 +79,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
         tenureDays,
         totalCapital,
         totalProfitEarned,
+        accruedProfit,
         earlyExitPenalty: penalty,
         loyaltyBonus: bonus,
         finalPayout,
@@ -106,6 +108,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
         _non_compete_months: nonCompeteMonths,
         _notes: notes || null,
         _legal_doc_url: legalDocUrl,
+        _accrued_profit: accruedProfit,
       });
 
       if (error) throw new Error(error.message);
@@ -133,6 +136,7 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
     setStep("overview");
     setPenalty(0);
     setBonus(0);
+    setAccruedProfit(0);
     setNotes("");
     onClose();
   };
@@ -296,6 +300,25 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
                     </div>
 
                     <div>
+                      <Label className="flex items-center gap-1.5 text-xs mb-1.5">
+                        <CircleDollarSign className="w-3.5 h-3.5 text-primary" />
+                        {bn ? "চলতি মাসের জমা মুনাফা (৳)" : "Current Month Accrued Profit (৳)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={accruedProfit || ""}
+                        onChange={(e) => setAccruedProfit(Number(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {bn
+                          ? "মাসের মাঝে বের হলে অপরিশোধিত প্রো-রাটা মুনাফা যোগ করুন"
+                          : "Add unpaid pro-rata profit if exiting mid-month"}
+                      </p>
+                    </div>
+
+                    <div>
                       <Label className="text-xs mb-1.5 block">
                         {bn ? "নন-কম্পিট সময়কাল (মাস)" : "Non-Compete Period (months)"}
                       </Label>
@@ -328,6 +351,16 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
                     {bn ? "চূড়ান্ত পেআউট সারাংশ" : "Final Payout Summary"}
                   </h4>
                   <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{bn ? "মূলধন + মুনাফা" : "Capital + Profit"}</span>
+                      <span className="font-mono">৳{(totalCapital + totalProfitEarned).toLocaleString()}</span>
+                    </div>
+                    {accruedProfit > 0 && (
+                      <div className="flex justify-between text-primary">
+                        <span>(+) {bn ? "জমা মুনাফা" : "Accrued Profit"}</span>
+                        <span className="font-mono">+৳{accruedProfit.toLocaleString()}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{bn ? "গ্রস সেটেলমেন্ট" : "Gross Settlement"}</span>
                       <span className="font-mono">৳{settlementAmount.toLocaleString()}</span>
