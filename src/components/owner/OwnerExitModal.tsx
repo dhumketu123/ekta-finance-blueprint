@@ -316,6 +316,8 @@ const OwnerExitModal = ({ open, onClose, owner, totalCapital, totalProfitEarned 
                           : "Add unpaid pro-rata profit if exiting mid-month"}
                       </p>
                     </div>
+
+                    <div>
                       <Label className="text-xs mb-1.5 block">
                         {bn ? "নন-কম্পিট সময়কাল (মাস)" : "Non-Compete Period (months)"}
                       </Label>
