@@ -120,12 +120,15 @@ const ReportsPage = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Page Title */}
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+        {/* Hero Header */}
+        <div className="w-full flex flex-col items-center justify-center text-center py-8 mb-6">
+          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 mb-4">
+            ⚡ {lang === "bn" ? "লাইভ ইন্টেলিজেন্স হাব" : "Live Intelligence Hub"}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
             {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
+          <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-lg mx-auto font-medium">
             {lang === "bn"
               ? "ফিন্যান্সিয়াল ইন্টেলিজেন্স ও অফিসিয়াল রিপোর্টসমূহ"
               : "Financial intelligence & official reports"}
