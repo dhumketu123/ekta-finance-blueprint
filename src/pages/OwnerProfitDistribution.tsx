@@ -133,7 +133,7 @@ const OwnerProfitDistribution = () => {
   if (distLoading) {
     return (
       <AppLayout>
-        <PageHeader title={lang === "bn" ? "মালিক মুনাফা বিতরণ" : "Owner Profit Distribution"} />
+        <PageHeader title={lang === "bn" ? "মালিক মুনাফা বিতরণ" : "Owner Profit Distribution"} badge={lang === "bn" ? "💎 প্রফিট ডিস্ট্রিবিউশন" : "💎 Profit Distribution"} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
