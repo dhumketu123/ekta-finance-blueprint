@@ -103,7 +103,7 @@ const PaymentStatusPage = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <PageHeader title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"} />
+        <PageHeader title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"} badge={lang === "bn" ? "💳 পেমেন্ট ট্র্যাকার" : "💳 Payment Tracker"} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
