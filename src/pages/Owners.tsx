@@ -170,6 +170,19 @@ const Owners = () => {
         ) : null}
       </div>
 
+      {/* Treasury Management — Super Admin Only */}
+      {isSuperAdmin && (
+        <div className="mb-8">
+          <SectionHeader
+            title={bn ? "🏛️ ট্রেজারি ম্যানেজমেন্ট" : "🏛️ Treasury Management"}
+            subtitle={bn ? "এক্সিটেড পার্টনারদের ইকুইটি পুনর্বণ্টন" : "Redistribute exited partner equity"}
+          />
+          <div className="mt-4">
+            <TreasuryManagementCard />
+          </div>
+        </div>
+      )}
+
       {/* Business Health Analytics */}
       <SectionHeader
         title={bn ? "ব্যবসায়িক স্বাস্থ্য বিশ্লেষণ" : "Business Health Analytics"}
