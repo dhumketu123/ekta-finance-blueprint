@@ -85,8 +85,8 @@ export const useDayClose = (date: string) => {
       qc.invalidateQueries({ queryKey: ["day-close-summary", date] });
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : "অজানা ত্রুটি";
-      toast.error(msg);
+      console.error("[DayClose:requestReopen]", error);
+      toast.error("❌ রিওপেন অনুরোধ পাঠাতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।");
     },
   });
 
