@@ -232,12 +232,6 @@ export default function TreasuryManagementCard() {
           setPinOpen(false);
           executeRedistribution();
         }}
-        title={bn ? "ট্রেজারি বিতরণ নিশ্চিত করুন" : "Confirm Treasury Redistribution"}
-        description={
-          bn
-            ? `${treasuryPct.toFixed(2)}% ইকুইটি ${selectedMethod === "equal" ? "সমানভাবে" : "প্রো-রাটা পদ্ধতিতে"} ${ownerCount} জন সক্রিয় পার্টনারে বিতরণ হবে।`
-            : `${treasuryPct.toFixed(2)}% equity will be distributed ${selectedMethod === "equal" ? "equally" : "pro-rata"} among ${ownerCount} active partners.`
-        }
       />
     </>
   );
