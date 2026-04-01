@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer";
+export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer" | "alumni";
 
 interface PermissionMatrix {
   canViewClients: boolean;
