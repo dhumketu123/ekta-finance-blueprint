@@ -87,68 +87,79 @@ const ReportsPage = () => {
 
   return (
     <AppLayout>
-      {/* Full-bleed wrapper: negative margins to escape AppLayout padding, then re-apply our own */}
-      <div className="relative -mx-4 -mt-6 -mb-40 md:-mx-6 md:-mt-8 md:-mb-8 lg:-mx-8 min-h-[calc(100vh-4rem)] overflow-hidden">
-        {/* Animated Mesh Background */}
-        <div className="absolute inset-0">
-          <div className="w-full h-full animate-mesh bg-gradient-to-br from-[hsl(217,100%,41%)] via-[hsl(228,92%,62%)] to-[hsl(211,97%,71%)]" />
+      <div className="space-y-6">
+        {/* Page Title */}
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            {lang === "bn"
+              ? "ফিন্যান্সিয়াল ইন্টেলিজেন্স ও অফিসিয়াল রিপোর্টসমূহ"
+              : "Financial intelligence & official reports"}
+          </p>
         </div>
 
-        {/* Page Content */}
-        <div className="relative z-10 px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-6">
-          {/* Title */}
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-              {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}
-            </h1>
-            <p className="text-white/80 text-sm md:text-base">
-              {lang === "bn"
-                ? "ফিন্যান্সিয়াল ইন্টেলিজেন্স ও অফিসিয়াল রিপোর্টসমূহ"
-                : "Financial intelligence & official reports"}
-            </p>
-          </div>
-
-          {/* Executive Intelligence Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {executiveMetrics.map((metric, index) => {
-              const Icon = metric.icon;
-              return (
-                <GlassCard key={index}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 rounded-xl bg-white/20">
-                      <Icon className="w-6 h-6 text-white" aria-hidden="true" />
-                    </div>
+        {/* Executive Intelligence Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {executiveMetrics.map((metric, index) => {
+            const Icon = metric.icon;
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "group relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 md:p-5 transition-all duration-300",
+                  "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest truncate">
+                      {metric.title}
+                    </p>
+                    <p className="mt-1.5 md:mt-2 text-2xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
+                      {metric.value}
+                    </p>
+                    <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground font-medium truncate">
+                      {metric.subtitle}
+                    </p>
                   </div>
-                  <h3 className="text-sm text-white/70 mb-1">{metric.title}</h3>
-                  <p className="text-2xl font-semibold text-white">{metric.value}</p>
-                  <p className="text-xs text-white/60 mt-1">{metric.subtitle}</p>
-                </GlassCard>
-              );
-            })}
-          </div>
-
-          {/* Reports Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-8">
-            {reportLinks.map((r) => (
-              <Link key={r.path} to={r.path} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-2xl">
-                <GlassCard>
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-white/15 shrink-0">
-                      <r.icon className="w-5 h-5 text-white" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white">
-                        {lang === "bn" ? r.titleBn : r.titleEn}
-                      </p>
-                      <p className="text-xs text-white/70 mt-1 leading-relaxed">
-                        {lang === "bn" ? r.descBn : r.descEn}
-                      </p>
-                    </div>
+                  <div className="p-2.5 md:p-3 rounded-xl shrink-0 bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110 group-hover:shadow-md">
+                    <Icon className="w-5 h-5 md:w-6 md:h-6" aria-hidden="true" />
                   </div>
-                </GlassCard>
-              </Link>
-            ))}
-          </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Reports Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {reportLinks.map((r) => (
+            <Link
+              key={r.path}
+              to={r.path}
+              className={cn(
+                "group relative overflow-hidden rounded-xl border border-border/60 bg-card p-5 transition-all duration-300",
+                "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl shrink-0 bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110">
+                  <r.icon className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-card-foreground">
+                    {lang === "bn" ? r.titleBn : r.titleEn}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {lang === "bn" ? r.descBn : r.descEn}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </AppLayout>
