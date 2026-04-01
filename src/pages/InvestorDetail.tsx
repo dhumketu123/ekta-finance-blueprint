@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, Phone, Wallet, Crown, Gem, Award, Star,
   PlusCircle, ArrowDownCircle, Banknote, Calendar, Timer,
-  Download, LineChart as LineChartIcon, Sparkles,
+  Download, LineChart as LineChartIcon, Sparkles, Edit2, Trash2, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
