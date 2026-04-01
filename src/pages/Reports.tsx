@@ -1,9 +1,8 @@
 import AppLayout from "@/components/AppLayout";
-import PageHeader from "@/components/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const reportLinks = [
   {
@@ -56,32 +55,77 @@ const reportLinks = [
   },
 ];
 
+/* ── Reusable Glass Card (local, not exported yet) ── */
+const GlassCard = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      "bg-white/10 backdrop-blur-xl border border-white/20",
+      "rounded-2xl shadow-2xl p-5 transition-all duration-300",
+      "hover:scale-[1.02] active:scale-[0.98]",
+      className
+    )}
+  >
+    {children}
+  </div>
+);
+
 const ReportsPage = () => {
   const { lang } = useLanguage();
 
   return (
     <AppLayout>
-      <PageHeader
-        title={lang === "bn" ? "রিপোর্ট" : "Reports"}
-        description={lang === "bn" ? "আর্থিক রিপোর্ট ও বিশ্লেষণ" : "Financial reports & analytics"}
-      />
+      {/* ── Animated Mesh Background ── */}
+      <div className="relative min-h-[calc(100vh-80px)] overflow-x-hidden">
+        <div className="absolute inset-0 -z-10 overflow-hidden rounded-xl">
+          <div className="w-full h-full animate-mesh bg-gradient-to-br from-[hsl(217,100%,41%)] via-[hsl(228,92%,62%)] to-[hsl(211,97%,71%)]" />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {reportLinks.map((r) => (
-          <Link key={r.path} to={r.path}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-border/50 hover:border-primary/30">
-              <CardContent className="p-5 flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-primary/10">
-                  <r.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{lang === "bn" ? r.titleBn : r.titleEn}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{lang === "bn" ? r.descBn : r.descEn}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {/* ── Page Content ── */}
+        <div className="relative z-10 px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-6">
+          {/* Title */}
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}
+            </h1>
+            <p className="text-white/80 text-sm md:text-base">
+              {lang === "bn"
+                ? "ফিন্যান্সিয়াল ইন্টেলিজেন্স ও অফিসিয়াল রিপোর্টসমূহ"
+                : "Financial intelligence & official reports"}
+            </p>
+          </div>
+
+          {/* Intelligence Widgets — placeholder for BLOCK 2 */}
+          <div id="intelligence-widgets-placeholder" />
+
+          {/* ── Reports Grid ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {reportLinks.map((r) => (
+              <Link key={r.path} to={r.path} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-2xl">
+                <GlassCard>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-white/15 shrink-0">
+                      <r.icon className="w-5 h-5 text-white" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white">
+                        {lang === "bn" ? r.titleBn : r.titleEn}
+                      </p>
+                      <p className="text-xs text-white/70 mt-1 leading-relaxed">
+                        {lang === "bn" ? r.descBn : r.descEn}
+                      </p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
