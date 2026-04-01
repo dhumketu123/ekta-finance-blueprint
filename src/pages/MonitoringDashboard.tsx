@@ -124,7 +124,7 @@ const MonitoringDashboard = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <PageHeader title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"} description={lang === "bn" ? "সার্ভার স্বাস্থ্য ও ডেলিভারি পরিসংখ্যান" : "Server health & delivery metrics"} />
+        <PageHeader title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"} description={lang === "bn" ? "সার্ভার স্বাস্থ্য ও ডেলিভারি পরিসংখ্যান" : "Server health & delivery metrics"} badge={lang === "bn" ? "🖥️ সিস্টেম অপস" : "🖥️ System Ops"} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 8 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
@@ -137,6 +137,7 @@ const MonitoringDashboard = () => {
       <PageHeader
         title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"}
         description={lang === "bn" ? "ডেলিভারি, ক্রন জব, অ্যানোমালি ইন্টেলিজেন্স" : "Delivery, cron jobs & anomaly intelligence"}
+        badge={lang === "bn" ? "🖥️ সিস্টেম অপস" : "🖥️ System Ops"}
         actions={
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={refetchAll} disabled={isFetching}>
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />

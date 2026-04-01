@@ -106,7 +106,7 @@ const SuperAdminDashboard = () => {
 
   return (
     <AppLayout>
-      <PageHeader title="Super Admin Dashboard" description="সকল টেন্যান্ট ও সিস্টেম পরিচালনা" />
+      <PageHeader title="Super Admin Dashboard" description="সকল টেন্যান্ট ও সিস্টেম পরিচালনা" badge="🔑 সুপার অ্যাডমিন" />
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

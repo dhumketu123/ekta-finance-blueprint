@@ -103,7 +103,7 @@ const PaymentStatusPage = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <PageHeader title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"} />
+        <PageHeader title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"} badge={lang === "bn" ? "💳 পেমেন্ট ট্র্যাকার" : "💳 Payment Tracker"} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
@@ -117,6 +117,7 @@ const PaymentStatusPage = () => {
       <PageHeader
         title={lang === "bn" ? "পেমেন্ট স্ট্যাটাস ড্যাশবোর্ড" : "Payment Status Dashboard"}
         description={lang === "bn" ? "সকল কিস্তির পেমেন্ট অবস্থা ও সারাংশ" : "Overview of all installment payment statuses"}
+        badge={lang === "bn" ? "💳 পেমেন্ট ট্র্যাকার" : "💳 Payment Tracker"}
         actions={
           <Button variant="outline" size="sm" onClick={exportCsv} className="gap-2">
             <Download className="w-4 h-4" />

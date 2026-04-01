@@ -85,7 +85,7 @@ export default function LedgerAudit() {
 
   return (
     <AppLayout>
-      <PageHeader title={bn ? "লেজার অডিট" : "Ledger Audit"} description={bn ? "PDF চেইন ভেরিফিকেশন ড্যাশবোর্ড" : "PDF Chain Verification Dashboard"} />
+      <PageHeader title={bn ? "লেজার অডিট" : "Ledger Audit"} description={bn ? "PDF চেইন ভেরিফিকেশন ড্যাশবোর্ড" : "PDF Chain Verification Dashboard"} badge={bn ? "🔗 চেইন ভেরিফায়ার" : "🔗 Chain Verifier"} />
 
       {/* Persistent Broken Chain Alert Banner */}
       {!loading && brokenLinks > 0 && (

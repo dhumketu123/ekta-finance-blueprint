@@ -352,6 +352,7 @@ const BalanceSheetPage = () => {
             ? `তারিখ: ${formatLocalDate(effectiveDate, lang)} — সম্পদ, দায় ও মালিকানা স্বত্ব`
             : `As of ${formatLocalDate(effectiveDate, lang)} — Assets, Liabilities & Equity`
         }
+        badge={bn ? "📒 ব্যালেন্স শীট" : "📒 Balance Sheet"}
         actions={
           <Badge
             variant={computed.balanced ? "default" : "destructive"}
