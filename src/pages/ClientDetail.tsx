@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useMemo, useCallback } from "react";
 import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
