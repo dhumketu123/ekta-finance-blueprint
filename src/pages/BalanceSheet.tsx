@@ -21,7 +21,7 @@ import { formatLocalDate } from "@/lib/date-utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface BsRow {
-  coa_id: string;
+  id: string;
   code: string;
   name: string;
   name_bn: string | null;
@@ -59,8 +59,9 @@ const fmtAmt = (n: number, useBrackets = true): string => {
 function validateBsRow(raw: unknown): BsRow | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
+  const rowId = typeof r.id === "string" ? r.id : typeof r.coa_id === "string" ? r.coa_id : null;
   if (
-    typeof r.coa_id !== "string" ||
+    !rowId ||
     typeof r.code !== "string" ||
     typeof r.name !== "string" ||
     !VALID_SECTIONS.includes(r.account_type as AccountSection)
@@ -68,7 +69,7 @@ function validateBsRow(raw: unknown): BsRow | null {
     return null;
   }
   return {
-    coa_id: r.coa_id,
+    id: rowId,
     code: r.code,
     name: r.name,
     name_bn: typeof r.name_bn === "string" ? r.name_bn : null,
@@ -82,6 +83,17 @@ async function logPageVisit() {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    const appMeta = user.app_metadata as Record<string, unknown> | undefined;
+    const tenantId = appMeta?.tenant_id as string | undefined;
+    let resolvedTenantId = tenantId;
+    if (!resolvedTenantId) {
+      const { data: profile } = await supabase
+        .from("profiles" as never)
+        .select("tenant_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      resolvedTenantId = (profile as Record<string, unknown> | null)?.tenant_id as string | undefined;
+    }
     await supabase.from("audit_logs").insert({
       user_id: user.id,
       entity_type: "report",
@@ -130,7 +142,7 @@ const SectionTable = ({
               </TableRow>
             )}
             {items.map((r) => (
-              <TableRow key={r.coa_id}>
+              <TableRow key={r.id}>
                 <TableCell className="text-xs font-medium">{bn ? (r.name_bn || r.name) : r.name}</TableCell>
                 <TableCell className="text-[11px] font-mono text-muted-foreground hidden sm:table-cell">{r.code}</TableCell>
                 <TableCell className="text-xs text-right font-mono font-semibold">{fmtAmt(r.balance)}</TableCell>
