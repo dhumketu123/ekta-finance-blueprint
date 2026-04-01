@@ -790,7 +790,7 @@ const OwnerDetail = () => {
           open={exitModalOpen}
           onClose={() => setExitModalOpen(false)}
           owner={{
-            id: owner.id,
+            id: ownerRefId,
             name_en: owner.name_en,
             name_bn: owner.name_bn,
             phone: owner.phone || "",
