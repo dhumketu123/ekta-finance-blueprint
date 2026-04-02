@@ -99,8 +99,8 @@ const App = () => (
                 <Route path="/clients/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><ClientDetail /></ProtectedRoute>} />
                 <Route path="/investors" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><Investors /></ProtectedRoute>} />
                 <Route path="/investors/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><InvestorDetail /></ProtectedRoute>} />
-                <Route path="/owners" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><Owners /></ProtectedRoute>} />
-                <Route path="/owners/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OwnerDetail /></ProtectedRoute>} />
+                <Route path="/owners" element={<ProtectedRoute allowedRoles={["admin", "owner", "super_admin"]}><Owners /></ProtectedRoute>} />
+                <Route path="/owners/:id" element={<ProtectedRoute allowedRoles={["admin", "owner", "super_admin"]}><OwnerDetail /></ProtectedRoute>} />
                 <Route path="/field-officers" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><FieldOfficers /></ProtectedRoute>} />
                 <Route path="/field-officers/:id" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><OfficerDetail /></ProtectedRoute>} />
                 <Route path="/loans" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><Loans /></ProtectedRoute>} />
