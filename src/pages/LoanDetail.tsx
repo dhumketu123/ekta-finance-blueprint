@@ -199,10 +199,10 @@ const LoanDetail = () => {
                 <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs border-white/20 text-white hover:bg-white/10" onClick={() => setFormOpen(true)}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white" onClick={() => setFormOpen(true)}>
                   <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10" onClick={() => setDeleteTarget(loan)}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs bg-transparent text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteTarget(loan)}>
                   <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
                 </Button>
               </div>
