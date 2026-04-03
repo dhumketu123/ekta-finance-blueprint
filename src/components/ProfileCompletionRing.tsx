@@ -89,12 +89,13 @@ export default function ProfileCompletionRing({ client, size = 120, strokeWidth 
             </svg>
             {/* Content slot — rigid aspect-square container */}
             <div
-              className="relative z-10 overflow-hidden rounded-full ring-2 ring-border/20 shadow-sm flex items-center justify-center"
+              className="relative z-10 overflow-hidden rounded-full ring-2 ring-border/20 shadow-sm flex items-center justify-center aspect-square"
               style={{
                 width: size - strokeWidth * 3,
                 height: size - strokeWidth * 3,
                 minWidth: size - strokeWidth * 3,
                 minHeight: size - strokeWidth * 3,
+                borderRadius: 9999,
               }}
             >
               {children}

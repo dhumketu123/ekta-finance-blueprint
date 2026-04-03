@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useMemo, useCallback } from "react";
 import { formatLocalDate, formatShortDate } from "@/lib/date-utils";
 import AppLayout from "@/components/AppLayout";
@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   User, Wallet, PiggyBank, MapPin, Shield, TrendingUp, Banknote, CalendarDays,
   AlertTriangle, CheckCircle, Calculator, Receipt, ArrowDownCircle, ArrowUpCircle,
-  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon, Phone, Edit2, Trash2, Settings
+  History, FileText, Filter, Download, BarChart3, Archive, CalendarIcon, Phone, Edit2, Trash2, Settings, ArrowLeft
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -52,8 +52,18 @@ import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 const ClientDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, lang } = useLanguage();
   const bn = lang === "bn";
+
+  const handleSmartBack = useCallback(() => {
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments.length > 1) {
+      navigate("/" + segments.slice(0, -1).join("/"));
+    } else {
+      navigate("/clients");
+    }
+  }, [location.pathname, navigate]);
   const { canEditClients, canDeleteClients, isAdmin, isTreasurer, isOwner } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
@@ -367,10 +377,21 @@ const ClientDetail = () => {
 
   return (
     <AppLayout>
-      <PageHeader
-        title={name}
-        description={`${t("detail.client")} — ${maskedMemberId}`}
-      />
+      {/* ── Slim Back Navigation ── */}
+      <div className="min-h-[48px] flex items-center gap-3 mb-2">
+        <button
+          onClick={handleSmartBack}
+          type="button"
+          aria-label={bn ? "পেছনে যান" : "Go back"}
+          className="w-9 h-9 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 active:scale-95"
+        >
+          <ArrowLeft className="w-4.5 h-4.5 text-primary" />
+        </button>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+          <p className="text-[11px] text-muted-foreground font-mono">{t("detail.client")} — {maskedMemberId}</p>
+        </div>
+      </div>
 
       {/* ── Unified Client Profile Header ── */}
       <ClientProfileHeader
