@@ -1,9 +1,9 @@
-import { useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
-import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, Wallet, Activity, FileText } from "lucide-react";
+import { Scale, TrendingUp, Landmark, CreditCard, Users, BookOpen, Wallet, Activity, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReportsMetrics } from "@/hooks/useReportsMetrics";
 
 const reportLinks = [
   {
@@ -56,17 +56,6 @@ const reportLinks = [
   },
 ];
 
-/* ── Mock Finance Snapshot (will be replaced by Supabase) ── */
-const mockFinanceSnapshot = {
-  totalCollections: 1250000,
-  totalOutstanding: 340000,
-  activeMembers: 412,
-  recoveryRate: 94,
-  weeklyGrowthPercent: 12,
-  todaysTransactions: 187,
-};
-
-/* ── KPI variant styles for visual hierarchy ── */
 const kpiVariants = [
   { border: "border-l-primary", iconBg: "bg-primary/10 text-primary" },
   { border: "border-l-success", iconBg: "bg-success/10 text-success" },
@@ -74,48 +63,40 @@ const kpiVariants = [
   { border: "border-l-accent", iconBg: "bg-accent text-accent-foreground" },
 ] as const;
 
-/* ── Pure KPI Calculation Engine ── */
-const useKpiEngine = () => {
-  return useMemo(() => ({
-    weeklyGrowth: mockFinanceSnapshot.weeklyGrowthPercent,
-    activeMembers: mockFinanceSnapshot.activeMembers,
-    todaysTransactions: mockFinanceSnapshot.todaysTransactions,
-    recoveryRate: mockFinanceSnapshot.recoveryRate,
-  }), []);
-};
-
-/* ── Executive Metrics Builder ── */
-const buildExecutiveMetrics = (kpi: ReturnType<typeof useKpiEngine>, lang: string) => [
+const buildExecutiveMetrics = (
+  metrics: ReturnType<typeof useReportsMetrics>,
+  lang: string
+) => [
   {
     icon: TrendingUp,
     title: lang === "bn" ? "সাপ্তাহিক প্রবৃদ্ধি" : "Weekly Growth",
-    value: `${kpi.weeklyGrowth}%`,
+    value: `${metrics.growthVelocity}%`,
     subtitle: lang === "bn" ? "গত ৭ দিনে সংগ্রহ বৃদ্ধি" : "Collection growth (7 days)",
   },
   {
     icon: Users,
     title: lang === "bn" ? "সক্রিয় সদস্য" : "Active Members",
-    value: `${kpi.activeMembers}`,
+    value: `${metrics.activeMembers}`,
     subtitle: lang === "bn" ? "বর্তমানে সক্রিয় প্রোফাইল" : "Currently active profiles",
   },
   {
     icon: Wallet,
     title: lang === "bn" ? "লেনদেন (আজ)" : "Today's Txns",
-    value: `${kpi.todaysTransactions}`,
+    value: `${metrics.todaysTransactions}`,
     subtitle: lang === "bn" ? "আজকের মোট কার্যক্রম" : "Total activity today",
   },
   {
     icon: Activity,
     title: lang === "bn" ? "রিকভারি রেট" : "Recovery Rate",
-    value: `${kpi.recoveryRate}%`,
+    value: `${metrics.recoveryRate}%`,
     subtitle: lang === "bn" ? "সামগ্রিক আদায় হার" : "Overall collection rate",
   },
 ];
 
 const ReportsPage = () => {
   const { lang } = useLanguage();
-  const kpi = useKpiEngine();
-  const executiveMetrics = buildExecutiveMetrics(kpi, lang);
+  const metrics = useReportsMetrics();
+  const executiveMetrics = buildExecutiveMetrics(metrics, lang);
 
   return (
     <AppLayout>
@@ -155,12 +136,20 @@ const ReportsPage = () => {
                       <p className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">
                         {metric.title}
                       </p>
-                      <p className="mt-1 md:mt-2 text-xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
-                        {metric.value}
-                      </p>
-                      <p className="mt-0.5 text-[10px] md:text-xs text-muted-foreground font-medium truncate hidden sm:block">
-                        {metric.subtitle}
-                      </p>
+                      {metrics.isLoading ? (
+                        <div className="mt-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <>
+                          <p className="mt-1 md:mt-2 text-xl md:text-3xl font-extrabold text-card-foreground tracking-tight">
+                            {metric.value}
+                          </p>
+                          <p className="mt-0.5 text-[10px] md:text-xs text-muted-foreground font-medium truncate hidden sm:block">
+                            {metric.subtitle}
+                          </p>
+                        </>
+                      )}
                     </div>
                     <div className={cn(
                       "p-2 md:p-3 rounded-xl shrink-0 transition-all duration-300 group-hover:scale-110",
