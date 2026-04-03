@@ -115,14 +115,15 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
   const photoUrl = localUrl ?? currentPhotoUrl;
 
   return (
-    <div className="relative group w-full h-full rounded-full overflow-hidden">
+    <div className="relative group w-full h-full rounded-full overflow-hidden aspect-square" style={{ borderRadius: 9999 }}>
       {photoUrl ? (
         <img
           src={photoUrl}
           alt="Client photo"
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover rounded-full"
+          style={{ borderRadius: 9999 }}
           onError={() => setLocalUrl(null)}
         />
       ) : (
