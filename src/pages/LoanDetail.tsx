@@ -14,6 +14,14 @@ import LoanProductForm from "@/components/forms/LoanProductForm";
 import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
+const GlassCard = ({ children }: { children: React.ReactNode }) => (
+  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10">
+    {children}
+  </div>
+);
+
+const formatTaka = (value: number) => `৳${value.toLocaleString("en-BD")}`;
+
 const LoanDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -77,65 +85,77 @@ const LoanDetail = () => {
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.loanProduct")} — ${loan.id.slice(0, 8)}`} />
+      <div className="relative min-h-screen overflow-hidden bg-[#0B1120] text-white -mx-4 -my-6 md:-mx-6 md:-my-8 lg:-mx-8">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)] animate-pulse" />
+        <div className="relative z-10 px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 animate-[fadeIn_0.6s_ease-in-out]">
 
-      <div className="card-elevated p-6 border-l-4 border-l-primary">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-            <CreditCard className="w-7 h-7 text-primary" />
+          <PageHeader title={name} description={`${t("detail.loanProduct")} — ${loan.id.slice(0, 8)}`} />
+
+          <GlassCard>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <CreditCard className="w-7 h-7 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-bold truncate">{name}</h2>
+                <span className="text-xs text-white/60 font-mono">{loan.id.slice(0, 8)}</span>
+              </div>
+            </div>
+          </GlassCard>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.interest")}</p>
+                <p className="mt-2 text-2xl font-bold text-amber-400">{loan.interest_rate}%</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.tenure")}</p>
+                <p className="mt-2 text-2xl font-bold text-cyan-400">{loan.tenure_months} {t("table.months")}</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.maxConcurrent")}</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-400">{loan.max_concurrent}</p>
+              </div>
+            </GlassCard>
           </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <span className="text-xs text-muted-foreground font-mono">{loan.id.slice(0, 8)}</span>
-          </div>
+
+          <GlassCard>
+            <div className="flex items-center gap-2 text-emerald-400 mb-4">
+              <Settings className="w-4 h-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <DetailField label={t("table.product")} value={name} />
+              <DetailField label={t("table.paymentType")} value={String(loan.payment_type).replace("_", " ")} />
+              <DetailField label={t("table.minAmount")} value={formatTaka(Number(loan.min_amount))} />
+              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(loan.max_amount))} highlight />
+            </div>
+          </GlassCard>
+
+          {canEditLoans && (
+            <GlassCard>
+              <div className="flex items-center gap-2 text-white/60 mb-4">
+                <Settings className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs border-white/20 text-white hover:bg-white/10" onClick={() => setFormOpen(true)}>
+                  <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10" onClick={() => setDeleteTarget(loan)}>
+                  <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
+                </Button>
+              </div>
+            </GlassCard>
+          )}
+
         </div>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-        <div className="card-elevated p-5 border-l-4 border-l-warning text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.interest")}</p>
-          <p className="mt-2 text-2xl font-bold text-warning">{loan.interest_rate}%</p>
-        </div>
-        <div className="card-elevated p-5 border-l-4 border-l-primary text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.tenure")}</p>
-          <p className="mt-2 text-2xl font-bold text-primary">{loan.tenure_months} {t("table.months")}</p>
-        </div>
-        <div className="card-elevated p-5 border-l-4 border-l-success text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.maxConcurrent")}</p>
-          <p className="mt-2 text-2xl font-bold text-success">{loan.max_concurrent}</p>
-        </div>
-      </div>
-
-      <div className="card-elevated p-5 space-y-4">
-        <div className="flex items-center gap-2 text-primary">
-          <Settings className="w-4 h-4" />
-          <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <DetailField label={t("table.product")} value={name} />
-          <DetailField label={t("table.paymentType")} value={String(loan.payment_type).replace("_", " ")} />
-          <DetailField label={t("table.minAmount")} value={`৳${Number(loan.min_amount).toLocaleString()}`} />
-          <DetailField label={t("table.maxAmount")} value={`৳${Number(loan.max_amount).toLocaleString()}`} highlight />
-        </div>
-      </div>
-
-      {/* Management Actions */}
-      {canEditLoans && (
-        <div className="card-elevated p-5 space-y-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Settings className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setFormOpen(true)}>
-              <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(loan)}>
-              <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {formOpen && <LoanProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={loan} />}
 
