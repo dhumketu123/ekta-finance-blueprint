@@ -70,7 +70,7 @@ export const useReportsMetrics = (): ReportsMetrics => {
       const todaysTransactions = todayTxs.length;
 
       // Recovery rate = (total_principal - outstanding) / total_principal * 100
-      const activeLoans = loans.filter((l) => l.status === "active" || l.status === "completed");
+      const activeLoans = loans.filter((l) => l.status === "active" || l.status === "closed");
       const totalPrincipal = activeLoans.reduce((s, l) => s + (l.total_principal ?? 0), 0);
       const totalOutstanding = activeLoans.reduce((s, l) => s + (l.outstanding_principal ?? 0), 0);
       const recoveryRate = totalPrincipal > 0
