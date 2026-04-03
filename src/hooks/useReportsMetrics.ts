@@ -43,14 +43,14 @@ export const useReportsMetrics = (): ReportsMetrics => {
           .select("amount")
           .gte("created_at", `${sevenDaysAgo}T00:00:00`)
           .eq("approval_status", "approved")
-          .in("transaction_type", ["loan_collection", "emi_collection"]),
+          .in("transaction_type", ["loan_repayment"] as any[]),
         supabase
           .from("financial_transactions")
           .select("amount")
           .gte("created_at", `${fourteenDaysAgo}T00:00:00`)
           .lt("created_at", `${sevenDaysAgo}T00:00:00`)
           .eq("approval_status", "approved")
-          .in("transaction_type", ["loan_collection", "emi_collection"]),
+          .in("transaction_type", ["loan_repayment"] as any[]),
         supabase
           .from("savings_accounts")
           .select("id, status")
