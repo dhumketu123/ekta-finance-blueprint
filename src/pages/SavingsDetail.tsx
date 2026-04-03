@@ -85,66 +85,78 @@ const SavingsDetail = () => {
 
   return (
     <AppLayout>
-      <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id.slice(0, 8)}`} />
+      <div className="relative min-h-screen overflow-hidden bg-[#0B1120] text-white -mx-4 -my-6 md:-mx-6 md:-my-8 lg:-mx-8">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)] animate-pulse" />
+        <div className="relative z-10 px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 animate-[fadeIn_0.6s_ease-in-out]">
 
-      <div className="card-elevated p-6 border-l-4 border-l-success">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center shrink-0">
-            <PiggyBank className="w-7 h-7 text-success" />
+          <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id.slice(0, 8)}`} />
+
+          <GlassCard>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <PiggyBank className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-bold truncate">{name}</h2>
+                <span className="text-xs text-white/60 font-mono">{sp.id.slice(0, 8)}</span>
+              </div>
+            </div>
+          </GlassCard>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.frequency")}</p>
+                <p className="mt-2 text-xl font-bold text-cyan-400 capitalize">{sp.frequency}</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.minAmount")}</p>
+                <p className="mt-2 text-2xl font-bold text-amber-400">{formatTaka(Number(sp.min_amount))}</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.maxAmount")}</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-400">{formatTaka(Number(sp.max_amount))}</p>
+              </div>
+            </GlassCard>
           </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-foreground truncate">{name}</h2>
-            <span className="text-xs text-muted-foreground font-mono">{sp.id.slice(0, 8)}</span>
-          </div>
+
+          <GlassCard>
+            <div className="flex items-center gap-2 text-emerald-400 mb-4">
+              <Settings className="w-4 h-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <DetailField label={t("table.product")} value={name} />
+              <DetailField label={t("detail.nameEn")} value={sp.product_name_en} />
+              <DetailField label={t("table.frequency")} value={sp.frequency} />
+              <DetailField label={t("table.minAmount")} value={formatTaka(Number(sp.min_amount))} />
+              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(sp.max_amount))} highlight />
+            </div>
+          </GlassCard>
+
+          {canEditSavings && (
+            <GlassCard>
+              <div className="flex items-center gap-2 text-white/60 mb-4">
+                <Settings className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs border-white/20 text-white hover:bg-white/10" onClick={() => setFormOpen(true)}>
+                  <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10" onClick={() => setDeleteTarget(sp)}>
+                  <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
+                </Button>
+              </div>
+            </GlassCard>
+          )}
+
         </div>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-        <div className="card-elevated p-5 border-l-4 border-l-primary text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.frequency")}</p>
-          <p className="mt-2 text-xl font-bold text-primary capitalize">{sp.frequency}</p>
-        </div>
-        <div className="card-elevated p-5 border-l-4 border-l-warning text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.minAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-warning">৳{Number(sp.min_amount).toLocaleString()}</p>
-        </div>
-        <div className="card-elevated p-5 border-l-4 border-l-success text-center">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("table.maxAmount")}</p>
-          <p className="mt-2 text-2xl font-bold text-success">৳{Number(sp.max_amount).toLocaleString()}</p>
-        </div>
-      </div>
-
-      <div className="card-elevated p-5 space-y-4">
-        <div className="flex items-center gap-2 text-primary">
-          <Settings className="w-4 h-4" />
-          <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <DetailField label={t("table.product")} value={name} />
-          <DetailField label={t("detail.nameEn")} value={sp.product_name_en} />
-          <DetailField label={t("table.frequency")} value={sp.frequency} />
-          <DetailField label={t("table.minAmount")} value={`৳${Number(sp.min_amount).toLocaleString()}`} />
-          <DetailField label={t("table.maxAmount")} value={`৳${Number(sp.max_amount).toLocaleString()}`} highlight />
-        </div>
-      </div>
-
-      {/* Management Actions */}
-      {canEditSavings && (
-        <div className="card-elevated p-5 space-y-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Settings className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setFormOpen(true)}>
-              <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(sp)}>
-              <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {formOpen && <SavingsProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={sp} />}
 
