@@ -52,8 +52,18 @@ import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 const ClientDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, lang } = useLanguage();
   const bn = lang === "bn";
+
+  const handleSmartBack = useCallback(() => {
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments.length > 1) {
+      navigate("/" + segments.slice(0, -1).join("/"));
+    } else {
+      navigate("/clients");
+    }
+  }, [location.pathname, navigate]);
   const { canEditClients, canDeleteClients, isAdmin, isTreasurer, isOwner } = usePermissions();
   const { data: client, isLoading } = useClient(id || "");
   const { data: txns } = useTransactions({ client_id: id });
