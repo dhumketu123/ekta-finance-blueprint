@@ -22,6 +22,15 @@ const GlassCard = ({ children }: { children: React.ReactNode }) => (
 
 const formatTaka = (value: number) => `৳${value.toLocaleString("en-BD")}`;
 
+const mockIntelligence = {
+  aum: 1250000,
+  members: 85,
+  netIncome: 350000,
+  projected: 52000,
+  riskIndex: 2.1,
+  velocity: 1.5,
+};
+
 const SavingsDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -91,17 +100,56 @@ const SavingsDetail = () => {
 
           <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id.slice(0, 8)}`} />
 
+          {/* Aura Header */}
+          <div className="flex flex-col items-center justify-center text-center space-y-4 animate-[fadeIn_0.6s_ease-in-out]">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-emerald-400 blur-md" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{name}</h1>
+              <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-500/20 border border-emerald-400/40">🟢 Stable</span>
+            </div>
+          </div>
+
+          {/* Quantum Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <GlassCard>
+              <p className="text-white/70 text-sm">অ্যাক্টিভ পোর্টফোলিও (AUM)</p>
+              <h2 className="text-2xl font-semibold mt-2">{formatTaka(mockIntelligence.aum)}</h2>
+              <p className="text-emerald-400 text-sm mt-1">গত মাসে ৮% বৃদ্ধি</p>
+            </GlassCard>
+            <GlassCard>
+              <p className="text-white/70 text-sm">সদস্য ইকোসিস্টেম</p>
+              <h2 className="text-2xl font-semibold mt-2">{mockIntelligence.members} জন</h2>
+            </GlassCard>
+            <GlassCard>
+              <p className="text-white/70 text-sm">বাস্তব লাভ (Net Income)</p>
+              <h2 className="text-2xl font-semibold mt-2">{formatTaka(mockIntelligence.netIncome)}</h2>
+            </GlassCard>
+            <GlassCard>
+              <p className="text-white/70 text-sm">প্রেডিক্টিভ লাভ (30D)</p>
+              <h2 className="text-2xl font-semibold mt-2">{formatTaka(mockIntelligence.projected)}</h2>
+            </GlassCard>
+            <GlassCard>
+              <p className="text-white/70 text-sm">রিস্ক ইনডেক্স (PAR)</p>
+              <h2 className="text-2xl font-semibold mt-2 text-emerald-400">{mockIntelligence.riskIndex}%</h2>
+            </GlassCard>
+            <GlassCard>
+              <p className="text-white/70 text-sm">গ্রোথ ভেলোসিটি</p>
+              <h2 className="text-2xl font-semibold mt-2">{mockIntelligence.velocity}x</h2>
+            </GlassCard>
+          </div>
+
+          {/* Oracle Panel */}
           <GlassCard>
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <PiggyBank className="w-7 h-7 text-emerald-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold truncate">{name}</h2>
-                <span className="text-xs text-white/60 font-mono">{sp.id.slice(0, 8)}</span>
-              </div>
+            <h3 className="text-lg font-semibold mb-4 text-amber-400">⚡ আর্টিফিশিয়াল ইন্টেলিজেন্স ভবিষ্যৎবাণী</h3>
+            <div className="space-y-3 text-white/80 text-sm">
+              <p>Insight 1: এই পণ্যটি আপনার মোট আয়ের ৩৫% কন্ট্রিবিউট করছে। Consider expanding its limit to capture 12% more market demand.</p>
+              <p>Insight 2: আপনার প্রেডিক্টিভ লাভ অনুযায়ী, আগামী ৪৫ দিনে আপনার অতিরিক্ত ৳১৫,০০০ নগদ অর্থের প্রয়োজন হতে পারে।</p>
             </div>
           </GlassCard>
+
+          {/* Existing Product Stats */}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
             <GlassCard>
