@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
-import DetailField from "@/components/DetailField";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSavingsProduct } from "@/hooks/useSupabaseData";
@@ -14,8 +13,8 @@ import SavingsProductForm from "@/components/forms/SavingsProductForm";
 import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
-const GlassCard = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10">
+const InfoCard = ({ children }: { children: React.ReactNode }) => (
+  <div className="card-elevated rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
     {children}
   </div>
 );
@@ -95,113 +94,104 @@ const SavingsDetail = () => {
 
   const name = lang === "bn" ? sp.product_name_bn : sp.product_name_en;
   const intelligence = mockIntelligence ?? { aum: 0, members: 0, netIncome: 0, projected: 0, riskIndex: 0, velocity: 0 };
-  const riskColor = intelligence.riskIndex < 3 ? "text-green-400" : intelligence.riskIndex < 6 ? "text-yellow-400" : "text-red-400";
+  const riskColor = intelligence.riskIndex < 3 ? "text-emerald-600" : intelligence.riskIndex < 6 ? "text-yellow-600" : "text-red-600";
 
   return (
     <AppLayout>
-      <div className="relative min-h-screen overflow-hidden bg-[#0B1120] text-white -mx-4 -my-6 md:-mx-6 md:-my-8 lg:-mx-8">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)]" />
-        <div className="relative z-10 px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 animate-[fadeIn_0.6s_ease-in-out]">
+      <div className="space-y-6">
+        <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp?.id?.slice(0, 8)}`} />
 
-          <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp?.id?.slice(0, 8)}`} />
-
-          {/* Aura Header */}
-          <div className="flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <div className="w-10 h-10 rounded-full bg-emerald-400 blur-md animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{name}</h1>
-              <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-500/20 border border-emerald-400/40">🟢 Stable</span>
-            </div>
+        {/* Aura Header */}
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <PiggyBank className="w-8 h-8 text-emerald-600" />
           </div>
-
-          {/* Intelligence Layer */}
-          <div className="mt-6 space-y-6">
-            {/* Quantum Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <GlassCard>
-                <p className="text-white/70 text-sm">অ্যাক্টিভ পোর্টফোলিও (AUM)</p>
-                <h2 className="text-2xl font-semibold mt-2">{formatTaka(intelligence.aum)}</h2>
-                <p className="text-emerald-400 text-sm mt-1">গত মাসে ৮% বৃদ্ধি</p>
-              </GlassCard>
-              <GlassCard>
-                <p className="text-white/70 text-sm">সদস্য ইকোসিস্টেম</p>
-                <h2 className="text-2xl font-semibold mt-2">{intelligence.members} জন</h2>
-              </GlassCard>
-              <GlassCard>
-                <p className="text-white/70 text-sm">বাস্তব লাভ (Net Income)</p>
-                <h2 className="text-2xl font-semibold mt-2">{formatTaka(intelligence.netIncome)}</h2>
-              </GlassCard>
-              <GlassCard>
-                <p className="text-white/70 text-sm">প্রেডিক্টিভ লাভ (30D)</p>
-                <h2 className="text-2xl font-semibold mt-2">{formatTaka(intelligence.projected)}</h2>
-              </GlassCard>
-              <GlassCard>
-                <p className="text-white/70 text-sm">রিস্ক ইনডেক্স (PAR)</p>
-                <h2 className={`text-2xl font-semibold mt-2 ${riskColor}`}>{intelligence.riskIndex}%</h2>
-              </GlassCard>
-              <GlassCard>
-                <p className="text-white/70 text-sm">গ্রোথ ভেলোসিটি</p>
-                <h2 className="text-2xl font-semibold mt-2">{intelligence.velocity}x</h2>
-              </GlassCard>
-            </div>
-
-            {/* Oracle Panel */}
-            <GlassCard>
-              <h3 className="text-lg font-semibold mb-4 text-amber-400">⚡ আর্টিফিশিয়াল ইন্টেলিজেন্স ভবিষ্যৎবাণী</h3>
-              <div className="space-y-3 text-white/80 text-sm">
-                <p>Insight 1: এই পণ্যটি আপনার মোট আয়ের ৩৫% কন্ট্রিবিউট করছে। Consider expanding its limit to capture 12% more market demand.</p>
-                <p>Insight 2: আপনার প্রেডিক্টিভ লাভ অনুযায়ী, আগামী ৪৫ দিনে আপনার অতিরিক্ত ৳১৫,০০০ নগদ অর্থের প্রয়োজন হতে পারে।</p>
-              </div>
-            </GlassCard>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">{name}</h1>
+            <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-700">🟢 Stable</span>
           </div>
-
-          {/* Configuration Matrix */}
-          <div className="mt-10">
-            <GlassCard>
-              <h3 className="text-sm uppercase tracking-widest text-white/40 mb-6">
-                {t("detail.configuration")}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-1">
-                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.frequency")}</p>
-                  <p className="text-lg font-semibold text-white capitalize">{sp?.frequency ?? "-"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.minAmount")}</p>
-                  <p className="text-lg font-semibold text-white">{formatTaka(Number(sp?.min_amount ?? 0))}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.maxAmount")}</p>
-                  <p className="text-lg font-semibold text-white">{formatTaka(Number(sp?.max_amount ?? 0))}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("detail.nameEn")}</p>
-                  <p className="text-lg font-semibold text-white">{sp?.product_name_en ?? "-"}</p>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
-
-          {canEditSavings && (
-            <GlassCard>
-              <div className="flex items-center gap-2 text-white/60 mb-4">
-                <Settings className="w-4 h-4" />
-                <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white" onClick={() => setFormOpen(true)}>
-                  <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs bg-transparent text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteTarget(sp)}>
-                  <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
-                </Button>
-              </div>
-            </GlassCard>
-          )}
-
         </div>
+
+        {/* Intelligence Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">অ্যাক্টিভ পোর্টফোলিও (AUM)</p>
+            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.aum)}</h2>
+            <p className="text-emerald-600 text-sm mt-1">গত মাসে ৮% বৃদ্ধি</p>
+          </InfoCard>
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">সদস্য ইকোসিস্টেম</p>
+            <h2 className="text-2xl font-semibold mt-2 text-foreground">{intelligence.members} জন</h2>
+          </InfoCard>
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">বাস্তব লাভ (Net Income)</p>
+            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.netIncome)}</h2>
+          </InfoCard>
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">প্রেডিক্টিভ লাভ (30D)</p>
+            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.projected)}</h2>
+          </InfoCard>
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">রিস্ক ইনডেক্স (PAR)</p>
+            <h2 className={`text-2xl font-semibold mt-2 ${riskColor}`}>{intelligence.riskIndex}%</h2>
+          </InfoCard>
+          <InfoCard>
+            <p className="text-muted-foreground text-sm">গ্রোথ ভেলোসিটি</p>
+            <h2 className="text-2xl font-semibold mt-2 text-foreground">{intelligence.velocity}x</h2>
+          </InfoCard>
+        </div>
+
+        {/* Oracle Panel */}
+        <InfoCard>
+          <h3 className="text-lg font-semibold mb-4 text-amber-600">⚡ আর্টিফিশিয়াল ইন্টেলিজেন্স ভবিষ্যৎবাণী</h3>
+          <div className="space-y-3 text-muted-foreground text-sm">
+            <p>Insight 1: এই পণ্যটি আপনার মোট আয়ের ৩৫% কন্ট্রিবিউট করছে। Consider expanding its limit to capture 12% more market demand.</p>
+            <p>Insight 2: আপনার প্রেডিক্টিভ লাভ অনুযায়ী, আগামী ৪৫ দিনে আপনার অতিরিক্ত ৳১৫,০০০ নগদ অর্থের প্রয়োজন হতে পারে।</p>
+          </div>
+        </InfoCard>
+
+        {/* Configuration Matrix */}
+        <InfoCard>
+          <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-6">
+            {t("detail.configuration")}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.frequency")}</p>
+              <p className="text-lg font-semibold text-foreground capitalize">{sp?.frequency ?? "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.minAmount")}</p>
+              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp?.min_amount ?? 0))}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.maxAmount")}</p>
+              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp?.max_amount ?? 0))}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("detail.nameEn")}</p>
+              <p className="text-lg font-semibold text-foreground">{sp?.product_name_en ?? "-"}</p>
+            </div>
+          </div>
+        </InfoCard>
+
+        {/* Management */}
+        {canEditSavings && (
+          <InfoCard>
+            <div className="flex items-center gap-2 text-muted-foreground mb-4">
+              <Settings className="w-4 h-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setFormOpen(true)}>
+                <Edit2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য সম্পাদনা" : "Edit Product"}
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(sp)}>
+                <Trash2 className="w-3.5 h-3.5" /> {lang === "bn" ? "পণ্য মুছুন" : "Delete Product"}
+              </Button>
+            </div>
+          </InfoCard>
+        )}
       </div>
 
       {formOpen && <SavingsProductForm open={formOpen} onClose={() => setFormOpen(false)} editData={sp} />}
