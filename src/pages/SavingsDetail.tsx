@@ -24,15 +24,6 @@ const formatTaka = (value: number) => {
   return `৳${safe.toLocaleString("en-BD")}`;
 };
 
-const mockIntelligence = {
-  aum: 1250000,
-  members: 85,
-  netIncome: 350000,
-  projected: 52000,
-  riskIndex: 2.1,
-  velocity: 1.5,
-};
-
 const SavingsDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -70,7 +61,7 @@ const SavingsDetail = () => {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <MetricCardSkeleton />
             <MetricCardSkeleton />
             <MetricCardSkeleton />
@@ -93,8 +84,6 @@ const SavingsDetail = () => {
   }
 
   const name = lang === "bn" ? sp.product_name_bn : sp.product_name_en;
-  const intelligence = mockIntelligence ?? { aum: 0, members: 0, netIncome: 0, projected: 0, riskIndex: 0, velocity: 0 };
-  const riskColor = intelligence.riskIndex < 3 ? "text-emerald-600" : intelligence.riskIndex < 6 ? "text-yellow-600" : "text-red-600";
 
   return (
     <AppLayout>
@@ -107,70 +96,38 @@ const SavingsDetail = () => {
             <PiggyBank className="w-8 h-8 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">{name}</h1>
-            <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-700">🟢 Stable</span>
+            <p className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">{name}</p>
+            <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-700">
+              🟢 {lang === "bn" ? "সক্রিয়" : "Active"}
+            </span>
           </div>
         </div>
-
-        {/* Intelligence Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">অ্যাক্টিভ পোর্টফোলিও (AUM)</p>
-            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.aum)}</h2>
-            <p className="text-emerald-600 text-sm mt-1">গত মাসে ৮% বৃদ্ধি</p>
-          </InfoCard>
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">সদস্য ইকোসিস্টেম</p>
-            <h2 className="text-2xl font-semibold mt-2 text-foreground">{intelligence.members} জন</h2>
-          </InfoCard>
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">বাস্তব লাভ (Net Income)</p>
-            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.netIncome)}</h2>
-          </InfoCard>
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">প্রেডিক্টিভ লাভ (30D)</p>
-            <h2 className="text-2xl font-semibold mt-2 text-foreground">{formatTaka(intelligence.projected)}</h2>
-          </InfoCard>
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">রিস্ক ইনডেক্স (PAR)</p>
-            <h2 className={`text-2xl font-semibold mt-2 ${riskColor}`}>{intelligence.riskIndex}%</h2>
-          </InfoCard>
-          <InfoCard>
-            <p className="text-muted-foreground text-sm">গ্রোথ ভেলোসিটি</p>
-            <h2 className="text-2xl font-semibold mt-2 text-foreground">{intelligence.velocity}x</h2>
-          </InfoCard>
-        </div>
-
-        {/* Oracle Panel */}
-        <InfoCard>
-          <h3 className="text-lg font-semibold mb-4 text-amber-600">⚡ আর্টিফিশিয়াল ইন্টেলিজেন্স ভবিষ্যৎবাণী</h3>
-          <div className="space-y-3 text-muted-foreground text-sm">
-            <p>Insight 1: এই পণ্যটি আপনার মোট আয়ের ৩৫% কন্ট্রিবিউট করছে। Consider expanding its limit to capture 12% more market demand.</p>
-            <p>Insight 2: আপনার প্রেডিক্টিভ লাভ অনুযায়ী, আগামী ৪৫ দিনে আপনার অতিরিক্ত ৳১৫,০০০ নগদ অর্থের প্রয়োজন হতে পারে।</p>
-          </div>
-        </InfoCard>
 
         {/* Configuration Matrix */}
         <InfoCard>
-          <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-6">
+          <h2 className="text-sm uppercase tracking-widest text-muted-foreground mb-6">
             {t("detail.configuration")}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.frequency")}</p>
-              <p className="text-lg font-semibold text-foreground capitalize">{sp?.frequency ?? "-"}</p>
+              <p className="text-lg font-semibold text-foreground capitalize">{sp.frequency ?? "-"}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.minAmount")}</p>
-              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp?.min_amount ?? 0))}</p>
+              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp.min_amount ?? 0))}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("table.maxAmount")}</p>
-              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp?.max_amount ?? 0))}</p>
+              <p className="text-lg font-semibold text-foreground">{formatTaka(Number(sp.max_amount ?? 0))}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("detail.nameEn")}</p>
-              <p className="text-lg font-semibold text-foreground">{sp?.product_name_en ?? "-"}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{lang === "bn" ? "পণ্যের নাম (ইংরেজি)" : "Product Name (EN)"}</p>
+              <p className="text-lg font-semibold text-foreground">{sp.product_name_en ?? "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{lang === "bn" ? "পণ্যের নাম (বাংলা)" : "Product Name (BN)"}</p>
+              <p className="text-lg font-semibold text-foreground">{sp.product_name_bn || "-"}</p>
             </div>
           </div>
         </InfoCard>
@@ -180,7 +137,7 @@ const SavingsDetail = () => {
           <InfoCard>
             <div className="flex items-center gap-2 text-muted-foreground mb-4">
               <Settings className="w-4 h-4" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h3>
+              <h2 className="text-xs font-bold uppercase tracking-wider">{lang === "bn" ? "ব্যবস্থাপনা" : "Management"}</h2>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setFormOpen(true)}>

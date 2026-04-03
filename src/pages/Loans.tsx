@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/TablePagination";
-import { Plus, CreditCard, Search, Banknote, FlaskConical, TrendingUp } from "lucide-react";
+import { Plus, CreditCard, Search, Banknote, FlaskConical, TrendingUp, AlertCircle } from "lucide-react";
 import LoanDisbursementModal from "@/components/forms/LoanDisbursementModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
@@ -27,7 +27,7 @@ const Loans = () => {
   const [disburseOpen, setDisburseOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { data: loans, isLoading, page, setPage, totalPages, totalCount } = usePaginatedQuery({
+  const { data: loans, isLoading, error, page, setPage, totalPages, totalCount } = usePaginatedQuery({
     table: "loan_products",
     queryKey: ["loan_products"],
     pageSize: 10,
@@ -36,8 +36,14 @@ const Loans = () => {
   const filtered = (loans ?? []).filter((lp: any) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    return lp.product_name_en.toLowerCase().includes(q) || lp.product_name_bn.toLowerCase().includes(q);
+    const nameEn = (lp.product_name_en ?? "").toLowerCase();
+    const nameBn = (lp.product_name_bn ?? "").toLowerCase();
+    return nameEn.includes(q) || nameBn.includes(q);
   });
+
+  const handleRowClick = useCallback((id: string) => {
+    navigate(`/loans/${id}`);
+  }, [navigate]);
 
   return (
     <AppLayout>
@@ -74,15 +80,36 @@ const Loans = () => {
       <div className="mb-4">
         <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === "bn" ? "পণ্য খুঁজুন..." : "Search products..."} className="pl-9 text-xs h-9" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={lang === "bn" ? "পণ্য খুঁজুন..." : "Search products..."}
+            className="pl-9 text-xs h-9"
+            aria-label={lang === "bn" ? "পণ্য খুঁজুন" : "Search products"}
+          />
         </div>
       </div>
 
       {isLoading ? (
         <TableSkeleton rows={4} cols={6} />
+      ) : error ? (
+        <div className="card-elevated p-8 text-center space-y-3">
+          <AlertCircle className="w-10 h-10 text-destructive/50 mx-auto" />
+          <p className="text-sm text-destructive font-medium">
+            {lang === "bn" ? "ডেটা লোড করতে সমস্যা হয়েছে" : "Failed to load data"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {lang === "bn" ? "পৃষ্ঠাটি রিফ্রেশ করে আবার চেষ্টা করুন।" : "Please refresh the page and try again."}
+          </p>
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
-          {lang === "bn" ? "কোনো ঋণ পণ্য পাওয়া যায়নি" : "No loan products found"}
+        <div className="card-elevated p-8 text-center space-y-3">
+          <CreditCard className="w-10 h-10 text-muted-foreground/30 mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {search.trim()
+              ? (lang === "bn" ? `"${search}" এর জন্য কোনো পণ্য পাওয়া যায়নি` : `No products found for "${search}"`)
+              : (lang === "bn" ? "কোনো ঋণ পণ্য পাওয়া যায়নি" : "No loan products found")}
+          </p>
         </div>
       ) : (
         <>
@@ -100,26 +127,33 @@ const Loans = () => {
               </TableHeader>
               <TableBody>
                 {filtered.map((lp: any) => (
-                  <TableRow key={lp.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/loans/${lp.id}`)}>
+                  <TableRow
+                    key={lp.id}
+                    className="cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => handleRowClick(lp.id)}
+                    role="link"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleRowClick(lp.id); } }}
+                  >
                     <TableCell><p className="text-xs font-medium">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p></TableCell>
                     <TableCell className="text-xs">
-                      <span className="font-semibold">{lp.interest_rate}%</span>
+                      <span className="font-semibold">{lp.interest_rate ?? 0}%</span>
                       <span className="text-muted-foreground"> / {lp.payment_frequency || "Monthly"}</span>
                     </TableCell>
-                    <TableCell className="text-xs">{lp.tenure_months} {t("table.months")}</TableCell>
-                    <TableCell className="text-xs">৳{Number(lp.min_amount).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs">৳{Number(lp.max_amount).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{lp.tenure_months ?? 0} {t("table.months")}</TableCell>
+                    <TableCell className="text-xs">৳{Number(lp.min_amount ?? 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">৳{Number(lp.max_amount ?? 0).toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {(lp.upfront_savings_pct > 0 || lp.compulsory_savings_amount > 0) ? (
+                        {(Number(lp.upfront_savings_pct ?? 0) > 0 || Number(lp.compulsory_savings_amount ?? 0) > 0) ? (
                           <>
-                            {lp.upfront_savings_pct > 0 && (
-                              <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                            {Number(lp.upfront_savings_pct ?? 0) > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/20">
                                 {lp.upfront_savings_pct}% Upfront
                               </span>
                             )}
-                            {lp.compulsory_savings_amount > 0 && (
-                              <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20">
+                            {Number(lp.compulsory_savings_amount ?? 0) > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 ring-1 ring-inset ring-blue-500/20">
                                 +৳{Number(lp.compulsory_savings_amount).toLocaleString()}/Inst.
                               </span>
                             )}
@@ -140,18 +174,25 @@ const Loans = () => {
 
           <div className="sm:hidden space-y-3">
             {filtered.map((lp: any) => (
-              <div key={lp.id} className="card-elevated p-4 flex items-center gap-3 cursor-pointer" onClick={() => navigate(`/loans/${lp.id}`)}>
+              <div
+                key={lp.id}
+                className="card-elevated p-4 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => handleRowClick(lp.id)}
+                role="link"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleRowClick(lp.id); } }}
+              >
                 <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
                   <CreditCard className="w-4.5 h-4.5 text-warning" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate">{lang === "bn" ? lp.product_name_bn : lp.product_name_en}</p>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">{lp.interest_rate}%</span>
+                    <span className="font-semibold text-foreground">{lp.interest_rate ?? 0}%</span>
                     <span>•</span>
-                    <span>{lp.tenure_months} {t("table.months")}</span>
+                    <span>{lp.tenure_months ?? 0} {t("table.months")}</span>
                     <span>•</span>
-                    <span className="capitalize">{String(lp.payment_type).replace("_", " ")}</span>
+                    <span className="capitalize">{String(lp.payment_type ?? "monthly").replace("_", " ")}</span>
                   </div>
                 </div>
               </div>
