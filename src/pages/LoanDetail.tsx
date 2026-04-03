@@ -185,9 +185,9 @@ const LoanDetail = () => {
               <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <DetailField label={t("table.paymentType")} value={String(loan.payment_type).replace("_", " ")} />
-              <DetailField label={t("table.minAmount")} value={formatTaka(Number(loan.min_amount))} />
-              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(loan.max_amount))} highlight />
+              <DetailField label={t("table.paymentType")} value={String(loan?.payment_type ?? "").replace("_", " ")} />
+              <DetailField label={t("table.minAmount")} value={formatTaka(Number(loan?.min_amount ?? 0))} />
+              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(loan?.max_amount ?? 0))} highlight />
             </div>
           </GlassCard>
 
