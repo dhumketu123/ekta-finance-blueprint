@@ -157,39 +157,40 @@ const LoanDetail = () => {
             </GlassCard>
           </div>
 
-          {/* Existing Product Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+          {/* Configuration Matrix */}
+          <div className="mt-10">
             <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.interest")}</p>
-                <p className="mt-2 text-2xl font-bold text-amber-400">{loan?.interest_rate ?? 0}%</p>
-              </div>
-            </GlassCard>
-            <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.tenure")}</p>
-                <p className="mt-2 text-2xl font-bold text-cyan-400">{loan?.tenure_months ?? 0} {t("table.months")}</p>
-              </div>
-            </GlassCard>
-            <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.maxConcurrent")}</p>
-                <p className="mt-2 text-2xl font-bold text-emerald-400">{loan?.max_concurrent ?? 0}</p>
+              <h3 className="text-sm uppercase tracking-widest text-white/40 mb-6">
+                {t("detail.configuration")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.interest")}</p>
+                  <p className="text-lg font-semibold text-white">{loan?.interest_rate ?? 0}%</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.tenure")}</p>
+                  <p className="text-lg font-semibold text-white">{loan?.tenure_months ?? 0} {t("table.months")}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.maxConcurrent")}</p>
+                  <p className="text-lg font-semibold text-white">{loan?.max_concurrent ?? 0}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.paymentType")}</p>
+                  <p className="text-lg font-semibold text-white capitalize">{String(loan?.payment_type ?? "").replace("_", " ")}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.minAmount")}</p>
+                  <p className="text-lg font-semibold text-white">{formatTaka(Number(loan?.min_amount ?? 0))}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.maxAmount")}</p>
+                  <p className="text-lg font-semibold text-white">{formatTaka(Number(loan?.max_amount ?? 0))}</p>
+                </div>
               </div>
             </GlassCard>
           </div>
-
-          <GlassCard>
-            <div className="flex items-center gap-2 text-emerald-400 mb-4">
-              <Settings className="w-4 h-4" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <DetailField label={t("table.paymentType")} value={String(loan?.payment_type ?? "").replace("_", " ")} />
-              <DetailField label={t("table.minAmount")} value={formatTaka(Number(loan?.min_amount ?? 0))} />
-              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(loan?.max_amount ?? 0))} highlight />
-            </div>
-          </GlassCard>
 
           {canEditLoans && (
             <GlassCard>
