@@ -14,6 +14,14 @@ import SavingsProductForm from "@/components/forms/SavingsProductForm";
 import DeleteConfirmDialog from "@/components/forms/DeleteConfirmDialog";
 import TransactionAuthModal from "@/components/security/TransactionAuthModal";
 
+const GlassCard = ({ children }: { children: React.ReactNode }) => (
+  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10">
+    {children}
+  </div>
+);
+
+const formatTaka = (value: number) => `৳${value.toLocaleString("en-BD")}`;
+
 const SavingsDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
