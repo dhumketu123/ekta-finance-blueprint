@@ -91,6 +91,7 @@ const SavingsDetail = () => {
   }
 
   const name = lang === "bn" ? sp.product_name_bn : sp.product_name_en;
+  const riskColor = mockIntelligence.riskIndex < 3 ? "text-emerald-400" : mockIntelligence.riskIndex < 6 ? "text-yellow-400" : "text-red-400";
 
   return (
     <AppLayout>
@@ -98,12 +99,12 @@ const SavingsDetail = () => {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)] animate-pulse" />
         <div className="relative z-10 px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 animate-[fadeIn_0.6s_ease-in-out]">
 
-          <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp.id.slice(0, 8)}`} />
+          <PageHeader title={name} description={`${t("detail.savingsProduct")} — ${sp?.id?.slice(0, 8)}`} />
 
           {/* Aura Header */}
-          <div className="flex flex-col items-center justify-center text-center space-y-4 animate-[fadeIn_0.6s_ease-in-out]">
-            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-pulse">
-              <div className="w-10 h-10 rounded-full bg-emerald-400 blur-md" />
+          <div className="flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <div className="w-10 h-10 rounded-full bg-emerald-400 blur-md animate-pulse" />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{name}</h1>
@@ -132,7 +133,7 @@ const SavingsDetail = () => {
             </GlassCard>
             <GlassCard>
               <p className="text-white/70 text-sm">রিস্ক ইনডেক্স (PAR)</p>
-              <h2 className="text-2xl font-semibold mt-2 text-emerald-400">{mockIntelligence.riskIndex}%</h2>
+              <h2 className={`text-2xl font-semibold mt-2 ${riskColor}`}>{mockIntelligence.riskIndex}%</h2>
             </GlassCard>
             <GlassCard>
               <p className="text-white/70 text-sm">গ্রোথ ভেলোসিটি</p>
@@ -150,7 +151,6 @@ const SavingsDetail = () => {
           </GlassCard>
 
           {/* Existing Product Stats */}
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
             <GlassCard>
               <div className="text-center">
@@ -178,7 +178,6 @@ const SavingsDetail = () => {
               <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <DetailField label={t("table.product")} value={name} />
               <DetailField label={t("detail.nameEn")} value={sp.product_name_en} />
               <DetailField label={t("table.frequency")} value={sp.frequency} />
               <DetailField label={t("table.minAmount")} value={formatTaka(Number(sp.min_amount))} />
