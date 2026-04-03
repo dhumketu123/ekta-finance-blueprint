@@ -22,6 +22,15 @@ const GlassCard = ({ children }: { children: React.ReactNode }) => (
 
 const formatTaka = (value: number) => `৳${value.toLocaleString("en-BD")}`;
 
+const mockIntelligence = {
+  aum: 1250000,
+  members: 85,
+  netIncome: 350000,
+  projected: 52000,
+  riskIndex: 2.1,
+  velocity: 1.5,
+};
+
 const LoanDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
