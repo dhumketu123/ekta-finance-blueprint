@@ -20,7 +20,10 @@ const GlassCard = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const formatTaka = (value: number) => `৳${value.toLocaleString("en-BD")}`;
+const formatTaka = (value: number) => {
+  const safe = isNaN(value) ? 0 : value;
+  return `৳${safe.toLocaleString("en-BD")}`;
+};
 
 const mockIntelligence = {
   aum: 1250000,
