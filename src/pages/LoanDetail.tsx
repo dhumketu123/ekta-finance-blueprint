@@ -94,12 +94,13 @@ const LoanDetail = () => {
   }
 
   const name = lang === "bn" ? loan.product_name_bn : loan.product_name_en;
-  const riskColor = mockIntelligence.riskIndex < 3 ? "text-emerald-400" : mockIntelligence.riskIndex < 6 ? "text-yellow-400" : "text-red-400";
+  const intelligence = mockIntelligence ?? { aum: 0, members: 0, netIncome: 0, projected: 0, riskIndex: 0, velocity: 0 };
+  const riskColor = intelligence.riskIndex < 3 ? "text-green-400" : intelligence.riskIndex < 6 ? "text-yellow-400" : "text-red-400";
 
   return (
     <AppLayout>
       <div className="relative min-h-screen overflow-hidden bg-[#0B1120] text-white -mx-4 -my-6 md:-mx-6 md:-my-8 lg:-mx-8">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)] animate-pulse" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(0,180,160,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(0,80,255,0.12),transparent_40%)]" />
         <div className="relative z-10 px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 animate-[fadeIn_0.6s_ease-in-out]">
 
           <PageHeader title={name} description={`${t("detail.loanProduct")} — ${loan?.id?.slice(0, 8)}`} />
