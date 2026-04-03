@@ -157,40 +157,32 @@ const SavingsDetail = () => {
             </GlassCard>
           </div>
 
-          {/* Existing Product Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+          {/* Configuration Matrix */}
+          <div className="mt-10">
             <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.frequency")}</p>
-                <p className="mt-2 text-xl font-bold text-cyan-400 capitalize">{sp?.frequency ?? "-"}</p>
-              </div>
-            </GlassCard>
-            <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.minAmount")}</p>
-                <p className="mt-2 text-2xl font-bold text-amber-400">{formatTaka(Number(sp?.min_amount ?? 0))}</p>
-              </div>
-            </GlassCard>
-            <GlassCard>
-              <div className="text-center">
-                <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">{t("table.maxAmount")}</p>
-                <p className="mt-2 text-2xl font-bold text-emerald-400">{formatTaka(Number(sp?.max_amount ?? 0))}</p>
+              <h3 className="text-sm uppercase tracking-widest text-white/40 mb-6">
+                {t("detail.configuration")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.frequency")}</p>
+                  <p className="text-lg font-semibold text-white capitalize">{sp?.frequency ?? "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.minAmount")}</p>
+                  <p className="text-lg font-semibold text-white">{formatTaka(Number(sp?.min_amount ?? 0))}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("table.maxAmount")}</p>
+                  <p className="text-lg font-semibold text-white">{formatTaka(Number(sp?.max_amount ?? 0))}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/40 uppercase tracking-wide">{t("detail.nameEn")}</p>
+                  <p className="text-lg font-semibold text-white">{sp?.product_name_en ?? "-"}</p>
+                </div>
               </div>
             </GlassCard>
           </div>
-
-          <GlassCard>
-            <div className="flex items-center gap-2 text-emerald-400 mb-4">
-              <Settings className="w-4 h-4" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">{t("detail.configuration")}</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <DetailField label={t("detail.nameEn")} value={sp?.product_name_en ?? "-"} />
-              <DetailField label={t("table.frequency")} value={sp?.frequency ?? "-"} />
-              <DetailField label={t("table.minAmount")} value={formatTaka(Number(sp?.min_amount ?? 0))} />
-              <DetailField label={t("table.maxAmount")} value={formatTaka(Number(sp?.max_amount ?? 0))} highlight />
-            </div>
-          </GlassCard>
 
           {canEditSavings && (
             <GlassCard>
