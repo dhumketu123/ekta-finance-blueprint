@@ -45,6 +45,7 @@ const GovernanceCore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const { metrics, isRunning, runBatch } = useGovernanceBatchRunner(queueRows);
 
   const fetchGovernanceData = useCallback(async () => {
     setIsLoading(true);
