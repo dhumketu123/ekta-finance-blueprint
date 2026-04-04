@@ -194,11 +194,23 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
       const cName = client ? (bn ? client.name_bn : client.name_en) || client.name_en : "";
       const cPhone = client?.phone || "";
 
+      // Fetch receipt_number from the financial_transactions created by RPC
+      let rcptNum = "";
+      try {
+        const { data: ftRow } = await supabase
+          .from("financial_transactions")
+          .select("receipt_number")
+          .eq("reference_id", refId)
+          .maybeSingle();
+        rcptNum = ftRow?.receipt_number || refId;
+      } catch { rcptNum = refId; }
+
       setSuccessData({
         amount: numAmount,
         newBalance: Number(result?.new_balance ?? (isDeposit ? (selectedAccount?.balance || 0) + numAmount : (selectedAccount?.balance || 0) - numAmount)),
         clientName: cName,
         clientPhone: cPhone,
+        receiptNumber: rcptNum,
       });
 
       queryClient.invalidateQueries({ queryKey: ["savings"] });
