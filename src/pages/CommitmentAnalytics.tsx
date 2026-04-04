@@ -15,7 +15,7 @@ import PredictiveRiskWidget from "@/components/analytics/PredictiveRiskWidget";
 import BurnoutDetectionWidget from "@/components/analytics/BurnoutDetectionWidget";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { formatChartDate, formatLocalDateTime } from "@/lib/date-utils";
 
 const CommitmentAnalytics = () => {
   const { lang } = useLanguage();
