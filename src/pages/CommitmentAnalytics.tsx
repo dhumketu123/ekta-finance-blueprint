@@ -282,7 +282,7 @@ const CommitmentAnalytics = () => {
               {JSON.stringify(latestReport.report_data, null, 2)}
             </pre>
             <p className="text-xs text-muted-foreground mt-2">
-              Generated: {format(new Date(latestReport.generated_at), "PPpp")}
+              Generated: {formatLocalDateTime(latestReport.generated_at, lang)}
             </p>
           </CardContent>
         </Card>

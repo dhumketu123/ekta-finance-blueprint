@@ -320,7 +320,7 @@ const DayClose = () => {
                     <div className="space-y-1 flex-1">
                       <p className="text-sm font-medium">কারণ: {req.reason}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(req.requested_at), "dd/MM/yyyy hh:mm a")}
+                        {formatLocalDateTime(req.requested_at, "bn")}
                       </p>
                     </div>
                     <Button

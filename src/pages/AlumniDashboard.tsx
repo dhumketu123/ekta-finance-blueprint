@@ -85,7 +85,7 @@ const AlumniDashboard = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">{bn ? "এক্সিট তারিখ" : "Exit Date"}</p>
-              <p className="font-bold">{format(new Date(settlement.exit_date), "dd MMM yyyy")}</p>
+              <p className="font-bold">{formatLocalDate(settlement.exit_date, lang, { short: true })}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{bn ? "সেবার সময়কাল" : "Tenure"}</p>

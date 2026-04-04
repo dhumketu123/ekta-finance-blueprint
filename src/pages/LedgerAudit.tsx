@@ -170,7 +170,7 @@ export default function LedgerAudit() {
                           {e.entity_type === "pdf_receipt" ? (bn ? "রিসিপ্ট" : "Receipt") : (bn ? "চুক্তিপত্র" : "Agreement")}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">{format(new Date(e.created_at), "dd MMM yyyy HH:mm")}</TableCell>
+                      <TableCell className="text-xs">{formatLocalDateTime(e.created_at, lang)}</TableCell>
                       <TableCell className="text-xs font-mono">{e.entity_id.slice(0, 8).toUpperCase()}</TableCell>
                       <TableCell className="text-[10px] font-mono text-muted-foreground">{truncHash(e.hash_self)}</TableCell>
                       <TableCell className="text-[10px] font-mono text-muted-foreground">{truncHash(e.hash_prev)}</TableCell>

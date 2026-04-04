@@ -253,7 +253,7 @@ const PaymentStatusPage = () => {
                     </TableCell>
                     <TableCell className="text-xs font-mono">{loanRef}</TableCell>
                     <TableCell className="text-xs text-center font-mono">{row.installment_number}</TableCell>
-                    <TableCell className="text-xs font-medium">{row.due_date}</TableCell>
+                    <TableCell className="text-xs font-medium">{formatLocalDate(row.due_date, lang, { short: true })}</TableCell>
                     <TableCell className="text-xs text-right font-bold">৳{totalDue.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                       <StatusBadge status={statusMap[row.status] ?? "pending"} />

@@ -163,7 +163,7 @@ export function PartnerLedgerModal({ investorId, investorName, open, onClose }: 
                   return (
                     <TableRow key={tx.id} className="group">
                       <TableCell className="text-xs font-mono text-muted-foreground">
-                        {format(parseISO(tx.transaction_date), "dd MMM yyyy")}
+                        {formatLocalDate(tx.transaction_date, lang, { short: true })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-[10px] ${cfg.className}`}>
