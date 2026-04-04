@@ -52,8 +52,9 @@ const FREQ_MAP: Record<string, { en: string; bn: string; perYear: number }> = {
 
 const TYPE_MAP: Record<string, { en: string; bn: string; icon: string }> = {
   general: { en: "General Savings", bn: "সাধারণ সঞ্চয়", icon: "🏦" },
-  dps: { en: "DPS (Deposit)", bn: "ডিপিএস (ডিপোজিট)", icon: "📈" },
-  fixed: { en: "Fixed Deposit", bn: "স্থায়ী আমানত", icon: "🔒" },
+  dps: { en: "DPS (Deposit Pension)", bn: "ডিপিএস (ডিপোজিট পেনশন)", icon: "📈" },
+  fixed: { en: "Fixed Deposit (FD)", bn: "স্থায়ী আমানত (FD)", icon: "🔒" },
+  locked: { en: "Locked Savings", bn: "লকড সঞ্চয়", icon: "🔐" },
 };
 
 export default function CreateSavingsAccountModal({ open, onClose, clientId, clientName, clientPhone }: Props) {
