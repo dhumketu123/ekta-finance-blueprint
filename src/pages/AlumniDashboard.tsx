@@ -7,7 +7,7 @@ import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import { GraduationCap, FileText, Download, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 
 const AlumniDashboard = () => {
