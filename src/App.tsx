@@ -53,6 +53,7 @@ const AccountingDashboard = React.lazy(() => import("./pages/AccountingDashboard
 const DayClose = React.lazy(() => import("./pages/DayClose"));
 const BalanceSheet = React.lazy(() => import("./pages/BalanceSheet"));
 const AlumniDashboard = React.lazy(() => import("./pages/AlumniDashboard"));
+const GovernanceCore = React.lazy(() => import("./pages/GovernanceCore"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
