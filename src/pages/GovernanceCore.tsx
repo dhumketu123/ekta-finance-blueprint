@@ -64,7 +64,7 @@ const GovernanceCore = () => {
           icon: STAGE_ICON_MAP[row.stage_id] ?? Eye,
           title: row.stage_title,
           desc: row.stage_desc,
-          tag: row.stage_tag,
+          tag: toStatusType(row.stage_tag),
           metric: row.metric,
         }));
         setEscalationStages(mapped);
