@@ -106,8 +106,10 @@ export default function SavingsProductForm({ open, onClose, editData }: Props) {
               <Select value={form.product_type} onValueChange={(v) => setForm({ ...form, product_type: v })}>
                 <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="locked">Locked</SelectItem>
+                  <SelectItem value="general">{lang === "bn" ? "সাধারণ সঞ্চয়" : "General Savings"}</SelectItem>
+                  <SelectItem value="dps">{lang === "bn" ? "ডিপিএস (DPS)" : "DPS (Deposit Pension)"}</SelectItem>
+                  <SelectItem value="fixed">{lang === "bn" ? "স্থায়ী আমানত (FD)" : "Fixed Deposit (FD)"}</SelectItem>
+                  <SelectItem value="locked">{lang === "bn" ? "লকড সঞ্চয়" : "Locked Savings"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
