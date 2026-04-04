@@ -22,6 +22,9 @@ import {
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
 import confetti from "canvas-confetti";
+import { normalizePhone } from "@/lib/phone-utils";
+import { buildReceiptMessage } from "@/services/messageBuilder";
+import { logReceiptSend } from "@/services/receiptAuditLogger";
 
 const schema = z.object({
   loan_id: z.string().uuid("Invalid Loan ID"),
