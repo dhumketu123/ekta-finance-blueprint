@@ -157,15 +157,24 @@ export default function CreateSavingsAccountModal({ open, onClose, clientId, cli
     if (!selectedProduct || !user) return;
     setExecuting(true);
     try {
-      // 1. Insert savings account
+      // 1. Insert savings account with maturity tracking
       const insertPayload: any = {
           client_id: clientId,
           savings_product_id: selectedProduct.id,
           balance: 0,
           status: "active",
           notes: `Opened via wizard. Product: ${selectedProduct.product_name_en}`,
+          tenure_months: selectedProduct.lock_period_days > 0 ? Math.ceil(selectedProduct.lock_period_days / 30) : 0,
+          target_amount: projection?.maturityValue ? Math.round(projection.maturityValue) : 0,
         };
       if (tenantId) insertPayload.tenant_id = tenantId;
+
+      // Set maturity date for DPS/FD/Locked
+      if (selectedProduct.lock_period_days > 0) {
+        const matDate = new Date();
+        matDate.setDate(matDate.getDate() + selectedProduct.lock_period_days);
+        insertPayload.maturity_date = matDate.toISOString().split("T")[0];
+      }
 
       const { data: newAccount, error: accErr } = await supabase
         .from("savings_accounts")
