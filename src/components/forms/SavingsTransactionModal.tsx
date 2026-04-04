@@ -452,8 +452,8 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
             const mockTarget = successData.newBalance === 0 ? 10000 : Math.ceil(successData.newBalance / 50000) * 50000 + 10000;
             const remaining = Math.max(0, mockTarget - successData.newBalance);
             const receiptMsg = isDeposit
-              ? `সম্মানিত গ্রাহক, অভিনন্দন! 🎉\nআপনার 'ভবিষ্যত স্বপ্ন' ফান্ডে ৳${successData.amount.toLocaleString()} জমা হয়েছে।\n\n💰 জমার পরিমাণ: ৳${successData.amount.toLocaleString()}\n💼 মোট সঞ্চয়: ৳${successData.newBalance.toLocaleString()}\n🎯 আপনার স্বপ্ন পূরণের আর মাত্র ৳${remaining.toLocaleString()} টাকা বাকি! 🚀\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\n— একতা ফাইন্যান্স`
-              : `সম্মানিত ${successData.clientName},\n\nআপনার সঞ্চয় অ্যাকাউন্ট থেকে ৳${successData.amount.toLocaleString()} সফলভাবে উত্তোলন করা হয়েছে।\n\n💸 উত্তোলিত: ৳${successData.amount.toLocaleString()}\n💼 অবশিষ্ট ব্যালেন্স: ৳${successData.newBalance.toLocaleString()}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+              ? `সম্মানিত ${successData.clientName},\nসঞ্চয় জমা ✅ ৳${successData.amount.toLocaleString()}\nমোট: ৳${successData.newBalance.toLocaleString()}${remaining > 0 ? ` বাকি: ৳${remaining.toLocaleString()}` : ""}\n— একতা ফাইন্যান্স`
+              : `সম্মানিত ${successData.clientName},\nসঞ্চয় উত্তোলন ✅ ৳${successData.amount.toLocaleString()}\nব্যালেন্স: ৳${successData.newBalance.toLocaleString()}\n— একতা ফাইন্যান্স`;
             const encoded = encodeURIComponent(receiptMsg);
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">

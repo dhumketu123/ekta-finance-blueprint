@@ -275,17 +275,15 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     const remaining = Number(result.new_outstanding).toLocaleString();
     const nextDateStr = nextDueDate
       ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
-      : format(new Date(), "dd/MM/yyyy");
-    const dpsLine = dps > 0 ? `\n🏦 বাধ্যতামূলক সঞ্চয় (DPS): ৳${dps.toLocaleString()}\n💳 ঋণ পরিশোধ: ৳${loanPaid.toLocaleString()}` : "";
+      : "";
+    const dpsLine = dps > 0 ? `\nসঞ্চয়: ৳${dps.toLocaleString()} ঋণ: ৳${loanPaid.toLocaleString()}` : "";
     const pointsEarned = result.points_earned ?? 0;
-    const pointsLine = pointsEarned > 0
-      ? `\n⭐ ট্রাস্ট পয়েন্ট অর্জিত: +${pointsEarned} (বর্তমান: ${result.new_score ?? 0})`
-      : pointsEarned < 0
-        ? `\n⚠️ ট্রাস্ট পয়েন্ট কর্তন: ${pointsEarned} (বর্তমান: ${result.new_score ?? 0})`
-        : "";
+    const pointsLine = pointsEarned !== 0
+      ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${result.new_score ?? 0})`
+      : "";
     return result.loan_closed
-      ? `সম্মানিত ${clientName},\n\nআপনার ঋণ সম্পূর্ণ পরিশোধিত হয়েছে! ✅\n\n💰 মোট জমা: ৳${totalInput.toLocaleString()}${dpsLine}\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}${pointsLine}\n\nআমাদের সাথে থাকার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\n\nআপনার ঋণের কিস্তি বাবদ মোট ৳${totalInput.toLocaleString()} সফলভাবে জমা হয়েছে।${dpsLine}\n\n💰 ঋণে জমা: ৳${loanPaid.toLocaleString()}\n📊 বর্তমান বকেয়া: ৳${remaining}\n✅ জমার তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n📅 পরবর্তী কিস্তি: ${nextDateStr}${pointsLine}\n\nআমাদের সাথে থাকার জন্য ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+      ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()}${pointsLine}\n— একতা ফাইন্যান্স`
+      : `সম্মানিত ${clientName},\nকিস্তি জমা হয়েছে ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()} বকেয়া: ৳${remaining}${nextDateStr ? `\nআগামী কিস্তি: ${nextDateStr}` : ""}${pointsLine}\n— একতা ফাইন্যান্স`;
   }, [result, clientName, nextDueDate]);
 
   const normalizePhone = (phone: string) => {

@@ -350,8 +350,8 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
             const isReinvest = payoutMode === "reinvest";
             const newTotalCapital = isReinvest ? capital + payAmt : capital;
             const msg = isReinvest
-              ? `সম্মানিত ${name},\nআপনার এই মাসের লভ্যাংশ ${payAmt.toLocaleString()} ৳ সফলভাবে মূলধনে পুনঃবিনিয়োগ করা হয়েছে।\n\n📈 আপনার বর্তমান মোট মূলধন: ${newTotalCapital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আর্থিক সমৃদ্ধির পথে একতা ফাইন্যান্স সর্বদা আপনার পাশে আছে।\n\n— একতা ফাইন্যান্স`
-              : `সম্মানিত ${name},\nএকতা ফাইন্যান্স থেকে আপনার লভ্যাংশ বাবদ ${payAmt.toLocaleString()} ৳ সফলভাবে প্রদান করা হয়েছে।\n\n💰 প্রদত্ত লভ্যাংশ: ${payAmt.toLocaleString()} ৳\n💼 বর্তমান মূলধন: ${capital.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআমাদের উপর নিরবচ্ছিন্ন আস্থা রাখার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+              ? `সম্মানিত ${name},\nলভ্যাংশ ৳${payAmt.toLocaleString()} পুনঃবিনিয়োগ ✅\nমোট মূলধন: ৳${newTotalCapital.toLocaleString()}\n— একতা ফাইন্যান্স`
+              : `সম্মানিত ${name},\nলভ্যাংশ ৳${payAmt.toLocaleString()} প্রদান ✅\nমূলধন: ৳${capital.toLocaleString()}\n— একতা ফাইন্যান্স`;
             const encoded = encodeURIComponent(msg);
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">

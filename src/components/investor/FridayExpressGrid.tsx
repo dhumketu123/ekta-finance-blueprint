@@ -198,8 +198,8 @@ export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: 
     const name = bn ? (inv.name_bn || inv.name_en) : inv.name_en;
     const total = (inv.total_weekly_paid || 0) + amount;
     const msg = bn
-      ? `সম্মানিত পার্টনার ${name}, আপনার ৳${amount.toLocaleString()} জমা হয়েছে। মোট শেয়ার স্থিতি: ৳${total.toLocaleString()}। ধন্যবাদ, একতা ফাইন্যান্স।`
-      : `Dear Partner ${name}, your payment of ৳${amount.toLocaleString()} has been received. Total balance: ৳${total.toLocaleString()}. Thank you, Ekta Finance.`;
+      ? `সম্মানিত ${name},\nশেয়ার জমা ✅ ৳${amount.toLocaleString()}\nমোট: ৳${total.toLocaleString()}\n— একতা ফাইন্যান্স`
+      : `Dear ${name},\nShare received ✅ ৳${amount.toLocaleString()}\nTotal: ৳${total.toLocaleString()}\n— Ekta Finance`;
     return encodeURIComponent(msg);
   };
 
