@@ -3,80 +3,33 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import AppLayout from "@/components/AppLayout";
 import { SectionHeader } from "@/components/SectionHeader";
+import { Button } from "@/components/ui/button";
 import {
-  ShieldAlert, Eye, AlertTriangle, Flame, Skull,
-  Clock, AlertCircle, TrendingDown, XOctagon,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Eye, Clock } from "lucide-react";
 
 import type {
-  EscalationStage, AgingBucket, QueueRow, PolicyItem, StatusType,
+  EscalationStage, AgingBucket, QueueRow, PolicyItem,
 } from "@/components/governance/types";
-import { BUCKET_COLOR_MAP } from "@/components/governance/types";
+import {
+  STAGE_ICON_MAP, BUCKET_ICON_MAP, BUCKET_COLOR_MAP,
+  toStatusType,
+  FALLBACK_STAGES, FALLBACK_BUCKETS, FALLBACK_POLICY,
+} from "@/components/governance/types";
 import { EscalationCard } from "@/components/governance/EscalationCard";
 import { AgingBucketCard } from "@/components/governance/AgingBucketCard";
 import { PriorityTable } from "@/components/governance/PriorityTable";
 import { DefaultPolicyPanel } from "@/components/governance/DefaultPolicyPanel";
 import { SystemHealthIndicator } from "@/components/governance/SystemHealthIndicator";
+import TablePagination from "@/components/TablePagination";
 import type { SystemStatus } from "@/components/governance/types";
 
-/* ══════════════════════════════════════════════
-   ICON MAPS (DB returns IDs, we map to icons)
-   ══════════════════════════════════════════════ */
-
-const STAGE_ICON_MAP: Record<string, LucideIcon> = {
-  "pre-due": Eye,
-  "early-1-7": ShieldAlert,
-  "control-8-15": AlertTriangle,
-  "escalation-16-30": Flame,
-  "critical-31-59": Skull,
-};
-
-const BUCKET_ICON_MAP: Record<string, LucideIcon> = {
-  "bucket-0-30": Clock,
-  "bucket-31-60": AlertCircle,
-  "bucket-61-90": TrendingDown,
-  "bucket-90-plus": XOctagon,
-};
-
-/* ══════════════════════════════════════════════
-   FALLBACK DATA (shown while loading / on error)
-   ══════════════════════════════════════════════ */
-
-const FALLBACK_STAGES: EscalationStage[] = [
-  { id: "pre-due", icon: Eye, title: "Pre-Due Monitoring", desc: "পরিশোধের আগে পর্যবেক্ষণ", metric: "—", tag: "Passive" },
-  { id: "early-1-7", icon: ShieldAlert, title: "Early Delinquency (1–7)", desc: "প্রাথমিক বিলম্ব সনাক্তকরণ", metric: "—", tag: "Soft Alert" },
-  { id: "control-8-15", icon: AlertTriangle, title: "Control Risk (8–15)", desc: "ঝুঁকি নিয়ন্ত্রণ পর্যায়", metric: "—", tag: "Follow-up" },
-  { id: "escalation-16-30", icon: Flame, title: "Escalation (16–30)", desc: "এসকেলেশন পর্যায়", metric: "—", tag: "Escalated" },
-  { id: "critical-31-59", icon: Skull, title: "Critical Watch (31–59)", desc: "জরুরি নজরদারি", metric: "—", tag: "Critical" },
-];
-
-const FALLBACK_BUCKETS: AgingBucket[] = [
-  { id: "bucket-0-30", icon: Clock, title: "0–30 দিন", label: "Current Risk", count: "—", color: "bg-warning" },
-  { id: "bucket-31-60", icon: AlertCircle, title: "31–60 দিন", label: "Watchlist", count: "—", color: "bg-amber-500" },
-  { id: "bucket-61-90", icon: TrendingDown, title: "61–90 দিন", label: "NPL Emerging", count: "—", color: "bg-destructive/70" },
-  { id: "bucket-90-plus", icon: XOctagon, title: "90+ দিন", label: "NPL Confirmed", count: "—", color: "bg-destructive" },
-];
-
-const FALLBACK_POLICY: PolicyItem[] = [
-  { label: "Default Trigger", value: "60 Days" },
-  { label: "Audit Log", value: "Enabled" },
-  { label: "Maker-Checker", value: "Required" },
-  { label: "Cron Controlled", value: "Yes" },
-];
-
-/* ══════════════════════════════════════════════
-   STATUS TYPE VALIDATOR
-   ══════════════════════════════════════════════ */
-
-const VALID_STATUSES: StatusType[] = ["Escalated", "Critical", "Follow-up", "Soft Alert", "Passive"];
-
-const toStatusType = (s: string): StatusType =>
-  VALID_STATUSES.includes(s as StatusType) ? (s as StatusType) : "Passive";
-
-/* ══════════════════════════════════════════════
-   PAGE COMPONENT
-   ══════════════════════════════════════════════ */
+const PAGE_SIZE = 10;
 
 const GovernanceCore = () => {
   const [systemStatus, setSystemStatus] = useState<SystemStatus>("online");
@@ -85,11 +38,12 @@ const GovernanceCore = () => {
   const [queueRows, setQueueRows] = useState<QueueRow[]>([]);
   const [policyItems, setPolicyItems] = useState<PolicyItem[]>(FALLBACK_POLICY);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const fetchGovernanceData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Parallel fetch all 4 RPCs
       const [escRes, agingRes, queueRes, policyRes] = await Promise.allSettled([
         supabase.rpc("get_governance_escalation_overview"),
         supabase.rpc("get_governance_aging_buckets"),
@@ -152,6 +106,7 @@ const GovernanceCore = () => {
           status: toStatusType(row.queue_status),
         }));
         setQueueRows(mapped);
+        setPage(1);
       }
 
       // 4️⃣ Policy Config
@@ -177,6 +132,8 @@ const GovernanceCore = () => {
 
   useEffect(() => {
     fetchGovernanceData();
+    const interval = setInterval(fetchGovernanceData, 60000);
+    return () => clearInterval(interval);
   }, [fetchGovernanceData]);
 
   // Memoized queue sorting by priority (highest first)
@@ -184,6 +141,12 @@ const GovernanceCore = () => {
     () => [...queueRows].sort((a, b) => b.priority - a.priority),
     [queueRows]
   );
+
+  const totalPages = Math.ceil(sortedQueue.length / PAGE_SIZE);
+  const paginatedQueue = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return sortedQueue.slice(start, start + PAGE_SIZE);
+  }, [sortedQueue, page]);
 
   return (
     <AppLayout>
@@ -213,8 +176,16 @@ const GovernanceCore = () => {
 
         {/* ── SECTION 3: Collection Priority Queue ── */}
         <SectionHeader title="Collection Priority Queue" subtitle="আদায় অগ্রাধিকার সারি" className="mt-10" />
-        {sortedQueue.length > 0 ? (
-          <PriorityTable rows={sortedQueue} />
+        {paginatedQueue.length > 0 ? (
+          <>
+            <PriorityTable rows={paginatedQueue} />
+            <TablePagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={sortedQueue.length}
+              onPageChange={setPage}
+            />
+          </>
         ) : (
           <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl shadow-lg mt-4 p-8 text-center">
             <p className="text-muted-foreground text-sm">
@@ -226,6 +197,52 @@ const GovernanceCore = () => {
         {/* ── SECTION 4: Default Policy Panel ── */}
         <SectionHeader title="Auto Default Policy" subtitle="স্বয়ংক্রিয় ডিফল্ট পলিসি কনফিগারেশন" className="mt-10" />
         <DefaultPolicyPanel items={policyItems} />
+        <div className="mt-4">
+          <Button variant="outline" onClick={() => setIsModalOpen(true)}>
+            View Escalation Rules
+          </Button>
+        </div>
+
+        {/* ── Escalation Rules Modal ── */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Escalation Rules</DialogTitle>
+              <DialogDescription>
+                এসকেলেশন নিয়মাবলী — পরবর্তী ব্যাচে ডায়নামিক ইমপ্লিমেন্টেশন হবে।
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Pre-Due</span>
+                <span className="font-medium">SMS Reminder</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">1–7 Days</span>
+                <span className="font-medium">Soft Call</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">8–15 Days</span>
+                <span className="font-medium">Field Visit</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">16–30 Days</span>
+                <span className="font-medium">Manager Escalation</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">31–59 Days</span>
+                <span className="font-medium">Legal Notice</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">60+ Days</span>
+                <span className="font-medium text-destructive">Auto Default</span>
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Close
+            </Button>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
