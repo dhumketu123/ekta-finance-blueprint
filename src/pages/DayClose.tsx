@@ -136,7 +136,7 @@ const DayClose = () => {
             দৈনিক ক্যাশ ক্লোজ
           </h1>
           <p className="text-sm text-muted-foreground mt-2 font-medium">
-            {format(new Date(), "dd MMMM yyyy")}
+            {formatLocalDate(new Date(), "bn")}
           </p>
         </div>
 
