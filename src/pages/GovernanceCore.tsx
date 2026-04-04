@@ -30,6 +30,8 @@ import { SystemHealthIndicator } from "@/components/governance/SystemHealthIndic
 import TablePagination from "@/components/TablePagination";
 import { GovernanceAlertsPanel } from "@/components/governance/GovernanceAlertsPanel";
 import { AutomatedActionsPanel } from "@/components/governance/AutomatedActionsPanel";
+import { BatchMetricsPanel } from "@/components/governance/BatchMetricsPanel";
+import { useGovernanceBatchRunner } from "@/components/governance/useGovernanceBatchRunner";
 import type { SystemStatus } from "@/components/governance/types";
 
 const PAGE_SIZE = 10;
