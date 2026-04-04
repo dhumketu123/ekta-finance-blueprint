@@ -16,12 +16,12 @@ interface CommunicationHubProps {
 
 const SMS_TEMPLATES = {
   reminder: {
-    bn: "প্রিয় {name}, আপনার কিস্তি পরিশোধের তারিখ আসছে। অনুগ্রহ করে সময়মতো পরিশোধ করুন। — একতা ফাইন্যান্স",
-    en: "Dear {name}, your installment payment is due soon. Please pay on time. — Ekta Finance",
+    bn: "সম্মানিত {name}, আপনার কিস্তি শীঘ্রই দেয়। সময়মতো পরিশোধ করুন। — একতা ফাইন্যান্স",
+    en: "Dear {name}, installment due soon. Please pay on time. — Ekta Finance",
   },
   thanks: {
-    bn: "প্রিয় {name}, আপনার কিস্তি পরিশোধের জন্য ধন্যবাদ। আপনার সহযোগিতায় কৃতজ্ঞ। — একতা ফাইন্যান্স",
-    en: "Dear {name}, thank you for your payment. We appreciate your cooperation. — Ekta Finance",
+    bn: "সম্মানিত {name}, কিস্তি পরিশোধের জন্য ধন্যবাদ। — একতা ফাইন্যান্স",
+    en: "Dear {name}, thank you for your payment. — Ekta Finance",
   },
 };
 

@@ -326,7 +326,7 @@ export const CapitalInjectionModal = ({
     }
     const phone = successData.phone.replace(/\D/g, "").replace(/^0/, "880");
     const message = encodeURIComponent(
-      `সম্মানিত পার্টনার ${successData.investorName}, আপনার ৳${successData.amount.toLocaleString("bn-BD")} ত্রৈমাসিক মূলধন সফলভাবে জমা হয়েছে। মোট মূলধন: ৳${successData.totalCapital.toLocaleString("bn-BD")}। ধন্যবাদ, একতা ফাইন্যান্স।`
+      `সম্মানিত ${successData.investorName},\nমূলধন জমা ✅ ৳${successData.amount.toLocaleString("bn-BD")}\nমোট: ৳${successData.totalCapital.toLocaleString("bn-BD")}\n— একতা ফাইন্যান্স`
     );
     window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
   }, [successData, bn]);

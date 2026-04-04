@@ -263,7 +263,7 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
             const cleanPhone = rawPhone.slice(-10);
             const finalPhone = cleanPhone.length === 10 ? "880" + cleanPhone : "";
             const remaining = capital - amt;
-            const msg = `সম্মানিত ${name},\n\nআপনার অনুরোধ অনুযায়ী মূলধন উত্তোলন সফলভাবে সম্পন্ন হয়েছে।\n\n💸 উত্তোলিত পরিমাণ: ${amt.toLocaleString()} ৳\n💼 অবশিষ্ট মূলধন: ${remaining.toLocaleString()} ৳\n📅 তারিখ: ${format(new Date(), "dd/MM/yyyy")}\n\nআপনার আস্থার জন্য আন্তরিক ধন্যবাদ।\n\n— একতা ফাইন্যান্স`;
+            const msg = `সম্মানিত ${name},\nমূলধন উত্তোলন ✅ ৳${amt.toLocaleString()}\nঅবশিষ্ট: ৳${remaining.toLocaleString()}\n— একতা ফাইন্যান্স`;
             const encoded = encodeURIComponent(msg);
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
