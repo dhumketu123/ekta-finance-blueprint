@@ -61,6 +61,7 @@ interface PaymentResult {
   points_earned?: number;
   new_score?: number;
   new_tier?: string;
+  ft_id?: string;
 }
 
 export interface PendingTransaction {
