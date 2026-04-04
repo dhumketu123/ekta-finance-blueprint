@@ -1,0 +1,1 @@
+ALTER TABLE public.sms_logs ALTER COLUMN tenant_id SET NOT NULL;
