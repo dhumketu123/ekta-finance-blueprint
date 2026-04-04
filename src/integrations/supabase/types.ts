@@ -3091,6 +3091,34 @@ export type Database = {
           },
         ]
       }
+      mv_trial_balance: {
+        Row: {
+          account_type: string | null
+          coa_id: string | null
+          entry_count: number | null
+          last_entry_at: string | null
+          net_balance: number | null
+          tenant_id: string | null
+          total_credit: number | null
+          total_debit: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_entry_ledger_coa_id_fkey"
+            columns: ["coa_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "double_entry_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_ai_chip_usage: {
         Row: {
           chip_date: string | null
@@ -3490,6 +3518,7 @@ export type Database = {
       }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
+      refresh_trial_balance_mv: { Args: never; Returns: undefined }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
         Returns: undefined
