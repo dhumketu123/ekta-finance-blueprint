@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import StatusBadge from "@/components/StatusBadge";
 import { Calendar, CircleDollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import { formatLocalDate, formatChartDate } from "@/lib/date-utils";
 
 const LazyResponsiveContainer = lazy(() => import("recharts").then((m) => ({ default: m.ResponsiveContainer })));
 const LazyAreaChart = lazy(() => import("recharts").then((m) => ({ default: m.AreaChart })));
