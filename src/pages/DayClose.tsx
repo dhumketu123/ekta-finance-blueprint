@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/date-utils";
 import {
   Lock, Unlock, CheckCircle2, AlertTriangle, XCircle, Clock, Send,
   ShieldCheck, Zap, TrendingUp, TrendingDown, Wallet, Copy,
