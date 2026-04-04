@@ -23,7 +23,7 @@ export interface EscalationStage {
   title: string;
   desc: string;
   tag: string;
-  metric: string;
+  metric: number | string;
 }
 
 export interface AgingBucket {
@@ -31,7 +31,7 @@ export interface AgingBucket {
   icon: LucideIcon;
   label: string;
   title: string;
-  count: string;
+  count: number | string;
   color: string;
 }
 
@@ -63,3 +63,22 @@ const statusStyles: Record<StatusType, string> = {
 
 export const getStatusStyle = (status: StatusType): string =>
   statusStyles[status] ?? "bg-muted text-muted-foreground";
+
+/* ══════════════════════════════════════════════
+   STAGE → ICON / COLOR MAPPING (used by page)
+   ══════════════════════════════════════════════ */
+
+export const STAGE_TAG_MAP: Record<string, StatusType> = {
+  "pre-due": "Passive",
+  "early-1-7": "Soft Alert",
+  "control-8-15": "Follow-up",
+  "escalation-16-30": "Escalated",
+  "critical-31-59": "Critical",
+};
+
+export const BUCKET_COLOR_MAP: Record<string, string> = {
+  "bucket-0-30": "bg-warning",
+  "bucket-31-60": "bg-amber-500",
+  "bucket-61-90": "bg-destructive/70",
+  "bucket-90-plus": "bg-destructive",
+};

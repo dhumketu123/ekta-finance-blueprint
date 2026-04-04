@@ -3248,6 +3248,43 @@ export type Database = {
         Returns: Json
       }
       get_day_close_summary: { Args: { p_date: string }; Returns: Json }
+      get_governance_aging_buckets: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          bucket_label: string
+          bucket_title: string
+          loan_count: number
+        }[]
+      }
+      get_governance_collection_queue: {
+        Args: never
+        Returns: {
+          client_name: string
+          overdue_days: number
+          priority_score: number
+          queue_status: string
+          risk_score: number
+          row_id: string
+        }[]
+      }
+      get_governance_escalation_overview: {
+        Args: never
+        Returns: {
+          metric: number
+          stage_desc: string
+          stage_id: string
+          stage_tag: string
+          stage_title: string
+        }[]
+      }
+      get_governance_policy_config: {
+        Args: never
+        Returns: {
+          policy_label: string
+          policy_value: string
+        }[]
+      }
       get_profit_loss: {
         Args: { p_from?: string; p_tenant_id?: string; p_to?: string }
         Returns: {
