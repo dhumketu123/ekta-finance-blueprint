@@ -3176,6 +3176,11 @@ export type Database = {
         Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
         Returns: Json
       }
+      archive_old_audit_logs: { Args: { p_cutoff: string }; Returns: number }
+      archive_old_financial_transactions: {
+        Args: { p_cutoff: string }
+        Returns: number
+      }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
       calculate_credit_score: { Args: { _client_id: string }; Returns: Json }
