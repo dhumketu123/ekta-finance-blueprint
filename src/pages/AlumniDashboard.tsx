@@ -136,7 +136,7 @@ const AlumniDashboard = () => {
                     <TableRow key={ps.id}>
                       <TableCell className="text-xs">
                         {ps.owner_profit_distributions
-                          ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                          ? formatLocalDate((ps.owner_profit_distributions as any).period_month, lang, { short: true })
                           : "—"}
                       </TableCell>
                       <TableCell className="text-xs">{ps.share_percentage}%</TableCell>
