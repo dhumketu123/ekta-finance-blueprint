@@ -57,7 +57,7 @@ const TxRow = memo(({ tx, bn, investorName, pdfLoadingId, onPrint, onPDF }: {
   const isProfit = tx.type === "investor_profit";
   return (
     <TableRow className="transition-colors hover:bg-muted/50">
-      <TableCell className="text-xs">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</TableCell>
+      <TableCell className="text-xs">{formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })}</TableCell>
       <TableCell className="text-xs font-medium">
         <span className="inline-flex items-center gap-1">
           {isProfit ? <ArrowDownRight className="w-3 h-3 text-success" /> : <ArrowUpRight className="w-3 h-3 text-primary" />}

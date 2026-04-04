@@ -1,6 +1,6 @@
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Wallet, TrendingUp, Banknote, Calendar } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 
 interface Props {
   capital: number;
@@ -34,7 +34,7 @@ export default function InvestorMetrics({ capital, monthlyProfit, profitPercent,
       />
       <MetricCard
         title={bn ? "পরিপক্কতার তারিখ" : "Maturity Date"}
-        value={maturityDate ? format(new Date(maturityDate), "dd MMM yyyy") : "—"}
+        value={formatLocalDate(maturityDate, bn ? "bn" : "en", { short: true })}
         icon={<Calendar className="w-5 h-5" />}
         variant="default"
       />

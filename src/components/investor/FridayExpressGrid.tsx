@@ -290,7 +290,7 @@ export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: 
                 const weeklyShare = inv.weekly_share || 100;
                 const weeksCount = row.amount > 0 ? Math.floor(row.amount / weeklyShare) : 0;
                 const paidUntil = inv.weekly_paid_until
-                  ? format(parseISO(inv.weekly_paid_until), "dd MMM yyyy")
+                  ? formatLocalDate(inv.weekly_paid_until, bn ? "bn" : "en", { short: true })
                   : "—";
 
                 // Tier
