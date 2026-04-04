@@ -153,7 +153,7 @@ const AlumniDashboard = () => {
                   <div>
                     <p className="text-xs font-medium">
                       {ps.owner_profit_distributions
-                        ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                        ? formatLocalDate((ps.owner_profit_distributions as any).period_month, lang, { short: true })
                         : "—"}
                     </p>
                     <p className="text-[11px] text-muted-foreground">{ps.share_percentage}%</p>
