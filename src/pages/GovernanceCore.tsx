@@ -30,6 +30,8 @@ import { SystemHealthIndicator } from "@/components/governance/SystemHealthIndic
 import TablePagination from "@/components/TablePagination";
 import { GovernanceAlertsPanel } from "@/components/governance/GovernanceAlertsPanel";
 import { AutomatedActionsPanel } from "@/components/governance/AutomatedActionsPanel";
+import { BatchMetricsPanel } from "@/components/governance/BatchMetricsPanel";
+import { useGovernanceBatchRunner } from "@/components/governance/useGovernanceBatchRunner";
 import type { SystemStatus } from "@/components/governance/types";
 
 const PAGE_SIZE = 10;
@@ -43,6 +45,7 @@ const GovernanceCore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const { metrics, isRunning, runBatch } = useGovernanceBatchRunner(queueRows);
 
   const fetchGovernanceData = useCallback(async () => {
     setIsLoading(true);
@@ -225,6 +228,10 @@ const GovernanceCore = () => {
         {/* ── SECTION 6: Automated Actions Preview ── */}
         <SectionHeader title="Automated Actions" subtitle="স্বয়ংক্রিয় এসকেলেশন অ্যাকশন প্রিভিউ" className="mt-10" />
         <AutomatedActionsPanel queue={queueRows} />
+
+        {/* ── SECTION 7: Batch Execution Metrics ── */}
+        <SectionHeader title="Batch Execution" subtitle="ব্যাচ এক্সিকিউশন মেট্রিক্স ও ম্যানুয়াল রান" className="mt-10" />
+        <BatchMetricsPanel metrics={metrics} isRunning={isRunning} onRunBatch={runBatch} />
 
         {/* ── Escalation Rules Modal ── */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
