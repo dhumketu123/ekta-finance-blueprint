@@ -61,7 +61,7 @@ const OwnerProfitTable = memo(({ ownerRefId, bn }: OwnerProfitTableProps) => {
         .limit(24);
       if (error) throw error;
       return (data ?? []).map((d) => ({
-        month: format(new Date(d.created_at), "MMM yy"),
+        month: formatChartDate(d.created_at, bn ? "bn" : "en"),
         amount: d.share_amount ?? 0,
       }));
     },
