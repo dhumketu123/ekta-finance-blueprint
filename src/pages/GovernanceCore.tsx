@@ -222,6 +222,10 @@ const GovernanceCore = () => {
         <SectionHeader title="Alerts & Violations" subtitle="সতর্কতা ও নীতি লঙ্ঘন" className="mt-10" />
         <GovernanceAlertsPanel queueRows={queueRows} />
 
+        {/* ── SECTION 6: Automated Actions Preview ── */}
+        <SectionHeader title="Automated Actions" subtitle="স্বয়ংক্রিয় এসকেলেশন অ্যাকশন প্রিভিউ" className="mt-10" />
+        <AutomatedActionsPanel queue={queueRows} />
+
         {/* ── Escalation Rules Modal ── */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent>
