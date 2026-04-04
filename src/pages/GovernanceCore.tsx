@@ -138,6 +138,18 @@ const GovernanceCore = () => {
     return () => clearInterval(interval);
   }, [fetchGovernanceData]);
 
+  // Real-time critical alert toast (fires once per data refresh, not on every render)
+  const prevCriticalRef = useRef(0);
+  useEffect(() => {
+    const criticalCount = queueRows.filter((q) => q.status === "Critical").length;
+    if (criticalCount > 0 && criticalCount !== prevCriticalRef.current) {
+      toast.error("Critical Clients Alert!", {
+        description: `${criticalCount} client(s) require immediate attention.`,
+      });
+    }
+    prevCriticalRef.current = criticalCount;
+  }, [queueRows]);
+
   // Memoized queue sorting by priority (highest first)
   const sortedQueue = useMemo(
     () => [...queueRows].sort((a, b) => b.priority - a.priority),
