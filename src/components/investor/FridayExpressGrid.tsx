@@ -24,6 +24,7 @@ import { MessageCircle, Lock, CheckCircle2, Loader2, Zap, Users, MoreVertical, S
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, isAfter, parseISO } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { CustomTransactionModal } from "./CustomTransactionModal";
 import { PartnerLedgerModal } from "./PartnerLedgerModal";
 

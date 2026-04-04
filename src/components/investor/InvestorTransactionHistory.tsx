@@ -296,7 +296,7 @@ export default function InvestorTransactionHistory({
                   { label: "Client / গ্রাহক", value: investorName || "Investor" },
                   { label: "Type / ধরন", value: typeLabels[tx.type] ? (bn ? typeLabels[tx.type].bn : typeLabels[tx.type].en) : tx.type },
                   { label: "Amount / পরিমাণ", value: `৳${tx.amount.toLocaleString()}` },
-                  { label: "Date / তারিখ", value: format(new Date(tx.transaction_date), "dd MMM yyyy") },
+                  { label: "Date / তারিখ", value: formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true }) },
                   { label: "Status / অবস্থা", value: tx.status },
                   tx.notes ? { label: "Notes / মন্তব্য", value: tx.notes } : null,
                 ].filter(Boolean).map((row, i) => (
