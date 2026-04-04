@@ -278,7 +278,7 @@ export default function InvestorTransactionHistory({
           >
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: "5rem", fontWeight: 800, color: "rgba(0,0,0,0.04)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.15em" }}>EKTA FINANCE</div>
             <div data-dynamic-watermark style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%, -50%) rotate(-25deg)", fontSize: "1.1rem", fontWeight: 600, color: "rgba(0,0,0,0.025)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.08em" }}>
-              {investorName || "Investor"} • {format(new Date(tx.transaction_date), "dd/MM/yyyy")} • {tx.id.slice(0, 8).toUpperCase()}
+              {investorName || "Investor"} • {formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })} • {tx.id.slice(0, 8).toUpperCase()}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0ea5e9", paddingBottom: "12px", marginBottom: "20px", position: "relative", zIndex: 1 }}>
               <div>
