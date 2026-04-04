@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FolderLock, FileText, Shield, Download, ChevronLeft, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const PAGE_SIZE = 15;
 
