@@ -3432,8 +3432,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_investor_dividend: {
+        Args: {
+          p_actor_id?: string
+          p_amount: number
+          p_investor_id: string
+          p_reinvest?: boolean
+        }
+        Returns: undefined
+      }
       process_investor_reinvest: {
         Args: { _investor_id: string }
+        Returns: undefined
+      }
+      process_investor_withdrawal: {
+        Args: { p_actor_id?: string; p_amount: number; p_investor_id: string }
         Returns: undefined
       }
       process_owner_exit:
@@ -3642,6 +3655,8 @@ export type Database = {
         | "insurance_claim_payout"
         | "adjustment_entry"
         | "investor_capital_injection"
+        | "investor_withdrawal"
+        | "investor_dividend"
       investment_model: "profit_only" | "profit_plus_principal"
       investor_status: "active" | "matured" | "closed"
       loan_model: "flat" | "reducing"
@@ -3832,6 +3847,8 @@ export const Constants = {
         "insurance_claim_payout",
         "adjustment_entry",
         "investor_capital_injection",
+        "investor_withdrawal",
+        "investor_dividend",
       ],
       investment_model: ["profit_only", "profit_plus_principal"],
       investor_status: ["active", "matured", "closed"],
