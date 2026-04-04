@@ -13,7 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+
 import {
   Banknote, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare, X,
 } from "lucide-react";
@@ -134,32 +134,20 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
     setPhase("executing");
     try {
       const payAmt = Number(dividendPayAmount);
-      const newDueDividend = totalPayable - payAmt;
-      const updatePayload: Record<string, any> = {
-        due_dividend: newDueDividend,
-        last_profit_date: format(new Date(), "yyyy-MM-dd"),
-      };
-      if (payoutMode === "reinvest") {
-        updatePayload.capital = capital + payAmt;
-        updatePayload.accumulated_profit = (investor.accumulated_profit || 0) + payAmt;
-      }
-      const { error: updErr } = await supabase.from("investors").update(updatePayload).eq("id", investor.id);
-      if (updErr) throw updErr;
+      const isReinvest = payoutMode === "reinvest";
 
-      const txNote = [
-        payoutMode === "reinvest" ? "Reinvested to capital" : "Cash payout",
-        newDueDividend > 0 ? `(Partial: ৳${newDueDividend} remaining due)` : "(Full payment)",
-        dividendNotes ? `— ${dividendNotes}` : "",
-      ].filter(Boolean).join(" ");
-
-      const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "investor_profit", amount: payAmt, status: "paid",
-        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: txNote, performed_by: user.id,
+      // Atomic server-side RPC — row-locked, audit-logged, single transaction
+      const { error: rpcErr } = await supabase.rpc("process_investor_dividend", {
+        p_investor_id: investor.id,
+        p_amount: payAmt,
+        p_reinvest: isReinvest,
+        p_actor_id: user.id,
       });
-      if (txErr) throw txErr;
+      if (rpcErr) throw rpcErr;
 
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "লভ্যাংশ প্রদান সফল ✅" : "Dividend paid successfully ✅");
       setPhase("success");
@@ -170,7 +158,7 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
     } finally {
       setSubmitting(false);
     }
-  }, [user, dividendPayAmount, totalPayable, payoutMode, capital, investor, dividendNotes, bn, queryClient, submitting]);
+  }, [user, dividendPayAmount, payoutMode, investor, bn, queryClient, submitting]);
 
   const handleClose = useCallback(() => {
     setPhase("form");

@@ -12,7 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+
 import {
   ArrowDownCircle, ShieldCheck, Lock, AlertTriangle, CheckCircle2, Loader2, MessageCircle, MessageSquare, X,
 } from "lucide-react";
@@ -114,15 +114,15 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
     setSubmitting(true);
     setPhase("executing");
     try {
-      const { error: updErr } = await supabase.from("investors").update({ capital: capital - amt }).eq("id", investor.id);
-      if (updErr) throw updErr;
-      const { error: txErr } = await supabase.from("transactions").insert({
-        investor_id: investor.id, type: "investor_principal_return", amount: amt, status: "paid",
-        transaction_date: format(new Date(), "yyyy-MM-dd"), notes: "Capital withdrawal", performed_by: user.id,
+      const { error: rpcErr } = await supabase.rpc("process_investor_withdrawal", {
+        p_investor_id: investor.id,
+        p_amount: amt,
+        p_actor_id: user.id,
       });
-      if (txErr) throw txErr;
+      if (rpcErr) throw rpcErr;
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "উত্তোলন সফল ✅" : "Withdrawal successful ✅");
       setPhase("success");
@@ -131,7 +131,7 @@ export function InvestorWithdrawalModal({ open, onClose, investor, capital }: Pr
       toast.error(errMsg || "Error");
       setPhase("confirm");
     } finally { setSubmitting(false); }
-  }, [user, amt, capital, investor, bn, queryClient, submitting]);
+  }, [user, amt, investor, bn, queryClient, submitting]);
 
   const handleClose = useCallback(() => {
     setPhase("form"); setWithdrawAmount(""); resetPin(); onClose();
