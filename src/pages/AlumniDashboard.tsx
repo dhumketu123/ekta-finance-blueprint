@@ -7,7 +7,7 @@ import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import { GraduationCap, FileText, Download, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 
 const AlumniDashboard = () => {
@@ -85,7 +85,7 @@ const AlumniDashboard = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">{bn ? "এক্সিট তারিখ" : "Exit Date"}</p>
-              <p className="font-bold">{format(new Date(settlement.exit_date), "dd MMM yyyy")}</p>
+              <p className="font-bold">{formatLocalDate(settlement.exit_date, lang, { short: true })}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{bn ? "সেবার সময়কাল" : "Tenure"}</p>
@@ -136,7 +136,7 @@ const AlumniDashboard = () => {
                     <TableRow key={ps.id}>
                       <TableCell className="text-xs">
                         {ps.owner_profit_distributions
-                          ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                          ? formatLocalDate((ps.owner_profit_distributions as any).period_month, lang, { short: true })
                           : "—"}
                       </TableCell>
                       <TableCell className="text-xs">{ps.share_percentage}%</TableCell>
@@ -153,7 +153,7 @@ const AlumniDashboard = () => {
                   <div>
                     <p className="text-xs font-medium">
                       {ps.owner_profit_distributions
-                        ? format(new Date((ps.owner_profit_distributions as any).period_month), "MMM yyyy")
+                        ? formatLocalDate((ps.owner_profit_distributions as any).period_month, lang, { short: true })
                         : "—"}
                     </p>
                     <p className="text-[11px] text-muted-foreground">{ps.share_percentage}%</p>

@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { formatChartDate } from "@/lib/date-utils";
 
 import InvestorMetrics from "@/components/investor/InvestorMetrics";
 import InvestorInfoCards from "@/components/investor/InvestorInfoCards";
@@ -94,7 +95,7 @@ const InvestorWallet = () => {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = format(d, "yyyy-MM");
-      const label = format(d, "MMM yy");
+      const label = formatChartDate(d, lang);
       const profit = (chartTxs ?? [])
         .filter((tx) => tx.transaction_date.startsWith(key))
         .reduce((s, tx) => s + tx.amount, 0);

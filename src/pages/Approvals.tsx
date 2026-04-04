@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TablePagination from "@/components/TablePagination";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, XCircle, Clock, Loader2, Plus, Users } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDateTime } from "@/lib/date-utils";
 import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
 import BulkCollectionForm from "@/components/forms/BulkCollectionForm";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -155,7 +155,7 @@ const Approvals = () => {
                     const Icon = sc.icon;
                     return (
                       <TableRow key={tx.id} className="animate-in fade-in-50 duration-300">
-                        <TableCell className="text-xs">{format(new Date(tx.created_at), "dd/MM/yy HH:mm")}</TableCell>
+                        <TableCell className="text-xs">{formatLocalDateTime(tx.created_at, lang)}</TableCell>
                         <TableCell className="text-xs font-medium">{typeLabels[tx.type] || tx.type}</TableCell>
                         <TableCell className="text-xs">{tx.clients?.name_bn || tx.clients?.name_en || "—"}</TableCell>
                         <TableCell className="text-xs font-mono">{tx.reference_id}</TableCell>

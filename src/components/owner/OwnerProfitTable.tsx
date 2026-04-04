@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import StatusBadge from "@/components/StatusBadge";
 import { Calendar, CircleDollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import { formatLocalDate, formatChartDate } from "@/lib/date-utils";
 
 const LazyResponsiveContainer = lazy(() => import("recharts").then((m) => ({ default: m.ResponsiveContainer })));
 const LazyAreaChart = lazy(() => import("recharts").then((m) => ({ default: m.AreaChart })));
@@ -60,7 +61,7 @@ const OwnerProfitTable = memo(({ ownerRefId, bn }: OwnerProfitTableProps) => {
         .limit(24);
       if (error) throw error;
       return (data ?? []).map((d) => ({
-        month: format(new Date(d.created_at), "MMM yy"),
+        month: formatChartDate(d.created_at, bn ? "bn" : "en"),
         amount: d.share_amount ?? 0,
       }));
     },
@@ -154,7 +155,7 @@ const OwnerProfitTable = memo(({ ownerRefId, bn }: OwnerProfitTableProps) => {
                       <TableRow key={ps.id}>
                         <TableCell className="text-xs font-medium">
                           {ps.owner_profit_distributions
-                            ? format(new Date(ps.owner_profit_distributions.period_month), "MMM yyyy")
+                            ? formatLocalDate(ps.owner_profit_distributions.period_month, bn ? "bn" : "en", { short: true })
                             : "—"}
                         </TableCell>
                         <TableCell className="text-xs">{ps.share_percentage}%</TableCell>
@@ -175,7 +176,7 @@ const OwnerProfitTable = memo(({ ownerRefId, bn }: OwnerProfitTableProps) => {
                     <div>
                       <p className="text-xs font-medium">
                         {ps.owner_profit_distributions
-                          ? format(new Date(ps.owner_profit_distributions.period_month), "MMM yyyy")
+                          ? formatLocalDate(ps.owner_profit_distributions.period_month, bn ? "bn" : "en", { short: true })
                           : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground">{ps.share_percentage}% {bn ? "শেয়ার" : "share"}</p>

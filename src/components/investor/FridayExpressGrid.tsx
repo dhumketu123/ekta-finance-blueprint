@@ -24,6 +24,7 @@ import { MessageCircle, Lock, CheckCircle2, Loader2, Zap, Users, MoreVertical, S
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, isAfter, parseISO } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { CustomTransactionModal } from "./CustomTransactionModal";
 import { PartnerLedgerModal } from "./PartnerLedgerModal";
 
@@ -290,7 +291,7 @@ export const FridayExpressGrid = memo(function FridayExpressGrid({ investors }: 
                 const weeklyShare = inv.weekly_share || 100;
                 const weeksCount = row.amount > 0 ? Math.floor(row.amount / weeklyShare) : 0;
                 const paidUntil = inv.weekly_paid_until
-                  ? format(parseISO(inv.weekly_paid_until), "dd MMM yyyy")
+                  ? formatLocalDate(inv.weekly_paid_until, bn ? "bn" : "en", { short: true })
                   : "—";
 
                 // Tier

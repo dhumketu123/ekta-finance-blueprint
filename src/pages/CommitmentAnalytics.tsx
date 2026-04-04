@@ -15,7 +15,7 @@ import PredictiveRiskWidget from "@/components/analytics/PredictiveRiskWidget";
 import BurnoutDetectionWidget from "@/components/analytics/BurnoutDetectionWidget";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { formatChartDate, formatLocalDateTime } from "@/lib/date-utils";
 
 const CommitmentAnalytics = () => {
   const { lang } = useLanguage();
@@ -97,14 +97,14 @@ const CommitmentAnalytics = () => {
 
   // Failure trend chart data
   const failureTrend = (swipeSuccess || []).slice(0, 14).reverse().map((d: any) => ({
-    date: d.report_date ? format(new Date(d.report_date), "MMM dd") : "",
+    date: d.report_date ? formatChartDate(d.report_date, lang) : "",
     success: Number(d.success_rate_pct) || 0,
     failed: 100 - (Number(d.success_rate_pct) || 0),
   }));
 
   // Reschedule heatmap data
   const rescheduleHeatmap = (rescheduleRate || []).slice(0, 14).reverse().map((d: any) => ({
-    date: d.report_date ? format(new Date(d.report_date), "MMM dd") : "",
+    date: d.report_date ? formatChartDate(d.report_date, lang) : "",
     rate: Number(d.reschedule_rate_pct) || 0,
   }));
 
@@ -282,7 +282,7 @@ const CommitmentAnalytics = () => {
               {JSON.stringify(latestReport.report_data, null, 2)}
             </pre>
             <p className="text-xs text-muted-foreground mt-2">
-              Generated: {format(new Date(latestReport.generated_at), "PPpp")}
+              Generated: {formatLocalDateTime(latestReport.generated_at, lang)}
             </p>
           </CardContent>
         </Card>

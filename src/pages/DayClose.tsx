@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/date-utils";
 import {
   Lock, Unlock, CheckCircle2, AlertTriangle, XCircle, Clock, Send,
   ShieldCheck, Zap, TrendingUp, TrendingDown, Wallet, Copy,
@@ -135,7 +136,7 @@ const DayClose = () => {
             দৈনিক ক্যাশ ক্লোজ
           </h1>
           <p className="text-sm text-muted-foreground mt-2 font-medium">
-            {format(new Date(), "dd MMMM yyyy")}
+            {formatLocalDate(new Date(), "bn")}
           </p>
         </div>
 
@@ -167,7 +168,7 @@ const DayClose = () => {
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Lock className="h-3 w-3" />
-                  বন্ধ হয়েছে: {existing?.closed_at ? format(new Date(existing.closed_at), "hh:mm a") : ""}
+                  বন্ধ হয়েছে: {existing?.closed_at ? formatLocalDateTime(existing.closed_at, "bn", { timeOnly: true }) : ""}
                 </div>
               </div>
             ) : (
@@ -319,7 +320,7 @@ const DayClose = () => {
                     <div className="space-y-1 flex-1">
                       <p className="text-sm font-medium">কারণ: {req.reason}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(req.requested_at), "dd/MM/yyyy hh:mm a")}
+                        {formatLocalDateTime(req.requested_at, "bn")}
                       </p>
                     </div>
                     <Button

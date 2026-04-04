@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Loader2, ShieldCheck, BookOpen } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 
 interface Props {
   investorId: string;
@@ -163,7 +163,7 @@ export function PartnerLedgerModal({ investorId, investorName, open, onClose }: 
                   return (
                     <TableRow key={tx.id} className="group">
                       <TableCell className="text-xs font-mono text-muted-foreground">
-                        {format(parseISO(tx.transaction_date), "dd MMM yyyy")}
+                        {formatLocalDate(tx.transaction_date, lang, { short: true })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-[10px] ${cfg.className}`}>

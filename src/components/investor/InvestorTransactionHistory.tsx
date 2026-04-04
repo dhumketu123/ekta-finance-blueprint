@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/StatusBadge";
 import TablePagination from "@/components/TablePagination";
 import { ArrowDownRight, ArrowUpRight, Search, X, Loader2, Printer, Download } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -57,7 +57,7 @@ const TxRow = memo(({ tx, bn, investorName, pdfLoadingId, onPrint, onPDF }: {
   const isProfit = tx.type === "investor_profit";
   return (
     <TableRow className="transition-colors hover:bg-muted/50">
-      <TableCell className="text-xs">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</TableCell>
+      <TableCell className="text-xs">{formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })}</TableCell>
       <TableCell className="text-xs font-medium">
         <span className="inline-flex items-center gap-1">
           {isProfit ? <ArrowDownRight className="w-3 h-3 text-success" /> : <ArrowUpRight className="w-3 h-3 text-primary" />}
@@ -107,7 +107,7 @@ const TxCard = memo(({ tx, bn, pdfLoadingId, onPrint, onPDF }: {
             <p className="text-xs font-medium">{lbl ? (bn ? lbl.bn : lbl.en) : tx.type}</p>
             <p className={`text-xs font-bold ${isProfit ? "text-success" : "text-primary"}`}>৳{tx.amount.toLocaleString()}</p>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })}</p>
         </div>
       </div>
       <div className="flex gap-2 mt-2 ml-12">
@@ -169,7 +169,7 @@ export default function InvestorTransactionHistory({
       // Update dynamic watermark
       const wmEl = el.querySelector("[data-dynamic-watermark]");
       if (wmEl) {
-        wmEl.textContent = `${investorName || "Investor"} • ${format(new Date(tx.transaction_date), "dd/MM/yyyy")} • ${receiptNo}`;
+        wmEl.textContent = `${investorName || "Investor"} • ${formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })} • ${receiptNo}`;
       }
 
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, logging: false });
@@ -278,7 +278,7 @@ export default function InvestorTransactionHistory({
           >
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: "5rem", fontWeight: 800, color: "rgba(0,0,0,0.04)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.15em" }}>EKTA FINANCE</div>
             <div data-dynamic-watermark style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%, -50%) rotate(-25deg)", fontSize: "1.1rem", fontWeight: 600, color: "rgba(0,0,0,0.025)", pointerEvents: "none", zIndex: 0, whiteSpace: "nowrap", letterSpacing: "0.08em" }}>
-              {investorName || "Investor"} • {format(new Date(tx.transaction_date), "dd/MM/yyyy")} • {tx.id.slice(0, 8).toUpperCase()}
+              {investorName || "Investor"} • {formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })} • {tx.id.slice(0, 8).toUpperCase()}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0ea5e9", paddingBottom: "12px", marginBottom: "20px", position: "relative", zIndex: 1 }}>
               <div>
@@ -296,7 +296,7 @@ export default function InvestorTransactionHistory({
                   { label: "Client / গ্রাহক", value: investorName || "Investor" },
                   { label: "Type / ধরন", value: typeLabels[tx.type] ? (bn ? typeLabels[tx.type].bn : typeLabels[tx.type].en) : tx.type },
                   { label: "Amount / পরিমাণ", value: `৳${tx.amount.toLocaleString()}` },
-                  { label: "Date / তারিখ", value: format(new Date(tx.transaction_date), "dd MMM yyyy") },
+                  { label: "Date / তারিখ", value: formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true }) },
                   { label: "Status / অবস্থা", value: tx.status },
                   tx.notes ? { label: "Notes / মন্তব্য", value: tx.notes } : null,
                 ].filter(Boolean).map((row, i) => (
