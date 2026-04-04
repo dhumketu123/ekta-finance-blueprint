@@ -107,3 +107,87 @@ export function formatShortDate(
     ? `${toBengaliDigits(day)} ${shortMonths[monthIdx]} '${toBengaliDigits(year)}`
     : `${day} ${shortMonths[monthIdx]} '${year}`;
 }
+
+/**
+ * Format a datetime with time component
+ * Example: "২১ মার্চ ২০২৬ ০৩:৪৫ PM" or "21 Mar 2026 03:45 PM"
+ */
+export function formatLocalDateTime(
+  dateInput: string | Date | null | undefined,
+  lang: string = "en",
+  options?: { dateOnly?: boolean; timeOnly?: boolean; shortDate?: boolean }
+): string {
+  if (!dateInput) return "—";
+
+  let date: Date;
+  if (typeof dateInput === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const [y, m, d] = dateInput.split("-").map(Number);
+      date = new Date(y, m - 1, d);
+    } else {
+      date = new Date(dateInput);
+    }
+  } else {
+    date = dateInput;
+  }
+
+  if (isNaN(date.getTime())) return "—";
+
+  const bn = lang === "bn";
+
+  // Time formatting
+  const hours24 = date.getHours();
+  const minutes = date.getMinutes();
+  const isPM = hours24 >= 12;
+  const hours12 = hours24 % 12 || 12;
+  const timeStr = bn
+    ? `${toBengaliDigits(String(hours12).padStart(2, "0"))}:${toBengaliDigits(String(minutes).padStart(2, "0"))} ${isPM ? "PM" : "AM"}`
+    : `${String(hours12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${isPM ? "PM" : "AM"}`;
+
+  if (options?.timeOnly) return timeStr;
+
+  const dateStr = options?.shortDate
+    ? formatShortDate(date, lang)
+    : formatLocalDate(date, lang, { short: true });
+
+  if (options?.dateOnly) return dateStr;
+
+  return `${dateStr} ${timeStr}`;
+}
+
+/**
+ * Format date for chart axes — compact
+ * Example: "২১ মার্চ" or "21 Mar"
+ */
+export function formatChartDate(
+  dateInput: string | Date | null | undefined,
+  lang: string = "en"
+): string {
+  if (!dateInput) return "";
+
+  let date: Date;
+  if (typeof dateInput === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const [y, m, d] = dateInput.split("-").map(Number);
+      date = new Date(y, m - 1, d);
+    } else {
+      date = new Date(dateInput);
+    }
+  } else {
+    date = dateInput;
+  }
+
+  if (isNaN(date.getTime())) return "";
+
+  const day = date.getDate();
+  const monthIdx = date.getMonth();
+  const bn = lang === "bn";
+
+  const shortMonths = bn
+    ? ["জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলা", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে"]
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  return bn
+    ? `${toBengaliDigits(day)} ${shortMonths[monthIdx]}`
+    : `${day} ${shortMonths[monthIdx]}`;
+}
