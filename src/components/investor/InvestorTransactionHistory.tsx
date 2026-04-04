@@ -107,7 +107,7 @@ const TxCard = memo(({ tx, bn, pdfLoadingId, onPrint, onPDF }: {
             <p className="text-xs font-medium">{lbl ? (bn ? lbl.bn : lbl.en) : tx.type}</p>
             <p className={`text-xs font-bold ${isProfit ? "text-success" : "text-primary"}`}>৳{tx.amount.toLocaleString()}</p>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.transaction_date), "dd MMM yyyy")}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })}</p>
         </div>
       </div>
       <div className="flex gap-2 mt-2 ml-12">
