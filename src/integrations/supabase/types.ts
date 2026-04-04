@@ -2451,11 +2451,17 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           id: string
+          last_profit_date: string | null
+          maturity_date: string | null
           notes: string | null
           opened_date: string
+          profit_earned: number
           savings_product_id: string | null
           status: string
+          target_amount: number
           tenant_id: string
+          tenure_months: number
+          total_deposited: number
           updated_at: string
         }
         Insert: {
@@ -2464,11 +2470,17 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          last_profit_date?: string | null
+          maturity_date?: string | null
           notes?: string | null
           opened_date?: string
+          profit_earned?: number
           savings_product_id?: string | null
           status?: string
+          target_amount?: number
           tenant_id: string
+          tenure_months?: number
+          total_deposited?: number
           updated_at?: string
         }
         Update: {
@@ -2477,11 +2489,17 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          last_profit_date?: string | null
+          maturity_date?: string | null
           notes?: string | null
           opened_date?: string
+          profit_earned?: number
           savings_product_id?: string | null
           status?: string
+          target_amount?: number
           tenant_id?: string
+          tenure_months?: number
+          total_deposited?: number
           updated_at?: string
         }
         Relationships: [
@@ -3437,6 +3455,17 @@ export type Database = {
             }
             Returns: Json
           }
+      process_savings_transaction: {
+        Args: {
+          _amount: number
+          _notes?: string
+          _performed_by: string
+          _reference_id?: string
+          _savings_account_id: string
+          _transaction_type: string
+        }
+        Returns: Json
+      }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
       reject_financial_transaction: {
@@ -3615,7 +3644,7 @@ export type Database = {
         | "overdue_alert"
         | "deposit_reminder"
       payment_type: "monthly" | "weekly" | "emi" | "bullet" | "monthly_profit"
-      savings_product_type: "general" | "locked"
+      savings_product_type: "general" | "locked" | "dps" | "fixed"
       transaction_status: "paid" | "pending" | "overdue"
       transaction_type:
         | "loan_disbursement"
@@ -3806,7 +3835,7 @@ export const Constants = {
         "deposit_reminder",
       ],
       payment_type: ["monthly", "weekly", "emi", "bullet", "monthly_profit"],
-      savings_product_type: ["general", "locked"],
+      savings_product_type: ["general", "locked", "dps", "fixed"],
       transaction_status: ["paid", "pending", "overdue"],
       transaction_type: [
         "loan_disbursement",
