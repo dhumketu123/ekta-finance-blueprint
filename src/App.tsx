@@ -53,6 +53,7 @@ const AccountingDashboard = React.lazy(() => import("./pages/AccountingDashboard
 const DayClose = React.lazy(() => import("./pages/DayClose"));
 const BalanceSheet = React.lazy(() => import("./pages/BalanceSheet"));
 const AlumniDashboard = React.lazy(() => import("./pages/AlumniDashboard"));
+const GovernanceCore = React.lazy(() => import("./pages/GovernanceCore"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
@@ -130,6 +131,7 @@ const App = () => (
                 <Route path="/day-close" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><DayClose /></ProtectedRoute>} />
                 <Route path="/reports/balance-sheet" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><BalanceSheet /></ProtectedRoute>} />
                 <Route path="/alumni" element={<ProtectedRoute allowedRoles={["alumni"]}><AlumniDashboard /></ProtectedRoute>} />
+                <Route path="/governance-core" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><GovernanceCore /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </RouteErrorBoundary>
