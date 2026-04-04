@@ -229,6 +229,10 @@ const GovernanceCore = () => {
         <SectionHeader title="Automated Actions" subtitle="স্বয়ংক্রিয় এসকেলেশন অ্যাকশন প্রিভিউ" className="mt-10" />
         <AutomatedActionsPanel queue={queueRows} />
 
+        {/* ── SECTION 7: Batch Execution Metrics ── */}
+        <SectionHeader title="Batch Execution" subtitle="ব্যাচ এক্সিকিউশন মেট্রিক্স ও ম্যানুয়াল রান" className="mt-10" />
+        <BatchMetricsPanel metrics={metrics} isRunning={isRunning} onRunBatch={runBatch} />
+
         {/* ── Escalation Rules Modal ── */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent>
