@@ -57,8 +57,8 @@ const GovernanceCore = () => (
         description="Overdue Escalation & Default Control System"
         badge="🛡️ গভর্নেন্স ইঞ্জিন"
         actions={
-          <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-600">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-primary">
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
             System Online
           </span>
         }
