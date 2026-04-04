@@ -217,6 +217,10 @@ const GovernanceCore = () => {
           </Button>
         </div>
 
+        {/* ── SECTION 5: Alerts & Violations ── */}
+        <SectionHeader title="Alerts & Violations" subtitle="সতর্কতা ও নীতি লঙ্ঘন" className="mt-10" />
+        <GovernanceAlertsPanel queueRows={queueRows} />
+
         {/* ── Escalation Rules Modal ── */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent>
