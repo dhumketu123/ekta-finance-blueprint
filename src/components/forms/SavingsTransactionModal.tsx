@@ -240,11 +240,7 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
     onClose();
   }, [onClose, prefillClientId, prefillSavingsId, prefillType, resetPin, isLocked]);
 
-  const normalizePhone = (phone: string) => {
-    const raw = phone.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
-    const last10 = raw.slice(-10);
-    return last10.length === 10 ? "880" + last10 : "";
-  };
+  // normalizePhone removed — using central import
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
