@@ -246,6 +246,18 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
         }
       } catch { /* non-critical */ }
 
+      // Fetch receipt_number from financial_transactions
+      try {
+        if (paymentData.ft_id) {
+          const { data: ftRow } = await supabase
+            .from("financial_transactions")
+            .select("receipt_number")
+            .eq("id", paymentData.ft_id)
+            .maybeSingle();
+          if (ftRow?.receipt_number) setReceiptNumber(ftRow.receipt_number);
+        }
+      } catch { /* non-critical */ }
+
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "পেমেন্ট সফল ✅" : "Payment successful ✅");
       setPhase("success");
@@ -267,35 +279,27 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     setClientName("");
     setClientPhone("");
     setNextDueDate(null);
+    setReceiptNumber("");
     resetPin();
     onClose();
   }, [onClose, prefilledLoanId, resetPin, isLocked]);
 
-  // Build receipt message
+  // Build receipt message using central builder
   const buildReceiptMsg = useCallback(() => {
-    if (!result) return "";
-    const dps = Number(result.dps_collected || 0);
-    const loanPaid = Number(result.total_payment);
-    const totalInput = dps + loanPaid;
-    const remaining = Number(result.new_outstanding).toLocaleString();
-    const nextDateStr = nextDueDate
-      ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
-      : "";
-    const dpsLine = dps > 0 ? `\nসঞ্চয়: ৳${dps.toLocaleString()} ঋণ: ৳${loanPaid.toLocaleString()}` : "";
-    const pointsEarned = result.points_earned ?? 0;
-    const pointsLine = pointsEarned !== 0
-      ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${result.new_score ?? 0})`
-      : "";
-    return result.loan_closed
-      ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()}${pointsLine}\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\nকিস্তি জমা হয়েছে ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()} বকেয়া: ৳${remaining}${nextDateStr ? `\nআগামী কিস্তি: ${nextDateStr}` : ""}${pointsLine}\n— একতা ফাইন্যান্স`;
-  }, [result, clientName, nextDueDate]);
-
-  const normalizePhone = (phone: string) => {
-    const raw = phone.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
-    const last10 = raw.slice(-10);
-    return last10.length === 10 ? "880" + last10 : "";
-  };
+    if (!result || !receiptNumber) return "";
+    return buildReceiptMessage({
+      type: "loan_payment",
+      clientName,
+      receiptNumber,
+      totalPayment: Number(result.total_payment),
+      dpsCollected: Number(result.dps_collected || 0),
+      newOutstanding: Number(result.new_outstanding),
+      loanClosed: result.loan_closed,
+      nextDueDate,
+      pointsEarned: result.points_earned,
+      currentScore: result.new_score,
+    });
+  }, [result, clientName, nextDueDate, receiptNumber]);
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
