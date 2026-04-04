@@ -131,6 +131,7 @@ const App = () => (
                 <Route path="/day-close" element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><DayClose /></ProtectedRoute>} />
                 <Route path="/reports/balance-sheet" element={<ProtectedRoute allowedRoles={["admin", "owner", "treasurer"]}><BalanceSheet /></ProtectedRoute>} />
                 <Route path="/alumni" element={<ProtectedRoute allowedRoles={["alumni"]}><AlumniDashboard /></ProtectedRoute>} />
+                <Route path="/governance-core" element={<ProtectedRoute allowedRoles={["admin", "owner"]}><GovernanceCore /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </RouteErrorBoundary>

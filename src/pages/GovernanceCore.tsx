@@ -156,7 +156,7 @@ const GovernanceCore = () => (
 
         <button
           type="button"
-          className="flex-shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black shadow-md hover:bg-emerald-400 active:scale-95 transition-all duration-200"
+          className="flex-shrink-0 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-95 transition-all duration-200"
         >
           View Escalation Rules
         </button>
