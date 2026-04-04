@@ -176,7 +176,7 @@ const OwnerProfitTable = memo(({ ownerRefId, bn }: OwnerProfitTableProps) => {
                     <div>
                       <p className="text-xs font-medium">
                         {ps.owner_profit_distributions
-                          ? format(new Date(ps.owner_profit_distributions.period_month), "MMM yyyy")
+                          ? formatLocalDate(ps.owner_profit_distributions.period_month, bn ? "bn" : "en", { short: true })
                           : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground">{ps.share_percentage}% {bn ? "শেয়ার" : "share"}</p>

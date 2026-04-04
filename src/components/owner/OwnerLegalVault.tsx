@@ -71,7 +71,7 @@ const OwnerLegalVault = memo(({ ownerRefId, bn }: OwnerLegalVaultProps) => {
                   <div className="min-w-0">
                     <p className="text-xs font-medium truncate">{doc.name}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {doc.created_at ? format(new Date(doc.created_at), "dd MMM yyyy") : "—"}
+                      {formatLocalDate(doc.created_at, "bn", { short: true })}
                     </p>
                   </div>
                 </div>
