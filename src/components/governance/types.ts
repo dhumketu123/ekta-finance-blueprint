@@ -26,7 +26,7 @@ export interface EscalationStage {
   icon: LucideIcon;
   title: string;
   desc: string;
-  tag: string;
+  tag: StatusType;
   metric: number | string;
 }
 
