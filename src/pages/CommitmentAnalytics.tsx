@@ -97,7 +97,7 @@ const CommitmentAnalytics = () => {
 
   // Failure trend chart data
   const failureTrend = (swipeSuccess || []).slice(0, 14).reverse().map((d: any) => ({
-    date: d.report_date ? format(new Date(d.report_date), "MMM dd") : "",
+    date: d.report_date ? formatChartDate(d.report_date, lang) : "",
     success: Number(d.success_rate_pct) || 0,
     failed: 100 - (Number(d.success_rate_pct) || 0),
   }));
