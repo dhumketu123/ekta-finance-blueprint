@@ -30,12 +30,12 @@ export const useGovernanceBatchRunner = (queue: QueueRow[]) => {
   const queueRef = useRef(queue);
   queueRef.current = queue;
 
-  const runBatch = useCallback(async (): Promise<BatchRunResult | null> => {
+  const runBatch = useCallback(async (tenantId?: string): Promise<BatchRunResult | null> => {
     if (queueRef.current.length === 0) return null;
     setIsRunning(true);
 
     try {
-      const result = await runGovernanceBatch(queueRef.current);
+      const result = await runGovernanceBatch(queueRef.current, tenantId);
 
       setMetrics((prev) => ({
         totalExecuted: prev.totalExecuted + result.executed,

@@ -1125,6 +1125,45 @@ export type Database = {
           },
         ]
       }
+      governance_action_logs: {
+        Row: {
+          action: string
+          channel: string
+          client_id: string
+          created_at: string
+          error: string | null
+          executed_at: string
+          executed_by: string | null
+          id: string
+          success: boolean
+          tenant_id: string
+        }
+        Insert: {
+          action: string
+          channel: string
+          client_id: string
+          created_at?: string
+          error?: string | null
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          success?: boolean
+          tenant_id: string
+        }
+        Update: {
+          action?: string
+          channel?: string
+          client_id?: string
+          created_at?: string
+          error?: string | null
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          success?: boolean
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       investor_weekly_transactions: {
         Row: {
           amount: number
