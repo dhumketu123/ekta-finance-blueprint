@@ -169,7 +169,7 @@ export default function InvestorTransactionHistory({
       // Update dynamic watermark
       const wmEl = el.querySelector("[data-dynamic-watermark]");
       if (wmEl) {
-        wmEl.textContent = `${investorName || "Investor"} • ${format(new Date(tx.transaction_date), "dd/MM/yyyy")} • ${receiptNo}`;
+        wmEl.textContent = `${investorName || "Investor"} • ${formatLocalDate(tx.transaction_date, bn ? "bn" : "en", { short: true })} • ${receiptNo}`;
       }
 
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, logging: false });
