@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/StatusBadge";
 import TablePagination from "@/components/TablePagination";
 import { ArrowDownRight, ArrowUpRight, Search, X, Loader2, Printer, Download } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
