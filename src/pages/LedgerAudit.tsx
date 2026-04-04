@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, ShieldCheck, ShieldAlert, RefreshCw, FileText, Link2, Link2Off, Download, AlertTriangle } from "lucide-react";
 import { verifyLedgerChain } from "@/lib/pdf-utils";
 import { format } from "date-fns";
+import { formatLocalDateTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 interface AuditEntry {
