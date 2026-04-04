@@ -511,6 +511,13 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             const finalPhone = normalizePhone(clientPhone);
             const receiptMsg = buildReceiptMsg();
             const encoded = encodeURIComponent(receiptMsg);
+            const handleSend = (channel: "whatsapp" | "sms") => {
+              if (user && receiptNumber) {
+                logReceiptSend({ clientId: result.loan_id, loanId: form.loan_id, channel, messageBody: receiptMsg, receiptNumber, userId: user.id });
+              }
+              if (channel === "whatsapp") window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank");
+              else window.open(`sms:+${finalPhone}?body=${encoded}`, "_self");
+            };
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
                 <DrawerBody>
@@ -591,12 +598,12 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
 
                     {/* WhatsApp + SMS receipt buttons */}
                     <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                      {finalPhone && (
+                      {finalPhone && receiptMsg && (
                         <div className="flex gap-2 w-full">
-                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => handleSend("whatsapp")}>
                             <MessageCircle className="w-4 h-4" /> WhatsApp
                           </Button>
-                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => handleSend("sms")}>
                             <MessageSquare className="w-4 h-4" /> SMS
                           </Button>
                         </div>
