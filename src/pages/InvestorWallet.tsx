@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { formatChartDate } from "@/lib/date-utils";
 
 import InvestorMetrics from "@/components/investor/InvestorMetrics";
 import InvestorInfoCards from "@/components/investor/InvestorInfoCards";
