@@ -57,7 +57,7 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [successData, setSuccessData] = useState<{ amount: number; newBalance: number; clientName: string; clientPhone: string } | null>(null);
+  const [successData, setSuccessData] = useState<{ amount: number; newBalance: number; clientName: string; clientPhone: string; receiptNumber: string } | null>(null);
 
   // PIN state
   const [pin, setPin] = useState(["", "", "", ""]);
