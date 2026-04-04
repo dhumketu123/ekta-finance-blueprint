@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Clock, AlertTriangle, Banknote, ArrowLeftRight, Download } from "lucide-react";
 import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const PaymentStatusPage = () => {
   const { lang } = useLanguage();
