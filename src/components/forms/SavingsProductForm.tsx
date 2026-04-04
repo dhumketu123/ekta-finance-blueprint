@@ -15,7 +15,7 @@ const schema = z.object({
   frequency: z.enum(["daily", "weekly", "monthly"]).default("monthly"),
   min_amount: z.coerce.number().min(0),
   max_amount: z.coerce.number().min(0),
-  product_type: z.enum(["general", "locked"]).default("general"),
+  product_type: z.enum(["general", "locked", "dps", "fixed"]).default("general"),
   minimum_balance: z.coerce.number().min(0).default(0),
   lock_period_days: z.coerce.number().int().min(0).default(0),
   profit_rate: z.coerce.number().min(0).max(100).default(0),

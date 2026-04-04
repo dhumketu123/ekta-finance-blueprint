@@ -165,48 +165,43 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
     setPhase("pin");
   }, [clientId, savingsId, numAmount, isDeposit, selectedAccount, bn]);
 
-  // Execute after PIN + Hold
+  // Execute after PIN + Hold — uses bank-grade RPC
   const handleExecute = useCallback(async () => {
     if (!user || submitting) return;
     setSubmitting(true);
     setPhase("executing");
     try {
-      const newBalance = isDeposit
-        ? (selectedAccount?.balance || 0) + numAmount
-        : (selectedAccount?.balance || 0) - numAmount;
+      const refId = `SAV_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-      // Update savings account balance
-      const { error: updErr } = await supabase
-        .from("savings_accounts")
-        .update({ balance: newBalance })
-        .eq("id", savingsId);
-      if (updErr) throw updErr;
-
-      // Insert pending transaction for audit
-      const refId = `FO_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const { error: txErr } = await supabase.from("pending_transactions").insert({
-        type: txType,
-        reference_id: refId,
-        amount: numAmount,
-        client_id: clientId,
-        savings_id: savingsId,
-        notes: notes.trim() || null,
-        submitted_by: user.id,
-        status: "approved",
+      // Call server-side RPC for atomic, ledger-grade transaction
+      const { data, error } = await supabase.rpc("process_savings_transaction" as any, {
+        _savings_account_id: savingsId,
+        _amount: numAmount,
+        _transaction_type: txType,
+        _performed_by: user.id,
+        _reference_id: refId,
+        _notes: notes.trim() || null,
       });
-      if (txErr) throw txErr;
+      if (error) throw error;
+
+      const result = data as any;
 
       // Get client info for receipt
       const client = clients?.find((c) => c.id === clientId);
       const cName = client ? (bn ? client.name_bn : client.name_en) || client.name_en : "";
       const cPhone = client?.phone || "";
 
-      setSuccessData({ amount: numAmount, newBalance, clientName: cName, clientPhone: cPhone });
+      setSuccessData({
+        amount: numAmount,
+        newBalance: Number(result?.new_balance ?? (isDeposit ? (selectedAccount?.balance || 0) + numAmount : (selectedAccount?.balance || 0) - numAmount)),
+        clientName: cName,
+        clientPhone: cPhone,
+      });
 
       queryClient.invalidateQueries({ queryKey: ["savings"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["client_savings_modal"] });
-      queryClient.invalidateQueries({ queryKey: ["pending_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
 
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? (isDeposit ? "জমা সফল ✅" : "উত্তোলন সফল ✅") : (isDeposit ? "Deposit successful ✅" : "Withdrawal successful ✅"));
