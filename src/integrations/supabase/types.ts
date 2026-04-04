@@ -3091,34 +3091,6 @@ export type Database = {
           },
         ]
       }
-      mv_trial_balance: {
-        Row: {
-          account_type: string | null
-          coa_id: string | null
-          entry_count: number | null
-          last_entry_at: string | null
-          net_balance: number | null
-          tenant_id: string | null
-          total_credit: number | null
-          total_debit: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "double_entry_ledger_coa_id_fkey"
-            columns: ["coa_id"]
-            isOneToOne: false
-            referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "double_entry_ledger_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       view_ai_chip_usage: {
         Row: {
           chip_date: string | null
@@ -3403,6 +3375,18 @@ export type Database = {
           code: string
           name: string
           name_bn: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
+      get_trial_balance_fast: {
+        Args: never
+        Returns: {
+          account_type: string
+          coa_id: string
+          entry_count: number
+          last_entry_at: string
+          net_balance: number
           total_credit: number
           total_debit: number
         }[]
