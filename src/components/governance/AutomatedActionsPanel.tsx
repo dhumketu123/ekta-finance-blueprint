@@ -8,6 +8,7 @@ import {
   ACTION_STYLE_MAP,
   type ActionableQueueRow,
 } from "./escalationActions";
+import { EXTERNAL_ACTION_MAP, CHANNEL_STYLE_MAP } from "./externalIntegration";
 
 interface AutomatedActionsPanelProps {
   queue: QueueRow[];
@@ -44,22 +45,32 @@ export const AutomatedActionsPanel = memo(({ queue }: AutomatedActionsPanelProps
           </p>
         ) : (
           <div className="space-y-2">
-            {displayed.map((row) => (
-              <div
-                key={row.id}
-                className="flex items-center justify-between rounded-lg border border-border/40 bg-background/50 px-3 py-2 text-sm"
-              >
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="font-medium truncate">{row.client}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {row.days} দিন ওভারডিউ · Risk {row.risk}
-                  </span>
+            {displayed.map((row) => {
+              const channels = EXTERNAL_ACTION_MAP[row.nextAction]?.channels ?? [];
+              return (
+                <div
+                  key={row.id}
+                  className="flex items-center justify-between rounded-lg border border-border/40 bg-background/50 px-3 py-2 text-sm"
+                >
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="font-medium truncate">{row.client}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {row.days} দিন ওভারডিউ · Risk {row.risk}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                    {channels.map((ch) => (
+                      <Badge key={ch} variant="outline" className={`text-[10px] px-1.5 py-0 ${CHANNEL_STYLE_MAP[ch]}`}>
+                        {ch}
+                      </Badge>
+                    ))}
+                    <Badge className={ACTION_STYLE_MAP[row.nextAction]}>
+                      {row.nextAction}
+                    </Badge>
+                  </div>
                 </div>
-                <Badge className={`shrink-0 ml-2 ${ACTION_STYLE_MAP[row.nextAction]}`}>
-                  {row.nextAction}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
             {remaining > 0 && (
               <p className="text-xs text-muted-foreground text-center pt-1">
                 +{remaining} আরো অ্যাকশন
