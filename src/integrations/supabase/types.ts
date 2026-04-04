@@ -3379,6 +3379,18 @@ export type Database = {
           total_debit: number
         }[]
       }
+      get_trial_balance_fast: {
+        Args: never
+        Returns: {
+          account_type: string
+          coa_id: string
+          entry_count: number
+          last_entry_at: string
+          net_balance: number
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       get_user_role: { Args: never; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
@@ -3490,6 +3502,7 @@ export type Database = {
       }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
+      refresh_trial_balance_mv: { Args: never; Returns: undefined }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
         Returns: undefined
