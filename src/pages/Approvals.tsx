@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TablePagination from "@/components/TablePagination";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, XCircle, Clock, Loader2, Plus, Users } from "lucide-react";
-import { format } from "date-fns";
+import { formatLocalDateTime } from "@/lib/date-utils";
 import FieldOfficerCollectionForm from "@/components/forms/FieldOfficerCollectionForm";
 import BulkCollectionForm from "@/components/forms/BulkCollectionForm";
 import { useLanguage } from "@/contexts/LanguageContext";
