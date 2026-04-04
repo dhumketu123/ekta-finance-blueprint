@@ -104,7 +104,7 @@ const CommitmentAnalytics = () => {
 
   // Reschedule heatmap data
   const rescheduleHeatmap = (rescheduleRate || []).slice(0, 14).reverse().map((d: any) => ({
-    date: d.report_date ? format(new Date(d.report_date), "MMM dd") : "",
+    date: d.report_date ? formatChartDate(d.report_date, lang) : "",
     rate: Number(d.reschedule_rate_pct) || 0,
   }));
 
