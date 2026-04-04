@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import AppLayout from "@/components/AppLayout";
@@ -27,6 +28,7 @@ import { PriorityTable } from "@/components/governance/PriorityTable";
 import { DefaultPolicyPanel } from "@/components/governance/DefaultPolicyPanel";
 import { SystemHealthIndicator } from "@/components/governance/SystemHealthIndicator";
 import TablePagination from "@/components/TablePagination";
+import { GovernanceAlertsPanel } from "@/components/governance/GovernanceAlertsPanel";
 import type { SystemStatus } from "@/components/governance/types";
 
 const PAGE_SIZE = 10;
@@ -136,6 +138,18 @@ const GovernanceCore = () => {
     return () => clearInterval(interval);
   }, [fetchGovernanceData]);
 
+  // Real-time critical alert toast (fires once per data refresh, not on every render)
+  const prevCriticalRef = useRef(0);
+  useEffect(() => {
+    const criticalCount = queueRows.filter((q) => q.status === "Critical").length;
+    if (criticalCount > 0 && criticalCount !== prevCriticalRef.current) {
+      toast.error("Critical Clients Alert!", {
+        description: `${criticalCount} client(s) require immediate attention.`,
+      });
+    }
+    prevCriticalRef.current = criticalCount;
+  }, [queueRows]);
+
   // Memoized queue sorting by priority (highest first)
   const sortedQueue = useMemo(
     () => [...queueRows].sort((a, b) => b.priority - a.priority),
@@ -202,6 +216,10 @@ const GovernanceCore = () => {
             View Escalation Rules
           </Button>
         </div>
+
+        {/* ── SECTION 5: Alerts & Violations ── */}
+        <SectionHeader title="Alerts & Violations" subtitle="সতর্কতা ও নীতি লঙ্ঘন" className="mt-10" />
+        <GovernanceAlertsPanel queueRows={queueRows} />
 
         {/* ── Escalation Rules Modal ── */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
