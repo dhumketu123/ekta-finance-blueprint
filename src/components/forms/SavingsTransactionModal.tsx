@@ -462,10 +462,22 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
             const finalPhone = normalizePhone(successData.clientPhone);
             const mockTarget = successData.newBalance === 0 ? 10000 : Math.ceil(successData.newBalance / 50000) * 50000 + 10000;
             const remaining = Math.max(0, mockTarget - successData.newBalance);
-            const receiptMsg = isDeposit
-              ? `সম্মানিত ${successData.clientName},\nসঞ্চয় জমা ✅ ৳${successData.amount.toLocaleString()}\nমোট: ৳${successData.newBalance.toLocaleString()}${remaining > 0 ? ` বাকি: ৳${remaining.toLocaleString()}` : ""}\n— একতা ফাইন্যান্স`
-              : `সম্মানিত ${successData.clientName},\nসঞ্চয় উত্তোলন ✅ ৳${successData.amount.toLocaleString()}\nব্যালেন্স: ৳${successData.newBalance.toLocaleString()}\n— একতা ফাইন্যান্স`;
+            const receiptMsg = buildReceiptMessage({
+              type: isDeposit ? "savings_deposit" : "savings_withdrawal",
+              clientName: successData.clientName,
+              receiptNumber: successData.receiptNumber,
+              amount: successData.amount,
+              newBalance: successData.newBalance,
+              targetRemaining: isDeposit ? remaining : undefined,
+            });
             const encoded = encodeURIComponent(receiptMsg);
+            const handleSend = (channel: "whatsapp" | "sms") => {
+              if (user) {
+                logReceiptSend({ clientId: clientId, channel, messageBody: receiptMsg, receiptNumber: successData.receiptNumber, userId: user.id });
+              }
+              if (channel === "whatsapp") window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank");
+              else window.open(`sms:+${finalPhone}?body=${encoded}`, "_self");
+            };
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
                 <DrawerBody>
@@ -486,12 +498,12 @@ export default function SavingsTransactionModal({ open, onClose, prefillClientId
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                      {finalPhone && (
+                      {finalPhone && receiptMsg && (
                         <div className="flex gap-2 w-full">
-                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => handleSend("whatsapp")}>
                             <MessageCircle className="w-4 h-4" /> {bn ? "💬 স্মার্ট রসিদ" : "💬 Smart Receipt"}
                           </Button>
-                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => handleSend("sms")}>
                             <MessageSquare className="w-4 h-4" /> SMS
                           </Button>
                         </div>
