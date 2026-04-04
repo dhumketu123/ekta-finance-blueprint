@@ -2592,7 +2592,7 @@ export type Database = {
           sent_at: string | null
           sent_by: string | null
           status: string
-          tenant_id: string | null
+          tenant_id: string
           transaction_id: string | null
           updated_at: string
         }
@@ -2607,7 +2607,7 @@ export type Database = {
           sent_at?: string | null
           sent_by?: string | null
           status?: string
-          tenant_id?: string | null
+          tenant_id: string
           transaction_id?: string | null
           updated_at?: string
         }
@@ -2622,7 +2622,7 @@ export type Database = {
           sent_at?: string | null
           sent_by?: string | null
           status?: string
-          tenant_id?: string | null
+          tenant_id?: string
           transaction_id?: string | null
           updated_at?: string
         }
