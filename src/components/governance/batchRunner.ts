@@ -1,6 +1,7 @@
 import type { ExternalActionResult, ExternalChannel } from "./externalIntegration";
 import { runEscalationBatchWithExternal } from "./externalIntegration";
 import type { QueueRow } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ══════════════════════════════════════════════
    GOVERNANCE ACTION LOG
@@ -32,15 +33,41 @@ export const mapResultsToLogs = (results: ExternalActionResult[]): GovernanceAct
   }));
 
 /* ══════════════════════════════════════════════
-   AUDIT LOGGER (DB stub — ready for Supabase)
+   AUDIT LOGGER (writes to governance_action_logs)
    ══════════════════════════════════════════════ */
 
-export const logActionResults = async (results: ExternalActionResult[]): Promise<GovernanceActionLog[]> => {
+export const logActionResults = async (
+  results: ExternalActionResult[],
+  tenantId?: string,
+): Promise<GovernanceActionLog[]> => {
   const logs = mapResultsToLogs(results);
 
-  // Future: insert into governance_action_logs table via Supabase
-  // await supabase.from("governance_action_logs").insert(logs);
-  console.table(logs);
+  // Write to governance_action_logs table
+  if (logs.length > 0) {
+    try {
+      const dbRows = logs.map((l) => ({
+        id: l.id,
+        client_id: l.clientId,
+        action: l.action,
+        channel: l.channel,
+        success: l.success,
+        error: l.error || null,
+        tenant_id: tenantId || "default",
+        executed_at: l.executedAt,
+      }));
+
+      const { error } = await supabase
+        .from("governance_action_logs" as any)
+        .insert(dbRows);
+
+      if (error) {
+        console.error("[GovernanceAudit] DB insert failed:", error.message);
+      }
+    } catch (err) {
+      // Non-blocking: log but don't crash the batch
+      console.error("[GovernanceAudit] DB write error:", err instanceof Error ? err.message : err);
+    }
+  }
 
   return logs;
 };
@@ -56,9 +83,9 @@ export interface BatchRunResult {
   logs: GovernanceActionLog[];
 }
 
-export const runGovernanceBatch = async (queue: QueueRow[]): Promise<BatchRunResult> => {
+export const runGovernanceBatch = async (queue: QueueRow[], tenantId?: string): Promise<BatchRunResult> => {
   const { executed, results } = await runEscalationBatchWithExternal(queue);
-  const logs = await logActionResults(results);
+  const logs = await logActionResults(results, tenantId);
 
   return {
     executed,
