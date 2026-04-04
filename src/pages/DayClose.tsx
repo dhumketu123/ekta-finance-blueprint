@@ -168,7 +168,7 @@ const DayClose = () => {
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Lock className="h-3 w-3" />
-                  বন্ধ হয়েছে: {existing?.closed_at ? format(new Date(existing.closed_at), "hh:mm a") : ""}
+                  বন্ধ হয়েছে: {existing?.closed_at ? formatLocalDateTime(existing.closed_at, "bn", { timeOnly: true }) : ""}
                 </div>
               </div>
             ) : (
