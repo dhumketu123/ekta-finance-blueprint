@@ -22,6 +22,9 @@ import {
 import { verifyTransactionPin } from "@/services/transactionPinService";
 import ArcReactorButton from "@/components/ui/ArcReactorButton";
 import confetti from "canvas-confetti";
+import { normalizePhone } from "@/lib/phone-utils";
+import { buildReceiptMessage } from "@/services/messageBuilder";
+import { logReceiptSend } from "@/services/receiptAuditLogger";
 
 const schema = z.object({
   loan_id: z.string().uuid("Invalid Loan ID"),
@@ -58,6 +61,7 @@ interface PaymentResult {
   points_earned?: number;
   new_score?: number;
   new_tier?: string;
+  ft_id?: string;
 }
 
 export interface PendingTransaction {
@@ -99,6 +103,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [nextDueDate, setNextDueDate] = useState<string | null>(null);
+  const [receiptNumber, setReceiptNumber] = useState("");
 
   // PIN state
   const [pin, setPin] = useState(["", "", "", ""]);
@@ -241,6 +246,18 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
         }
       } catch { /* non-critical */ }
 
+      // Fetch receipt_number from financial_transactions
+      try {
+        if (paymentData.ft_id) {
+          const { data: ftRow } = await supabase
+            .from("financial_transactions")
+            .select("receipt_number")
+            .eq("id", paymentData.ft_id)
+            .maybeSingle();
+          if (ftRow?.receipt_number) setReceiptNumber(ftRow.receipt_number);
+        }
+      } catch { /* non-critical */ }
+
       confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 }, disableForReducedMotion: true });
       toast.success(bn ? "পেমেন্ট সফল ✅" : "Payment successful ✅");
       setPhase("success");
@@ -262,35 +279,27 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     setClientName("");
     setClientPhone("");
     setNextDueDate(null);
+    setReceiptNumber("");
     resetPin();
     onClose();
   }, [onClose, prefilledLoanId, resetPin, isLocked]);
 
-  // Build receipt message
+  // Build receipt message using central builder
   const buildReceiptMsg = useCallback(() => {
-    if (!result) return "";
-    const dps = Number(result.dps_collected || 0);
-    const loanPaid = Number(result.total_payment);
-    const totalInput = dps + loanPaid;
-    const remaining = Number(result.new_outstanding).toLocaleString();
-    const nextDateStr = nextDueDate
-      ? format(new Date(nextDueDate + "T00:00:00"), "dd/MM/yyyy")
-      : "";
-    const dpsLine = dps > 0 ? `\nসঞ্চয়: ৳${dps.toLocaleString()} ঋণ: ৳${loanPaid.toLocaleString()}` : "";
-    const pointsEarned = result.points_earned ?? 0;
-    const pointsLine = pointsEarned !== 0
-      ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${result.new_score ?? 0})`
-      : "";
-    return result.loan_closed
-      ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()}${pointsLine}\n— একতা ফাইন্যান্স`
-      : `সম্মানিত ${clientName},\nকিস্তি জমা হয়েছে ✅${dpsLine}\nমোট: ৳${totalInput.toLocaleString()} বকেয়া: ৳${remaining}${nextDateStr ? `\nআগামী কিস্তি: ${nextDateStr}` : ""}${pointsLine}\n— একতা ফাইন্যান্স`;
-  }, [result, clientName, nextDueDate]);
-
-  const normalizePhone = (phone: string) => {
-    const raw = phone.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d]/g, "");
-    const last10 = raw.slice(-10);
-    return last10.length === 10 ? "880" + last10 : "";
-  };
+    if (!result || !receiptNumber) return "";
+    return buildReceiptMessage({
+      type: "loan_payment",
+      clientName,
+      receiptNumber,
+      totalPayment: Number(result.total_payment),
+      dpsCollected: Number(result.dps_collected || 0),
+      newOutstanding: Number(result.new_outstanding),
+      loanClosed: result.loan_closed,
+      nextDueDate,
+      pointsEarned: result.points_earned,
+      currentScore: result.new_score,
+    });
+  }, [result, clientName, nextDueDate, receiptNumber]);
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
@@ -502,6 +511,13 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             const finalPhone = normalizePhone(clientPhone);
             const receiptMsg = buildReceiptMsg();
             const encoded = encodeURIComponent(receiptMsg);
+            const handleSend = (channel: "whatsapp" | "sms") => {
+              if (user && receiptNumber) {
+                logReceiptSend({ clientId: result.loan_id, loanId: form.loan_id, channel, messageBody: receiptMsg, receiptNumber, userId: user.id });
+              }
+              if (channel === "whatsapp") window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank");
+              else window.open(`sms:+${finalPhone}?body=${encoded}`, "_self");
+            };
             return (
               <motion.div key="success" {...vaultTransition} className="flex flex-col flex-1 min-h-0">
                 <DrawerBody>
@@ -582,12 +598,12 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
 
                     {/* WhatsApp + SMS receipt buttons */}
                     <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                      {finalPhone && (
+                      {finalPhone && receiptMsg && (
                         <div className="flex gap-2 w-full">
-                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => window.open(`https://wa.me/${finalPhone}?text=${encoded}`, "_blank")}>
+                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => handleSend("whatsapp")}>
                             <MessageCircle className="w-4 h-4" /> WhatsApp
                           </Button>
-                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => window.open(`sms:+${finalPhone}?body=${encoded}`, "_self")}>
+                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => handleSend("sms")}>
                             <MessageSquare className="w-4 h-4" /> SMS
                           </Button>
                         </div>
