@@ -883,6 +883,36 @@ export type Database = {
           },
         ]
       }
+      digest_queue: {
+        Row: {
+          created_at: string
+          id: string
+          notification_id: string
+          priority: string
+          processed: boolean
+          scheduled_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_id: string
+          priority?: string
+          processed?: boolean
+          scheduled_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_id?: string
+          priority?: string
+          processed?: boolean
+          scheduled_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       double_entry_ledger: {
         Row: {
           account_id: string
@@ -3392,6 +3422,14 @@ export type Database = {
         }
         Returns: Json
       }
+      dispatch_notification: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+      enqueue_digest: {
+        Args: { p_id: string; p_priority: string; p_user_id: string }
+        Returns: undefined
+      }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       generate_event_hash: {
         Args: {
@@ -3564,6 +3602,20 @@ export type Database = {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
       }
+      notify_dashboard_strip: {
+        Args: { p_id: string; p_message: string; p_title: string }
+        Returns: undefined
+      }
+      notify_user_bell: {
+        Args: {
+          p_id: string
+          p_message: string
+          p_priority: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
@@ -3666,6 +3718,17 @@ export type Database = {
       }
       seed_default_journal_rules: {
         Args: { p_tenant_id: string }
+        Returns: undefined
+      }
+      send_push_notification: {
+        Args: {
+          p_action_payload: Json
+          p_id: string
+          p_message: string
+          p_priority: string
+          p_title: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       send_sms: {
