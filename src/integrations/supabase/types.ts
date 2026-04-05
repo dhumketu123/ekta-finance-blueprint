@@ -1164,6 +1164,62 @@ export type Database = {
         }
         Relationships: []
       }
+      in_app_notifications: {
+        Row: {
+          action_payload: Json | null
+          created_at: string | null
+          event_type: string
+          id: string
+          is_archived: boolean | null
+          is_read: boolean | null
+          message: string
+          priority: string
+          role: string
+          source_module: string
+          tenant_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_payload?: Json | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          message: string
+          priority?: string
+          role: string
+          source_module: string
+          tenant_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_payload?: Json | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          priority?: string
+          role?: string
+          source_module?: string
+          tenant_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "in_app_notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_weekly_transactions: {
         Row: {
           amount: number
@@ -1847,6 +1903,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          digest_enabled: boolean | null
+          id: string
+          muted_categories: string[] | null
+          push_enabled: boolean | null
+          reminder_time: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          digest_enabled?: boolean | null
+          id?: string
+          muted_categories?: string[] | null
+          push_enabled?: boolean | null
+          reminder_time?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          digest_enabled?: boolean | null
+          id?: string
+          muted_categories?: string[] | null
+          push_enabled?: boolean | null
+          reminder_time?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -3253,6 +3339,20 @@ export type Database = {
             }
             Returns: Json
           }
+      create_notification: {
+        Args: {
+          p_action_payload?: Json
+          p_event_type: string
+          p_message: string
+          p_priority?: string
+          p_role: string
+          p_source_module: string
+          p_tenant_id: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       create_or_update_transaction_pin: {
         Args: { _new_pin: string }
         Returns: Json
