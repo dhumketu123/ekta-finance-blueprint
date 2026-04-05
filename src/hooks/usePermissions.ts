@@ -81,7 +81,7 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewSavings: true, canEditSavings: false,
     canViewOwners: false, canViewOfficers: false, canEditOfficers: false,
     canViewNotifications: false, canViewSettings: false, canViewReports: true,
-    canApproveTransactions: true, canRecordPayments: false, canDeleteMasterData: false,
+    canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
     canViewOwnWallet: false,
     isAdmin: false, isOwner: false, isTreasurer: true, isFieldOfficer: false, isInvestor: false,
   },
