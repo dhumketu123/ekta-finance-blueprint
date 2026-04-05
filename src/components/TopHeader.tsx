@@ -1,4 +1,5 @@
-import { Bell, Globe, Wifi, WifiOff, Menu, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
+import { Globe, Wifi, WifiOff, Menu, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import ProfileAvatarUpload from "@/components/ProfileAvatarUpload";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -137,17 +138,7 @@ const TopHeader = () => {
         </Button>
 
         {/* Notification Bell */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/notifications")}
-          className="relative h-9 w-9 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-        >
-          <Bell className="w-4.5 h-4.5" />
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center">
-            3
-          </span>
-        </Button>
+        <NotificationBell />
 
         {/* Profile Dropdown */}
         <div className="pl-2 border-l border-primary-foreground/20">
