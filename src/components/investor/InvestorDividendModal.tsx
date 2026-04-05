@@ -142,7 +142,8 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
         p_amount: payAmt,
         p_reinvest: isReinvest,
         p_actor_id: user.id,
-      });
+        p_accrue_profit: monthlyProfit,
+      } as any);
       if (rpcErr) throw rpcErr;
 
       queryClient.invalidateQueries({ queryKey: ["investors"] });
@@ -152,13 +153,18 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
       toast.success(bn ? "লভ্যাংশ প্রদান সফল ✅" : "Dividend paid successfully ✅");
       setPhase("success");
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
-      toast.error(errMsg || "Error");
+      const errMsg = err instanceof Error ? err.message : typeof err === "object" && err !== null && "message" in err ? String((err as any).message) : "";
+      console.error("[DividendPay] Error:", err);
+      if (errMsg.includes("Insufficient")) {
+        toast.error(bn ? "❌ পর্যাপ্ত লভ্যাংশ নেই। অনুগ্রহ করে পরিমাণ কমিয়ে চেষ্টা করুন।" : "❌ Insufficient dividend balance. Try a lower amount.");
+      } else {
+        toast.error(bn ? "❌ লভ্যাংশ প্রদানে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।" : "❌ Dividend payment failed. Please try again.");
+      }
       setPhase("confirm");
     } finally {
       setSubmitting(false);
     }
-  }, [user, dividendPayAmount, payoutMode, investor, bn, queryClient, submitting]);
+  }, [user, dividendPayAmount, payoutMode, investor, bn, queryClient, submitting, monthlyProfit]);
 
   const handleClose = useCallback(() => {
     setPhase("form");
