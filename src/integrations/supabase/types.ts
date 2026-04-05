@@ -3262,6 +3262,7 @@ export type Database = {
         Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
         Returns: Json
       }
+      archive_notification: { Args: { p_id: string }; Returns: undefined }
       archive_old_audit_logs: { Args: { p_cutoff: string }; Returns: number }
       archive_old_financial_transactions: {
         Args: { p_cutoff: string }
@@ -3339,20 +3340,36 @@ export type Database = {
             }
             Returns: Json
           }
-      create_notification: {
-        Args: {
-          p_action_payload?: Json
-          p_event_type: string
-          p_message: string
-          p_priority?: string
-          p_role: string
-          p_source_module: string
-          p_tenant_id: string
-          p_title: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      create_notification:
+        | {
+            Args: {
+              p_action_payload?: Json
+              p_event_type: string
+              p_message: string
+              p_priority?: string
+              p_role: string
+              p_source_module: string
+              p_tenant_id: string
+              p_title: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_action_payload?: Json
+              p_event_type: string
+              p_message: string
+              p_priority?: string
+              p_reference?: string
+              p_role: string
+              p_source_module: string
+              p_tenant_id: string
+              p_title: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       create_or_update_transaction_pin: {
         Args: { _new_pin: string }
         Returns: Json
@@ -3541,6 +3558,8 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_notification_read: { Args: { p_id: string }; Returns: undefined }
       mark_schedule_payment: {
         Args: { _amount: number; _loan_id: string; _paid_date?: string }
         Returns: undefined
