@@ -1,4 +1,5 @@
-import { Bell, Globe, Wifi, WifiOff, Menu, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
+import { Globe, Wifi, WifiOff, Menu, Sun, Moon, User, KeyRound, LogOut, Camera } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import ProfileAvatarUpload from "@/components/ProfileAvatarUpload";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
