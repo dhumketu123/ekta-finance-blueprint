@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,7 +63,8 @@ const FinancialTransactionsPage = () => {
   const [receiptView, setReceiptView] = useState<FinancialTransaction | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-
+  const [approveTarget, setApproveTarget] = useState<{ id: string; manual: boolean } | null>(null);
+  const [approveReason, setApproveReason] = useState("");
   const statusFilter = tab === "all" ? undefined : tab as ApprovalStatus;
   const { data: transactions, isLoading } = useFinancialTransactions(statusFilter);
   const approveMut = useApproveFinancialTransaction();
@@ -87,12 +88,21 @@ const FinancialTransactionsPage = () => {
 
   const handleApprove = (txId: string, manual: boolean) => {
     if (manual) {
-      const reason = prompt(lang === "bn" ? "অনুমোদনের কারণ লিখুন:" : "Enter approval reason:");
-      if (!reason) return;
-      approveMut.mutate({ txId, reason });
+      setApproveTarget({ id: txId, manual: true });
+      setApproveReason("");
     } else {
-      approveMut.mutate({ txId });
+      setApproveTarget({ id: txId, manual: false });
+      setApproveReason("");
     }
+  };
+
+  const confirmApprove = () => {
+    if (!approveTarget) return;
+    if (approveTarget.manual && !approveReason.trim()) return;
+    approveMut.mutate(
+      { txId: approveTarget.id, reason: approveReason.trim() || undefined },
+      { onSuccess: () => { setApproveTarget(null); setApproveReason(""); } }
+    );
   };
 
   const handleReject = () => {
@@ -399,7 +409,46 @@ const FinancialTransactionsPage = () => {
         </Dialog>
       )}
 
-      {/* Create Transaction Dialog */}
+      {/* Approve Dialog */}
+      <Dialog open={!!approveTarget} onOpenChange={(o) => { if (!o) { setApproveTarget(null); setApproveReason(""); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-success" />
+              {lang === "bn" ? "লেনদেন অনুমোদন" : "Approve Transaction"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {approveTarget?.manual
+                ? (lang === "bn" ? "ম্যানুয়াল লেনদেন — অনুমোদনের কারণ আবশ্যক" : "Manual transaction — reason required")
+                : (lang === "bn" ? "অনুমোদনের কারণ লিখুন (ঐচ্ছিক)" : "Enter approval reason (optional)")
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={approveReason}
+            onChange={(e) => setApproveReason(e.target.value)}
+            placeholder={lang === "bn" ? "কারণ লিখুন..." : "Enter reason..."}
+            rows={3}
+            className="text-sm"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => { setApproveTarget(null); setApproveReason(""); }} className="text-xs">
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={confirmApprove}
+              disabled={approveMut.isPending || (approveTarget?.manual && !approveReason.trim())}
+              className="text-xs bg-success hover:bg-success/90 text-success-foreground"
+            >
+              {approveMut.isPending && <Clock className="w-3.5 h-3.5 mr-1 animate-spin" />}
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+              {lang === "bn" ? "অনুমোদন করুন" : "Confirm Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {createOpen && <CreateTransactionDialog open={createOpen} onClose={() => setCreateOpen(false)} lang={lang} />}
       
       {/* Smart Transaction Form */}
