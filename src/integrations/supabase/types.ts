@@ -1855,6 +1855,42 @@ export type Database = {
           },
         ]
       }
+      notification_analytics: {
+        Row: {
+          channel: string
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          ignored: boolean
+          notification_id: string
+          opened_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          ignored?: boolean
+          notification_id: string
+          opened_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          ignored?: boolean
+          notification_id?: string
+          opened_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_logs: {
         Row: {
           channel: string
@@ -1960,6 +1996,39 @@ export type Database = {
           muted_categories?: string[] | null
           push_enabled?: boolean | null
           reminder_time?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_retry_queue: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          failed: boolean
+          id: string
+          last_attempt: string | null
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          created_at?: string
+          failed?: boolean
+          id?: string
+          last_attempt?: string | null
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          failed?: boolean
+          id?: string
+          last_attempt?: string | null
+          notification_id?: string
           user_id?: string
         }
         Relationships: []
@@ -3317,6 +3386,10 @@ export type Database = {
         Args: { _created_by?: string; _period_month: string }
         Returns: Json
       }
+      calculate_priority: {
+        Args: { p_notification_id: string }
+        Returns: string
+      }
       can_export: { Args: never; Returns: boolean }
       check_and_apply_overdue_penalty: {
         Args: { _penalty_percent?: number }
@@ -3423,6 +3496,10 @@ export type Database = {
         Returns: Json
       }
       dispatch_notification: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+      dispatch_notification_advanced: {
         Args: { p_notification_id: string }
         Returns: undefined
       }
@@ -3587,6 +3664,18 @@ export type Database = {
         Returns: Json
       }
       lock_expired_subscriptions: { Args: never; Returns: undefined }
+      log_notification_click: {
+        Args: { p_notification_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      log_notification_ignore: {
+        Args: { p_notification_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      log_notification_open: {
+        Args: { p_notification_id: string; p_user_id: string }
+        Returns: undefined
+      }
       map_transaction_to_journal: {
         Args: {
           p_amount: number
@@ -3619,6 +3708,7 @@ export type Database = {
       populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
+      process_digest: { Args: never; Returns: undefined }
       process_ghost_penalties: { Args: never; Returns: Json }
       process_investor_capital_injection: {
         Args: {
@@ -3749,6 +3839,10 @@ export type Database = {
         Returns: Json
       }
       suspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
+      sync_notification_status: {
+        Args: { p_action: string; p_notification_id: string; p_user_id: string }
+        Returns: undefined
+      }
       sync_overdue_schedules: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
       unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
