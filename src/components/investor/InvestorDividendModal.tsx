@@ -164,7 +164,7 @@ export function InvestorDividendModal({ open, onClose, investor, capital, profit
     } finally {
       setSubmitting(false);
     }
-  }, [user, dividendPayAmount, payoutMode, investor, bn, queryClient, submitting]);
+  }, [user, dividendPayAmount, payoutMode, investor, bn, queryClient, submitting, monthlyProfit]);
 
   const handleClose = useCallback(() => {
     setPhase("form");
