@@ -88,12 +88,21 @@ const FinancialTransactionsPage = () => {
 
   const handleApprove = (txId: string, manual: boolean) => {
     if (manual) {
-      const reason = prompt(lang === "bn" ? "অনুমোদনের কারণ লিখুন:" : "Enter approval reason:");
-      if (!reason) return;
-      approveMut.mutate({ txId, reason });
+      setApproveTarget({ id: txId, manual: true });
+      setApproveReason("");
     } else {
-      approveMut.mutate({ txId });
+      setApproveTarget({ id: txId, manual: false });
+      setApproveReason("");
     }
+  };
+
+  const confirmApprove = () => {
+    if (!approveTarget) return;
+    if (approveTarget.manual && !approveReason.trim()) return;
+    approveMut.mutate(
+      { txId: approveTarget.id, reason: approveReason.trim() || undefined },
+      { onSuccess: () => { setApproveTarget(null); setApproveReason(""); } }
+    );
   };
 
   const handleReject = () => {
