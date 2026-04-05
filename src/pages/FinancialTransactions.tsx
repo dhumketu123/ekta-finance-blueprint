@@ -409,7 +409,46 @@ const FinancialTransactionsPage = () => {
         </Dialog>
       )}
 
-      {/* Create Transaction Dialog */}
+      {/* Approve Dialog */}
+      <Dialog open={!!approveTarget} onOpenChange={(o) => { if (!o) { setApproveTarget(null); setApproveReason(""); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-success" />
+              {lang === "bn" ? "লেনদেন অনুমোদন" : "Approve Transaction"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {approveTarget?.manual
+                ? (lang === "bn" ? "ম্যানুয়াল লেনদেন — অনুমোদনের কারণ আবশ্যক" : "Manual transaction — reason required")
+                : (lang === "bn" ? "অনুমোদনের কারণ লিখুন (ঐচ্ছিক)" : "Enter approval reason (optional)")
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={approveReason}
+            onChange={(e) => setApproveReason(e.target.value)}
+            placeholder={lang === "bn" ? "কারণ লিখুন..." : "Enter reason..."}
+            rows={3}
+            className="text-sm"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => { setApproveTarget(null); setApproveReason(""); }} className="text-xs">
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={confirmApprove}
+              disabled={approveMut.isPending || (approveTarget?.manual && !approveReason.trim())}
+              className="text-xs bg-success hover:bg-success/90 text-success-foreground"
+            >
+              {approveMut.isPending && <Clock className="w-3.5 h-3.5 mr-1 animate-spin" />}
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+              {lang === "bn" ? "অনুমোদন করুন" : "Confirm Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {createOpen && <CreateTransactionDialog open={createOpen} onClose={() => setCreateOpen(false)} lang={lang} />}
       
       {/* Smart Transaction Form */}
