@@ -3719,15 +3719,26 @@ export type Database = {
         }
         Returns: undefined
       }
-      process_investor_dividend: {
-        Args: {
-          p_actor_id?: string
-          p_amount: number
-          p_investor_id: string
-          p_reinvest?: boolean
-        }
-        Returns: undefined
-      }
+      process_investor_dividend:
+        | {
+            Args: {
+              p_actor_id?: string
+              p_amount: number
+              p_investor_id: string
+              p_reinvest?: boolean
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_accrue_profit?: number
+              p_actor_id?: string
+              p_amount: number
+              p_investor_id: string
+              p_reinvest: boolean
+            }
+            Returns: undefined
+          }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
