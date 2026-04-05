@@ -27,10 +27,10 @@ const PageHeader = ({ title, description, actions, badge }: PageHeaderProps) => 
   }, [navigate, location.pathname]);
 
   return (
-    <div className="w-full py-3 md:py-5 mb-3 md:mb-5">
-      {/* Top row: back + badge + spacer */}
-      <div className="flex items-center gap-3 mb-2">
-        {!isHome && (
+    <div className="w-full flex flex-col items-center justify-center text-center py-3 md:py-5 mb-2 md:mb-4">
+      {/* Back button — floated top-left */}
+      {!isHome && (
+        <div className="w-full flex justify-start mb-2">
           <button
             type="button"
             onClick={handleBack}
@@ -39,29 +39,31 @@ const PageHeader = ({ title, description, actions, badge }: PageHeaderProps) => 
           >
             <ArrowLeft className="w-4.5 h-4.5 text-primary group-hover:text-primary-foreground transition-colors duration-200" />
           </button>
-        )}
-        {badge && (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-            {badge}
-          </span>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Badge */}
+      {badge && (
+        <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 mb-2">
+          {badge}
+        </span>
+      )}
 
       {/* Title */}
-      <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
         {title}
       </h1>
 
       {/* Description */}
       {description && (
-        <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-xl font-medium leading-relaxed">
+        <p className="text-sm md:text-base text-muted-foreground mt-1.5 max-w-lg mx-auto font-medium">
           {description}
         </p>
       )}
 
       {/* Actions */}
       {actions && (
-        <div className="flex gap-2 flex-shrink-0 flex-wrap mt-3">
+        <div className="flex gap-2 flex-shrink-0 flex-wrap justify-center mt-3">
           {actions}
         </div>
       )}
