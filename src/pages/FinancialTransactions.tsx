@@ -63,7 +63,8 @@ const FinancialTransactionsPage = () => {
   const [receiptView, setReceiptView] = useState<FinancialTransaction | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-
+  const [approveTarget, setApproveTarget] = useState<{ id: string; manual: boolean } | null>(null);
+  const [approveReason, setApproveReason] = useState("");
   const statusFilter = tab === "all" ? undefined : tab as ApprovalStatus;
   const { data: transactions, isLoading } = useFinancialTransactions(statusFilter);
   const approveMut = useApproveFinancialTransaction();
