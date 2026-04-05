@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
 
 export interface AppNotification {
   id: string;
@@ -28,13 +27,28 @@ export const useNotifications = () => {
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  const recalcUnread = useCallback((list: AppNotification[]) => {
-    return list.filter((n) => !n.is_read && !n.is_archived).length;
-  }, []);
+  /* ── helpers ────────────────────────────────── */
+  const recalcUnread = useCallback(
+    (list: AppNotification[]) =>
+      list.filter((n) => !n.is_read && !n.is_archived).length,
+    []
+  );
 
-  // Initial fetch
+  const updateList = useCallback(
+    (fn: (prev: AppNotification[]) => AppNotification[]) => {
+      setNotifications((prev) => {
+        const next = fn(prev);
+        setUnreadCount(next.filter((n) => !n.is_read && !n.is_archived).length);
+        return next;
+      });
+    },
+    []
+  );
+
+  /* ── initial fetch + realtime ───────────────── */
   useEffect(() => {
     mountedRef.current = true;
+
     if (!user?.id) {
       setNotifications([]);
       setUnreadCount(0);
@@ -44,29 +58,33 @@ export const useNotifications = () => {
 
     const fetchNotifications = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from("in_app_notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_archived", false)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      try {
+        const { data, error } = await supabase
+          .from("in_app_notifications")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_archived", false)
+          .order("created_at", { ascending: false })
+          .limit(100);
 
-      if (!mountedRef.current) return;
-
-      if (!error && data) {
-        const typed = data as unknown as AppNotification[];
-        setNotifications(typed);
-        setUnreadCount(recalcUnread(typed));
+        if (!mountedRef.current) return;
+        if (!error && data) {
+          const typed = data as unknown as AppNotification[];
+          setNotifications(typed);
+          setUnreadCount(typed.filter((n) => !n.is_read && !n.is_archived).length);
+        }
+      } catch (err) {
+        console.error("[useNotifications] fetch error:", err);
+      } finally {
+        if (mountedRef.current) setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchNotifications();
 
-    // Realtime subscription
+    // Realtime: INSERT + UPDATE (DELETE not expected due to archive pattern)
     const channel = supabase
-      .channel(`notif_${user.id}`)
+      .channel(`notif_realtime_${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -78,12 +96,27 @@ export const useNotifications = () => {
         (payload) => {
           if (!mountedRef.current) return;
           const newNotif = payload.new as unknown as AppNotification;
-          setNotifications((prev) => {
-            // Deduplicate
+          updateList((prev) => {
             if (prev.some((n) => n.id === newNotif.id)) return prev;
-            const updated = [newNotif, ...prev].slice(0, 100);
-            setUnreadCount(recalcUnread(updated));
-            return updated;
+            return [newNotif, ...prev].slice(0, 100);
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "in_app_notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (!mountedRef.current) return;
+          const updated = payload.new as unknown as AppNotification;
+          updateList((prev) => {
+            // If archived via another device, remove from list
+            if (updated.is_archived) return prev.filter((n) => n.id !== updated.id);
+            return prev.map((n) => (n.id === updated.id ? { ...n, ...updated } : n));
           });
         }
       )
@@ -93,47 +126,51 @@ export const useNotifications = () => {
       mountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [user?.id, recalcUnread]);
+  }, [user?.id, updateList]);
 
+  /* ── actions (optimistic + RPC) ─────────────── */
   const markAsRead = useCallback(
     async (id: string) => {
-      // Optimistic update
-      setNotifications((prev) => {
-        const updated = prev.map((n) =>
+      updateList((prev) =>
+        prev.map((n) =>
           n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
-        );
-        setUnreadCount(recalcUnread(updated));
-        return updated;
-      });
-      await supabase.rpc("mark_notification_read", { p_id: id });
+        )
+      );
+      try {
+        await supabase.rpc("mark_notification_read", { p_id: id });
+      } catch (err) {
+        console.error("[useNotifications] markAsRead RPC failed:", err);
+      }
     },
-    [recalcUnread]
+    [updateList]
   );
 
   const archive = useCallback(
     async (id: string) => {
-      setNotifications((prev) => {
-        const updated = prev.filter((n) => n.id !== id);
-        setUnreadCount(recalcUnread(updated));
-        return updated;
-      });
-      await supabase.rpc("archive_notification", { p_id: id });
+      updateList((prev) => prev.filter((n) => n.id !== id));
+      try {
+        await supabase.rpc("archive_notification", { p_id: id });
+      } catch (err) {
+        console.error("[useNotifications] archive RPC failed:", err);
+      }
     },
-    [recalcUnread]
+    [updateList]
   );
 
   const markAllAsRead = useCallback(async () => {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({
+    updateList((prev) =>
+      prev.map((n) => ({
         ...n,
         is_read: true,
         read_at: n.read_at || new Date().toISOString(),
-      }));
-      setUnreadCount(0);
-      return updated;
-    });
-    await supabase.rpc("mark_all_notifications_read");
-  }, []);
+      }))
+    );
+    try {
+      await supabase.rpc("mark_all_notifications_read");
+    } catch (err) {
+      console.error("[useNotifications] markAllAsRead RPC failed:", err);
+    }
+  }, [updateList]);
 
   return {
     notifications,
