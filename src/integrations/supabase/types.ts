@@ -3376,6 +3376,15 @@ export type Database = {
         Returns: Json
       }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      generate_event_hash: {
+        Args: {
+          p_event_type: string
+          p_reference?: string
+          p_source_module: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       generate_loan_schedule: {
         Args: {
           _client_id: string
