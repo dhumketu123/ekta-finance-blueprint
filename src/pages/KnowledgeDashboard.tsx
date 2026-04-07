@@ -5,16 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PageHeader from "@/components/PageHeader";
 import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
 import { useKnowledgeDashboardAutoRefresh } from "@/hooks/useKnowledgeDashboardAutoRefresh";
-import { useSystemHealth } from "@/hooks/useSystemHealth";
+import { useSystemHealth, useHealthTrend, useHealthRealtime } from "@/hooks/useSystemHealth";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
   CheckCircle2, AlertTriangle, Clock, Cpu, HeartPulse,
+  ChevronDown, Info,
 } from "lucide-react";
 import { format } from "date-fns";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 
 const NODE_TYPE_CONFIG: Record<string, { icon: typeof Brain; label: string; color: string }> = {
   table: { icon: Database, label: "টেবিল", color: "bg-blue-500/15 text-blue-600" },
@@ -34,9 +38,17 @@ const CriticalityBar = ({ value }: { value: number }) => (
   </div>
 );
 
+const STATUS_ICON: Record<string, string> = { pass: "✓", warn: "⚠", fail: "✗" };
+const STATUS_COLOR: Record<string, string> = {
+  pass: "text-emerald-600",
+  warn: "text-amber-500",
+  fail: "text-destructive",
+};
+
 export default function KnowledgeDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedType, setSelectedType] = useState<string | undefined>();
+  const [healthExpanded, setHealthExpanded] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useKnowledgeStats();
   const { data: nodes = [], isLoading: nodesLoading } = useKnowledgeNodes(selectedType);
@@ -45,6 +57,8 @@ export default function KnowledgeDashboard() {
   useKnowledgeRealtime();
   useKnowledgeDashboardAutoRefresh();
   const { data: health } = useSystemHealth();
+  const trendData = useHealthTrend(health);
+  useHealthRealtime();
 
   const filteredNodes = useMemo(() => {
     if (!selectedType) return nodes;
@@ -52,6 +66,16 @@ export default function KnowledgeDashboard() {
   }, [nodes, selectedType]);
 
   const lastSync = syncLogs[0];
+
+  // Format trend data for chart
+  const chartData = useMemo(() => {
+    return trendData.map((p) => ({
+      time: format(new Date(p.timestamp), "HH:mm"),
+      পাস: p.pass,
+      সতর্কতা: p.warn,
+      ব্যর্থ: p.fail,
+    }));
+  }, [trendData]);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -101,8 +125,8 @@ export default function KnowledgeDashboard() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Activity className="h-5 w-5 text-amber-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Activity className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.avgCriticality ?? "—"}</p>
@@ -114,8 +138,8 @@ export default function KnowledgeDashboard() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -128,33 +152,69 @@ export default function KnowledgeDashboard() {
         </Card>
       </div>
 
-      {/* System Health Strip */}
+      {/* Expandable System Health Card */}
       {health && (
-        <Card className={health.status === "unhealthy" ? "border-destructive" : health.status === "degraded" ? "border-amber-500" : "border-emerald-500/50"}>
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <HeartPulse className={`h-5 w-5 ${health.status === "healthy" ? "text-emerald-500" : health.status === "degraded" ? "text-amber-500" : "text-destructive"}`} />
-                <div>
-                  <p className="font-semibold text-sm">
-                    সিস্টেম হেলথ: {health.status === "healthy" ? "✅ সুস্থ" : health.status === "degraded" ? "⚠️ ক্ষয়প্রাপ্ত" : "❌ অসুস্থ"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    ✓ {health.summary.pass} পাস · ⚠ {health.summary.warn} সতর্কতা · ✗ {health.summary.fail} ব্যর্থ · {health.total_latency_ms}ms
-                  </p>
+        <Collapsible open={healthExpanded} onOpenChange={setHealthExpanded}>
+          <Card className={
+            health.status === "unhealthy" ? "border-destructive"
+            : health.status === "degraded" ? "border-amber-500"
+            : "border-emerald-500/50"
+          }>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <HeartPulse className={`h-5 w-5 ${
+                      health.status === "healthy" ? "text-emerald-500"
+                      : health.status === "degraded" ? "text-amber-500"
+                      : "text-destructive"
+                    }`} />
+                    <div>
+                      <p className="font-semibold text-sm">
+                        সিস্টেম হেলথ: {health.status === "healthy" ? "✅ সুস্থ" : health.status === "degraded" ? "⚠️ ক্ষয়প্রাপ্ত" : "❌ অসুস্থ"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ✓ {health.summary.pass} পাস · ⚠ {health.summary.warn} সতর্কতা · ✗ {health.summary.fail} ব্যর্থ · {health.total_latency_ms}ms
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${healthExpanded ? "rotate-180" : ""}`} />
                 </div>
-              </div>
-              {health.checks?.find(c => c.name === "knowledge_sync") && (
-                <Badge variant={
-                  health.checks.find(c => c.name === "knowledge_sync")!.status === "pass" ? "default" :
-                  health.checks.find(c => c.name === "knowledge_sync")!.status === "warn" ? "secondary" : "destructive"
-                }>
-                  সিঙ্ক: {health.checks.find(c => c.name === "knowledge_sync")!.detail?.slice(0, 40)}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-4 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <TooltipProvider>
+                    {health.checks?.map((check) => (
+                      <Tooltip key={check.name}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-between p-2 rounded-md bg-muted/40">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-bold ${STATUS_COLOR[check.status]}`}>
+                                {STATUS_ICON[check.status]}
+                              </span>
+                              <span className="text-sm font-medium">{check.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {check.latency_ms != null && (
+                                <span className="text-xs text-muted-foreground">{check.latency_ms}ms</span>
+                              )}
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">{check.detail || "কোনো বিবরণ নেই"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       )}
 
       {/* Type Distribution */}
@@ -194,6 +254,7 @@ export default function KnowledgeDashboard() {
         <TabsList>
           <TabsTrigger value="overview">নোড তালিকা</TabsTrigger>
           <TabsTrigger value="sync">সিঙ্ক লগ</TabsTrigger>
+          <TabsTrigger value="trend">হেলথ ট্রেন্ড</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -269,12 +330,13 @@ export default function KnowledgeDashboard() {
                     <TableHead>নোড</TableHead>
                     <TableHead>সময়</TableHead>
                     <TableHead>তারিখ</TableHead>
+                    <TableHead>ত্রুটি</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {syncLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         কোনো সিঙ্ক লগ নেই
                       </TableCell>
                     </TableRow>
@@ -282,7 +344,7 @@ export default function KnowledgeDashboard() {
                     syncLogs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell>
-                          <Badge variant={log.status === "completed" ? "default" : "destructive"}>
+                          <Badge variant={log.status === "completed" ? "default" : log.status === "running" ? "secondary" : "destructive"}>
                             {log.status === "completed" ? "✅ সম্পূর্ণ" : log.status === "running" ? "⏳ চলছে" : "❌ ব্যর্থ"}
                           </Badge>
                         </TableCell>
@@ -292,11 +354,58 @@ export default function KnowledgeDashboard() {
                         <TableCell className="text-xs">
                           {format(new Date(log.started_at), "dd MMM yyyy HH:mm")}
                         </TableCell>
+                        <TableCell>
+                          {log.errors && log.errors.length > 0 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge variant="destructive" className="text-xs">{log.errors.length} ত্রুটি</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-sm">
+                                  <ul className="text-xs space-y-1">
+                                    {log.errors.slice(0, 5).map((e, i) => <li key={i}>• {e}</li>)}
+                                    {log.errors.length > 5 && <li>...আরো {log.errors.length - 5}টি</li>}
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 24h Health Trend Tab */}
+        <TabsContent value="trend" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">২৪ ঘণ্টার হেলথ ট্রেন্ড</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {chartData.length < 2 ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">
+                  ট্রেন্ড ডেটা সংগ্রহ হচ্ছে — কিছুক্ষণ পর আবার দেখুন
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="time" className="text-xs" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <Legend />
+                    <Area type="monotone" dataKey="পাস" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.3)" />
+                    <Area type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b33" />
+                    <Area type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.3)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
