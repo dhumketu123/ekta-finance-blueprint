@@ -53,7 +53,27 @@ class SystemMonitor {
     }
   }
 
+  public trackEvent(eventName: string, payload?: Record<string, any>) {
+    const eventPayload = {
+      name: eventName,
+      timestamp: Date.now(),
+      details: payload ?? {},
+    };
+
+    if (import.meta.env.DEV) {
+      console.debug("[TrackEvent]", eventPayload);
+    }
+
+    if (this.telemetryAdapter) {
+      this.telemetryAdapter("metric", eventPayload);
+    }
+  }
+
   public setTelemetryAdapter(
+    adapter: (type: "metric" | "error", payload: any) => void
+  ) {
+    this.telemetryAdapter = adapter;
+  }
     adapter: (type: "metric" | "error", payload: any) => void
   ) {
     this.telemetryAdapter = adapter;

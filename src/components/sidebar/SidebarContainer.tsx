@@ -10,6 +10,7 @@ import SidebarBrand from "./SidebarBrand";
 import SidebarNavGroup from "./SidebarNavGroup";
 import SidebarFooter from "./SidebarFooter";
 import SidebarErrorBoundaryWrapper from "./SidebarErrorBoundaryWrapper";
+import { useSidebarTelemetry } from "./useSidebarTelemetry";
 import type { NavGroup } from "@/config/navigation";
 
 function filterGroupsByRole(groups: NavGroup[], role: AppRole | null): NavGroup[] {
