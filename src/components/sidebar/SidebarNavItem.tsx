@@ -1,30 +1,37 @@
+import React from "react";
+import { NavLink } from "react-router-dom";
 import type { NavItem } from "@/config/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SidebarNavItemProps {
   item: NavItem;
-  isActive?: boolean;
+  onClick?: () => void;
 }
 
-const SidebarNavItem = ({ item, isActive = false }: SidebarNavItemProps) => {
+const SidebarNavItem = React.memo(({ item, onClick }: SidebarNavItemProps) => {
   const Icon = item.icon;
+  const { lang } = useLanguage();
+  const label = lang === "bn" && item.labelBn ? item.labelBn : item.label;
 
   return (
-    <a
-      href={item.path}
-      className={`
-        flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-        transition-colors duration-100
-        ${
+    <NavLink
+      to={item.path}
+      end={item.path === "/"}
+      onClick={onClick}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-100 ${
           isActive
             ? "bg-primary/10 text-primary"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
-        }
-      `}
+        }`
+      }
     >
       <Icon className="h-4 w-4 shrink-0" />
-      <span>{item.label}</span>
-    </a>
+      <span>{label}</span>
+    </NavLink>
   );
-};
+});
+
+SidebarNavItem.displayName = "SidebarNavItem";
 
 export default SidebarNavItem;
