@@ -1,117 +1,156 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type OnboardRole = "client" | "investor" | "officer";
+export type OnboardRole = "client" | "investor" | "officer";
 
-interface OnboardEntry {
+export interface OnboardEntry {
   name_en: string;
-  phone?: string | null;
-  email?: string | null;
+  name_bn: string;
+  phone: string;
+  area?: string;
+  email?: string;
+  notes?: string;
 }
 
-interface NotifyOptions {
-  userId: string;
-  tenantId: string;
-  role: OnboardRole;
-  entries: OnboardEntry[];
+export interface ChannelResult {
+  channel: "In-App" | "SMS" | "Email";
+  ok: boolean;
+  detail: string;
 }
 
-interface OnboardNotifyResult {
+export interface OnboardNotifyResult {
   name: string;
   status: "success" | "failed";
-  messages: string[];
+  channels: ChannelResult[];
 }
 
-const ROLE_LABEL_BN: Record<OnboardRole, string> = {
+const ROLE_BN: Record<OnboardRole, string> = {
   client: "গ্রাহক",
   investor: "বিনিয়োগকারী",
   officer: "মাঠকর্মী",
 };
 
-/**
- * Dispatches multi-channel notifications (In-App + SMS + Email)
- * for each onboarded entry. Each channel is independent —
- * failure in one does not block others.
- */
-export const notifyBulkOnboard = async (opts: NotifyOptions): Promise<OnboardNotifyResult[]> => {
-  const results: OnboardNotifyResult[] = [];
-
-  for (const entry of opts.entries) {
-    const result: OnboardNotifyResult = { name: entry.name_en, status: "success", messages: [] };
-
-    // 1️⃣ In-App notification via SECURITY DEFINER RPC
+// ── Retry helper: exponential backoff, max 3 attempts ──
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
+  let lastErr: any;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      await supabase.rpc("dispatch_notification" as any, {
-        p_user_id: opts.userId,
-        p_tenant_id: opts.tenantId,
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 500));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+async function sendInApp(entry: OnboardEntry, role: OnboardRole, tenantId: string, userId: string): Promise<ChannelResult> {
+  try {
+    await withRetry(async () => {
+      const { error } = await supabase.rpc("dispatch_notification" as any, {
+        p_user_id: userId,
+        p_tenant_id: tenantId,
         p_title: `${entry.name_en} অনবোর্ড সম্পন্ন`,
-        p_message: `${ROLE_LABEL_BN[opts.role]} "${entry.name_en}" সফলভাবে যোগ হয়েছে।`,
+        p_message: `${ROLE_BN[role]} "${entry.name_en}" সফলভাবে যোগ হয়েছে।`,
         p_event_type: "bulk_onboard",
         p_source_module: "onboarding",
         p_role: "admin",
         p_priority: "LOW",
       });
-      result.messages.push("In-App ✅");
-    } catch (err: any) {
-      result.messages.push(`In-App ❌ ${err.message || ""}`);
-    }
+      if (error) throw error;
+    });
+    return { channel: "In-App", ok: true, detail: "✅" };
+  } catch (err: any) {
+    return { channel: "In-App", ok: false, detail: err.message || "Failed" };
+  }
+}
 
-    // 2️⃣ SMS via BulkSMSBD gateway
-    try {
-      if (entry.phone?.trim()) {
-        await supabase.rpc("send_sms" as any, {
-          p_recipient: entry.phone.trim(),
-          p_message: `স্বাগতম ${entry.name_en}! আপনার ${ROLE_LABEL_BN[opts.role]} অ্যাকাউন্ট Ekta Finance-এ তৈরি হয়েছে।`,
-          p_recipient_name: entry.name_en,
-          p_message_type: "onboarding",
-        });
-        result.messages.push("SMS ✅");
-      }
-    } catch (err: any) {
-      result.messages.push(`SMS ❌ ${err.message || ""}`);
-    }
+async function sendSms(entry: OnboardEntry, role: OnboardRole): Promise<ChannelResult | null> {
+  if (!entry.phone?.trim()) return null;
+  try {
+    await withRetry(async () => {
+      const { error } = await supabase.rpc("send_sms" as any, {
+        p_recipient: entry.phone.trim(),
+        p_message: `স্বাগতম ${entry.name_en}! আপনার ${ROLE_BN[role]} অ্যাকাউন্ট Ekta Finance-এ তৈরি হয়েছে।`,
+        p_recipient_name: entry.name_en,
+        p_message_type: "onboarding",
+      });
+      if (error) throw error;
+    });
+    return { channel: "SMS", ok: true, detail: "✅" };
+  } catch (err: any) {
+    return { channel: "SMS", ok: false, detail: err.message || "Failed" };
+  }
+}
 
-    // 3️⃣ Email (if provided) — uses send-notification edge function
-    try {
-      if (entry.email?.trim()) {
-        await supabase.functions.invoke("send-notification", {
-          body: {
-            channel: "email",
-            to: entry.email.trim(),
-            subject: `Welcome to Ekta Finance — ${ROLE_LABEL_BN[opts.role]}`,
-            body: `Hello ${entry.name_en},\n\nYour ${opts.role} account has been created on Ekta Finance.\n\nধন্যবাদ,\nEkta Finance Team`,
-          },
-        });
-        result.messages.push("Email ✅");
-      }
-    } catch (err: any) {
-      result.messages.push(`Email ❌ ${err.message || ""}`);
-    }
+async function sendEmail(entry: OnboardEntry, role: OnboardRole): Promise<ChannelResult | null> {
+  if (!entry.email?.trim()) return null;
+  try {
+    await withRetry(async () => {
+      const { error } = await supabase.functions.invoke("send-notification", {
+        body: {
+          channel: "email",
+          to: entry.email!.trim(),
+          subject: `Welcome to Ekta Finance — ${ROLE_BN[role]}`,
+          body: `Hello ${entry.name_en},\n\nYour ${role} account has been created on Ekta Finance.\n\nধন্যবাদ,\nEkta Finance Team`,
+        },
+      });
+      if (error) throw error;
+    });
+    return { channel: "Email", ok: true, detail: "✅" };
+  } catch (err: any) {
+    return { channel: "Email", ok: false, detail: err.message || "Failed" };
+  }
+}
 
-    // Mark failed if no channel succeeded
-    if (result.messages.every((m) => m.includes("❌"))) {
-      result.status = "failed";
-    }
+/**
+ * Multi-channel notification dispatcher with retry logic.
+ * Each channel is independent — failure in one does not block others.
+ */
+export const notifyBulkOnboard = async (
+  entries: OnboardEntry[],
+  role: OnboardRole,
+  tenantId: string,
+  userId: string
+): Promise<OnboardNotifyResult[]> => {
+  const results: OnboardNotifyResult[] = [];
 
-    results.push(result);
+  for (const entry of entries) {
+    const channelResults = await Promise.all([
+      sendInApp(entry, role, tenantId, userId),
+      sendSms(entry, role),
+      sendEmail(entry, role),
+    ]);
+
+    const channels = channelResults.filter(Boolean) as ChannelResult[];
+    const allFailed = channels.length > 0 && channels.every((c) => !c.ok);
+
+    results.push({
+      name: entry.name_en,
+      status: allFailed ? "failed" : "success",
+      channels,
+    });
   }
 
   return results;
 };
 
-/** Backward-compatible alias used by BulkOnboarding page */
+/** Backward-compatible alias */
 export const notifyOnboardedUsers = async (
   entries: { name_en: string; phone?: string | null }[],
   role: OnboardRole,
   tenantId: string,
   userId: string
 ) => {
-  return notifyBulkOnboard({ userId, tenantId, role, entries });
+  const mapped: OnboardEntry[] = entries.map((e) => ({
+    name_en: e.name_en,
+    name_bn: e.name_en,
+    phone: e.phone || "",
+  }));
+  return notifyBulkOnboard(mapped, role, tenantId, userId);
 };
 
-/**
- * Triggers the first-login onboarding wizard if not already shown.
- */
-export const triggerFirstLoginWizard = (userId: string) => {
-  const key = "ekta_onboarding_dismissed";
-  return !localStorage.getItem(key);
+export const triggerFirstLoginWizard = (_userId: string) => {
+  return !localStorage.getItem("ekta_onboarding_dismissed");
 };
