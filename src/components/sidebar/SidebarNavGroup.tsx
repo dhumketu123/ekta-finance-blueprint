@@ -1,34 +1,38 @@
-import React, { useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useMemo, useCallback } from "react";
+import { useLocation, matchPath } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import type { NavGroup } from "@/config/navigation";
+import type { NavGroup, NavItem } from "@/config/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SidebarNavItem from "./SidebarNavItem";
 
 interface SidebarNavGroupProps {
   group: NavGroup;
-  onItemClick?: () => void;
 }
 
-const SidebarNavGroup = React.memo(({ group, onItemClick }: SidebarNavGroupProps) => {
+const SidebarNavGroup = React.memo(({ group }: SidebarNavGroupProps) => {
   const location = useLocation();
   const { lang } = useLanguage();
 
   const hasActiveChild = useMemo(
-    () => group.items.some((item) =>
-      item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path)
-    ),
+    () =>
+      group.items.some((item) =>
+        matchPath({ path: item.path, end: item.path === "/" }, location.pathname)
+      ),
     [group.items, location.pathname]
   );
 
   const [isOpen, setIsOpen] = React.useState(hasActiveChild);
 
-  // Auto-expand when navigating into this group
   React.useEffect(() => {
     if (hasActiveChild) setIsOpen(true);
   }, [hasActiveChild]);
 
   const title = lang === "bn" && group.titleBn ? group.titleBn : group.title;
+
+  const renderItem = useCallback(
+    (item: NavItem) => <SidebarNavItem key={item.path} item={item} />,
+    []
+  );
 
   return (
     <div className="px-3 py-1">
@@ -46,9 +50,7 @@ const SidebarNavGroup = React.memo(({ group, onItemClick }: SidebarNavGroupProps
 
       {isOpen && (
         <div className="mt-1 flex flex-col gap-0.5">
-          {group.items.map((item) => (
-            <SidebarNavItem key={item.path} item={item} onClick={onItemClick} />
-          ))}
+          {group.items.map(renderItem)}
         </div>
       )}
     </div>
