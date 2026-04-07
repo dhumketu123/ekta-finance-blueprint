@@ -190,18 +190,30 @@ const BulkOnboarding = () => {
       return original || { name_en: r.name, name_bn: r.name, phone: "" };
     });
 
-    const retryResults = await notifyBulkOnboard(retryEntries, activeRole, tenantId, user.id);
+    try {
+      const retryResults = await notifyBulkOnboard(retryEntries, activeRole, tenantId, user.id);
 
-    setResults((prev) =>
-      prev.map((r) => {
-        const retry = retryResults.find((rr) => rr.name === r.name);
-        if (retry) return { ...r, notifyResult: retry };
-        return r;
-      })
-    );
+      setResults((prev) =>
+        prev.map((r) => {
+          const retry = retryResults.find((rr) => rr.name === r.name);
+          if (retry) return { ...r, notifyResult: retry };
+          return r;
+        })
+      );
 
-    const retried = retryResults.filter((r) => r.status === "success").length;
-    toast.success(t(`${retried}টি রিট্রাই সফল`, `${retried} retried successfully`));
+      const retried = retryResults.filter((r) => r.status === "success").length;
+      const stillFailed = retryResults.filter((r) => r.status === "failed").length;
+      if (retried > 0) toast.success(t(`${retried}টি রিট্রাই সফল`, `${retried} retried successfully`));
+      if (stillFailed > 0) {
+        const failedNames = retryResults.filter((r) => r.status === "failed").map((r) => r.name).join(", ");
+        toast.error(t(`${stillFailed}টি এখনও ব্যর্থ: ${failedNames}`, `${stillFailed} still failed: ${failedNames}`));
+        console.error("[BulkOnboarding] Retry failures:", retryResults.filter((r) => r.status === "failed"));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("[BulkOnboarding] Retry error:", err);
+      toast.error(t(`রিট্রাই ত্রুটি: ${msg}`, `Retry error: ${msg}`));
+    }
     setIsProcessing(false);
   }, [results, entries, activeRole, tenantId, user?.id]);
 
