@@ -1,34 +1,37 @@
 // src/config/performanceBudgets.ts
-// Central Performance Budget Configuration
-// Single source of truth for Core Web Vitals thresholds
+// Central Performance Budget Configuration — env-overridable thresholds
 
-export const performanceBudgets = {
-  LCP: 2500,   // ms — Largest Contentful Paint
-  CLS: 0.1,    // unitless — Cumulative Layout Shift
-  FID: 100,    // ms — First Input Delay
+export interface MetricPayload {
+  name: string;
+  value: number;
+}
+
+export const PERFORMANCE_BUDGETS = {
+  LCP: Number(import.meta.env.VITE_BUDGET_LCP || 2500),
+  CLS: Number(import.meta.env.VITE_BUDGET_CLS || 0.1),
+  FID: Number(import.meta.env.VITE_BUDGET_FID || 100),
 } as const;
 
-export type BudgetMetricName = keyof typeof performanceBudgets;
+export type BudgetMetricName = keyof typeof PERFORMANCE_BUDGETS;
 
 export function normalizeMetric(name: string, value: number): number {
-  if (name === "CLS") return parseFloat(value.toFixed(3));
-  if (name === "LCP" || name === "FID") return Math.round(value);
-  return value;
+  if (name === "CLS") return parseFloat(Math.max(0, value).toFixed(3));
+  if (name === "LCP" || name === "FID") return Math.round(Math.max(0, value));
+  return Math.max(0, value);
 }
 
 export function checkBudget(name: string, value: number) {
-  const threshold = performanceBudgets[name as BudgetMetricName];
+  const threshold = PERFORMANCE_BUDGETS[name as BudgetMetricName];
   if (threshold === undefined) return;
 
   const normalized = normalizeMetric(name, value);
   if (normalized <= threshold) return;
 
   if (import.meta.env.DEV) {
-    console.warn("[PerfBudget]", {
+    console.warn("[BudgetExceeded]", {
       name,
       value: normalized,
       threshold,
-      severity: "warning",
       timestamp: Date.now(),
     });
   }
