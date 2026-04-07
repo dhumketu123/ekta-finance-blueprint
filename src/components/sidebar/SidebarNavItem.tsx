@@ -17,9 +17,12 @@ const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
       to={item.path}
       end={item.path === "/"}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-100 ${
-          isActive ? "" : "hover:opacity-90"
-        }`
+        [
+          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
+          "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+          isActive ? "" : "active:scale-95",
+        ].join(" ")
       }
       style={({ isActive }) => ({
         backgroundColor: isActive
@@ -29,6 +32,21 @@ const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
           ? "hsl(var(--sidebar-primary-foreground))"
           : "hsl(var(--sidebar-foreground))",
       })}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget;
+        if (!el.classList.contains("active")) {
+          el.style.backgroundColor = "hsl(var(--sidebar-accent) / 0.35)";
+          el.style.color = "hsl(var(--sidebar-primary-foreground))";
+        }
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget;
+        const isActive = el.getAttribute("aria-current") === "page";
+        if (!isActive) {
+          el.style.backgroundColor = "transparent";
+          el.style.color = "hsl(var(--sidebar-foreground))";
+        }
+      }}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span>{label}</span>
