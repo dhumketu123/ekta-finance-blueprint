@@ -40,6 +40,7 @@ export default function KnowledgeDashboard() {
   const { data: nodes = [], isLoading: nodesLoading } = useKnowledgeNodes(selectedType);
   const { data: syncLogs = [] } = useSyncLogs();
   const syncMutation = useRunKnowledgeSync();
+  useKnowledgeRealtime();
 
   const filteredNodes = useMemo(() => {
     if (!selectedType) return nodes;
