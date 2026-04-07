@@ -10,7 +10,7 @@ const corsHeaders = {
 const CRITICAL_TABLES = new Set([
   "clients", "investors", "loans", "transactions",
   "financial_transactions", "savings_accounts", "loan_schedules",
-  "commitments", "double_entry_ledger", "profiles",
+  "commitments", "double_entry_ledger", "profiles", "user_roles",
 ]);
 
 serve(async (req) => {
