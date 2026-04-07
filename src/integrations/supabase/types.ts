@@ -438,6 +438,7 @@ export type Database = {
         Row: {
           area: string | null
           assigned_officer: string | null
+          canonical_phone: string | null
           created_at: string
           date_of_birth: string | null
           deleted_at: string | null
@@ -475,6 +476,7 @@ export type Database = {
         Insert: {
           area?: string | null
           assigned_officer?: string | null
+          canonical_phone?: string | null
           created_at?: string
           date_of_birth?: string | null
           deleted_at?: string | null
@@ -512,6 +514,7 @@ export type Database = {
         Update: {
           area?: string | null
           assigned_officer?: string | null
+          canonical_phone?: string | null
           created_at?: string
           date_of_birth?: string | null
           deleted_at?: string | null
@@ -1308,6 +1311,7 @@ export type Database = {
         Row: {
           accumulated_profit: number
           address: string | null
+          canonical_phone: string | null
           capital: number
           created_at: string
           deleted_at: string | null
@@ -1344,6 +1348,7 @@ export type Database = {
         Insert: {
           accumulated_profit?: number
           address?: string | null
+          canonical_phone?: string | null
           capital?: number
           created_at?: string
           deleted_at?: string | null
@@ -1380,6 +1385,7 @@ export type Database = {
         Update: {
           accumulated_profit?: number
           address?: string | null
+          canonical_phone?: string | null
           capital?: number
           created_at?: string
           deleted_at?: string | null
