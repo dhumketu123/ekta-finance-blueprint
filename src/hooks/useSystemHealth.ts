@@ -26,6 +26,7 @@ export interface HealthTrendPoint {
   warn: number;
   fail: number;
   status: string;
+  latency_ms?: number;
 }
 
 export interface AutoFixLog {
@@ -138,6 +139,7 @@ export const useHealthTrend = (
         warn: health.summary.warn,
         fail: health.summary.fail,
         status: health.status,
+        latency_ms: health.total_latency_ms,
       });
       localStorage.setItem(TREND_STORAGE_KEY, JSON.stringify(trend.slice(-maxPoints)));
     } catch { /* localStorage unavailable */ }

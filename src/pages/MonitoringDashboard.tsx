@@ -28,7 +28,7 @@ import {
 } from "@/hooks/useSystemHealth";
 import { format } from "date-fns";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Line,
   ResponsiveContainer, Legend, BarChart, Bar, Tooltip as RechartsTooltip,
 } from "recharts";
 
