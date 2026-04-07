@@ -3710,6 +3710,10 @@ export type Database = {
         Returns: Json
       }
       get_day_close_summary: { Args: { p_date: string }; Returns: Json }
+      get_function_dependencies: {
+        Args: { _function_name: string }
+        Returns: Json
+      }
       get_governance_aging_buckets: {
         Args: never
         Returns: {
