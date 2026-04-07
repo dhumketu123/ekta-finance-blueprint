@@ -1,6 +1,5 @@
 import React, { useMemo, useCallback } from "react";
 import { useLocation, matchPath } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
 import type { NavGroup, NavItem } from "@/config/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SidebarNavItem from "./SidebarNavItem";
@@ -36,18 +35,14 @@ const SidebarNavGroup = React.memo(({ group }: SidebarNavGroupProps) => {
 
   return (
     <div className="px-3 py-1">
-      <button
+      <div
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between px-2 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-100"
+        className="flex w-full items-center justify-between px-2 py-2 text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-colors duration-100 select-none"
         style={{ color: "hsl(var(--sidebar-muted))" }}
       >
         <span>{title}</span>
-        <ChevronDown
-          className={`h-3.5 w-3.5 transition-transform duration-150 ${
-            isOpen ? "rotate-0" : "-rotate-90"
-          }`}
-        />
-      </button>
+        <span className="text-[10px]">{isOpen ? "▾" : "▸"}</span>
+      </div>
 
       {isOpen && (
         <div className="mt-1 flex flex-col gap-0.5">
