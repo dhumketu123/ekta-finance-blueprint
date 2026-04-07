@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantId } from "@/hooks/useTenantId";
 import { toast } from "sonner";
+import { canonicalizePhone } from "@/lib/phoneCanonical";
 import {
   notifyBulkOnboard,
   type OnboardEntry,
@@ -37,10 +38,13 @@ import {
   Mail,
 } from "lucide-react";
 
+type ReasonType = "duplicate" | "validation" | "system";
+
 interface OnboardResult {
   name: string;
   dbStatus: "success" | "failed" | "skipped";
   dbMessage: string;
+  reasonType?: ReasonType;
   notifyResult?: OnboardNotifyResult;
 }
 
@@ -109,49 +113,69 @@ const BulkOnboarding = () => {
     setProgress(0);
     const batchResults: OnboardResult[] = [];
 
-    // ── STEP 1: In-memory CSV duplicate detection ──
+    // ── STEP 1: In-memory CSV duplicate detection with canonical phone ──
     const seenPhones = new Set<string>();
     const seenNames = new Set<string>();
     const deduped: OnboardEntry[] = [];
 
     for (const entry of validEntries) {
-      const phone = entry.phone?.trim().toLowerCase() || "";
+      const canonical = canonicalizePhone(entry.phone);
       const name = entry.name_en.trim().toLowerCase();
 
-      if (phone && seenPhones.has(phone)) {
-        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (phone)" });
+      if (!canonical) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Valid BD phone required (01XXXXXXXXX)", reasonType: "validation" });
+        continue;
+      }
+      if (seenPhones.has(canonical)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (phone)", reasonType: "duplicate" });
         continue;
       }
       if (seenNames.has(name)) {
-        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (name)" });
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (name)", reasonType: "duplicate" });
         continue;
       }
-      if (phone) seenPhones.add(phone);
+      seenPhones.add(canonical);
       seenNames.add(name);
       deduped.push(entry);
     }
 
-    // ── STEP 2: DB existence check ──
+    // ── STEP 2: DB existence check (same role) ──
     let existingPhoneSet = new Set<string>();
-    const phonesToCheck = deduped.map((e) => e.phone?.trim().toLowerCase()).filter(Boolean) as string[];
+    const phonesToCheck = deduped.map((e) => canonicalizePhone(e.phone)).filter(Boolean) as string[];
 
     if (phonesToCheck.length > 0) {
       try {
-        const table = activeRole === "client" ? "clients" : activeRole === "investor" ? "investors" : "profiles";
-        const { data } = await supabase.from(table).select("phone").in("phone", phonesToCheck);
+        const table = activeRole === "client" ? "clients" : "investors";
+        const { data } = await supabase.from(table).select("canonical_phone").in("canonical_phone", phonesToCheck);
         if (data) {
-          existingPhoneSet = new Set(data.map((r: { phone: string | null }) => r.phone?.toLowerCase() || ""));
+          existingPhoneSet = new Set(data.map((r: { canonical_phone: string | null }) => r.canonical_phone || ""));
         }
       } catch (err) {
         console.error("[BulkOnboarding] DB duplicate check failed, continuing safely:", err);
       }
     }
 
+    // ── STEP 3: Cross-role duplicate check ──
+    let crossRolePhoneSet = new Set<string>();
+    if (phonesToCheck.length > 0) {
+      try {
+        const crossTable = activeRole === "client" ? "investors" : "clients";
+        const { data } = await supabase.from(crossTable).select("canonical_phone").in("canonical_phone", phonesToCheck);
+        if (data) {
+          crossRolePhoneSet = new Set(data.map((r: { canonical_phone: string | null }) => r.canonical_phone || ""));
+        }
+      } catch (err) {
+        console.error("[BulkOnboarding] Cross-role check failed, continuing safely:", err);
+      }
+    }
+
     const insertQueue: OnboardEntry[] = [];
     for (const entry of deduped) {
-      const phone = entry.phone?.trim().toLowerCase() || "";
-      if (phone && existingPhoneSet.has(phone)) {
-        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Already exists in system (phone)" });
+      const canonical = canonicalizePhone(entry.phone)!;
+      if (existingPhoneSet.has(canonical)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Already exists in system", reasonType: "duplicate" });
+      } else if (crossRolePhoneSet.has(canonical)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Already exists in other role", reasonType: "duplicate" });
       } else {
         insertQueue.push(entry);
       }
@@ -168,15 +192,19 @@ const BulkOnboarding = () => {
 
     for (let i = 0; i < total; i++) {
       const entry = insertQueue[i];
-      let dbStatus: "success" | "failed" = "success";
+      let dbStatus: "success" | "failed" | "skipped" = "success";
       let dbMessage = "✅";
+      let reasonType: ReasonType | undefined;
 
       try {
+        const canonical = canonicalizePhone(entry.phone)!;
+
         if (activeRole === "client") {
           const { error } = await supabase.from("clients").insert({
             name_en: entry.name_en.trim(),
             name_bn: entry.name_bn.trim() || entry.name_en.trim(),
-            phone: entry.phone.trim() || null,
+            phone: canonical,
+            canonical_phone: canonical,
             area: entry.area?.trim() || null,
             tenant_id: tenantId,
             status: "active",
@@ -186,7 +214,8 @@ const BulkOnboarding = () => {
           const { error } = await supabase.from("investors").insert({
             name_en: entry.name_en.trim(),
             name_bn: entry.name_bn.trim() || entry.name_en.trim(),
-            phone: entry.phone.trim() || null,
+            phone: canonical,
+            canonical_phone: canonical,
             address: entry.area?.trim() || null,
             tenant_id: tenantId,
             capital: 0,
@@ -199,13 +228,22 @@ const BulkOnboarding = () => {
         await supabase.from("audit_logs").insert({
           action_type: "bulk_onboard",
           entity_type: activeRole,
-          details: { name: entry.name_en, role: activeRole, method: "bulk_onboarding" },
+          details: { name: entry.name_en, role: activeRole, method: "bulk_onboarding", canonical_phone: canonical },
           user_id: user.id,
           branch_id: null,
         });
       } catch (err: any) {
-        dbStatus = "failed";
-        dbMessage = err.message || "DB Error";
+        const msg = err?.message || "DB Error";
+        // Atomic: catch unique constraint violations as skipped duplicates
+        if (msg.includes("unique") || msg.includes("duplicate") || err?.code === "23505") {
+          dbStatus = "skipped";
+          dbMessage = "Duplicate phone detected (race-safe)";
+          reasonType = "duplicate";
+        } else {
+          dbStatus = "failed";
+          dbMessage = msg;
+          reasonType = "system";
+        }
       }
 
       // Non-blocking notifications (only if DB succeeded)
@@ -219,7 +257,7 @@ const BulkOnboarding = () => {
         }
       }
 
-      batchResults.push({ name: entry.name_en, dbStatus, dbMessage, notifyResult });
+      batchResults.push({ name: entry.name_en, dbStatus, dbMessage, reasonType, notifyResult });
       setProgress(Math.round(((i + 1) / total) * 100));
       setResults([...batchResults]);
     }
