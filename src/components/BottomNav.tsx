@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, Wallet, TrendingUp, Menu } from "lucide-react";
 import { useSidebarState } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ROUTES } from "@/config/routes";
 import { useMemo } from "react";
 
 const navItemClass = "flex flex-col items-center justify-center gap-1 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95 relative";
@@ -21,11 +22,11 @@ interface BottomNavItem {
 }
 
 const allBottomItems: BottomNavItem[] = [
-  { path: "/", icon: LayoutDashboard, labelEn: "Home", labelBn: "হোম", roles: ["admin", "owner", "field_officer", "treasurer"] },
-  { path: "/wallet", icon: Wallet, labelEn: "Wallet", labelBn: "ওয়ালেট", roles: ["investor"] },
-  { path: "/clients", icon: Users, labelEn: "Clients", labelBn: "গ্রাহক", roles: ["admin", "owner", "field_officer"] },
-  { path: "/transactions", icon: Wallet, labelEn: "", labelBn: "", roles: ["admin", "owner", "field_officer", "treasurer"], isFab: true },
-  { path: "/savings", icon: TrendingUp, labelEn: "Savings", labelBn: "সঞ্চয়", roles: ["admin", "owner", "field_officer", "treasurer"] },
+  { path: ROUTES.DASHBOARD, icon: LayoutDashboard, labelEn: "Home", labelBn: "হোম", roles: ["admin", "owner", "field_officer", "treasurer"] },
+  { path: ROUTES.INVESTOR_WALLET, icon: Wallet, labelEn: "Wallet", labelBn: "ওয়ালেট", roles: ["investor"] },
+  { path: ROUTES.CLIENTS, icon: Users, labelEn: "Clients", labelBn: "গ্রাহক", roles: ["admin", "owner", "field_officer"] },
+  { path: ROUTES.TRANSACTIONS, icon: Wallet, labelEn: "", labelBn: "", roles: ["admin", "owner", "field_officer", "treasurer"], isFab: true },
+  { path: ROUTES.SAVINGS, icon: TrendingUp, labelEn: "Savings", labelBn: "সঞ্চয়", roles: ["admin", "owner", "field_officer", "treasurer"] },
 ];
 
 const BottomNav = () => {
@@ -78,7 +79,6 @@ const BottomNav = () => {
           );
         })}
 
-        {/* Menu button — always visible */}
         <button
           onClick={open}
           className={`${navItemClass} text-muted-foreground`}
