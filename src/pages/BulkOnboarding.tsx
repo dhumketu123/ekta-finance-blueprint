@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantId } from "@/hooks/useTenantId";
 import { toast } from "sonner";
+import { notifyOnboardedUsers } from "@/services/onboardingNotifier";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,6 +146,14 @@ const BulkOnboarding = () => {
         });
 
         batchResults.push({ name: entry.name_en, status: "success", message: "✅" });
+
+        // Non-blocking notification dispatch (in-app + SMS)
+        notifyOnboardedUsers(
+          [{ name_en: entry.name_en.trim(), phone: entry.phone?.trim() }],
+          activeRole,
+          tenantId,
+          user.id
+        ).catch(() => {});
       } catch (err: any) {
         batchResults.push({ name: entry.name_en, status: "failed", message: err.message || "Error" });
       }
