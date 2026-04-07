@@ -57,8 +57,9 @@ async function sendInApp(entry: OnboardEntry, role: OnboardRole, tenantId: strin
         p_source_module: "onboarding",
         p_role: "admin",
         p_priority: "LOW",
-      }).then(({ error }) => { if (error) throw error; })
-    );
+      });
+      if (error) throw error;
+    });
     return { channel: "In-App", ok: true, detail: "✅" };
   } catch (err: any) {
     return { channel: "In-App", ok: false, detail: err.message || "Failed" };
