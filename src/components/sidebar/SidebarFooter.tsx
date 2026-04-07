@@ -2,6 +2,7 @@ import { LogOut, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ROUTES } from "@/config/routes";
 import { useNavigate } from "react-router-dom";
 
 const SidebarFooter = () => {
@@ -27,7 +28,7 @@ const SidebarFooter = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/auth");
+    navigate(ROUTES.AUTH);
   };
 
   return (
