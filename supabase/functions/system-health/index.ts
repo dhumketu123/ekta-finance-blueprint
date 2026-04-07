@@ -28,7 +28,6 @@ function measure<T>(fn: () => Promise<T>): Promise<{ result: T; ms: number }> {
   return fn().then((result) => ({ result, ms: Date.now() - start }));
 }
 
-/** Load per-tenant sync thresholds from system_settings, fallback to defaults */
 async function loadSyncThresholds(supabase: ReturnType<typeof createClient>): Promise<SyncThresholds> {
   try {
     const { data } = await supabase
@@ -58,17 +57,97 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const checks: HealthCheck[] = [];
     const startTotal = Date.now();
-
-    // Load configurable thresholds
     const thresholds = await loadSyncThresholds(supabase);
 
-    // ── 1. Database Connectivity ──
-    const db = await measure(async () => {
-      const { error } = await supabase.from("profiles").select("id").limit(1);
-      return error;
-    });
+    // ── Run ALL checks in parallel ──
+    const [db, tr, qc, ff, cron, notif, loans, rls, ksync] = await Promise.all([
+      // 1. Database Connectivity
+      measure(async () => {
+        const { error } = await supabase.from("profiles").select("id").limit(1);
+        return error;
+      }),
+      // 2. Tenant Rules
+      measure(async () => {
+        const { data, error } = await supabase.from("tenant_rules").select("id, rule_key").limit(10);
+        return { data, error };
+      }),
+      // 3. Quantum Ledger Config
+      measure(async () => {
+        const { data, error } = await supabase
+          .from("system_settings")
+          .select("setting_value")
+          .eq("setting_key", "quantum_ledger_config")
+          .maybeSingle();
+        return { data, error };
+      }),
+      // 4. Feature Flags
+      measure(async () => {
+        const { data, error } = await supabase.from("feature_flags").select("feature_name, is_enabled");
+        return { data, error };
+      }),
+      // 5. Cron Activity (24h)
+      measure(async () => {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("id, action_type")
+          .gte("created_at", yesterday)
+          .in("action_type", [
+            "predict_loan_risk",
+            "savings_reconciliation_alert",
+            "overdue_penalty_applied",
+            "monthly_investor_profit",
+          ])
+          .limit(50);
+        return { data, error };
+      }),
+      // 6. Notification Delivery (7d)
+      measure(async () => {
+        const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from("notification_logs")
+          .select("delivery_status")
+          .gte("created_at", lastWeek);
+        return { data, error };
+      }),
+      // 7. Loans Health
+      measure(async () => {
+        const { data, error } = await supabase
+          .from("loans")
+          .select("status")
+          .is("deleted_at", null);
+        return { data, error };
+      }),
+      // 8. RLS Enforcement
+      measure(async () => {
+        if (!anonKey) return { verified: false, reason: "SUPABASE_ANON_KEY not available" };
+        try {
+          const anonClient = createClient(supabaseUrl, anonKey);
+          const { data, error } = await anonClient.from("clients").select("id").limit(1);
+          if (error) return { verified: true, reason: "RLS blocked anon: " + error.code };
+          if (!data || data.length === 0) return { verified: true, reason: "RLS active — anon gets 0 rows" };
+          return { verified: false, reason: `CRITICAL: anon read ${data.length} rows from clients` };
+        } catch {
+          return { verified: true, reason: "RLS blocked request" };
+        }
+      }),
+      // 9. Knowledge Sync
+      measure(async () => {
+        const { data, error } = await supabase
+          .from("knowledge_sync_log")
+          .select("id, status, started_at, completed_at, nodes_processed, errors, duration_ms")
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return { data, error };
+      }),
+    ]);
+
+    // ── Process results into checks ──
+    const checks: HealthCheck[] = [];
+
+    // 1. Database
     checks.push({
       name: "database",
       status: db.result ? "fail" : "pass",
@@ -76,11 +155,7 @@ Deno.serve(async (req) => {
       latency_ms: db.ms,
     });
 
-    // ── 2. Tenant Rules Loaded ──
-    const tr = await measure(async () => {
-      const { data, error } = await supabase.from("tenant_rules").select("id, rule_key").limit(10);
-      return { data, error };
-    });
+    // 2. Tenant Rules
     {
       const { data, error } = tr.result;
       const ruleCount = data?.length ?? 0;
@@ -96,15 +171,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 3. Quantum Ledger Config ──
-    const qc = await measure(async () => {
-      const { data, error } = await supabase
-        .from("system_settings")
-        .select("setting_value")
-        .eq("setting_key", "quantum_ledger_config")
-        .maybeSingle();
-      return { data, error };
-    });
+    // 3. Quantum Config
     {
       const { data, error } = qc.result;
       checks.push({
@@ -115,11 +182,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 4. Feature Flags ──
-    const ff = await measure(async () => {
-      const { data, error } = await supabase.from("feature_flags").select("feature_name, is_enabled");
-      return { data, error };
-    });
+    // 4. Feature Flags
     {
       const { data, error } = ff.result;
       const enabledCount = data?.filter((f: any) => f.is_enabled).length ?? 0;
@@ -136,22 +199,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 5. Recent Cron Activity (last 24h) ──
-    const cron = await measure(async () => {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("audit_logs")
-        .select("id, action_type")
-        .gte("created_at", yesterday)
-        .in("action_type", [
-          "predict_loan_risk",
-          "savings_reconciliation_alert",
-          "overdue_penalty_applied",
-          "monthly_investor_profit",
-        ])
-        .limit(50);
-      return { data, error };
-    });
+    // 5. Cron Activity
     {
       const { data, error } = cron.result;
       const jobCount = data?.length ?? 0;
@@ -167,15 +215,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 6. Notification Delivery Health (last 7 days) ──
-    const notif = await measure(async () => {
-      const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("notification_logs")
-        .select("delivery_status")
-        .gte("created_at", lastWeek);
-      return { data, error };
-    });
+    // 6. Notifications
     {
       const { data, error } = notif.result;
       if (error) {
@@ -196,14 +236,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 7. Active Loans Health ──
-    const loans = await measure(async () => {
-      const { data, error } = await supabase
-        .from("loans")
-        .select("status")
-        .is("deleted_at", null);
-      return { data, error };
-    });
+    // 7. Loans
     {
       const { data, error } = loans.result;
       if (error) {
@@ -225,22 +258,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 8. RLS Enforcement (Real Check via Anon Client) ──
-    const rls = await measure(async () => {
-      if (!anonKey) return { verified: false, reason: "SUPABASE_ANON_KEY not available" };
-      try {
-        const anonClient = createClient(supabaseUrl, anonKey);
-        const { data, error } = await anonClient
-          .from("clients")
-          .select("id")
-          .limit(1);
-        if (error) return { verified: true, reason: "RLS blocked anon: " + error.code };
-        if (!data || data.length === 0) return { verified: true, reason: "RLS active — anon gets 0 rows" };
-        return { verified: false, reason: `CRITICAL: anon read ${data.length} rows from clients` };
-      } catch (e) {
-        return { verified: true, reason: "RLS blocked request" };
-      }
-    });
+    // 8. RLS
     {
       const { verified, reason } = rls.result;
       checks.push({
@@ -251,16 +269,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 9. Knowledge Sync Health (configurable thresholds) ──
-    const ksync = await measure(async () => {
-      const { data, error } = await supabase
-        .from("knowledge_sync_log")
-        .select("id, status, started_at, completed_at, nodes_processed, errors, duration_ms")
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return { data, error };
-    });
+    // 9. Knowledge Sync (configurable thresholds)
     {
       const { data, error } = ksync.result;
       if (error) {
