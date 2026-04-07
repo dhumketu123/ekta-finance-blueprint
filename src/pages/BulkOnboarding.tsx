@@ -39,7 +39,7 @@ import {
 
 interface OnboardResult {
   name: string;
-  dbStatus: "success" | "failed";
+  dbStatus: "success" | "failed" | "skipped";
   dbMessage: string;
   notifyResult?: OnboardNotifyResult;
 }
@@ -108,9 +108,66 @@ const BulkOnboarding = () => {
     setResults([]);
     setProgress(0);
     const batchResults: OnboardResult[] = [];
-    const total = validEntries.length;
+
+    // ── STEP 1: In-memory CSV duplicate detection ──
+    const seenPhones = new Set<string>();
+    const seenNames = new Set<string>();
+    const deduped: OnboardEntry[] = [];
+
+    for (const entry of validEntries) {
+      const phone = entry.phone?.trim().toLowerCase() || "";
+      const name = entry.name_en.trim().toLowerCase();
+
+      if (phone && seenPhones.has(phone)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (phone)" });
+        continue;
+      }
+      if (seenNames.has(name)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Duplicate in CSV (name)" });
+        continue;
+      }
+      if (phone) seenPhones.add(phone);
+      seenNames.add(name);
+      deduped.push(entry);
+    }
+
+    // ── STEP 2: DB existence check ──
+    let existingPhoneSet = new Set<string>();
+    const phonesToCheck = deduped.map((e) => e.phone?.trim().toLowerCase()).filter(Boolean) as string[];
+
+    if (phonesToCheck.length > 0) {
+      try {
+        const table = activeRole === "client" ? "clients" : activeRole === "investor" ? "investors" : "profiles";
+        const { data } = await supabase.from(table).select("phone").in("phone", phonesToCheck);
+        if (data) {
+          existingPhoneSet = new Set(data.map((r: { phone: string | null }) => r.phone?.toLowerCase() || ""));
+        }
+      } catch (err) {
+        console.error("[BulkOnboarding] DB duplicate check failed, continuing safely:", err);
+      }
+    }
+
+    const insertQueue: OnboardEntry[] = [];
+    for (const entry of deduped) {
+      const phone = entry.phone?.trim().toLowerCase() || "";
+      if (phone && existingPhoneSet.has(phone)) {
+        batchResults.push({ name: entry.name_en, dbStatus: "skipped", dbMessage: "Already exists in system (phone)" });
+      } else {
+        insertQueue.push(entry);
+      }
+    }
+
+    console.debug("[BulkOnboarding] Duplicate detection completed:", {
+      total: validEntries.length,
+      csvDuplicates: validEntries.length - deduped.length,
+      dbDuplicates: deduped.length - insertQueue.length,
+      toInsert: insertQueue.length,
+    });
+
+    const total = insertQueue.length;
 
     for (let i = 0; i < total; i++) {
+      const entry = insertQueue[i];
       const entry = validEntries[i];
       let dbStatus: "success" | "failed" = "success";
       let dbMessage = "✅";
@@ -170,9 +227,11 @@ const BulkOnboarding = () => {
 
     const successCount = batchResults.filter((r) => r.dbStatus === "success").length;
     const failCount = batchResults.filter((r) => r.dbStatus === "failed").length;
+    const skipCount = batchResults.filter((r) => r.dbStatus === "skipped").length;
 
     if (successCount > 0) toast.success(t(`${successCount}টি সফল`, `${successCount} succeeded`));
     if (failCount > 0) toast.error(t(`${failCount}টি ব্যর্থ`, `${failCount} failed`));
+    if (skipCount > 0) toast.warning(t(`${skipCount}টি ডুপ্লিকেট বাদ`, `${skipCount} skipped (duplicates)`));
 
     setIsProcessing(false);
   };
