@@ -32,20 +32,35 @@ const SidebarFooter = () => {
   };
 
   return (
-    <div className="border-t border-border p-4">
+    <div
+      className="p-4"
+      style={{ borderTop: "1px solid hsl(var(--sidebar-border))" }}
+    >
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-          <User className="h-4 w-4 text-muted-foreground" />
+        <div
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+          style={{ backgroundColor: "hsl(var(--sidebar-accent))" }}
+        >
+          <User className="h-4 w-4" style={{ color: "hsl(var(--sidebar-muted))" }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {user?.email?.split("@")[0] || "User"}
+          <p
+            className="text-sm font-medium truncate"
+            style={{ color: "hsl(var(--sidebar-foreground))" }}
+          >
+            {user?.email?.split("@")[0] ?? "User"}
           </p>
-          <p className="text-xs text-muted-foreground truncate capitalize">{roleDisplay}</p>
+          <p
+            className="text-xs truncate capitalize"
+            style={{ color: "hsl(var(--sidebar-muted))" }}
+          >
+            {roleDisplay}
+          </p>
         </div>
         <button
           onClick={handleLogout}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-100"
+          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-100 hover:bg-destructive/20"
+          style={{ color: "hsl(var(--sidebar-muted))" }}
           aria-label="Logout"
         >
           <LogOut className="h-4 w-4" />

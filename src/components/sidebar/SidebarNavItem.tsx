@@ -19,10 +19,18 @@ const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-100 ${
           isActive
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "text-white"
+            : "hover:text-white"
         }`
       }
+      style={({ isActive }) => ({
+        backgroundColor: isActive
+          ? "hsl(var(--sidebar-accent))"
+          : "transparent",
+        color: isActive
+          ? "hsl(var(--sidebar-primary-foreground))"
+          : "hsl(var(--sidebar-foreground))",
+      })}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span>{label}</span>

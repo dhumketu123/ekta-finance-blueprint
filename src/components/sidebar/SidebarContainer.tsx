@@ -39,7 +39,6 @@ const SidebarContainer = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  // Close mobile drawer on route change
   useEffect(() => {
     if (isMobile) close();
   }, [location.pathname, isMobile, close]);
@@ -49,13 +48,16 @@ const SidebarContainer = () => {
     [role]
   );
 
-  // Prevent flash while role hydrates
   if (!role) return null;
 
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={(open) => { if (!open) close(); }}>
-        <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-card">
+        <SheetContent
+          side="left"
+          className="w-[280px] p-0 flex flex-col border-r-0"
+          style={{ backgroundColor: "hsl(var(--sidebar-background))" }}
+        >
           <SidebarInner groups={filteredGroups} />
         </SheetContent>
       </Sheet>
@@ -63,7 +65,13 @@ const SidebarContainer = () => {
   }
 
   return (
-    <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-[260px] md:border-r md:border-border md:bg-card md:z-40">
+    <aside
+      className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-[260px] md:border-r md:z-40"
+      style={{
+        backgroundColor: "hsl(var(--sidebar-background))",
+        borderColor: "hsl(var(--sidebar-border))",
+      }}
+    >
       <SidebarInner groups={filteredGroups} />
     </aside>
   );
