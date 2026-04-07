@@ -1,10 +1,10 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, Wallet, TrendingUp, Menu } from "lucide-react";
 import { useSidebarState } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ROUTES } from "@/config/routes";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 
 const navItemClass = "flex flex-col items-center justify-center gap-1 min-w-12 min-h-12 flex-1 transform-gpu transition-transform duration-200 ease-out active:scale-95 relative";
 
@@ -31,6 +31,7 @@ const allBottomItems: BottomNavItem[] = [
 
 const BottomNav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { open } = useSidebarState();
   const { lang } = useLanguage();
   const { role } = usePermissions();
@@ -38,6 +39,13 @@ const BottomNav = () => {
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
+
+  const handleNavClick = useCallback(
+    (path: string) => {
+      navigate(path);
+    },
+    [navigate]
+  );
 
   const visibleItems = useMemo(() => {
     if (!role) return [];
@@ -54,20 +62,21 @@ const BottomNav = () => {
           if (item.isFab) {
             return (
               <div key={item.path} className="flex-1 flex items-center justify-center relative overflow-visible">
-                <Link
-                  to={item.path}
+                <button
+                  onClick={() => handleNavClick(item.path)}
                   className="absolute -top-8 flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-xl transform-gpu transition-transform duration-200 ease-out active:scale-95"
+                  aria-label={bn ? "লেনদেন" : "Transactions"}
                 >
                   <item.icon className="w-7 h-7" />
-                </Link>
+                </button>
               </div>
             );
           }
 
           return (
-            <Link
+            <button
               key={item.path}
-              to={item.path}
+              onClick={() => handleNavClick(item.path)}
               className={`${navItemClass} ${isActive(item.path) ? "text-primary" : "text-muted-foreground"}`}
             >
               <item.icon className="w-6 h-6" />
@@ -75,7 +84,7 @@ const BottomNav = () => {
                 {bn ? item.labelBn : item.labelEn}
               </span>
               {isActive(item.path) && <ActiveDot />}
-            </Link>
+            </button>
           );
         })}
 

@@ -10,7 +10,7 @@ interface SidebarNavItemProps {
 const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
   const Icon = item.icon;
   const { lang } = useLanguage();
-  const label = lang === "bn" && item.labelBn ? item.labelBn : item.label;
+  const label = lang === "bn" ? item.labelBn ?? item.label : item.label;
 
   return (
     <NavLink
