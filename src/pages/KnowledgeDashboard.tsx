@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import PageHeader from "@/components/PageHeader";
 import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
