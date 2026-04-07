@@ -7,7 +7,7 @@ import { ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 
 interface OnboardResult {
   name: string;
-  dbStatus: "success" | "failed";
+  dbStatus: "success" | "failed" | "skipped";
   dbMessage: string;
   notifyResult?: {
     name: string;
