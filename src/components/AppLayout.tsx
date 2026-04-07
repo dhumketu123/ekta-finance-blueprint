@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { AppSidebar } from "./AppSidebar";
+import AppSidebarNew from "./sidebar/AppSidebarNew";
 import TopHeader from "./TopHeader";
 import BottomNav from "./BottomNav";
 import { SidebarStateProvider } from "@/contexts/SidebarContext";
@@ -13,10 +13,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <SidebarStateProvider>
       <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
-        <AppSidebar />
+        <AppSidebarNew />
         <TopHeader />
         <SubscriptionLockOverlay />
-        <main className="w-full min-w-0 mt-16 animate-page-enter">
+        {/* Desktop: offset by sidebar width; Mobile: full width */}
+        <main className="w-full min-w-0 mt-16 md:ml-[260px] animate-page-enter">
           <div className="max-w-[1400px] mx-auto px-4 py-6 md:px-6 md:py-8 lg:px-8 space-y-6 md:space-y-8 pb-40 md:pb-8">
             {children}
           </div>

@@ -1,11 +1,14 @@
 import SidebarContainer from "./SidebarContainer";
 
 /**
- * Enterprise Sidebar — Phase B Skeleton
+ * Enterprise Sidebar — Phase C: Full Navigation Brain
  *
- * This is the new modular sidebar shell.
- * It is NOT yet connected to routing, RBAC, or layout.
- * Import this component to preview the sidebar structure.
+ * Features:
+ * - React Router NavLink with active highlight
+ * - Auto-expanding active group
+ * - RBAC filtering from usePermissions
+ * - Responsive: fixed desktop + Sheet drawer mobile
+ * - React.memo on NavItem & NavGroup
  */
 const AppSidebarNew = () => {
   return <SidebarContainer />;
