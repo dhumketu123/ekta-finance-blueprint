@@ -16,6 +16,7 @@ import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRi
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
 import ExpenseEntryModal from "@/components/expenses/ExpenseEntryModal";
+import OnboardingWizard from "@/components/OnboardingWizard";
 
 
 const Dashboard = () => {
