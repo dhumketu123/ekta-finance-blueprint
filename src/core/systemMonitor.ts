@@ -54,6 +54,8 @@ class SystemMonitor {
   }
 
   public trackEvent(eventName: string, payload?: Record<string, any>) {
+    if (!this.initialized) return;
+
     const eventPayload = {
       name: eventName,
       timestamp: Date.now(),
