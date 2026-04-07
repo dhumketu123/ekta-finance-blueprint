@@ -31,8 +31,6 @@ const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
         color: isActive
           ? "hsl(var(--sidebar-primary-foreground))"
           : "hsl(var(--sidebar-foreground))",
-        // @ts-expect-error CSS custom property for focus ring
-        "--tw-ring-color": "hsl(var(--sidebar-ring))",
       })}
       onMouseEnter={(e) => {
         const el = e.currentTarget;
