@@ -61,6 +61,9 @@ export const ROUTES = {
 
   // Onboarding
   BULK_ONBOARDING: "/bulk-onboarding",
+
+  // AI & Intelligence
+  KNOWLEDGE_DASHBOARD: "/knowledge",
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
