@@ -40,7 +40,18 @@ export default function KnowledgeDashboard() {
   const { data: nodes = [], isLoading: nodesLoading } = useKnowledgeNodes(selectedType);
   const { data: syncLogs = [] } = useSyncLogs();
   const syncMutation = useRunKnowledgeSync();
+  const queryClient = useQueryClient();
   useKnowledgeRealtime();
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
+      queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
+      queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [queryClient]);
 
   const filteredNodes = useMemo(() => {
     if (!selectedType) return nodes;
