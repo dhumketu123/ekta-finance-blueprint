@@ -471,6 +471,7 @@ const BulkOnboarding = () => {
               <div className="flex gap-3 text-xs text-muted-foreground pt-1 border-t">
                 <span className="text-primary">✅ {results.filter((r) => r.dbStatus === "success").length} {t("সফল", "success")}</span>
                 <span className="text-destructive">❌ {results.filter((r) => r.dbStatus === "failed").length} {t("ব্যর্থ", "failed")}</span>
+                <span className="text-amber-500">⚠️ {results.filter((r) => r.dbStatus === "skipped").length} {t("বাদ", "skipped")}</span>
               </div>
 
               <BulkFailureTable results={results} />
