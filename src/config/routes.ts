@@ -58,6 +58,9 @@ export const ROUTES = {
 
   // Role-specific
   ALUMNI: "/alumni",
+
+  // Onboarding
+  BULK_ONBOARDING: "/bulk-onboarding",
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
