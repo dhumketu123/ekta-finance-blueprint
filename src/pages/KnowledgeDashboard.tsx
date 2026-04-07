@@ -53,7 +53,7 @@ export default function KnowledgeDashboard() {
       <div className="flex items-center justify-between">
         <PageHeader
           title="🧠 AI Knowledge Engine"
-          subtitle="সিস্টেম নলেজ গ্রাফ ও ডেটা ফাউন্ডেশন"
+          description="সিস্টেম নলেজ গ্রাফ ও ডেটা ফাউন্ডেশন"
         />
         <Button
           onClick={() => syncMutation.mutate()}
