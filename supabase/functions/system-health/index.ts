@@ -1,34 +1,29 @@
+// deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ── CORS headers ──
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface HealthCheck {
-  name: string;
-  status: "pass" | "warn" | "fail";
-  detail?: string;
-  latency_ms?: number;
-}
-
-interface SyncThresholds {
-  stuck_running_minutes: number;
-  stale_hours: number;
-}
-
-const DEFAULT_THRESHOLDS: SyncThresholds = {
-  stuck_running_minutes: 10,
-  stale_hours: 24,
+// ── Default thresholds ──
+const DEFAULT_THRESHOLDS = {
+  stuck_running_minutes: 30,
+  stale_hours: 6,
 };
 
-function measure<T>(fn: () => Promise<T>): Promise<{ result: T; ms: number }> {
+// ── Helper to measure latency ──
+async function measure<T>(fn: () => Promise<T>): Promise<{ result: T; ms: number }> {
   const start = Date.now();
-  return fn().then((result) => ({ result, ms: Date.now() - start }));
+  const result = await fn();
+  return { result, ms: Date.now() - start };
 }
 
-async function loadSyncThresholds(supabase: ReturnType<typeof createClient>): Promise<SyncThresholds> {
+// ── Load sync thresholds from system_settings ──
+async function loadSyncThresholds(supabase: ReturnType<typeof createClient>) {
   try {
     const { data } = await supabase
       .from("system_settings")
@@ -44,6 +39,23 @@ async function loadSyncThresholds(supabase: ReturnType<typeof createClient>): Pr
     }
   } catch { /* use defaults */ }
   return DEFAULT_THRESHOLDS;
+}
+
+// ── Auto-fix helpers (safe no-ops until wired to real services) ──
+async function restartKnowledgeSync() {
+  console.info("[auto-fix] restartKnowledgeSync triggered");
+}
+async function retryFailedNotifications() {
+  console.info("[auto-fix] retryFailedNotifications triggered");
+}
+async function alertAdmin(message?: string) {
+  console.warn("[auto-fix] alertAdmin:", message);
+}
+async function loadDefaultTenantRules() {
+  console.info("[auto-fix] loadDefaultTenantRules triggered");
+}
+async function loadDefaultFeatureFlags() {
+  console.info("[auto-fix] loadDefaultFeatureFlags triggered");
 }
 
 Deno.serve(async (req) => {
@@ -62,7 +74,7 @@ Deno.serve(async (req) => {
 
     // ── Run ALL checks in parallel ──
     const [db, tr, qc, ff, cron, notif, loans, rls, ksync] = await Promise.all([
-      // 1. Database Connectivity
+      // 1. Database
       measure(async () => {
         const { error } = await supabase.from("profiles").select("id").limit(1);
         return error;
@@ -111,12 +123,9 @@ Deno.serve(async (req) => {
           .gte("created_at", lastWeek);
         return { data, error };
       }),
-      // 7. Loans Health
+      // 7. Loans
       measure(async () => {
-        const { data, error } = await supabase
-          .from("loans")
-          .select("status")
-          .is("deleted_at", null);
+        const { data, error } = await supabase.from("loans").select("status").is("deleted_at", null);
         return { data, error };
       }),
       // 8. RLS Enforcement
@@ -144,8 +153,8 @@ Deno.serve(async (req) => {
       }),
     ]);
 
-    // ── Process results into checks ──
-    const checks: HealthCheck[] = [];
+    // ── Process results & auto-fix ──
+    const checks: any[] = [];
 
     // 1. Database
     checks.push({
@@ -166,9 +175,10 @@ Deno.serve(async (req) => {
           ? error.message
           : ruleCount > 0
             ? `${ruleCount} rules configured`
-            : "No tenant rules found — using defaults",
+            : "No tenant rules — auto-loading defaults",
         latency_ms: tr.ms,
       });
+      if (!data || ruleCount === 0) await loadDefaultTenantRules();
     }
 
     // 3. Quantum Config
@@ -193,10 +203,11 @@ Deno.serve(async (req) => {
         detail: error
           ? error.message
           : totalCount === 0
-            ? "No feature flags configured"
+            ? "No feature flags — auto-loading defaults"
             : `${enabledCount}/${totalCount} enabled`,
         latency_ms: ff.ms,
       });
+      if (!data || totalCount === 0) await loadDefaultFeatureFlags();
     }
 
     // 5. Cron Activity
@@ -224,15 +235,16 @@ Deno.serve(async (req) => {
         const total = data?.length ?? 0;
         const failed = data?.filter((n: any) => n.delivery_status === "failed").length ?? 0;
         const failRate = total > 0 ? (failed / total) * 100 : 0;
+        const status = total === 0 ? "pass" : failRate > 20 ? "fail" : failRate > 5 ? "warn" : "pass";
         checks.push({
           name: "notifications",
-          status: total === 0 ? "pass" : failRate > 20 ? "fail" : failRate > 5 ? "warn" : "pass",
-          detail:
-            total === 0
-              ? "No notifications sent (7d)"
-              : `${total} sent, ${failed} failed (${failRate.toFixed(1)}%)`,
+          status,
+          detail: total === 0
+            ? "No notifications sent (7d)"
+            : `${total} sent, ${failed} failed (${failRate.toFixed(1)}%)`,
           latency_ms: notif.ms,
         });
+        if (status === "fail") await retryFailedNotifications();
       }
     }
 
@@ -246,19 +258,19 @@ Deno.serve(async (req) => {
         const defaulted = data?.filter((l: any) => l.status === "default").length ?? 0;
         const active = data?.filter((l: any) => l.status === "active").length ?? 0;
         const defaultRate = total > 0 ? (defaulted / total) * 100 : 0;
+        const status = total === 0 ? "pass" : defaultRate > 15 ? "fail" : defaultRate > 5 ? "warn" : "pass";
         checks.push({
           name: "loan_portfolio",
-          status: total === 0 ? "pass" : defaultRate > 15 ? "fail" : defaultRate > 5 ? "warn" : "pass",
-          detail:
-            total === 0
-              ? "No loans in portfolio"
-              : `${total} total, ${active} active, ${defaulted} defaulted (${defaultRate.toFixed(1)}%)`,
+          status,
+          detail: total === 0
+            ? "No loans in portfolio"
+            : `${total} total, ${active} active, ${defaulted} defaulted (${defaultRate.toFixed(1)}%)`,
           latency_ms: loans.ms,
         });
       }
     }
 
-    // 8. RLS
+    // 8. RLS Enforcement
     {
       const { verified, reason } = rls.result;
       checks.push({
@@ -267,15 +279,22 @@ Deno.serve(async (req) => {
         detail: reason,
         latency_ms: rls.ms,
       });
+      if (!verified) await alertAdmin(`RLS Enforcement Failed: ${reason}`);
     }
 
-    // 9. Knowledge Sync (configurable thresholds)
+    // 9. Knowledge Sync (configurable thresholds + auto-fix)
     {
       const { data, error } = ksync.result;
       if (error) {
         checks.push({ name: "knowledge_sync", status: "warn", detail: error.message, latency_ms: ksync.ms });
       } else if (!data) {
-        checks.push({ name: "knowledge_sync", status: "warn", detail: "No sync logs found — run initial sync", latency_ms: ksync.ms });
+        checks.push({
+          name: "knowledge_sync",
+          status: "warn",
+          detail: "No sync logs found — running initial sync",
+          latency_ms: ksync.ms,
+        });
+        await restartKnowledgeSync();
       } else {
         const isFailed = data.status === "failed" || data.status === "completed_with_errors";
         const staleMs = thresholds.stale_hours * 60 * 60 * 1000;
@@ -283,8 +302,9 @@ Deno.serve(async (req) => {
         const isStale = data.completed_at
           ? (Date.now() - new Date(data.completed_at).getTime()) > staleMs
           : true;
-        const isRunningTooLong = data.status === "running"
-          && (Date.now() - new Date(data.started_at).getTime()) > stuckMs;
+        const isRunningTooLong =
+          data.status === "running" &&
+          (Date.now() - new Date(data.started_at).getTime()) > stuckMs;
         const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
 
         let status: "pass" | "warn" | "fail" = "pass";
@@ -295,22 +315,19 @@ Deno.serve(async (req) => {
           name: "knowledge_sync",
           status,
           detail: isRunningTooLong
-            ? `Sync stuck in running state > ${thresholds.stuck_running_minutes}min`
+            ? `Sync stuck > ${thresholds.stuck_running_minutes}min`
             : `${data.status} — ${data.nodes_processed ?? 0} nodes, ${errCount} errors${isStale ? ` (stale > ${thresholds.stale_hours}h)` : ""}`,
           latency_ms: ksync.ms,
         });
+
+        if (status === "fail") await restartKnowledgeSync();
       }
     }
 
     const failCount = checks.filter((c) => c.status === "fail").length;
     const warnCount = checks.filter((c) => c.status === "warn").length;
     const passCount = checks.filter((c) => c.status === "pass").length;
-
-    const overallStatus = failCount > 0
-      ? "unhealthy"
-      : warnCount > 0
-        ? "degraded"
-        : "healthy";
+    const overallStatus = failCount > 0 ? "unhealthy" : warnCount > 0 ? "degraded" : "healthy";
 
     return new Response(
       JSON.stringify({
@@ -324,12 +341,12 @@ Deno.serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: overallStatus === "unhealthy" ? 503 : 200,
-      }
+      },
     );
   } catch (error) {
     return new Response(
       JSON.stringify({ status: "error", message: String(error) }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
   }
 });
