@@ -170,8 +170,7 @@ export const useRunKnowledgeSync = () => {
 };
 
 /**
- * Realtime subscription for knowledge graph changes.
- * Call this at the dashboard level to auto-refresh on sync completion.
+ * Realtime subscription for knowledge graph AND sync log changes.
  */
 export const useKnowledgeRealtime = () => {
   const { tenantId } = useTenantId();
@@ -180,7 +179,6 @@ export const useKnowledgeRealtime = () => {
   useEffect(() => {
     if (!tenantId) return;
 
-    // Guard against duplicate channels
     const existingChannel = supabase.getChannels().find(c => c.topic === "knowledge-realtime");
     if (existingChannel) return;
 
@@ -188,15 +186,18 @@ export const useKnowledgeRealtime = () => {
       .channel("knowledge-realtime")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "system_knowledge_graph",
-        },
+        { event: "*", schema: "public", table: "system_knowledge_graph" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["knowledge_graph", tenantId] });
           queryClient.invalidateQueries({ queryKey: ["knowledge_stats", tenantId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "knowledge_sync_log" },
+        () => {
           queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs", tenantId] });
+          queryClient.invalidateQueries({ queryKey: ["system_health"] });
         }
       )
       .subscribe();
@@ -204,5 +205,7 @@ export const useKnowledgeRealtime = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [tenantId, queryClient]);
+};
   }, [tenantId, queryClient]);
 };
