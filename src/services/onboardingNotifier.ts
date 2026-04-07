@@ -87,16 +87,17 @@ async function sendSms(entry: OnboardEntry, role: OnboardRole): Promise<ChannelR
 async function sendEmail(entry: OnboardEntry, role: OnboardRole): Promise<ChannelResult | null> {
   if (!entry.email?.trim()) return null;
   try {
-    await withRetry(() =>
-      supabase.functions.invoke("send-notification", {
+    await withRetry(async () => {
+      const { error } = await supabase.functions.invoke("send-notification", {
         body: {
           channel: "email",
           to: entry.email!.trim(),
           subject: `Welcome to Ekta Finance — ${ROLE_BN[role]}`,
           body: `Hello ${entry.name_en},\n\nYour ${role} account has been created on Ekta Finance.\n\nধন্যবাদ,\nEkta Finance Team`,
         },
-      }).then(({ error }) => { if (error) throw error; })
-    );
+      });
+      if (error) throw error;
+    });
     return { channel: "Email", ok: true, detail: "✅" };
   } catch (err: any) {
     return { channel: "Email", ok: false, detail: err.message || "Failed" };
