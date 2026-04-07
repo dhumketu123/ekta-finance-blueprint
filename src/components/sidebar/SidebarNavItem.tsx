@@ -5,10 +5,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SidebarNavItemProps {
   item: NavItem;
-  onClick?: () => void;
 }
 
-const SidebarNavItem = React.memo(({ item, onClick }: SidebarNavItemProps) => {
+const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
   const Icon = item.icon;
   const { lang } = useLanguage();
   const label = lang === "bn" && item.labelBn ? item.labelBn : item.label;
@@ -17,7 +16,6 @@ const SidebarNavItem = React.memo(({ item, onClick }: SidebarNavItemProps) => {
     <NavLink
       to={item.path}
       end={item.path === "/"}
-      onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-100 ${
           isActive
