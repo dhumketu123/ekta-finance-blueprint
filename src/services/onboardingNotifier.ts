@@ -88,12 +88,24 @@ async function sendEmail(entry: OnboardEntry, role: OnboardRole): Promise<Channe
   if (!entry.email?.trim()) return null;
   try {
     await withRetry(async () => {
+      const nameBn = entry.name_bn || entry.name_en;
+      const subject = `স্বাগতম — Ekta Finance ${ROLE_BN[role]}`;
+      const body = [
+        `হ্যালো ${nameBn} (${entry.name_en}),`,
+        "",
+        `আপনার ${ROLE_BN[role]} অ্যাকাউন্ট Ekta Finance-এ সফলভাবে তৈরি হয়েছে।`,
+        `Your ${role} account has been created on Ekta Finance.`,
+        "",
+        "ধন্যবাদ,",
+        "Ekta Finance Team",
+      ].join("\n");
+
       const { error } = await supabase.functions.invoke("send-notification", {
         body: {
           channel: "email",
           to: entry.email!.trim(),
-          subject: `Welcome to Ekta Finance — ${ROLE_BN[role]}`,
-          body: `Hello ${entry.name_en},\n\nYour ${role} account has been created on Ekta Finance.\n\nধন্যবাদ,\nEkta Finance Team`,
+          subject,
+          body,
         },
       });
       if (error) throw error;
