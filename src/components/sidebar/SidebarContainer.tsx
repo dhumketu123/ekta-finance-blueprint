@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import SidebarBrand from "./SidebarBrand";
 import SidebarNavGroup from "./SidebarNavGroup";
 import SidebarFooter from "./SidebarFooter";
-import SidebarErrorBoundary from "./SidebarErrorBoundary";
+import SidebarErrorBoundaryWrapper from "./SidebarErrorBoundaryWrapper";
 import type { NavGroup } from "@/config/navigation";
 
 function filterGroupsByRole(groups: NavGroup[], role: AppRole | null): NavGroup[] {
@@ -89,9 +89,9 @@ const SidebarContainer = () => {
   if (!role) return null;
 
   const sidebar = (
-    <SidebarErrorBoundary>
+    <SidebarErrorBoundaryWrapper>
       <SidebarInner groups={filteredGroups} accentColor={accentColor} roleLabel={roleLabel} />
-    </SidebarErrorBoundary>
+    </SidebarErrorBoundaryWrapper>
   );
 
   if (isMobile) {

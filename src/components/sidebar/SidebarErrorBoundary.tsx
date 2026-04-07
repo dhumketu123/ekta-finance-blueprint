@@ -3,21 +3,18 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Props {
   children: React.ReactNode;
-  /** Optional callback for future error reporting (e.g. Sentry) */
   onError?: (error: Error, componentStack: string | null) => void;
 }
 
 interface State {
   hasError: boolean;
-  /** Tracks the pathname that triggered the error for auto-reset */
-  errorPathname: string | null;
 }
 
 class SidebarErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false, errorPathname: null };
+  state: State = { hasError: false };
 
   static getDerivedStateFromError(): Partial<State> {
-    return { hasError: true, errorPathname: window.location.pathname };
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -25,17 +22,6 @@ class SidebarErrorBoundary extends React.Component<Props, State> {
       console.error("[SidebarErrorBoundary]", error, info.componentStack);
     }
     this.props.onError?.(error, info.componentStack ?? null);
-  }
-
-  componentDidUpdate() {
-    // Auto-reset when user navigates to a different route
-    if (
-      this.state.hasError &&
-      this.state.errorPathname &&
-      window.location.pathname !== this.state.errorPathname
-    ) {
-      this.setState({ hasError: false, errorPathname: null });
-    }
   }
 
   render() {
@@ -50,7 +36,7 @@ class SidebarErrorBoundary extends React.Component<Props, State> {
         <AlertTriangle className="h-6 w-6" aria-hidden="true" />
         <p className="text-xs">Menu unavailable</p>
         <button
-          onClick={() => this.setState({ hasError: false, errorPathname: null })}
+          onClick={() => this.setState({ hasError: false })}
           className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors"
           style={{
             backgroundColor: "hsl(var(--sidebar-accent) / 0.3)",
