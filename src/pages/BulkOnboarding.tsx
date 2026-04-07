@@ -168,7 +168,6 @@ const BulkOnboarding = () => {
 
     for (let i = 0; i < total; i++) {
       const entry = insertQueue[i];
-      const entry = validEntries[i];
       let dbStatus: "success" | "failed" = "success";
       let dbMessage = "✅";
 
