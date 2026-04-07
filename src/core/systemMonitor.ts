@@ -89,7 +89,7 @@ class SystemMonitor {
   private observeFID() {
     try {
       const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
+        for (const entry of list.getEntries() as any[]) {
           this.reportMetric({
             name: "FID",
             value: entry.processingStart - entry.startTime,
