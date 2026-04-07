@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import SidebarErrorBoundary from "./SidebarErrorBoundary";
-import { systemMonitor } from "@/core/systemMonitor";
+import { telemetryAdapter } from "@/core/telemetryAdapter";
 
 const SidebarErrorBoundaryWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -9,8 +9,7 @@ const SidebarErrorBoundaryWrapper = ({ children }: { children: React.ReactNode }
     <SidebarErrorBoundary
       key={location.pathname}
       onError={(error, stack) => {
-        // Route error telemetry through systemMonitor pipeline
-        systemMonitor["telemetryAdapter"]?.("error", {
+        telemetryAdapter("error", {
           message: error.message,
           stack: stack ?? error.stack,
           source: "SidebarErrorBoundary",
