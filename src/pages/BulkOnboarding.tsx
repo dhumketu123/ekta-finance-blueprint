@@ -305,7 +305,7 @@ const BulkOnboarding = () => {
 
                 {/* Officer note */}
                 {role === "officer" && (
-                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-700 dark:text-amber-400">
+                  <div className="rounded-lg bg-accent border border-border p-3 text-xs text-accent-foreground">
                     {lang === "bn"
                       ? "⚠️ মাঠকর্মী যোগ করতে Settings → User Management ব্যবহার করুন। তাদের auth account দরকার।"
                       : "⚠️ To add officers, use Settings → User Management. They need auth accounts."}
@@ -349,7 +349,7 @@ const BulkOnboarding = () => {
                 ))}
               </div>
               <div className="flex gap-2 text-xs text-muted-foreground">
-                <span className="text-green-600">
+                <span className="text-primary">
                   ✅ {results.filter((r) => r.status === "success").length}
                 </span>
                 <span className="text-destructive">
