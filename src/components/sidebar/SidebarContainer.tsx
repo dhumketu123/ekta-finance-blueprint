@@ -70,6 +70,7 @@ const CONTAINMENT_STYLE: React.CSSProperties = {
 };
 
 const SidebarContainer = () => {
+  useSidebarTelemetry();
   const { role } = usePermissions();
   const { isOpen, close } = useSidebarState();
   const isMobile = useIsMobile();
