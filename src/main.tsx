@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
 import { systemMonitor } from "@/core/systemMonitor";
+import { telemetryAdapter } from "@/core/telemetryAdapter";
 import "./index.css";
 
 // Keyboard adaptive engine — production safe with fallback
@@ -34,6 +35,7 @@ function setupKeyboardAdaptiveOffset() {
 }
 
 setupKeyboardAdaptiveOffset();
+systemMonitor.setTelemetryAdapter(telemetryAdapter);
 systemMonitor.init();
 
 createRoot(document.getElementById("root")!).render(
