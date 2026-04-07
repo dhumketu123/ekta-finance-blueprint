@@ -136,6 +136,10 @@ export const useKnowledgeRealtime = () => {
   useEffect(() => {
     if (!tenantId) return;
 
+    // Guard against duplicate channels
+    const existingChannel = supabase.getChannels().find(c => c.topic === "knowledge-realtime");
+    if (existingChannel) return;
+
     const channel = supabase
       .channel("knowledge-realtime")
       .on(
@@ -148,6 +152,7 @@ export const useKnowledgeRealtime = () => {
         () => {
           queryClient.invalidateQueries({ queryKey: ["knowledge_graph", tenantId] });
           queryClient.invalidateQueries({ queryKey: ["knowledge_stats", tenantId] });
+          queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs", tenantId] });
         }
       )
       .subscribe();
