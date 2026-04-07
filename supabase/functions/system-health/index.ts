@@ -220,7 +220,46 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Summary ──
+    // ── 9. Knowledge Sync Health ──
+    const ksync = await measure(async () => {
+      const { data, error } = await supabase
+        .from("knowledge_sync_log")
+        .select("id, status, started_at, completed_at, nodes_processed, errors, duration_ms")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return { data, error };
+    });
+    {
+      const { data, error } = ksync.result;
+      if (error) {
+        checks.push({ name: "knowledge_sync", status: "warn", detail: error.message, latency_ms: ksync.ms });
+      } else if (!data) {
+        checks.push({ name: "knowledge_sync", status: "warn", detail: "No sync logs found — run initial sync", latency_ms: ksync.ms });
+      } else {
+        const isFailed = data.status === "failed" || data.status === "completed_with_errors";
+        const isStale = data.completed_at
+          ? (Date.now() - new Date(data.completed_at).getTime()) > 24 * 60 * 60 * 1000
+          : true;
+        const isRunningTooLong = data.status === "running"
+          && (Date.now() - new Date(data.started_at).getTime()) > 10 * 60 * 1000;
+        const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
+
+        let status: "pass" | "warn" | "fail" = "pass";
+        if (isFailed || isRunningTooLong) status = "fail";
+        else if (isStale || errCount > 0) status = "warn";
+
+        checks.push({
+          name: "knowledge_sync",
+          status,
+          detail: isRunningTooLong
+            ? "Sync stuck in running state > 10min"
+            : `${data.status} — ${data.nodes_processed ?? 0} nodes, ${errCount} errors${isStale ? " (stale > 24h)" : ""}`,
+          latency_ms: ksync.ms,
+        });
+      }
+    }
+
     const failCount = checks.filter((c) => c.status === "fail").length;
     const warnCount = checks.filter((c) => c.status === "warn").length;
     const passCount = checks.filter((c) => c.status === "pass").length;

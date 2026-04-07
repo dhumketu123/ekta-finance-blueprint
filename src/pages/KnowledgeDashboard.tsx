@@ -8,10 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import PageHeader from "@/components/PageHeader";
 import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
 import { useKnowledgeDashboardAutoRefresh } from "@/hooks/useKnowledgeDashboardAutoRefresh";
+import { useSystemHealth } from "@/hooks/useSystemHealth";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
-  CheckCircle2, AlertTriangle, Clock, Cpu,
+  CheckCircle2, AlertTriangle, Clock, Cpu, HeartPulse,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -43,6 +44,7 @@ export default function KnowledgeDashboard() {
   const syncMutation = useRunKnowledgeSync();
   useKnowledgeRealtime();
   useKnowledgeDashboardAutoRefresh();
+  const { data: health } = useSystemHealth();
 
   const filteredNodes = useMemo(() => {
     if (!selectedType) return nodes;
@@ -125,6 +127,35 @@ export default function KnowledgeDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* System Health Strip */}
+      {health && (
+        <Card className={health.status === "unhealthy" ? "border-destructive" : health.status === "degraded" ? "border-amber-500" : "border-emerald-500/50"}>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <HeartPulse className={`h-5 w-5 ${health.status === "healthy" ? "text-emerald-500" : health.status === "degraded" ? "text-amber-500" : "text-destructive"}`} />
+                <div>
+                  <p className="font-semibold text-sm">
+                    সিস্টেম হেলথ: {health.status === "healthy" ? "✅ সুস্থ" : health.status === "degraded" ? "⚠️ ক্ষয়প্রাপ্ত" : "❌ অসুস্থ"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ✓ {health.summary.pass} পাস · ⚠ {health.summary.warn} সতর্কতা · ✗ {health.summary.fail} ব্যর্থ · {health.total_latency_ms}ms
+                  </p>
+                </div>
+              </div>
+              {health.checks?.find(c => c.name === "knowledge_sync") && (
+                <Badge variant={
+                  health.checks.find(c => c.name === "knowledge_sync")!.status === "pass" ? "default" :
+                  health.checks.find(c => c.name === "knowledge_sync")!.status === "warn" ? "secondary" : "destructive"
+                }>
+                  সিঙ্ক: {health.checks.find(c => c.name === "knowledge_sync")!.detail?.slice(0, 40)}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Type Distribution */}
       {stats?.byType && (
