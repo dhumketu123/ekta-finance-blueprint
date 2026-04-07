@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import PageHeader from "@/components/PageHeader";
-import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync } from "@/hooks/useKnowledgeGraph";
+import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
