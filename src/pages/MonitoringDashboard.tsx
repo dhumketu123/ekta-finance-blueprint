@@ -28,7 +28,7 @@ import {
 } from "@/hooks/useSystemHealth";
 import { format } from "date-fns";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Line,
   ResponsiveContainer, Legend, BarChart, Bar, Tooltip as RechartsTooltip,
 } from "recharts";
 
@@ -98,6 +98,7 @@ const LiveHealthTab = () => {
       পাস: p.pass,
       সতর্কতা: p.warn,
       ব্যর্থ: p.fail,
+      latency_ms: p.latency_ms ?? 0,
     }));
   }, [trend.data]);
 
@@ -309,20 +310,43 @@ const LiveHealthTab = () => {
             {trendChartData.length < 2 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">ট্রেন্ড ডেটা সংগ্রহ হচ্ছে...</p>
             ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={trendChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={trendChartData} margin={{ top: 5, right: 40, left: -10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.4} />
-                  <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    label={{ value: "সময়", position: "insideBottom", offset: -10, fontSize: 11 }}
+                  />
+                  <YAxis
+                    yAxisId="checks"
+                    allowDecimals={false}
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    label={{ value: "চেক সংখ্যা", angle: -90, position: "insideLeft", fontSize: 10 }}
+                  />
+                  <YAxis
+                    yAxisId="latency"
+                    orientation="right"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    unit="ms"
+                    label={{ value: "লেটেন্সি", angle: 90, position: "insideRight", fontSize: 10 }}
+                  />
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-                    formatter={(value: number, name: string) => [`${value} checks`, name]}
+                    formatter={(value: number, name: string) => [name === "latency_ms" ? `${value}ms` : `${value} checks`, name === "latency_ms" ? "লেটেন্সি" : name]}
                     labelFormatter={(label) => `সময়: ${label}`}
                   />
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                  <Area type="monotone" dataKey="পাস" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} strokeWidth={2} />
-                  <Area type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} strokeWidth={2} />
-                  <Area type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} strokeWidth={2} />
+                  <Area yAxisId="checks" type="monotone" dataKey="পাস" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} strokeWidth={2} />
+                  <Area yAxisId="checks" type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} strokeWidth={2} />
+                  <Area yAxisId="checks" type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} strokeWidth={2} />
+                  <Line yAxisId="latency" type="monotone" dataKey="latency_ms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="লেটেন্সি (ms)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}

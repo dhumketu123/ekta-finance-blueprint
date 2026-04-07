@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const DEFAULT_THRESHOLDS = {
-  stuck_running_minutes: 30,
+  stuck_running_minutes: 15,
   stale_hours: 6,
 };
 
