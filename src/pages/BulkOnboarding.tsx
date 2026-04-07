@@ -270,6 +270,21 @@ const BulkOnboarding = () => {
     if (failCount > 0) toast.error(t(`${failCount}টি ব্যর্থ`, `${failCount} failed`));
     if (skipCount > 0) toast.warning(t(`${skipCount}টি ডুপ্লিকেট বাদ`, `${skipCount} skipped (duplicates)`));
 
+    // Record onboarding metrics
+    try {
+      await supabase.from("onboarding_metrics").insert({
+        tenant_id: tenantId,
+        role: activeRole,
+        total: validEntries.length,
+        success: successCount,
+        skipped: skipCount,
+        failed: failCount,
+        created_by: user.id,
+      });
+    } catch (err) {
+      console.error("[BulkOnboarding] Failed to record metrics:", err);
+    }
+
     setIsProcessing(false);
   };
 

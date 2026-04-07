@@ -2185,6 +2185,50 @@ export type Database = {
           },
         ]
       }
+      onboarding_metrics: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          failed: number
+          id: string
+          role: string
+          skipped: number
+          success: number
+          tenant_id: string
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          failed?: number
+          id?: string
+          role: string
+          skipped?: number
+          success?: number
+          tenant_id: string
+          total?: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          failed?: number
+          id?: string
+          role?: string
+          skipped?: number
+          success?: number
+          tenant_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_metrics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_exit_settlements: {
         Row: {
           accrued_profit: number
