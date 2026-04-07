@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantId } from "@/hooks/useTenantId";
 import { toast } from "sonner";
+import { canonicalizePhone } from "@/lib/phoneCanonical";
 import {
   notifyBulkOnboard,
   type OnboardEntry,
@@ -37,10 +38,13 @@ import {
   Mail,
 } from "lucide-react";
 
+type ReasonType = "duplicate" | "validation" | "system";
+
 interface OnboardResult {
   name: string;
   dbStatus: "success" | "failed" | "skipped";
   dbMessage: string;
+  reasonType?: ReasonType;
   notifyResult?: OnboardNotifyResult;
 }
 
