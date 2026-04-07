@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import PageHeader from "@/components/PageHeader";
 import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
-import { useQueryClient } from "@tanstack/react-query";
+import { useKnowledgeDashboardAutoRefresh } from "@/hooks/useKnowledgeDashboardAutoRefresh";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
@@ -41,18 +41,8 @@ export default function KnowledgeDashboard() {
   const { data: nodes = [], isLoading: nodesLoading } = useKnowledgeNodes(selectedType);
   const { data: syncLogs = [] } = useSyncLogs();
   const syncMutation = useRunKnowledgeSync();
-  const queryClient = useQueryClient();
   useKnowledgeRealtime();
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
-      queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
-      queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [queryClient]);
+  useKnowledgeDashboardAutoRefresh();
 
   const filteredNodes = useMemo(() => {
     if (!selectedType) return nodes;
