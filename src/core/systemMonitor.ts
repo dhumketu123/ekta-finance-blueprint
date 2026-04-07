@@ -20,6 +20,9 @@ class SystemMonitor {
   private initialized = false;
   private observers: PerformanceObserver[] = [];
   private clsValue = 0;
+  private errorHandler?: (event: ErrorEvent) => void;
+  private rejectionHandler?: (event: PromiseRejectionEvent) => void;
+  private telemetryAdapter?: (type: "metric" | "error", payload: any) => void;
 
   static getInstance() {
     if (!SystemMonitor.instance) {
@@ -37,9 +40,23 @@ class SystemMonitor {
     this.setupUnhandledRejectionHandler();
   }
 
-  destroy() {
+  public destroy() {
     this.observers.forEach((obs) => obs.disconnect());
     this.observers = [];
+
+    if (this.errorHandler) {
+      window.removeEventListener("error", this.errorHandler);
+    }
+
+    if (this.rejectionHandler) {
+      window.removeEventListener("unhandledrejection", this.rejectionHandler);
+    }
+  }
+
+  public setTelemetryAdapter(
+    adapter: (type: "metric" | "error", payload: any) => void
+  ) {
+    this.telemetryAdapter = adapter;
   }
 
   // ----------------------------------
@@ -105,15 +122,17 @@ class SystemMonitor {
     if (import.meta.env.DEV) {
       console.debug("[PerfMetric]", metric);
     }
-    // Future telemetry hook
-    // sendToAnalytics(metric)
+
+    if (this.telemetryAdapter) {
+      this.telemetryAdapter("metric", metric);
+    }
   }
 
   // ----------------------------------
   // Runtime Errors
   // ----------------------------------
   private setupGlobalErrorHandler() {
-    window.addEventListener("error", (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.reportError({
         message: event.message,
         stack: event.error?.stack,
@@ -121,11 +140,13 @@ class SystemMonitor {
         lineno: event.lineno,
         colno: event.colno,
       });
-    });
+    };
+
+    window.addEventListener("error", this.errorHandler);
   }
 
   private setupUnhandledRejectionHandler() {
-    window.addEventListener("unhandledrejection", (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.reportError({
         message:
           typeof event.reason === "string"
@@ -133,16 +154,26 @@ class SystemMonitor {
             : event.reason?.message || "Unhandled Promise Rejection",
         stack: event.reason?.stack,
       });
-    });
+    };
+
+    window.addEventListener("unhandledrejection", this.rejectionHandler);
   }
 
   private reportError(error: ErrorPayload) {
     if (import.meta.env.DEV) {
       console.error("[RuntimeError]", error);
     }
-    // Future telemetry hook
-    // sendErrorToMonitoring(error)
+
+    if (this.telemetryAdapter) {
+      this.telemetryAdapter("error", error);
+    }
   }
 }
 
 export const systemMonitor = SystemMonitor.getInstance();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    systemMonitor.destroy();
+  });
+}
