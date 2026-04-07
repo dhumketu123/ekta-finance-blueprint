@@ -28,7 +28,7 @@ import {
 } from "@/hooks/useSystemHealth";
 import { format } from "date-fns";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Line,
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Legend, BarChart, Bar, Tooltip as RechartsTooltip,
 } from "recharts";
 
@@ -311,43 +311,40 @@ const LiveHealthTab = () => {
               <p className="text-center py-8 text-muted-foreground text-sm">ট্রেন্ড ডেটা সংগ্রহ হচ্ছে...</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={trendChartData} margin={{ top: 5, right: 40, left: -10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.4} />
+                <LineChart data={trendChartData} margin={{ top: 20, right: 40, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
                   <XAxis
                     dataKey="time"
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    label={{ value: "সময়", position: "insideBottom", offset: -10, fontSize: 11 }}
+                    tick={{ fontSize: 12 }}
+                    label={{ value: "সময়", position: "insideBottom", offset: -10, fontSize: 12 }}
                   />
                   <YAxis
-                    yAxisId="checks"
+                    yAxisId="left"
                     allowDecimals={false}
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    label={{ value: "চেক সংখ্যা", angle: -90, position: "insideLeft", fontSize: 10 }}
+                    tick={{ fontSize: 12 }}
+                    label={{ value: "চেক সংখ্যা", angle: -90, position: "insideLeft", fontSize: 12 }}
                   />
                   <YAxis
-                    yAxisId="latency"
+                    yAxisId="right"
                     orientation="right"
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    unit="ms"
-                    label={{ value: "লেটেন্সি", angle: 90, position: "insideRight", fontSize: 10 }}
+                    tick={{ fontSize: 12 }}
+                    domain={[0, "dataMax + 100"]}
+                    label={{ value: "লেটেন্সি", angle: 90, position: "insideRight", fontSize: 12 }}
                   />
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-                    formatter={(value: number, name: string) => [name === "latency_ms" ? `${value}ms` : `${value} checks`, name === "latency_ms" ? "লেটেন্সি" : name]}
+                    formatter={(value: number, name: string) => [
+                      name === "latency_ms" ? `${value}ms` : `${value} checks`,
+                      name === "latency_ms" ? "লেটেন্সি" : name,
+                    ]}
                     labelFormatter={(label) => `সময়: ${label}`}
                   />
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                  <Area yAxisId="checks" type="monotone" dataKey="পাস" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} strokeWidth={2} />
-                  <Area yAxisId="checks" type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} strokeWidth={2} />
-                  <Area yAxisId="checks" type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} strokeWidth={2} />
-                  <Line yAxisId="latency" type="monotone" dataKey="latency_ms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="লেটেন্সি (ms)" />
-                </AreaChart>
+                  <Line yAxisId="left" type="monotone" dataKey="পাস" stroke="#16a34a" strokeWidth={1.5} dot={false} />
+                  <Line yAxisId="left" type="monotone" dataKey="সতর্কতা" stroke="#facc15" strokeWidth={1.5} dot={false} />
+                  <Line yAxisId="left" type="monotone" dataKey="ব্যর্থ" stroke="#dc2626" strokeWidth={1.5} dot={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="latency_ms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="লেটেন্সি (ms)" />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </CardContent>
