@@ -45,7 +45,7 @@ export const useKnowledgeNodes = (nodeType?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as KnowledgeNode[];
+      return (data ?? []) as unknown as KnowledgeNode[];
     },
     enabled: !!tenantId,
     staleTime: 2 * 60 * 1000,
