@@ -74,10 +74,6 @@ class SystemMonitor {
   ) {
     this.telemetryAdapter = adapter;
   }
-    adapter: (type: "metric" | "error", payload: any) => void
-  ) {
-    this.telemetryAdapter = adapter;
-  }
 
   // ----------------------------------
   // Performance Monitoring (Hardened)
