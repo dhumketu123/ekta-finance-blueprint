@@ -1487,6 +1487,59 @@ export type Database = {
           },
         ]
       }
+      knowledge_sync_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          errors: Json
+          id: string
+          nodes_created: number
+          nodes_processed: number
+          nodes_updated: number
+          started_at: string
+          status: string
+          sync_type: string
+          tenant_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          errors?: Json
+          id?: string
+          nodes_created?: number
+          nodes_processed?: number
+          nodes_updated?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+          tenant_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          errors?: Json
+          id?: string
+          nodes_created?: number
+          nodes_processed?: number
+          nodes_updated?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_sync_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ledger_entries: {
         Row: {
           account_id: string
@@ -2967,6 +3020,62 @@ export type Database = {
         }
         Relationships: []
       }
+      system_knowledge_graph: {
+        Row: {
+          category: string
+          created_at: string
+          criticality: number
+          embedding_version: number
+          id: string
+          last_synced_at: string
+          metadata: Json
+          node_key: string
+          node_label: string
+          node_type: string
+          relationships: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          criticality?: number
+          embedding_version?: number
+          id?: string
+          last_synced_at?: string
+          metadata?: Json
+          node_key: string
+          node_label: string
+          node_type: string
+          relationships?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          criticality?: number
+          embedding_version?: number
+          id?: string
+          last_synced_at?: string
+          metadata?: Json
+          node_key?: string
+          node_label?: string
+          node_type?: string
+          relationships?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_knowledge_graph_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -3649,6 +3758,9 @@ export type Database = {
           name_bn: string
         }[]
       }
+      get_schema_functions: { Args: never; Returns: Json }
+      get_schema_tables: { Args: never; Returns: Json }
+      get_schema_triggers: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
       get_subscription_status: {
         Args: never

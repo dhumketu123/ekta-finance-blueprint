@@ -57,6 +57,7 @@ const BalanceSheet = React.lazy(() => import("./pages/BalanceSheet"));
 const AlumniDashboard = React.lazy(() => import("./pages/AlumniDashboard"));
 const GovernanceCore = React.lazy(() => import("./pages/GovernanceCore"));
 const BulkOnboarding = React.lazy(() => import("./pages/BulkOnboarding"));
+const KnowledgeDashboard = React.lazy(() => import("./pages/KnowledgeDashboard"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
@@ -152,6 +153,7 @@ const App = () => (
 
                 {/* ── Onboarding ── */}
                 <Route path={ROUTES.BULK_ONBOARDING} element={<ProtectedRoute allowedRoles={["admin", "owner"]}><BulkOnboarding /></ProtectedRoute>} />
+                <Route path={ROUTES.KNOWLEDGE_DASHBOARD} element={<ProtectedRoute allowedRoles={["admin", "owner"]}><KnowledgeDashboard /></ProtectedRoute>} />
 
                 {/* ── Fallback ── */}
                 <Route path="*" element={<NotFound />} />
