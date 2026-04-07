@@ -60,6 +60,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
+      <OnboardingWizard />
       <PageHeader
         title={t("dashboard.title")}
         description={t("dashboard.description")}
