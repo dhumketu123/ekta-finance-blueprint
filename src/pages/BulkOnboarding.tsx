@@ -12,6 +12,7 @@ import {
   type ChannelResult,
 } from "@/services/onboardingNotifier";
 import AppLayout from "@/components/AppLayout";
+import BulkFailureTable from "@/components/BulkFailureTable";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
