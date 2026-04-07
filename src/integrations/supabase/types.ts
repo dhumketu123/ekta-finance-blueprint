@@ -3758,6 +3758,9 @@ export type Database = {
           name_bn: string
         }[]
       }
+      get_schema_functions: { Args: never; Returns: Json }
+      get_schema_tables: { Args: never; Returns: Json }
+      get_schema_triggers: { Args: never; Returns: Json }
       get_server_time: { Args: never; Returns: Json }
       get_subscription_status: {
         Args: never
