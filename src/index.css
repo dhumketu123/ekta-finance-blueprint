@@ -59,13 +59,13 @@
     --shadow-card-hover: 0 8px 30px -4px hsla(200, 30%, 20%, 0.14), 0 2px 8px hsla(180, 40%, 20%, 0.06);
     --shadow-metric: 0 2px 8px -2px hsla(200, 30%, 20%, 0.08), 0 8px 24px -4px hsla(180, 40%, 20%, 0.1);
 
-    --sidebar-background: 220 60% 13%;
+    --sidebar-background: var(--header-background);
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 210 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 80% 45%;
+    --sidebar-accent: 180 80% 20%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 210 40% 22%;
+    --sidebar-border: 180 60% 20%;
     --sidebar-ring: 210 70% 55%;
     --sidebar-muted: 0 0% 60%;
 
@@ -118,13 +118,13 @@
     --shadow-card-hover: 0 8px 24px -4px hsla(210, 30%, 5%, 0.5);
     --shadow-metric: 0 4px 20px -4px hsla(210, 30%, 5%, 0.45);
 
-    --sidebar-background: 220 65% 10%;
+    --sidebar-background: var(--header-background);
     --sidebar-foreground: 210 15% 82%;
     --sidebar-primary: 210 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 55% 15%;
+    --sidebar-accent: 180 60% 18%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 210 35% 18%;
+    --sidebar-border: 180 50% 16%;
     --sidebar-ring: 210 70% 55%;
     --sidebar-muted: 210 18% 50%;
 
