@@ -27,6 +27,7 @@ import {
   Activity,
   Flame,
   ShieldCheck,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import type { AppRole } from "@/hooks/usePermissions";
@@ -103,6 +104,7 @@ export const navigationGroups: NavGroup[] = [
     title: "SYSTEM ADMINISTRATION",
     titleBn: "সিস্টেম প্রশাসন",
     items: [
+      { label: "Bulk Onboarding", labelBn: "বাল্ক অনবোর্ডিং", path: ROUTES.BULK_ONBOARDING, icon: UserPlus, roles: MANAGEMENT },
       { label: "Settings", labelBn: "সেটিংস", path: ROUTES.SETTINGS, icon: Settings, roles: MANAGEMENT },
       { label: "Notifications", labelBn: "বিজ্ঞপ্তি", path: ROUTES.NOTIFICATIONS, icon: Bell, roles: MANAGEMENT },
       { label: "Super Admin", labelBn: "সুপার অ্যাডমিন", path: ROUTES.SUPER_ADMIN, icon: ShieldCheck, roles: ADMIN_ONLY },
