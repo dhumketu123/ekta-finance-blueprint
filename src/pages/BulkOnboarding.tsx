@@ -12,6 +12,7 @@ import {
   type ChannelResult,
 } from "@/services/onboardingNotifier";
 import AppLayout from "@/components/AppLayout";
+import BulkFailureTable from "@/components/BulkFailureTable";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -413,6 +414,8 @@ const BulkOnboarding = () => {
                 <span className="text-primary">✅ {results.filter((r) => r.dbStatus === "success").length} {t("সফল", "success")}</span>
                 <span className="text-destructive">❌ {results.filter((r) => r.dbStatus === "failed").length} {t("ব্যর্থ", "failed")}</span>
               </div>
+
+              <BulkFailureTable results={results} />
             </div>
           )}
         </CardContent>
