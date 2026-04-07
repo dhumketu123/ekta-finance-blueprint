@@ -60,14 +60,14 @@
     --shadow-metric: 0 2px 8px -2px hsla(200, 30%, 20%, 0.08), 0 8px 24px -4px hsla(180, 40%, 20%, 0.1);
 
     --sidebar-background: 220 60% 13%;
-    --sidebar-foreground: 210 20% 85%;
+    --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 210 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 50% 18%;
+    --sidebar-accent: 210 80% 45%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 210 40% 22%;
     --sidebar-ring: 210 70% 55%;
-    --sidebar-muted: 210 20% 55%;
+    --sidebar-muted: 0 0% 60%;
 
     --header-background: 180 100% 15%;
     --header-foreground: 0 0% 100%;

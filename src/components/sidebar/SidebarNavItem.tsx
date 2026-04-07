@@ -18,9 +18,7 @@ const SidebarNavItem = React.memo(({ item }: SidebarNavItemProps) => {
       end={item.path === "/"}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-100 ${
-          isActive
-            ? "text-white"
-            : "hover:text-white"
+          isActive ? "text-white" : "hover:text-white"
         }`
       }
       style={({ isActive }) => ({
