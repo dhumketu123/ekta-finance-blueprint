@@ -180,7 +180,7 @@ const BulkOnboarding = () => {
     <AppLayout>
       <PageHeader
         title={lang === "bn" ? "বাল্ক অনবোর্ডিং" : "Bulk Onboarding"}
-        subtitle={lang === "bn" ? "একসাথে একাধিক গ্রাহক/বিনিয়োগকারী/কর্মী যোগ করুন" : "Add multiple clients/investors/officers at once"}
+        description={lang === "bn" ? "একসাথে একাধিক গ্রাহক/বিনিয়োগকারী/কর্মী যোগ করুন" : "Add multiple clients/investors/officers at once"}
       />
 
       <Card>
