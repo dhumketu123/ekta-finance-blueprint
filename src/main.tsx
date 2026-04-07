@@ -34,6 +34,7 @@ function setupKeyboardAdaptiveOffset() {
 }
 
 setupKeyboardAdaptiveOffset();
+systemMonitor.init();
 
 createRoot(document.getElementById("root")!).render(
   <GlobalErrorBoundary>
