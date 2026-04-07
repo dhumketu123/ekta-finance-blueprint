@@ -8,10 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import PageHeader from "@/components/PageHeader";
 import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
 import { useKnowledgeDashboardAutoRefresh } from "@/hooks/useKnowledgeDashboardAutoRefresh";
+import { useSystemHealth } from "@/hooks/useSystemHealth";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
-  CheckCircle2, AlertTriangle, Clock, Cpu,
+  CheckCircle2, AlertTriangle, Clock, Cpu, HeartPulse,
 } from "lucide-react";
 import { format } from "date-fns";
 
