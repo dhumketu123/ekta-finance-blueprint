@@ -7,15 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import PageHeader from "@/components/PageHeader";
-import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync, useKnowledgeRealtime } from "@/hooks/useKnowledgeGraph";
+import { useKnowledgeNodes, useKnowledgeStats, useSyncLogs, useRunKnowledgeSync } from "@/hooks/useKnowledgeGraph";
 import { useKnowledgeDashboardAutoRefresh } from "@/hooks/useKnowledgeDashboardAutoRefresh";
 import { useSystemHealth, useHealthTrend, useHealthRealtime } from "@/hooks/useSystemHealth";
 import {
   Brain, Database, Code2, Shield, Activity,
   RefreshCw, Layers, Zap, GitBranch, BarChart3,
   CheckCircle2, AlertTriangle, Clock, Cpu, HeartPulse,
-  ChevronDown, Info,
+  ChevronDown, ChevronLeft, ChevronRight, Info,
 } from "lucide-react";
 import { format } from "date-fns";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
@@ -54,10 +55,9 @@ export default function KnowledgeDashboard() {
   const { data: nodes = [], isLoading: nodesLoading } = useKnowledgeNodes(selectedType);
   const { data: syncLogs = [] } = useSyncLogs();
   const syncMutation = useRunKnowledgeSync();
-  useKnowledgeRealtime();
   useKnowledgeDashboardAutoRefresh();
   const { data: health } = useSystemHealth();
-  const trendData = useHealthTrend(health);
+  const trend = useHealthTrend(health);
   useHealthRealtime();
 
   const filteredNodes = useMemo(() => {
@@ -69,13 +69,13 @@ export default function KnowledgeDashboard() {
 
   // Format trend data for chart
   const chartData = useMemo(() => {
-    return trendData.map((p) => ({
+    return trend.data.map((p) => ({
       time: format(new Date(p.timestamp), "HH:mm"),
       পাস: p.pass,
       সতর্কতা: p.warn,
       ব্যর্থ: p.fail,
     }));
-  }, [trendData]);
+  }, [trend.data]);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -152,23 +152,39 @@ export default function KnowledgeDashboard() {
         </Card>
       </div>
 
-      {/* Expandable System Health Card */}
+      {/* Expandable System Health Card with max-height scroll + aria */}
       {health && (
         <Collapsible open={healthExpanded} onOpenChange={setHealthExpanded}>
-          <Card className={
-            health.status === "unhealthy" ? "border-destructive"
-            : health.status === "degraded" ? "border-amber-500"
-            : "border-emerald-500/50"
-          }>
+          <Card
+            className={
+              health.status === "unhealthy" ? "border-destructive"
+              : health.status === "degraded" ? "border-amber-500"
+              : "border-emerald-500/50"
+            }
+            role="region"
+            aria-label="সিস্টেম হেলথ স্ট্যাটাস"
+          >
             <CollapsibleTrigger asChild>
-              <CardContent className="pt-4 pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+              <CardContent
+                className="pt-4 pb-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                role="button"
+                aria-expanded={healthExpanded}
+                aria-controls="health-details"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setHealthExpanded(!healthExpanded);
+                  }
+                }}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <HeartPulse className={`h-5 w-5 ${
                       health.status === "healthy" ? "text-emerald-500"
                       : health.status === "degraded" ? "text-amber-500"
                       : "text-destructive"
-                    }`} />
+                    }`} aria-hidden="true" />
                     <div>
                       <p className="font-semibold text-sm">
                         সিস্টেম হেলথ: {health.status === "healthy" ? "✅ সুস্থ" : health.status === "degraded" ? "⚠️ ক্ষয়প্রাপ্ত" : "❌ অসুস্থ"}
@@ -178,39 +194,53 @@ export default function KnowledgeDashboard() {
                       </p>
                     </div>
                   </div>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${healthExpanded ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${healthExpanded ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
                 </div>
               </CardContent>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <CardContent className="pt-0 pb-4 border-t">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                  <TooltipProvider>
-                    {health.checks?.map((check) => (
-                      <Tooltip key={check.name}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center justify-between p-2 rounded-md bg-muted/40">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-bold ${STATUS_COLOR[check.status]}`}>
-                                {STATUS_ICON[check.status]}
-                              </span>
-                              <span className="text-sm font-medium">{check.name}</span>
+              <CardContent id="health-details" className="pt-0 pb-4 border-t">
+                <ScrollArea className="max-h-64 mt-3">
+                  <div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                    role="list"
+                    aria-label="হেলথ চেক তালিকা"
+                  >
+                    <TooltipProvider>
+                      {health.checks?.map((check) => (
+                        <Tooltip key={check.name}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="flex items-center justify-between p-2 rounded-md bg-muted/40 focus:ring-2 focus:ring-primary focus:outline-none"
+                              role="listitem"
+                              tabIndex={0}
+                              aria-label={`${check.name}: ${check.status === "pass" ? "পাস" : check.status === "warn" ? "সতর্কতা" : "ব্যর্থ"}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold ${STATUS_COLOR[check.status]}`} aria-hidden="true">
+                                  {STATUS_ICON[check.status]}
+                                </span>
+                                <span className="text-sm font-medium">{check.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {check.latency_ms != null && (
+                                  <span className="text-xs text-muted-foreground">{check.latency_ms}ms</span>
+                                )}
+                                <Info className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {check.latency_ms != null && (
-                                <span className="text-xs text-muted-foreground">{check.latency_ms}ms</span>
-                              )}
-                              <Info className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p className="text-xs">{check.detail || "কোনো বিবরণ নেই"}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
-                  </TooltipProvider>
-                </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">{check.detail || "কোনো বিবরণ নেই"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </TooltipProvider>
+                  </div>
+                </ScrollArea>
               </CardContent>
             </CollapsibleContent>
           </Card>
@@ -382,11 +412,40 @@ export default function KnowledgeDashboard() {
           </Card>
         </TabsContent>
 
-        {/* 24h Health Trend Tab */}
+        {/* 24h Health Trend Tab with pagination */}
         <TabsContent value="trend" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">২৪ ঘণ্টার হেলথ ট্রেন্ড</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">২৪ ঘণ্টার হেলথ ট্রেন্ড</CardTitle>
+                {trend.totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={trend.page >= trend.totalPages - 1}
+                      onClick={trend.nextPage}
+                      aria-label="পূর্ববর্তী পৃষ্ঠা"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {trend.page + 1}/{trend.totalPages}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={trend.page <= 0}
+                      onClick={trend.prevPage}
+                      aria-label="পরবর্তী পৃষ্ঠা"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {chartData.length < 2 ? (
