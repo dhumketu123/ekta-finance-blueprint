@@ -46,11 +46,16 @@ class SystemMonitor {
 
     if (this.errorHandler) {
       window.removeEventListener("error", this.errorHandler);
+      this.errorHandler = undefined;
     }
 
     if (this.rejectionHandler) {
       window.removeEventListener("unhandledrejection", this.rejectionHandler);
+      this.rejectionHandler = undefined;
     }
+
+    this.telemetryAdapter = undefined;
+    this.initialized = false;
   }
 
   public trackEvent(eventName: string, payload?: Record<string, any>) {
