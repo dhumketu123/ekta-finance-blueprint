@@ -56,6 +56,7 @@ const DayClose = React.lazy(() => import("./pages/DayClose"));
 const BalanceSheet = React.lazy(() => import("./pages/BalanceSheet"));
 const AlumniDashboard = React.lazy(() => import("./pages/AlumniDashboard"));
 const GovernanceCore = React.lazy(() => import("./pages/GovernanceCore"));
+const BulkOnboarding = React.lazy(() => import("./pages/BulkOnboarding"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
@@ -148,6 +149,9 @@ const App = () => (
 
                 {/* ── Role-specific ── */}
                 <Route path={ROUTES.ALUMNI} element={<ProtectedRoute allowedRoles={["alumni"]}><AlumniDashboard /></ProtectedRoute>} />
+
+                {/* ── Onboarding ── */}
+                <Route path={ROUTES.BULK_ONBOARDING} element={<ProtectedRoute allowedRoles={["admin", "owner"]}><BulkOnboarding /></ProtectedRoute>} />
 
                 {/* ── Fallback ── */}
                 <Route path="*" element={<NotFound />} />
