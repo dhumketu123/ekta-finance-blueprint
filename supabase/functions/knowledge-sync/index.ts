@@ -131,12 +131,13 @@ serve(async (req) => {
       // Get function dependencies
       let deps: string[] = [];
       try {
-        const { data: depData } = await svc.rpc("get_function_dependencies", {
+        const { data: depData, error: depErr } = await svc.rpc("get_function_dependencies", {
           _function_name: fn.routine_name,
         });
+        if (depErr) console.warn(`Dependency fetch failed for ${fn.routine_name}: ${depErr.message}`);
         deps = (depData || []) as string[];
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error(`Unexpected dependency error for ${fn.routine_name}:`, err);
       }
 
       const rels = deps.map((tableName: string) => ({
