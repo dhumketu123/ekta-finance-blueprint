@@ -414,6 +414,8 @@ const BulkOnboarding = () => {
                 <span className="text-primary">✅ {results.filter((r) => r.dbStatus === "success").length} {t("সফল", "success")}</span>
                 <span className="text-destructive">❌ {results.filter((r) => r.dbStatus === "failed").length} {t("ব্যর্থ", "failed")}</span>
               </div>
+
+              <BulkFailureTable results={results} />
             </div>
           )}
         </CardContent>
