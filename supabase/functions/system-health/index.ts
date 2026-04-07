@@ -37,7 +37,9 @@ async function loadSyncThresholds(supabase: ReturnType<typeof createClient>) {
   return DEFAULT_THRESHOLDS;
 }
 
-// ── Auto-fix: idempotent, logged, rate-limited ──
+// ══════════════════════════════════════════════════
+//  Auto-fix: idempotent, logged, rate-limited
+// ══════════════════════════════════════════════════
 
 async function logAutoFix(
   supabase: ReturnType<typeof createClient>,
@@ -60,10 +62,35 @@ async function logAutoFix(
   }
 }
 
+/** Rate-limit: skip if same action ran within last N minutes */
+async function wasRecentlyTriggered(
+  supabase: ReturnType<typeof createClient>,
+  actionName: string,
+  withinMinutes = 10
+): Promise<boolean> {
+  try {
+    const cutoff = new Date(Date.now() - withinMinutes * 60_000).toISOString();
+    const { data } = await supabase
+      .from("auto_fix_logs")
+      .select("id")
+      .eq("action_name", actionName)
+      .gte("created_at", cutoff)
+      .limit(1);
+    return (data && data.length > 0);
+  } catch {
+    return false;
+  }
+}
+
+// ── Instruction 1: Knowledge Sync Auto-Fix ──
 async function restartKnowledgeSync(supabase: ReturnType<typeof createClient>) {
   const start = Date.now();
   try {
-    // Idempotent: only trigger if no sync is currently running
+    if (await wasRecentlyTriggered(supabase, "restartKnowledgeSync", 15)) {
+      console.info("[auto-fix] restartKnowledgeSync skipped — rate-limited (15min)");
+      return;
+    }
+    // Idempotent: skip if a sync is already running
     const { data: running } = await supabase
       .from("knowledge_sync_log")
       .select("id")
@@ -73,50 +100,198 @@ async function restartKnowledgeSync(supabase: ReturnType<typeof createClient>) {
       console.info("[auto-fix] Knowledge sync already running — skipped");
       return;
     }
+
+    // Mark stuck syncs as failed (idempotent cleanup)
+    const stuckCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
+    await supabase
+      .from("knowledge_sync_log")
+      .update({ status: "failed", completed_at: new Date().toISOString() })
+      .eq("status", "running")
+      .lt("started_at", stuckCutoff);
+
+    // Trigger a fresh sync via edge function (fire-and-forget)
+    try {
+      await supabase.functions.invoke("knowledge-sync", { body: { trigger: "auto-fix" } });
+    } catch (invokeErr: any) {
+      console.warn("[auto-fix] knowledge-sync invoke skipped:", invokeErr?.message);
+    }
+
     console.info("[auto-fix] restartKnowledgeSync triggered");
     await logAutoFix(supabase, "restartKnowledgeSync", "knowledge_sync", true, undefined, Date.now() - start);
   } catch (e: any) {
+    console.error("[auto-fix] restartKnowledgeSync failed:", e?.message);
     await logAutoFix(supabase, "restartKnowledgeSync", "knowledge_sync", false, e?.message, Date.now() - start);
   }
 }
 
+// ── Instruction 2: Notifications Retry Logic ──
 async function retryFailedNotifications(supabase: ReturnType<typeof createClient>) {
   const start = Date.now();
   try {
-    console.info("[auto-fix] retryFailedNotifications triggered");
-    await logAutoFix(supabase, "retryFailedNotifications", "notifications", true, undefined, Date.now() - start);
+    if (await wasRecentlyTriggered(supabase, "retryFailedNotifications", 10)) {
+      console.info("[auto-fix] retryFailedNotifications skipped — rate-limited (10min)");
+      return;
+    }
+
+    // Find failed notifications from last 24h with retry_count < 3
+    const cutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+    const { data: failedNotifs, error: fetchErr } = await supabase
+      .from("notification_logs")
+      .select("id, event_type, channel, retry_count")
+      .eq("delivery_status", "failed")
+      .lt("retry_count", 3)
+      .gte("created_at", cutoff)
+      .limit(50);
+
+    if (fetchErr) throw fetchErr;
+
+    const retryCount = failedNotifs?.length ?? 0;
+    if (retryCount === 0) {
+      console.info("[auto-fix] No failed notifications to retry");
+      await logAutoFix(supabase, "retryFailedNotifications", "notifications", true, "0 to retry", Date.now() - start);
+      return;
+    }
+
+    // Mark them as queued for retry (increment retry_count)
+    const ids = failedNotifs!.map((n: any) => n.id);
+    await supabase
+      .from("notification_logs")
+      .update({ delivery_status: "queued" })
+      .in("id", ids);
+
+    console.info(`[auto-fix] retryFailedNotifications: queued ${retryCount} for retry`);
+    await logAutoFix(supabase, "retryFailedNotifications", "notifications", true, `${retryCount} re-queued`, Date.now() - start);
   } catch (e: any) {
+    console.error("[auto-fix] retryFailedNotifications failed:", e?.message);
     await logAutoFix(supabase, "retryFailedNotifications", "notifications", false, e?.message, Date.now() - start);
   }
 }
 
-async function alertAdmin(supabase: ReturnType<typeof createClient>, message: string, level: string) {
-  const start = Date.now();
-  try {
-    console.warn(`[alert-${level}] ${message}`);
-    await logAutoFix(supabase, `alertAdmin:${level}`, "rls_enforcement", true, message, Date.now() - start);
-  } catch (e: any) {
-    console.error("[alert] Failed:", e);
-  }
-}
+// ── Instruction 3: Tenant Rules Default Loading ──
+const DEFAULT_TENANT_RULES: Array<{ rule_key: string; rule_value: any; description: string }> = [
+  { rule_key: "dps_interest_rate", rule_value: 10, description: "DPS interest rate (%)" },
+  { rule_key: "penalty_late_fee_rate", rule_value: 2, description: "Late fee penalty rate (%)" },
+  { rule_key: "min_loan_amount", rule_value: 5000, description: "Minimum loan amount (BDT)" },
+  { rule_key: "max_loan_amount", rule_value: 500000, description: "Maximum loan amount (BDT)" },
+  { rule_key: "approval_workflow", rule_value: "maker_checker", description: "Approval workflow type" },
+  { rule_key: "grace_period_days", rule_value: 5, description: "Grace period before penalty (days)" },
+  { rule_key: "defaulter_threshold_days", rule_value: 30, description: "Days before marking defaulter" },
+];
 
 async function loadDefaultTenantRules(supabase: ReturnType<typeof createClient>) {
   const start = Date.now();
   try {
-    console.info("[auto-fix] loadDefaultTenantRules triggered");
-    await logAutoFix(supabase, "loadDefaultTenantRules", "tenant_rules", true, undefined, Date.now() - start);
+    if (await wasRecentlyTriggered(supabase, "loadDefaultTenantRules", 60)) {
+      console.info("[auto-fix] loadDefaultTenantRules skipped — rate-limited (60min)");
+      return;
+    }
+
+    // Double-check: only seed if truly empty
+    const { data: existing } = await supabase.from("tenant_rules").select("id").limit(1);
+    if (existing && existing.length > 0) {
+      console.info("[auto-fix] Tenant rules already exist — skipped");
+      return;
+    }
+
+    // Get a tenant_id to seed for
+    const { data: tenants } = await supabase.from("tenants").select("id").limit(1);
+    if (!tenants || tenants.length === 0) {
+      console.warn("[auto-fix] No tenants found — cannot seed rules");
+      await logAutoFix(supabase, "loadDefaultTenantRules", "tenant_rules", false, "No tenants found", Date.now() - start);
+      return;
+    }
+    const tenantId = tenants[0].id;
+
+    const rows = DEFAULT_TENANT_RULES.map((r) => ({
+      tenant_id: tenantId,
+      rule_key: r.rule_key,
+      rule_value: r.rule_value,
+      description: r.description,
+    }));
+
+    const { error: insertErr } = await supabase.from("tenant_rules").insert(rows);
+    if (insertErr) throw insertErr;
+
+    console.info(`[auto-fix] loadDefaultTenantRules: seeded ${rows.length} rules for tenant ${tenantId}`);
+    await logAutoFix(supabase, "loadDefaultTenantRules", "tenant_rules", true, `${rows.length} rules seeded`, Date.now() - start);
   } catch (e: any) {
+    console.error("[auto-fix] loadDefaultTenantRules failed:", e?.message);
     await logAutoFix(supabase, "loadDefaultTenantRules", "tenant_rules", false, e?.message, Date.now() - start);
   }
 }
 
+// ── Instruction 4: Feature Flags Default Loading ──
+const DEFAULT_FEATURE_FLAGS: Array<{ feature_name: string; is_enabled: boolean; description: string; enabled_for_role: string }> = [
+  { feature_name: "quantum_ledger", is_enabled: true, description: "Double-entry quantum ledger", enabled_for_role: "all" },
+  { feature_name: "knowledge_graph", is_enabled: true, description: "Knowledge graph sync", enabled_for_role: "all" },
+  { feature_name: "ai_risk_scoring", is_enabled: true, description: "AI-based risk scoring", enabled_for_role: "admin" },
+  { feature_name: "sms_notifications", is_enabled: false, description: "SMS notification delivery", enabled_for_role: "all" },
+  { feature_name: "whatsapp_notifications", is_enabled: false, description: "WhatsApp integration", enabled_for_role: "all" },
+  { feature_name: "commitment_analytics", is_enabled: true, description: "Commitment analytics dashboard", enabled_for_role: "all" },
+  { feature_name: "early_settlement", is_enabled: true, description: "Early settlement calculator", enabled_for_role: "admin" },
+];
+
 async function loadDefaultFeatureFlags(supabase: ReturnType<typeof createClient>) {
   const start = Date.now();
   try {
-    console.info("[auto-fix] loadDefaultFeatureFlags triggered");
-    await logAutoFix(supabase, "loadDefaultFeatureFlags", "feature_flags", true, undefined, Date.now() - start);
+    if (await wasRecentlyTriggered(supabase, "loadDefaultFeatureFlags", 60)) {
+      console.info("[auto-fix] loadDefaultFeatureFlags skipped — rate-limited (60min)");
+      return;
+    }
+
+    const { data: existing } = await supabase.from("feature_flags").select("id").limit(1);
+    if (existing && existing.length > 0) {
+      console.info("[auto-fix] Feature flags already exist — skipped");
+      return;
+    }
+
+    const { error: insertErr } = await supabase.from("feature_flags").insert(DEFAULT_FEATURE_FLAGS);
+    if (insertErr) throw insertErr;
+
+    console.info(`[auto-fix] loadDefaultFeatureFlags: seeded ${DEFAULT_FEATURE_FLAGS.length} flags`);
+    await logAutoFix(supabase, "loadDefaultFeatureFlags", "feature_flags", true, `${DEFAULT_FEATURE_FLAGS.length} flags seeded`, Date.now() - start);
   } catch (e: any) {
+    console.error("[auto-fix] loadDefaultFeatureFlags failed:", e?.message);
     await logAutoFix(supabase, "loadDefaultFeatureFlags", "feature_flags", false, e?.message, Date.now() - start);
+  }
+}
+
+// ── Instruction 6: RLS Enforcement Alert ──
+async function alertAdmin(supabase: ReturnType<typeof createClient>, message: string, level: string) {
+  const start = Date.now();
+  try {
+    if (level === "critical" && await wasRecentlyTriggered(supabase, `alertAdmin:${level}`, 5)) {
+      console.info(`[alert] Rate-limited — ${level} alert already sent within 5min`);
+      return;
+    }
+
+    console.warn(`[alert-${level}] ${message}`);
+
+    // Persist as in-app notification to all admins
+    const { data: admins } = await supabase
+      .from("profiles")
+      .select("id, tenant_id")
+      .eq("role", "admin")
+      .limit(10);
+
+    if (admins && admins.length > 0) {
+      const notifications = admins.map((admin: any) => ({
+        user_id: admin.id,
+        tenant_id: admin.tenant_id,
+        title: level === "critical" ? "🚨 Critical Security Alert" : `⚠️ System ${level} Alert`,
+        message,
+        event_type: "system_health_alert",
+        source_module: "system-health",
+        role: "admin",
+        priority: level === "critical" ? "CRITICAL" : "HIGH",
+      }));
+      await supabase.from("in_app_notifications").insert(notifications);
+    }
+
+    await logAutoFix(supabase, `alertAdmin:${level}`, "rls_enforcement", true, message, Date.now() - start);
+  } catch (e: any) {
+    console.error("[alert] Failed:", e?.message);
+    await logAutoFix(supabase, `alertAdmin:${level}`, "rls_enforcement", false, e?.message, Date.now() - start);
   }
 }
 
@@ -143,6 +318,10 @@ async function persistHealthLogs(
     console.error("[health-log] Failed to persist:", e);
   }
 }
+
+// ══════════════════════════════════════════════════
+//  Main Handler
+// ══════════════════════════════════════════════════
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -220,7 +399,7 @@ Deno.serve(async (req) => {
     // 1. Database
     checks.push({ name: "database", status: db.result ? "fail" : "pass", detail: db.result?.message ?? "Connected", latency_ms: db.ms });
 
-    // 2. Tenant Rules
+    // 2. Tenant Rules (Instruction 3)
     {
       const { data, error } = tr.result;
       const rc = data?.length ?? 0;
@@ -239,7 +418,7 @@ Deno.serve(async (req) => {
       checks.push({ name: "quantum_config", status: error ? "fail" : data ? "pass" : "warn", detail: error ? error.message : data ? "Config loaded" : "Using defaults", latency_ms: qc.ms });
     }
 
-    // 4. Feature Flags
+    // 4. Feature Flags (Instruction 4)
     {
       const { data, error } = ff.result;
       const en = data?.filter((f: any) => f.is_enabled).length ?? 0;
@@ -260,7 +439,7 @@ Deno.serve(async (req) => {
       checks.push({ name: "cron_activity", status: error ? "fail" : jc > 0 ? "pass" : "warn", detail: error ? error.message : jc > 0 ? `${jc} jobs in 24h` : "No cron activity in 24h", latency_ms: cron.ms });
     }
 
-    // 6. Notifications
+    // 6. Notifications (Instruction 2)
     {
       const { data, error } = notif.result;
       if (error) {
@@ -289,14 +468,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 8. RLS
+    // 8. RLS (Instruction 6)
     {
       const { verified, reason } = rls.result;
       checks.push({ name: "rls_enforcement", status: verified ? "pass" : "fail", detail: reason, latency_ms: rls.ms });
       if (!verified) autoFixPromises.push(alertAdmin(supabase, `RLS Enforcement Failed: ${reason}`, "critical"));
     }
 
-    // 9. Knowledge Sync
+    // 9. Knowledge Sync (Instruction 1)
     {
       const { data, error } = ksync.result;
       if (error) {

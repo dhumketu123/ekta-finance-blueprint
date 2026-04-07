@@ -268,12 +268,15 @@ const LiveHealthTab = () => {
             <div className="pt-2 border-t">
               <p className="text-xs font-medium mb-2 text-muted-foreground">লেটেন্সি ব্রেকডাউন</p>
               {latencyData.length > 0 && (
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={latencyData} layout="vertical">
-                    <XAxis type="number" tick={{ fontSize: 10 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={80} />
-                    <RechartsTooltip formatter={(v: number) => `${v}ms`} />
-                    <Bar dataKey="latency" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={latencyData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                    <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit="ms" />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={85} tickLine={false} axisLine={false} />
+                    <RechartsTooltip
+                      formatter={(v: number) => [`${v}ms`, "লেটেন্সি"]}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
+                    />
+                    <Bar dataKey="latency" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={14} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -306,15 +309,20 @@ const LiveHealthTab = () => {
             {trendChartData.length < 2 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">ট্রেন্ড ডেটা সংগ্রহ হচ্ছে...</p>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={trendChartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area type="monotone" dataKey="পাস" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.3)" />
-                  <Area type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b33" />
-                  <Area type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.3)" />
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={trendChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.4} />
+                  <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <RechartsTooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
+                    formatter={(value: number, name: string) => [`${value} checks`, name]}
+                    labelFormatter={(label) => `সময়: ${label}`}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Area type="monotone" dataKey="পাস" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} strokeWidth={2} />
+                  <Area type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} strokeWidth={2} />
+                  <Area type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
