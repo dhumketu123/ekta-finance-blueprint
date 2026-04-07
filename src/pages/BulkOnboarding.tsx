@@ -146,6 +146,14 @@ const BulkOnboarding = () => {
         });
 
         batchResults.push({ name: entry.name_en, status: "success", message: "✅" });
+
+        // Non-blocking notification dispatch (in-app + SMS)
+        notifyOnboardedUsers(
+          [{ name_en: entry.name_en.trim(), phone: entry.phone?.trim() }],
+          activeRole,
+          tenantId,
+          user.id
+        ).catch(() => {});
       } catch (err: any) {
         batchResults.push({ name: entry.name_en, status: "failed", message: err.message || "Error" });
       }
