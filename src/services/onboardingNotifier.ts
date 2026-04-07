@@ -69,14 +69,15 @@ async function sendInApp(entry: OnboardEntry, role: OnboardRole, tenantId: strin
 async function sendSms(entry: OnboardEntry, role: OnboardRole): Promise<ChannelResult | null> {
   if (!entry.phone?.trim()) return null;
   try {
-    await withRetry(() =>
-      supabase.rpc("send_sms" as any, {
+    await withRetry(async () => {
+      const { error } = await supabase.rpc("send_sms" as any, {
         p_recipient: entry.phone.trim(),
         p_message: `স্বাগতম ${entry.name_en}! আপনার ${ROLE_BN[role]} অ্যাকাউন্ট Ekta Finance-এ তৈরি হয়েছে।`,
         p_recipient_name: entry.name_en,
         p_message_type: "onboarding",
-      }).then(({ error }) => { if (error) throw error; })
-    );
+      });
+      if (error) throw error;
+    });
     return { channel: "SMS", ok: true, detail: "✅" };
   } catch (err: any) {
     return { channel: "SMS", ok: false, detail: err.message || "Failed" };
