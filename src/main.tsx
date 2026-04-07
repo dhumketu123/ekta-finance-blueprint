@@ -3,24 +3,23 @@ import App from "./App.tsx";
 import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
 import "./index.css";
 
-// Production console guard — suppress logs in production
-if (import.meta.env.PROD) {
-  const noop = () => {};
-  console.log = noop;
-  console.debug = noop;
-  console.info = noop;
-  // Keep console.warn and console.error for critical issues
-}
-
 // Keyboard adaptive engine — dynamically adjusts --keyboard-offset for mobile
 if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", () => {
+  const handleViewportResize = () => {
     const offset = window.innerHeight - window.visualViewport!.height;
     document.documentElement.style.setProperty(
       "--keyboard-offset",
       `${offset > 0 ? offset : 0}px`
     );
-  });
+  };
+  window.visualViewport.addEventListener("resize", handleViewportResize);
+
+  // Cleanup on HMR dispose (dev only)
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -34,13 +34,27 @@ function getRoleAccentColor(role: AppRole | null): string {
   }
 }
 
-const SidebarInner = ({ groups, accentColor }: { groups: NavGroup[]; accentColor: string }) => (
+function getRoleLabel(role: AppRole | null): string {
+  switch (role) {
+    case "admin": return "Admin role";
+    case "owner": return "Owner role";
+    case "field_officer": return "Field Officer role";
+    case "investor": return "Investor role";
+    case "treasurer": return "Treasurer role";
+    default: return "";
+  }
+}
+
+const SidebarInner = ({ groups, accentColor, roleLabel }: { groups: NavGroup[]; accentColor: string; roleLabel: string }) => (
   <>
     <SidebarBrand />
+    {/* Role accent stripe */}
     <div
       className="absolute left-0 top-0 bottom-0 w-[3px]"
       style={{ backgroundColor: accentColor }}
+      aria-hidden="true"
     />
+    {roleLabel && <span className="sr-only">{roleLabel}</span>}
     <ScrollArea className="flex-1 py-2">
       {groups.map((group) => (
         <SidebarNavGroup key={group.title} group={group} />
@@ -49,6 +63,10 @@ const SidebarInner = ({ groups, accentColor }: { groups: NavGroup[]; accentColor
     <SidebarFooter />
   </>
 );
+
+const CONTAINMENT_STYLE: React.CSSProperties = {
+  contain: "layout paint style",
+};
 
 const SidebarContainer = () => {
   const { role } = usePermissions();
@@ -66,12 +84,13 @@ const SidebarContainer = () => {
   );
 
   const accentColor = useMemo(() => getRoleAccentColor(role), [role]);
+  const roleLabel = useMemo(() => getRoleLabel(role), [role]);
 
   if (!role) return null;
 
   const sidebar = (
     <SidebarErrorBoundary>
-      <SidebarInner groups={filteredGroups} accentColor={accentColor} />
+      <SidebarInner groups={filteredGroups} accentColor={accentColor} roleLabel={roleLabel} />
     </SidebarErrorBoundary>
   );
 
@@ -81,7 +100,10 @@ const SidebarContainer = () => {
         <SheetContent
           side="left"
           className="w-[280px] p-0 flex flex-col border-r-0 will-change-transform"
-          style={{ backgroundColor: "hsl(var(--sidebar-background))" }}
+          style={{
+            backgroundColor: "hsl(var(--sidebar-background))",
+            ...CONTAINMENT_STYLE,
+          }}
         >
           {sidebar}
         </SheetContent>
@@ -95,6 +117,7 @@ const SidebarContainer = () => {
       style={{
         backgroundColor: "hsl(var(--sidebar-background))",
         borderColor: "hsl(var(--sidebar-border))",
+        ...CONTAINMENT_STYLE,
       }}
     >
       {sidebar}
