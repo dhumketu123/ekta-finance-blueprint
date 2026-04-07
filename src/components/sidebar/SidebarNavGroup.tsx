@@ -27,7 +27,7 @@ const SidebarNavGroup = React.memo(({ group }: SidebarNavGroupProps) => {
     if (hasActiveChild) setIsOpen(true);
   }, [hasActiveChild]);
 
-  const title = lang === "bn" && group.titleBn ? group.titleBn : group.title;
+  const title = lang === "bn" ? group.titleBn ?? group.title : group.title;
 
   const renderItem = useCallback(
     (item: NavItem) => <SidebarNavItem key={item.path} item={item} />,
