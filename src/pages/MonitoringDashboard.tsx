@@ -1,21 +1,43 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetricCardSkeleton } from "@/components/ui/skeleton";
-import { Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle, BarChart3, Server, ShieldAlert, Rocket } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle,
+  BarChart3, Server, ShieldAlert, Rocket, HeartPulse, Wrench, Info,
+  ChevronLeft, ChevronRight,
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AnomalyIntelligencePanel from "@/components/analytics/AnomalyIntelligencePanel";
 import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
 import LaunchReadinessPanel from "@/components/ops/LaunchReadinessPanel";
+import {
+  useSystemHealth, useAutoFixLogs, useHealthHistory,
+  useHealthTrend, useHealthRealtime,
+} from "@/hooks/useSystemHealth";
+import { format } from "date-fns";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  ResponsiveContainer, Legend, BarChart, Bar, Tooltip as RechartsTooltip,
+} from "recharts";
+
+const STATUS_ICON: Record<string, string> = { pass: "✓", warn: "⚠", fail: "✗" };
+const STATUS_COLOR: Record<string, string> = {
+  pass: "text-emerald-600",
+  warn: "text-amber-500",
+  fail: "text-destructive",
+};
 
 const useNotificationStats = () =>
   useQuery({
@@ -62,6 +84,303 @@ const useLoanStats = () =>
     staleTime: 60_000,
   });
 
+// ── Live Health Tab Component ──
+const LiveHealthTab = () => {
+  const { data: health, isLoading: healthLoading } = useSystemHealth(true, 15_000);
+  const { data: autoFixLogs = [] } = useAutoFixLogs(15);
+  const { data: healthHistory = [] } = useHealthHistory(50);
+  const trend = useHealthTrend(health);
+  useHealthRealtime();
+
+  const trendChartData = useMemo(() => {
+    return trend.data.map((p) => ({
+      time: format(new Date(p.timestamp), "HH:mm"),
+      পাস: p.pass,
+      সতর্কতা: p.warn,
+      ব্যর্থ: p.fail,
+    }));
+  }, [trend.data]);
+
+  // Latency chart from health checks
+  const latencyData = useMemo(() => {
+    if (!health?.checks) return [];
+    return health.checks.map((c) => ({
+      name: c.name,
+      latency: c.latency_ms ?? 0,
+    }));
+  }, [health]);
+
+  if (healthLoading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Overall Status + Summary Cards */}
+      {health && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className={
+            health.status === "healthy" ? "border-emerald-500/50"
+            : health.status === "degraded" ? "border-amber-500/50"
+            : "border-destructive/50"
+          }>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-3">
+                <HeartPulse className={`h-6 w-6 ${
+                  health.status === "healthy" ? "text-emerald-500"
+                  : health.status === "degraded" ? "text-amber-500"
+                  : "text-destructive"
+                }`} />
+                <div>
+                  <p className="text-lg font-bold capitalize">{health.status}</p>
+                  <p className="text-xs text-muted-foreground">সামগ্রিক অবস্থা</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <p className="text-2xl font-bold">{health.summary.pass}</p>
+                  <p className="text-xs text-muted-foreground">পাস</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="text-2xl font-bold">{health.summary.warn}</p>
+                  <p className="text-xs text-muted-foreground">সতর্কতা</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-3">
+                <XCircle className="h-5 w-5 text-destructive" />
+                <div>
+                  <p className="text-2xl font-bold">{health.summary.fail}</p>
+                  <p className="text-xs text-muted-foreground">ব্যর্থ</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Check List Table + Thresholds */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Check List */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              হেলথ চেক তালিকা
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="max-h-80">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>স্ট্যাটাস</TableHead>
+                    <TableHead>চেক নাম</TableHead>
+                    <TableHead>লেটেন্সি</TableHead>
+                    <TableHead>বিবরণ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {health?.checks?.map((check) => (
+                    <TableRow key={check.name}>
+                      <TableCell>
+                        <span className={`text-sm font-bold ${STATUS_COLOR[check.status]}`}>
+                          {STATUS_ICON[check.status]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{check.name}</TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {check.latency_ms ?? "—"}ms
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-xs text-muted-foreground truncate max-w-[200px] block cursor-help">
+                                {check.detail || "—"}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-sm">
+                              <p className="text-xs">{check.detail}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Thresholds Panel */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              থ্রেশোল্ড কনফিগ
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Stuck Sync Timeout</span>
+                <Badge variant="outline">{health?.thresholds?.stuck_running_minutes ?? 30} মিনিট</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Stale Threshold</span>
+                <Badge variant="outline">{health?.thresholds?.stale_hours ?? 6} ঘণ্টা</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">মোট লেটেন্সি</span>
+                <Badge variant="secondary">{health?.total_latency_ms ?? "—"}ms</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Run ID</span>
+                <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px]">
+                  {health?.run_id?.slice(0, 8) ?? "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">লেটেন্সি ব্রেকডাউন</p>
+              {latencyData.length > 0 && (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={latencyData} layout="vertical">
+                    <XAxis type="number" tick={{ fontSize: 10 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={80} />
+                    <RechartsTooltip formatter={(v: number) => `${v}ms`} />
+                    <Bar dataKey="latency" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Trend Chart + Auto-Fix Logs side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Trend Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">হেলথ ট্রেন্ড</CardTitle>
+              {trend.totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={trend.page >= trend.totalPages - 1} onClick={trend.nextPage}>
+                    <ChevronLeft className="h-3 w-3" />
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground">{trend.page + 1}/{trend.totalPages}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={trend.page <= 0} onClick={trend.prevPage}>
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {trendChartData.length < 2 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">ট্রেন্ড ডেটা সংগ্রহ হচ্ছে...</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={trendChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="পাস" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.3)" />
+                  <Area type="monotone" dataKey="সতর্কতা" stackId="1" stroke="#f59e0b" fill="#f59e0b33" />
+                  <Area type="monotone" dataKey="ব্যর্থ" stackId="1" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.3)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Auto-Fix Logs */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-primary" />
+              অটো-ফিক্স লগ
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="max-h-64">
+              {autoFixLogs.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">কোনো অটো-ফিক্স চালানো হয়নি</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>অ্যাকশন</TableHead>
+                      <TableHead>চেক</TableHead>
+                      <TableHead>ফলাফল</TableHead>
+                      <TableHead>সময়</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {autoFixLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs font-medium">{log.action_name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{log.triggered_by_check}</TableCell>
+                        <TableCell>
+                          {log.success ? (
+                            <Badge variant="default" className="text-[10px]">✅ সফল</Badge>
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge variant="destructive" className="text-[10px]">❌ ব্যর্থ</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-xs">{log.error_message || "Unknown error"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-[10px] text-muted-foreground">
+                          {format(new Date(log.created_at), "dd MMM HH:mm")}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Dashboard ──
 const MonitoringDashboard = () => {
   const { lang } = useLanguage();
   const { data: notifLogs, isLoading: notifLoading, refetch: refetchNotif, isFetching } = useNotificationStats();
@@ -70,7 +389,6 @@ const MonitoringDashboard = () => {
 
   const isLoading = notifLoading || auditLoading || loanLoading;
 
-  // Notification KPIs
   const stats = useMemo(() => {
     if (!notifLogs) return { total: 0, sent: 0, failed: 0, queued: 0, retried: 0, sms: 0, whatsapp: 0, deliveryRate: 0 };
     const total = notifLogs.length;
@@ -84,7 +402,6 @@ const MonitoringDashboard = () => {
     return { total, sent, failed, queued, retried, sms, whatsapp, deliveryRate };
   }, [notifLogs]);
 
-  // Loan health
   const loanHealth = useMemo(() => {
     if (!loanStats) return { active: 0, closed: 0, defaulted: 0, total: 0 };
     const active = loanStats.filter(l => l.status === "active").length;
@@ -93,23 +410,15 @@ const MonitoringDashboard = () => {
     return { active, closed, defaulted, total: loanStats.length };
   }, [loanStats]);
 
-  // Recent cron runs
   const cronRuns = useMemo(() => {
     if (!auditLogs) return [];
-    return auditLogs.map(log => ({
-      type: log.action_type,
-      time: log.created_at,
-      details: log.details as any,
-    }));
+    return auditLogs.map(log => ({ type: log.action_type, time: log.created_at, details: log.details as any }));
   }, [auditLogs]);
 
-  // Top failed event types
   const failedByEvent = useMemo(() => {
     if (!notifLogs) return [];
     const map: Record<string, number> = {};
-    notifLogs.filter(n => n.delivery_status === "failed").forEach(n => {
-      map[n.event_type] = (map[n.event_type] || 0) + 1;
-    });
+    notifLogs.filter(n => n.delivery_status === "failed").forEach(n => { map[n.event_type] = (map[n.event_type] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [notifLogs]);
 
@@ -136,7 +445,7 @@ const MonitoringDashboard = () => {
     <AppLayout>
       <PageHeader
         title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"}
-        description={lang === "bn" ? "ডেলিভারি, ক্রন জব, অ্যানোমালি ইন্টেলিজেন্স" : "Delivery, cron jobs & anomaly intelligence"}
+        description={lang === "bn" ? "ডেলিভারি, ক্রন জব, লাইভ হেলথ, অ্যানোমালি ইন্টেলিজেন্স" : "Delivery, cron jobs, live health & anomaly intelligence"}
         badge={lang === "bn" ? "🖥️ সিস্টেম অপস" : "🖥️ System Ops"}
         actions={
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={refetchAll} disabled={isFetching}>
@@ -146,8 +455,12 @@ const MonitoringDashboard = () => {
         }
       />
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs defaultValue="health">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="health" className="gap-1.5">
+            <HeartPulse className="w-3.5 h-3.5" />
+            {lang === "bn" ? "লাইভ হেলথ" : "Live Health"}
+          </TabsTrigger>
           <TabsTrigger value="overview">{lang === "bn" ? "ওভারভিউ" : "Overview"}</TabsTrigger>
           <TabsTrigger value="anomaly" className="gap-1.5">
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -163,6 +476,10 @@ const MonitoringDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="health" className="space-y-6">
+          <LiveHealthTab />
+        </TabsContent>
+
         <TabsContent value="overview" className="space-y-6">
           {/* Delivery KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
@@ -174,7 +491,6 @@ const MonitoringDashboard = () => {
 
           {/* System Health Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {/* Delivery Rate Gauge */}
             <div className="card-elevated p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-4 h-4 text-primary" />
@@ -192,7 +508,6 @@ const MonitoringDashboard = () => {
               </div>
             </div>
 
-            {/* Loan Portfolio Health */}
             <div className="card-elevated p-5">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-4 h-4 text-primary" />
@@ -217,7 +532,6 @@ const MonitoringDashboard = () => {
               </div>
             </div>
 
-            {/* Failed by Event Type */}
             <div className="card-elevated p-5">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -238,7 +552,7 @@ const MonitoringDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Cron Job Runs */}
+          {/* Recent Cron */}
           <div className="card-elevated overflow-hidden">
             <div className="p-4 border-b border-border flex items-center gap-2">
               <Server className="w-4 h-4 text-primary" />

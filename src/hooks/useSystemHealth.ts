@@ -13,6 +13,7 @@ export interface HealthCheck {
 export interface SystemHealthData {
   status: "healthy" | "degraded" | "unhealthy" | "error";
   timestamp: string;
+  run_id?: string;
   total_latency_ms: number;
   summary: { pass: number; warn: number; fail: number };
   checks: HealthCheck[];
@@ -27,10 +28,32 @@ export interface HealthTrendPoint {
   status: string;
 }
 
+export interface AutoFixLog {
+  id: string;
+  action_name: string;
+  triggered_by_check: string;
+  success: boolean;
+  error_message: string | null;
+  execution_ms: number | null;
+  created_at: string;
+}
+
+export interface HealthLogEntry {
+  id: string;
+  run_id: string;
+  check_name: string;
+  status: string;
+  latency_ms: number | null;
+  detail: string | null;
+  overall_status: string;
+  total_latency_ms: number | null;
+  created_at: string;
+}
+
 /**
- * Fetches system health with auto-refetch every 60s.
+ * Fetches system health with configurable refetch interval.
  */
-export const useSystemHealth = (enabled = true) => {
+export const useSystemHealth = (enabled = true, refetchIntervalMs = 15_000) => {
   return useQuery({
     queryKey: ["system_health"],
     queryFn: async (): Promise<SystemHealthData> => {
@@ -39,49 +62,76 @@ export const useSystemHealth = (enabled = true) => {
       return data as SystemHealthData;
     },
     enabled,
+    staleTime: 10_000,
+    refetchInterval: refetchIntervalMs,
+  });
+};
+
+/**
+ * Fetches recent auto-fix logs from the database.
+ */
+export const useAutoFixLogs = (limit = 20) => {
+  return useQuery({
+    queryKey: ["auto_fix_logs", limit],
+    queryFn: async (): Promise<AutoFixLog[]> => {
+      const { data, error } = await supabase
+        .from("auto_fix_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []) as unknown as AutoFixLog[];
+    },
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
+  });
+};
+
+/**
+ * Fetches recent health log history from the database.
+ */
+export const useHealthHistory = (limit = 50) => {
+  return useQuery({
+    queryKey: ["health_history", limit],
+    queryFn: async (): Promise<HealthLogEntry[]> => {
+      const { data, error } = await supabase
+        .from("system_health_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []) as unknown as HealthLogEntry[];
+    },
+    staleTime: 30_000,
+    refetchInterval: 30_000,
   });
 };
 
 const TREND_STORAGE_KEY = "knowledge_health_trend";
 const DEFAULT_MAX_POINTS = 48;
-const DEFAULT_MIN_INTERVAL_MS = 10 * 60 * 1000; // 10 min
+const DEFAULT_MIN_INTERVAL_MS = 10 * 60 * 1000;
 
-/**
- * Maintains a rolling health trend stored in localStorage.
- * Supports configurable interval and pagination for multi-tab reliability.
- */
 export const useHealthTrend = (
   health: SystemHealthData | undefined,
   options?: { minIntervalMs?: number; maxPoints?: number }
 ) => {
   const minInterval = options?.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS;
   const maxPoints = options?.maxPoints ?? DEFAULT_MAX_POINTS;
-
-  // Page state for trend pagination
   const [page, setPage] = useState(0);
 
   const getTrend = useCallback((): HealthTrendPoint[] => {
     try {
       const stored = localStorage.getItem(TREND_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   }, []);
 
   useEffect(() => {
     if (!health) return;
-
     try {
       const trend = getTrend();
       const lastPoint = trend[trend.length - 1];
-      const now = Date.now();
-      if (lastPoint && (now - new Date(lastPoint.timestamp).getTime()) < minInterval) {
-        return;
-      }
-
+      if (lastPoint && (Date.now() - new Date(lastPoint.timestamp).getTime()) < minInterval) return;
       trend.push({
         timestamp: new Date().toISOString(),
         pass: health.summary.pass,
@@ -89,12 +139,8 @@ export const useHealthTrend = (
         fail: health.summary.fail,
         status: health.status,
       });
-
-      const trimmed = trend.slice(-maxPoints);
-      localStorage.setItem(TREND_STORAGE_KEY, JSON.stringify(trimmed));
-    } catch {
-      // localStorage unavailable
-    }
+      localStorage.setItem(TREND_STORAGE_KEY, JSON.stringify(trend.slice(-maxPoints)));
+    } catch { /* localStorage unavailable */ }
   }, [health, minInterval, maxPoints, getTrend]);
 
   const allTrend = getTrend();
@@ -103,10 +149,9 @@ export const useHealthTrend = (
   const safeP = Math.min(page, totalPages - 1);
   const start = Math.max(0, allTrend.length - PAGE_SIZE * (safeP + 1));
   const end = allTrend.length - PAGE_SIZE * safeP;
-  const visibleTrend = allTrend.slice(start, end);
 
   return {
-    data: visibleTrend,
+    data: allTrend.slice(start, end),
     page: safeP,
     totalPages,
     setPage,
@@ -116,8 +161,7 @@ export const useHealthTrend = (
 };
 
 /**
- * Unified realtime subscription for knowledge_sync_log changes.
- * Invalidates both system_health and knowledge queries.
+ * Unified realtime subscription — invalidates health + knowledge queries.
  */
 export const useHealthRealtime = () => {
   const queryClient = useQueryClient();
@@ -128,20 +172,21 @@ export const useHealthRealtime = () => {
 
     const channel = supabase
       .channel("health-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "knowledge_sync_log" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["system_health"] });
-          queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
-          queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
-          queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "knowledge_sync_log" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["system_health"] });
+        queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
+        queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
+        queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "system_health_logs" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["health_history"] });
+        queryClient.invalidateQueries({ queryKey: ["system_health"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "auto_fix_logs" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["auto_fix_logs"] });
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 };

@@ -294,6 +294,39 @@ export type Database = {
           },
         ]
       }
+      auto_fix_logs: {
+        Row: {
+          action_name: string
+          created_at: string
+          error_message: string | null
+          execution_ms: number | null
+          id: string
+          success: boolean
+          tenant_id: string | null
+          triggered_by_check: string
+        }
+        Insert: {
+          action_name: string
+          created_at?: string
+          error_message?: string | null
+          execution_ms?: number | null
+          id?: string
+          success?: boolean
+          tenant_id?: string | null
+          triggered_by_check: string
+        }
+        Update: {
+          action_name?: string
+          created_at?: string
+          error_message?: string | null
+          execution_ms?: number | null
+          id?: string
+          success?: boolean
+          tenant_id?: string | null
+          triggered_by_check?: string
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
@@ -3017,6 +3050,45 @@ export type Database = {
           resolved_by?: string | null
           severity?: string
           title?: string
+        }
+        Relationships: []
+      }
+      system_health_logs: {
+        Row: {
+          check_name: string
+          created_at: string
+          detail: string | null
+          id: string
+          latency_ms: number | null
+          overall_status: string
+          run_id: string
+          status: string
+          tenant_id: string | null
+          total_latency_ms: number | null
+        }
+        Insert: {
+          check_name: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          latency_ms?: number | null
+          overall_status: string
+          run_id?: string
+          status: string
+          tenant_id?: string | null
+          total_latency_ms?: number | null
+        }
+        Update: {
+          check_name?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          latency_ms?: number | null
+          overall_status?: string
+          run_id?: string
+          status?: string
+          tenant_id?: string | null
+          total_latency_ms?: number | null
         }
         Relationships: []
       }
