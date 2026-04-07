@@ -131,6 +131,16 @@
     --header-background: 180 80% 12%;
     --header-foreground: 0 0% 100%;
   }
+
+  /* Reduced motion: disable hover scale, transitions, and animations */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer base {
