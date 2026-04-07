@@ -47,8 +47,8 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
 
 async function sendInApp(entry: OnboardEntry, role: OnboardRole, tenantId: string, userId: string): Promise<ChannelResult> {
   try {
-    await withRetry(() =>
-      supabase.rpc("dispatch_notification" as any, {
+    await withRetry(async () => {
+      const { error } = await supabase.rpc("dispatch_notification" as any, {
         p_user_id: userId,
         p_tenant_id: tenantId,
         p_title: `${entry.name_en} অনবোর্ড সম্পন্ন`,
