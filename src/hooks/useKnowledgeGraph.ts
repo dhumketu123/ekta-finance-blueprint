@@ -207,5 +207,3 @@ export const useKnowledgeRealtime = () => {
     };
   }, [tenantId, queryClient]);
 };
-  }, [tenantId, queryClient]);
-};
