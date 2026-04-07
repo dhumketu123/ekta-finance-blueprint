@@ -7,6 +7,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const CRITICAL_TABLES = new Set([
+  "clients", "investors", "loans", "transactions",
+  "financial_transactions", "savings_accounts", "loan_schedules",
+  "commitments", "double_entry_ledger", "profiles",
+]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
@@ -18,14 +24,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // User client to verify auth & get tenant
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authErr } = await userClient.auth.getUser();
     if (authErr || !user) throw new Error("Unauthorized");
 
-    // Get tenant_id
     const { data: profile } = await userClient
       .from("profiles")
       .select("tenant_id")
@@ -34,11 +38,10 @@ serve(async (req) => {
     if (!profile?.tenant_id) throw new Error("No tenant found");
     const tenantId = profile.tenant_id;
 
-    // Service client for schema introspection
     const svc = createClient(supabaseUrl, serviceKey);
     const startTime = Date.now();
 
-    // Create sync log entry
+    // Create sync log
     const { data: syncLog } = await svc
       .from("knowledge_sync_log")
       .insert({ tenant_id: tenantId, sync_type: "full", status: "running" })
@@ -58,20 +61,19 @@ serve(async (req) => {
     }> = [];
 
     // ═══════════════════════════════════════
-    // 1. SCHEMA INGESTION — Tables & Columns
+    // 1. TABLES — Dynamic FK Weight
     // ═══════════════════════════════════════
     const { data: tables } = await svc.rpc("get_schema_tables");
-    const tableList = tables || [];
-
-    for (const t of tableList) {
+    for (const t of (tables || []) as any[]) {
       const tableName = t.table_name as string;
-      const columns = (t.columns || []) as Array<Record<string, unknown>>;
-      const fkeys = (t.foreign_keys || []) as Array<Record<string, unknown>>;
+      const columns = (t.columns || []) as any[];
+      const fkeys = (t.foreign_keys || []) as any[];
+      const isCritical = CRITICAL_TABLES.has(tableName);
 
-      const rels = fkeys.map((fk: Record<string, unknown>) => ({
+      const rels = fkeys.map((fk: any) => ({
         target_key: `table:${fk.referenced_table}`,
         relation_type: "foreign_key",
-        weight: 8,
+        weight: CRITICAL_TABLES.has(fk.referenced_table as string) ? 10 : 8,
         column: fk.column_name,
         referenced_column: fk.referenced_column,
       }));
@@ -84,15 +86,16 @@ serve(async (req) => {
         category: "schema",
         metadata: {
           column_count: columns.length,
-          columns: columns.map((c: Record<string, unknown>) => ({
+          columns: columns.map((c: any) => ({
             name: c.column_name,
             type: c.data_type,
             nullable: c.is_nullable === "YES",
           })),
           has_rls: t.has_rls ?? false,
+          fk_count: fkeys.length,
         },
         relationships: rels,
-        criticality: ["clients", "investors", "loans", "transactions", "financial_transactions"].includes(tableName) ? 10 : 5,
+        criticality: isCritical ? 10 : 5,
       });
     }
 
@@ -100,12 +103,12 @@ serve(async (req) => {
     // 2. TRIGGERS
     // ═══════════════════════════════════════
     const { data: triggers } = await svc.rpc("get_schema_triggers");
-    for (const tr of triggers || []) {
+    for (const tr of (triggers || []) as any[]) {
       nodes.push({
         tenant_id: tenantId,
         node_type: "trigger",
         node_key: `trigger:${tr.trigger_name}`,
-        node_label: tr.trigger_name as string,
+        node_label: tr.trigger_name,
         category: "schema",
         metadata: {
           event: tr.event_manipulation,
@@ -116,33 +119,52 @@ serve(async (req) => {
         relationships: [
           { target_key: `table:${tr.event_object_table}`, relation_type: "attached_to", weight: 9 },
         ],
-        criticality: 7,
+        criticality: CRITICAL_TABLES.has(tr.event_object_table) ? 9 : 7,
       });
     }
 
     // ═══════════════════════════════════════
-    // 3. DB FUNCTIONS
+    // 3. FUNCTIONS — with Dependency Mapping
     // ═══════════════════════════════════════
     const { data: funcs } = await svc.rpc("get_schema_functions");
-    for (const fn of funcs || []) {
+    for (const fn of (funcs || []) as any[]) {
+      // Get function dependencies
+      let deps: string[] = [];
+      try {
+        const { data: depData } = await svc.rpc("get_function_dependencies", {
+          _function_name: fn.routine_name,
+        });
+        deps = (depData || []) as string[];
+      } catch {
+        // ignore
+      }
+
+      const rels = deps.map((tableName: string) => ({
+        target_key: `table:${tableName}`,
+        relation_type: "depends_on",
+        weight: CRITICAL_TABLES.has(tableName) ? 10 : 9,
+      }));
+
+      const isSecurityDefiner = fn.security_type === "DEFINER";
       nodes.push({
         tenant_id: tenantId,
         node_type: "function",
         node_key: `function:${fn.routine_name}`,
-        node_label: fn.routine_name as string,
+        node_label: fn.routine_name,
         category: "schema",
         metadata: {
           return_type: fn.data_type,
           security: fn.security_type,
           language: fn.routine_language || "plpgsql",
+          dependency_count: deps.length,
         },
-        relationships: [],
-        criticality: (fn.security_type === "DEFINER") ? 9 : 6,
+        relationships: rels,
+        criticality: isSecurityDefiner ? 9 : Math.max(6, Math.min(deps.length + 5, 10)),
       });
     }
 
     // ═══════════════════════════════════════
-    // 4. FRONTEND COMPONENTS (Static Registry)
+    // 4. COMPONENTS (Static Registry)
     // ═══════════════════════════════════════
     const coreComponents = [
       { key: "AppLayout", label: "App Layout Shell", cat: "layout", crit: 10 },
@@ -160,6 +182,7 @@ serve(async (req) => {
       { key: "CashflowOracleWidget", label: "Cashflow Prediction", cat: "ai", crit: 7 },
       { key: "NotificationBell", label: "Notification System", cat: "notifications", crit: 8 },
       { key: "TenantBrandingContext", label: "White-Label Branding", cat: "multi-tenant", crit: 9 },
+      { key: "KnowledgeDashboard", label: "AI Knowledge Dashboard", cat: "ai", crit: 8 },
     ];
 
     for (const c of coreComponents) {
@@ -176,7 +199,7 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════
-    // 5. HOOKS (Static Registry)
+    // 5. HOOKS
     // ═══════════════════════════════════════
     const coreHooks = [
       { key: "useSupabaseData", label: "Core Data Fetcher", deps: ["clients", "investors", "loans"], crit: 10 },
@@ -189,6 +212,7 @@ serve(async (req) => {
       { key: "useDayClose", label: "Day Close Process", deps: ["daily_user_close"], crit: 9 },
       { key: "useInvestorTransactions", label: "Investor TX Manager", deps: ["investor_weekly_transactions"], crit: 8 },
       { key: "useTenantConfig", label: "Tenant Config", deps: ["tenant_settings"], crit: 9 },
+      { key: "useKnowledgeGraph", label: "Knowledge Graph Manager", deps: ["system_knowledge_graph", "knowledge_sync_log"], crit: 8 },
     ];
 
     for (const h of coreHooks) {
@@ -265,22 +289,30 @@ serve(async (req) => {
     // 7. EDGE FUNCTIONS
     // ═══════════════════════════════════════
     const edgeFunctions = [
-      "knowledge-sync", "daily-cron", "ledger-audit", "send-notification",
-      "system-health", "server-time", "weekly-intelligence",
-      "monthly-investor-profit", "monthly-commitment-export",
-      "commitments-create", "commitments-reschedule", "commitments-reschedule-swipe",
+      { name: "knowledge-sync", crit: 8 },
+      { name: "daily-cron", crit: 9 },
+      { name: "ledger-audit", crit: 9 },
+      { name: "send-notification", crit: 7 },
+      { name: "system-health", crit: 8 },
+      { name: "server-time", crit: 7 },
+      { name: "weekly-intelligence", crit: 8 },
+      { name: "monthly-investor-profit", crit: 9 },
+      { name: "monthly-commitment-export", crit: 7 },
+      { name: "commitments-create", crit: 8 },
+      { name: "commitments-reschedule", crit: 7 },
+      { name: "commitments-reschedule-swipe", crit: 7 },
     ];
 
     for (const ef of edgeFunctions) {
       nodes.push({
         tenant_id: tenantId,
         node_type: "edge_function",
-        node_key: `edge:${ef}`,
-        node_label: ef,
+        node_key: `edge:${ef.name}`,
+        node_label: ef.name,
         category: "backend",
-        metadata: { path: `supabase/functions/${ef}/index.ts` },
+        metadata: { path: `supabase/functions/${ef.name}/index.ts` },
         relationships: [],
-        criticality: ["daily-cron", "ledger-audit", "monthly-investor-profit"].includes(ef) ? 9 : 6,
+        criticality: Math.max(6, ef.crit), // Fix 5: Minimum criticality 6 for edge functions
       });
     }
 
@@ -291,58 +323,91 @@ serve(async (req) => {
     let updated = 0;
     const errors: string[] = [];
 
-    for (const node of nodes) {
+    // Batch upsert in chunks of 25
+    const chunkSize = 25;
+    for (let i = 0; i < nodes.length; i += chunkSize) {
+      const chunk = nodes.slice(i, i + chunkSize).map((n) => ({
+        ...n,
+        last_synced_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+
       const { error } = await svc
         .from("system_knowledge_graph")
-        .upsert(
-          { ...node, last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-          { onConflict: "tenant_id,node_type,node_key" }
-        );
+        .upsert(chunk, { onConflict: "tenant_id,node_type,node_key" });
+
       if (error) {
-        errors.push(`${node.node_key}: ${error.message}`);
+        errors.push(`Batch ${Math.floor(i / chunkSize)}: ${error.message}`);
       } else {
-        // Simplified: count all as created/updated
-        created++;
+        created += chunk.length;
       }
+    }
+
+    // ═══════════════════════════════════════
+    // FIX 3: Stale "running" sync logs cleanup
+    // ═══════════════════════════════════════
+    const { data: staleLogs } = await svc
+      .from("knowledge_sync_log")
+      .select("id")
+      .eq("status", "running")
+      .neq("id", syncLogId || "")
+      .lt("started_at", new Date(Date.now() - 5 * 60 * 1000).toISOString());
+
+    for (const stale of staleLogs || []) {
+      await svc
+        .from("knowledge_sync_log")
+        .update({
+          status: "completed_with_errors",
+          completed_at: new Date().toISOString(),
+          errors: ["Auto-resolved: stale running state"],
+        })
+        .eq("id", stale.id);
     }
 
     const durationMs = Date.now() - startTime;
 
-    // Update sync log
+    // Finalize sync log
     if (syncLogId) {
       await svc
         .from("knowledge_sync_log")
         .update({
-          status: errors.length > 0 ? "completed" : "completed",
+          status: errors.length > 0 ? "completed_with_errors" : "completed",
           nodes_processed: nodes.length,
           nodes_created: created,
           nodes_updated: updated,
-          errors: errors,
+          errors,
           duration_ms: durationMs,
           completed_at: new Date().toISOString(),
         })
         .eq("id", syncLogId);
     }
 
-    const summary = {
-      status: "✅ সম্পূর্ণ",
-      total_nodes: nodes.length,
-      tables: nodes.filter((n) => n.node_type === "table").length,
-      triggers: nodes.filter((n) => n.node_type === "trigger").length,
-      functions: nodes.filter((n) => n.node_type === "function").length,
-      components: nodes.filter((n) => n.node_type === "component").length,
-      hooks: nodes.filter((n) => n.node_type === "hook").length,
-      business_rules: nodes.filter((n) => n.node_type === "business_rule").length,
-      kpis: nodes.filter((n) => n.node_type === "kpi").length,
-      edge_functions: nodes.filter((n) => n.node_type === "edge_function").length,
-      errors: errors.length,
-      duration_ms: durationMs,
-      sync_log_id: syncLogId,
-    };
-
-    return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        status: "✅ সম্পূর্ণ",
+        fixes_applied: [
+          "Dynamic FK weight adjustment",
+          "Function dependency mapping",
+          "Stale sync log cleanup",
+          "Criticality normalization (min 6 for edge functions)",
+          "Batch upsert optimization",
+        ],
+        total_nodes: nodes.length,
+        tables: nodes.filter((n) => n.node_type === "table").length,
+        triggers: nodes.filter((n) => n.node_type === "trigger").length,
+        functions: nodes.filter((n) => n.node_type === "function").length,
+        components: nodes.filter((n) => n.node_type === "component").length,
+        hooks: nodes.filter((n) => n.node_type === "hook").length,
+        business_rules: nodes.filter((n) => n.node_type === "business_rule").length,
+        kpis: nodes.filter((n) => n.node_type === "kpi").length,
+        edge_functions: nodes.filter((n) => n.node_type === "edge_function").length,
+        stale_logs_fixed: (staleLogs || []).length,
+        errors: errors.length,
+        duration_ms: durationMs,
+        sync_log_id: syncLogId,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("knowledge-sync error:", e);
     return new Response(

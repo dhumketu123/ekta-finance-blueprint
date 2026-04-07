@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantId } from "@/hooks/useTenantId";
 import { toast } from "sonner";
@@ -96,7 +97,7 @@ export const useSyncLogs = () => {
         .order("started_at", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return (data ?? []) as SyncLog[];
+      return (data ?? []) as unknown as SyncLog[];
     },
     enabled: !!tenantId,
   });
@@ -112,7 +113,8 @@ export const useRunKnowledgeSync = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`নলেজ সিঙ্ক সম্পূর্ণ — ${data.total_nodes} নোড প্রসেস হয়েছে`);
+      const fixes = data.fixes_applied?.length || 0;
+      toast.success(`নলেজ সিঙ্ক সম্পূর্ণ — ${data.total_nodes} নোড, ${fixes}টি ফিক্স প্রয়োগ`);
       queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
       queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
       queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
@@ -121,4 +123,37 @@ export const useRunKnowledgeSync = () => {
       toast.error(`সিঙ্ক ব্যর্থ: ${err.message}`);
     },
   });
+};
+
+/**
+ * Realtime subscription for knowledge graph changes.
+ * Call this at the dashboard level to auto-refresh on sync completion.
+ */
+export const useKnowledgeRealtime = () => {
+  const { tenantId } = useTenantId();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel("knowledge-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "system_knowledge_graph",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["knowledge_graph", tenantId] });
+          queryClient.invalidateQueries({ queryKey: ["knowledge_stats", tenantId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, queryClient]);
 };
