@@ -6,6 +6,15 @@ interface FuzzySearchOptions {
   threshold?: number;
 }
 
+/** Strip diacritics, punctuation, lowercase, trim */
+const preprocess = (str: string): string =>
+  str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,;:!?'"()\-_]/g, "")
+    .toLowerCase()
+    .trim();
+
 export const useFuzzySearch = <T>(
   data: T[],
   searchTerm: string,
@@ -23,7 +32,8 @@ export const useFuzzySearch = <T>(
   );
 
   return useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    return fuse.search(searchTerm).map((res) => res.item);
+    const cleaned = preprocess(searchTerm);
+    if (!cleaned) return data;
+    return fuse.search(cleaned).map((res) => res.item);
   }, [searchTerm, fuse, data]);
 };

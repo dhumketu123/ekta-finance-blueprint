@@ -33,27 +33,40 @@ const SidebarFooter = () => {
 
   return (
     <div
-      className="mt-auto p-4 flex flex-col gap-1"
+      className="mt-auto p-4 flex flex-col justify-between gap-2 z-50 sticky bottom-0"
       style={{
         backgroundColor: "hsl(var(--sidebar-background))",
         borderTop: "1px solid hsl(var(--sidebar-border))",
       }}
     >
-      <span
-        className="truncate text-sm font-medium"
-        style={{ color: "hsl(var(--sidebar-foreground))" }}
-      >
-        {user?.email?.split("@")[0] ?? "User"}
-      </span>
-      <span
-        className="text-xs truncate capitalize"
-        style={{ color: "hsl(var(--sidebar-muted))" }}
-      >
-        {roleDisplay}
-      </span>
+      <div className="flex items-center gap-3">
+        <div
+          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+          style={{
+            backgroundColor: "hsl(var(--sidebar-accent))",
+            color: "hsl(var(--sidebar-primary-foreground))",
+          }}
+        >
+          {user?.email?.charAt(0).toUpperCase() ?? "U"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <span
+            className="block truncate text-sm font-medium"
+            style={{ color: "hsl(var(--sidebar-foreground))" }}
+          >
+            {user?.email?.split("@")[0] ?? "User"}
+          </span>
+          <span
+            className="block text-xs truncate capitalize"
+            style={{ color: "hsl(var(--sidebar-muted))" }}
+          >
+            {roleDisplay}
+          </span>
+        </div>
+      </div>
       <button
         onClick={handleLogout}
-        className="flex items-center gap-1.5 text-xs mt-1 transition-colors duration-100"
+        className="flex items-center gap-1.5 text-xs mt-1 transition-colors duration-100 hover:opacity-80"
         style={{ color: "hsl(var(--destructive))" }}
         aria-label="Logout"
       >
