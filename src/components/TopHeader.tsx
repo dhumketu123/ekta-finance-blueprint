@@ -86,7 +86,7 @@ const TopHeader = () => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 h-16 bg-primary z-30 flex items-center justify-between px-4 border-b border-primary/80 transition-shadow duration-300 ${scrolled ? "shadow-lg shadow-primary/25" : "shadow-md"}`}>
+    <header className={`fixed top-0 left-0 right-0 md:left-[260px] h-16 bg-primary z-30 flex items-center justify-between px-4 border-b border-primary/80 transition-shadow duration-300 ${scrolled ? "shadow-lg shadow-primary/25" : "shadow-md"}`}>
       {/* Left: Three-dot menu + Tagline */}
       <div className="flex items-center gap-3 min-w-0">
         <button
