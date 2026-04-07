@@ -18,9 +18,7 @@ const SidebarBrand = () => {
       } else {
         localStorage.removeItem(LOGO_STORAGE_KEY);
       }
-    } catch {
-      // localStorage unavailable
-    }
+    } catch {}
   }, [logo]);
 
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,19 +41,26 @@ const SidebarBrand = () => {
         className="hidden"
         id="logo-upload"
       />
-      <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
+      <label htmlFor="logo-upload" className="cursor-pointer shrink-0 flex items-center justify-center">
         {logo ? (
           <img
             src={logo}
             alt="Brand Logo"
             className="rounded object-contain"
-            style={{ maxWidth: "100px", height: "auto", maxHeight: "40px" }}
+            style={{ maxWidth: "200px", maxHeight: "50px", height: "auto", width: "auto" }}
           />
         ) : (
           <div
-            className="h-9 w-9 rounded-lg"
+            className="h-10 w-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: "hsl(var(--sidebar-accent))" }}
-          />
+          >
+            <span
+              className="text-lg font-bold"
+              style={{ color: "hsl(var(--sidebar-primary-foreground))" }}
+            >
+              E
+            </span>
+          </div>
         )}
       </label>
       <span

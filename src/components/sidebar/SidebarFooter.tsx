@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -26,14 +26,23 @@ const SidebarFooter = () => {
       : roleLabels[role]?.en ?? role
     : "—";
 
+  const userEmail = user?.email ?? "";
+  const userName = userEmail.split("@")[0] || "User";
+
   const handleLogout = async () => {
     await signOut();
     navigate(ROUTES.AUTH);
   };
 
+  const handleMail = () => {
+    if (userEmail) {
+      window.open(`mailto:${userEmail}`, "_blank");
+    }
+  };
+
   return (
     <div
-      className="mt-auto p-4 flex flex-col justify-between gap-2 z-50 sticky bottom-0"
+      className="mt-auto p-4 flex flex-col gap-3 z-50 sticky bottom-0"
       style={{
         backgroundColor: "hsl(var(--sidebar-background))",
         borderTop: "1px solid hsl(var(--sidebar-border))",
@@ -47,14 +56,14 @@ const SidebarFooter = () => {
             color: "hsl(var(--sidebar-primary-foreground))",
           }}
         >
-          {user?.email?.charAt(0).toUpperCase() ?? "U"}
+          {userEmail.charAt(0).toUpperCase() || "U"}
         </div>
         <div className="min-w-0 flex-1">
           <span
             className="block truncate text-sm font-medium"
             style={{ color: "hsl(var(--sidebar-foreground))" }}
           >
-            {user?.email?.split("@")[0] ?? "User"}
+            {userName}
           </span>
           <span
             className="block text-xs truncate capitalize"
@@ -64,15 +73,28 @@ const SidebarFooter = () => {
           </span>
         </div>
       </div>
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-1.5 text-xs mt-1 transition-colors duration-100 hover:opacity-80"
-        style={{ color: "hsl(var(--destructive))" }}
-        aria-label="Logout"
-      >
-        <LogOut className="h-3.5 w-3.5" />
-        <span>{lang === "bn" ? "লগআউট" : "Logout"}</span>
-      </button>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 text-xs transition-colors duration-150 hover:brightness-125"
+          style={{ color: "hsl(var(--destructive))" }}
+          aria-label="Logout"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span>{lang === "bn" ? "লগআউট" : "Logout"}</span>
+        </button>
+
+        <button
+          onClick={handleMail}
+          className="flex items-center gap-1.5 text-xs transition-colors duration-150 hover:brightness-125 ml-auto"
+          style={{ color: "hsl(var(--sidebar-foreground))" }}
+          aria-label="Email"
+        >
+          <Mail className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{lang === "bn" ? "মেইল" : "Mail"}</span>
+        </button>
+      </div>
     </div>
   );
 };
