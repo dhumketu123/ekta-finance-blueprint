@@ -13,9 +13,38 @@ interface HealthCheck {
   latency_ms?: number;
 }
 
+interface SyncThresholds {
+  stuck_running_minutes: number;
+  stale_hours: number;
+}
+
+const DEFAULT_THRESHOLDS: SyncThresholds = {
+  stuck_running_minutes: 10,
+  stale_hours: 24,
+};
+
 function measure<T>(fn: () => Promise<T>): Promise<{ result: T; ms: number }> {
   const start = Date.now();
   return fn().then((result) => ({ result, ms: Date.now() - start }));
+}
+
+/** Load per-tenant sync thresholds from system_settings, fallback to defaults */
+async function loadSyncThresholds(supabase: ReturnType<typeof createClient>): Promise<SyncThresholds> {
+  try {
+    const { data } = await supabase
+      .from("system_settings")
+      .select("setting_value")
+      .eq("setting_key", "sync_thresholds")
+      .maybeSingle();
+    if (data?.setting_value) {
+      const val = typeof data.setting_value === "string" ? JSON.parse(data.setting_value) : data.setting_value;
+      return {
+        stuck_running_minutes: val.stuck_running_minutes ?? DEFAULT_THRESHOLDS.stuck_running_minutes,
+        stale_hours: val.stale_hours ?? DEFAULT_THRESHOLDS.stale_hours,
+      };
+    }
+  } catch { /* use defaults */ }
+  return DEFAULT_THRESHOLDS;
 }
 
 Deno.serve(async (req) => {
@@ -31,6 +60,9 @@ Deno.serve(async (req) => {
 
     const checks: HealthCheck[] = [];
     const startTotal = Date.now();
+
+    // Load configurable thresholds
+    const thresholds = await loadSyncThresholds(supabase);
 
     // ── 1. Database Connectivity ──
     const db = await measure(async () => {
@@ -202,7 +234,6 @@ Deno.serve(async (req) => {
           .from("clients")
           .select("id")
           .limit(1);
-        // If RLS is active, anon should get 0 rows or a permission error
         if (error) return { verified: true, reason: "RLS blocked anon: " + error.code };
         if (!data || data.length === 0) return { verified: true, reason: "RLS active — anon gets 0 rows" };
         return { verified: false, reason: `CRITICAL: anon read ${data.length} rows from clients` };
@@ -220,7 +251,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 9. Knowledge Sync Health ──
+    // ── 9. Knowledge Sync Health (configurable thresholds) ──
     const ksync = await measure(async () => {
       const { data, error } = await supabase
         .from("knowledge_sync_log")
@@ -238,11 +269,13 @@ Deno.serve(async (req) => {
         checks.push({ name: "knowledge_sync", status: "warn", detail: "No sync logs found — run initial sync", latency_ms: ksync.ms });
       } else {
         const isFailed = data.status === "failed" || data.status === "completed_with_errors";
+        const staleMs = thresholds.stale_hours * 60 * 60 * 1000;
+        const stuckMs = thresholds.stuck_running_minutes * 60 * 1000;
         const isStale = data.completed_at
-          ? (Date.now() - new Date(data.completed_at).getTime()) > 24 * 60 * 60 * 1000
+          ? (Date.now() - new Date(data.completed_at).getTime()) > staleMs
           : true;
         const isRunningTooLong = data.status === "running"
-          && (Date.now() - new Date(data.started_at).getTime()) > 10 * 60 * 1000;
+          && (Date.now() - new Date(data.started_at).getTime()) > stuckMs;
         const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
 
         let status: "pass" | "warn" | "fail" = "pass";
@@ -253,8 +286,8 @@ Deno.serve(async (req) => {
           name: "knowledge_sync",
           status,
           detail: isRunningTooLong
-            ? "Sync stuck in running state > 10min"
-            : `${data.status} — ${data.nodes_processed ?? 0} nodes, ${errCount} errors${isStale ? " (stale > 24h)" : ""}`,
+            ? `Sync stuck in running state > ${thresholds.stuck_running_minutes}min`
+            : `${data.status} — ${data.nodes_processed ?? 0} nodes, ${errCount} errors${isStale ? ` (stale > ${thresholds.stale_hours}h)` : ""}`,
           latency_ms: ksync.ms,
         });
       }
@@ -277,6 +310,7 @@ Deno.serve(async (req) => {
         total_latency_ms: Date.now() - startTotal,
         summary: { pass: passCount, warn: warnCount, fail: failCount },
         checks,
+        thresholds,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

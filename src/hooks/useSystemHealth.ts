@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,7 @@ export interface SystemHealthData {
   total_latency_ms: number;
   summary: { pass: number; warn: number; fail: number };
   checks: HealthCheck[];
+  thresholds?: { stuck_running_minutes: number; stale_hours: number };
 }
 
 export interface HealthTrendPoint {
@@ -28,7 +29,6 @@ export interface HealthTrendPoint {
 
 /**
  * Fetches system health with auto-refetch every 60s.
- * Also maintains a 24h trend history in memory.
  */
 export const useSystemHealth = (enabled = true) => {
   return useQuery({
@@ -45,26 +45,40 @@ export const useSystemHealth = (enabled = true) => {
 };
 
 const TREND_STORAGE_KEY = "knowledge_health_trend";
-const MAX_TREND_POINTS = 48; // 24h at 30min intervals
+const DEFAULT_MAX_POINTS = 48;
+const DEFAULT_MIN_INTERVAL_MS = 10 * 60 * 1000; // 10 min
 
 /**
- * Maintains a rolling 24h health trend stored in localStorage.
- * Each new health fetch appends a data point (max every 10min).
+ * Maintains a rolling health trend stored in localStorage.
+ * Supports configurable interval and pagination for multi-tab reliability.
  */
-export const useHealthTrend = (health: SystemHealthData | undefined) => {
-  const queryClient = useQueryClient();
+export const useHealthTrend = (
+  health: SystemHealthData | undefined,
+  options?: { minIntervalMs?: number; maxPoints?: number }
+) => {
+  const minInterval = options?.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS;
+  const maxPoints = options?.maxPoints ?? DEFAULT_MAX_POINTS;
+
+  // Page state for trend pagination
+  const [page, setPage] = useState(0);
+
+  const getTrend = useCallback((): HealthTrendPoint[] => {
+    try {
+      const stored = localStorage.getItem(TREND_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     if (!health) return;
 
     try {
-      const stored = localStorage.getItem(TREND_STORAGE_KEY);
-      const trend: HealthTrendPoint[] = stored ? JSON.parse(stored) : [];
-
-      // Only add a point if last one is >10min old
+      const trend = getTrend();
       const lastPoint = trend[trend.length - 1];
       const now = Date.now();
-      if (lastPoint && (now - new Date(lastPoint.timestamp).getTime()) < 10 * 60 * 1000) {
+      if (lastPoint && (now - new Date(lastPoint.timestamp).getTime()) < minInterval) {
         return;
       }
 
@@ -76,25 +90,34 @@ export const useHealthTrend = (health: SystemHealthData | undefined) => {
         status: health.status,
       });
 
-      // Keep only last MAX_TREND_POINTS
-      const trimmed = trend.slice(-MAX_TREND_POINTS);
+      const trimmed = trend.slice(-maxPoints);
       localStorage.setItem(TREND_STORAGE_KEY, JSON.stringify(trimmed));
     } catch {
-      // localStorage unavailable — silently skip
+      // localStorage unavailable
     }
-  }, [health]);
+  }, [health, minInterval, maxPoints, getTrend]);
 
-  // Return current trend data
-  try {
-    const stored = localStorage.getItem(TREND_STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as HealthTrendPoint[]) : [];
-  } catch {
-    return [];
-  }
+  const allTrend = getTrend();
+  const PAGE_SIZE = 24;
+  const totalPages = Math.max(1, Math.ceil(allTrend.length / PAGE_SIZE));
+  const safeP = Math.min(page, totalPages - 1);
+  const start = Math.max(0, allTrend.length - PAGE_SIZE * (safeP + 1));
+  const end = allTrend.length - PAGE_SIZE * safeP;
+  const visibleTrend = allTrend.slice(start, end);
+
+  return {
+    data: visibleTrend,
+    page: safeP,
+    totalPages,
+    setPage,
+    nextPage: () => setPage((p) => Math.min(p + 1, totalPages - 1)),
+    prevPage: () => setPage((p) => Math.max(p - 1, 0)),
+  };
 };
 
 /**
- * Realtime subscription for system health updates via sync log changes.
+ * Unified realtime subscription for knowledge_sync_log changes.
+ * Invalidates both system_health and knowledge queries.
  */
 export const useHealthRealtime = () => {
   const queryClient = useQueryClient();
@@ -110,6 +133,9 @@ export const useHealthRealtime = () => {
         { event: "*", schema: "public", table: "knowledge_sync_log" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["system_health"] });
+          queryClient.invalidateQueries({ queryKey: ["knowledge_sync_logs"] });
+          queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
+          queryClient.invalidateQueries({ queryKey: ["knowledge_stats"] });
         }
       )
       .subscribe();
