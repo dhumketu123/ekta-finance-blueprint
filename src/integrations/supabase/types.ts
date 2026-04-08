@@ -321,6 +321,27 @@ export type Database = {
           },
         ]
       }
+      ai_pipeline_alerts: {
+        Row: {
+          alert_time: string
+          id: number
+          message: string | null
+          severity: string
+        }
+        Insert: {
+          alert_time?: string
+          id?: number
+          message?: string | null
+          severity?: string
+        }
+        Update: {
+          alert_time?: string
+          id?: number
+          message?: string | null
+          severity?: string
+        }
+        Relationships: []
+      }
       ai_pipeline_runs: {
         Row: {
           id: number
