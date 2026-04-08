@@ -459,7 +459,138 @@ const MonitoringDashboard = () => {
     ledger_entry: { en: "Ledger Entry", bn: "লেজার এন্ট্রি" },
   };
 
-// ── System DNA Tab ──
+// ── AI Knowledge Tab ──
+const AiKnowledgeTab = () => {
+  const { lang } = useLanguage();
+  const [syncing, setSyncing] = useState(false);
+
+  const { data: knowledgeData = [], isLoading, refetch } = useQuery({
+    queryKey: ["ai_assistant_knowledge_view"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_fetch_ai_knowledge");
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("populate-system-dna");
+      if (error) throw error;
+      refetch();
+    } catch (e: any) {
+      console.error("AI Knowledge sync failed:", e);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    knowledgeData.forEach((e: any) => { counts[e.entity_category] = (counts[e.entity_category] || 0) + 1; });
+    return counts;
+  }, [knowledgeData]);
+
+  const categoryIcons: Record<string, React.ReactNode> = {
+    database_table: <Database className="w-4 h-4 text-blue-500" />,
+    edge_function: <Code2 className="w-4 h-4 text-purple-500" />,
+    business_rule: <Settings2 className="w-4 h-4 text-orange-500" />,
+    feature_flag: <Flag className="w-4 h-4 text-emerald-500" />,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <BrainCircuit className="w-5 h-5 text-primary" />
+            {lang === "bn" ? "AI অ্যাসিস্ট্যান্ট নলেজ বেস" : "AI Assistant Knowledge Base"}
+          </h3>
+          <p className="text-xs text-muted-foreground">{lang === "bn" ? "System DNA + AI Knowledge মার্জড ভিউ — AI অ্যাসিস্ট্যান্টের প্রাইমারি কনটেক্সট সোর্স" : "Merged System DNA + AI Knowledge — primary context source for AI assistant"}</p>
+        </div>
+        <Button size="sm" onClick={handleSync} disabled={syncing} className="gap-1.5">
+          <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? (lang === "bn" ? "সিঙ্ক হচ্ছে..." : "Syncing...") : (lang === "bn" ? "নলেজ সিঙ্ক" : "Sync Knowledge")}
+        </Button>
+      </div>
+
+      {/* Category summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <p className="text-2xl font-bold">{knowledgeData.length}</p>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট এন্ট্রি" : "Total Entries"}</p>
+          </CardContent>
+        </Card>
+        {Object.entries(categoryCounts).map(([cat, count]) => (
+          <Card key={cat}>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-2">
+                {categoryIcons[cat] || <Info className="w-4 h-4" />}
+                <div>
+                  <p className="text-xl font-bold">{count}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{cat.replace(/_/g, " ")}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Merged knowledge table */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+        </div>
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{lang === "bn" ? "AI কনটেক্সট ডেটা" : "AI Context Data"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[130px]">{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
+                    <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
+                    <TableHead className="hidden md:table-cell">{lang === "bn" ? "বিবরণ" : "Description"}</TableHead>
+                    <TableHead className="w-[60px] text-center">{lang === "bn" ? "ভার্সন" : "Ver"}</TableHead>
+                    <TableHead className="w-[70px] text-center">{lang === "bn" ? "ক্রিটিক্যালিটি" : "Crit"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {knowledgeData.map((entry: any, idx: number) => (
+                    <TableRow key={`${entry.entity_category}-${entry.entity_name}-${idx}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {categoryIcons[entry.entity_category] || <Info className="w-3 h-3" />}
+                          <Badge variant="outline" className="text-[10px]">{entry.entity_category?.replace(/_/g, " ")}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{entry.entity_name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[300px] truncate">{entry.description}</TableCell>
+                      <TableCell className="text-center text-xs">{entry.version}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={entry.criticality_score >= 4 ? "destructive" : entry.criticality_score >= 2 ? "secondary" : "outline"} className="text-[10px]">
+                          {entry.criticality_score}/5
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+
 const SystemDnaTab = () => {
   const { lang } = useLanguage();
   const [populating, setPopulating] = useState(false);
