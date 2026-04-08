@@ -241,6 +241,36 @@ export type Database = {
           },
         ]
       }
+      ai_assistant_knowledge: {
+        Row: {
+          created_at: string
+          description: string | null
+          entity_category: string
+          entity_name: string
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entity_category: string
+          entity_name: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entity_category?: string
+          entity_name?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -3596,6 +3626,20 @@ export type Database = {
       }
     }
     Views: {
+      ai_assistant_overview: {
+        Row: {
+          criticality_score: number | null
+          description: string | null
+          entity_category: string | null
+          entity_name: string | null
+          generated_at: string | null
+          is_active: boolean | null
+          knowledge_metadata: Json | null
+          metadata: Json | null
+          version: number | null
+        }
+        Relationships: []
+      }
       ai_system_overview: {
         Row: {
           active_feature_flags: number | null
@@ -3869,6 +3913,19 @@ export type Database = {
         Returns: undefined
       }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      fn_fetch_ai_knowledge: {
+        Args: never
+        Returns: {
+          criticality_score: number
+          description: string
+          entity_category: string
+          entity_name: string
+          is_active: boolean
+          knowledge_metadata: Json
+          metadata: Json
+          version: number
+        }[]
+      }
       generate_event_hash: {
         Args: {
           p_event_type: string
