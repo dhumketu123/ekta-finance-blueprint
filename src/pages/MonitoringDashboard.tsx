@@ -503,6 +503,10 @@ const MonitoringDashboard = () => {
             <Rocket className="w-3.5 h-3.5" />
             {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
           </TabsTrigger>
+          <TabsTrigger value="dna" className="gap-1.5">
+            <Dna className="w-3.5 h-3.5" />
+            {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
