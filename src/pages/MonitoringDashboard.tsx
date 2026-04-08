@@ -525,7 +525,7 @@ const AiKnowledgeTab = () => {
               <div className="flex items-center gap-2">
                 {categoryIcons[cat] || <Info className="w-4 h-4" />}
                 <div>
-                  <p className="text-xl font-bold">{count}</p>
+                  <p className="text-xl font-bold">{String(count)}</p>
                   <p className="text-xs text-muted-foreground capitalize">{cat.replace(/_/g, " ")}</p>
                 </div>
               </div>
