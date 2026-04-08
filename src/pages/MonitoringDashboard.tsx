@@ -463,35 +463,25 @@ const MonitoringDashboard = () => {
 const AiKnowledgeTab = () => {
   const { lang } = useLanguage();
   const [syncing, setSyncing] = useState(false);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
 
-  const { data: knowledgeData = [], isLoading, refetch } = useQuery({
-    queryKey: ["ai_assistant_knowledge_view"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("fn_fetch_ai_knowledge");
-      if (error) throw error;
-      return data ?? [];
-    },
-    staleTime: 60_000,
-  });
+  const {
+    entries, relations, history, stats, isLoading, syncAndRefresh,
+    queryByCategory,
+  } = useAiBrainContext();
 
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("populate-system-dna");
-      if (error) throw error;
-      refetch();
-    } catch (e: any) {
-      console.error("AI Knowledge sync failed:", e);
+      await syncAndRefresh();
+    } catch {
+      // toast handled inside hook
     } finally {
       setSyncing(false);
     }
   };
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    knowledgeData.forEach((e: any) => { counts[e.entity_category] = (counts[e.entity_category] || 0) + 1; });
-    return counts;
-  }, [knowledgeData]);
+  const displayEntries = filterCat ? queryByCategory(filterCat) : entries;
 
   const categoryIcons: Record<string, React.ReactNode> = {
     database_table: <Database className="w-4 h-4 text-blue-500" />,
@@ -506,26 +496,30 @@ const AiKnowledgeTab = () => {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-primary" />
-            {lang === "bn" ? "AI অ্যাসিস্ট্যান্ট নলেজ বেস" : "AI Assistant Knowledge Base"}
+            {lang === "bn" ? "AI ব্রেইন কনটেক্সট লেয়ার" : "AI Brain Context Layer"}
           </h3>
-          <p className="text-xs text-muted-foreground">{lang === "bn" ? "System DNA + AI Knowledge মার্জড ভিউ — AI অ্যাসিস্ট্যান্টের প্রাইমারি কনটেক্সট সোর্স" : "Merged System DNA + AI Knowledge — primary context source for AI assistant"}</p>
+          <p className="text-xs text-muted-foreground">
+            {lang === "bn"
+              ? `মার্জড ভিউ — ${stats.totalEntries} এন্ট্রি, ${relations.length} রিলেশন, ${history.length} হিস্টোরি স্ন্যাপশট`
+              : `Merged view — ${stats.totalEntries} entries, ${relations.length} relations, ${history.length} history snapshots`}
+          </p>
         </div>
         <Button size="sm" onClick={handleSync} disabled={syncing} className="gap-1.5">
           <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? (lang === "bn" ? "সিঙ্ক হচ্ছে..." : "Syncing...") : (lang === "bn" ? "নলেজ সিঙ্ক" : "Sync Knowledge")}
+          {syncing ? (lang === "bn" ? "সিঙ্ক হচ্ছে..." : "Syncing...") : (lang === "bn" ? "ব্রেইন সিঙ্ক" : "Brain Sync")}
         </Button>
       </div>
 
-      {/* Category summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card>
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <Card className={`cursor-pointer transition-colors ${filterCat === null ? "ring-2 ring-primary" : ""}`} onClick={() => setFilterCat(null)}>
           <CardContent className="pt-4 pb-3">
-            <p className="text-2xl font-bold">{knowledgeData.length}</p>
-            <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট এন্ট্রি" : "Total Entries"}</p>
+            <p className="text-2xl font-bold">{stats.totalEntries}</p>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট এন্ট্রি" : "Total"}</p>
           </CardContent>
         </Card>
-        {Object.entries(categoryCounts).map(([cat, count]) => (
-          <Card key={cat}>
+        {Object.entries(stats.byCategory).map(([cat, count]) => (
+          <Card key={cat} className={`cursor-pointer transition-colors ${filterCat === cat ? "ring-2 ring-primary" : ""}`} onClick={() => setFilterCat(filterCat === cat ? null : cat)}>
             <CardContent className="pt-4 pb-3">
               <div className="flex items-center gap-2">
                 {categoryIcons[cat] || <Info className="w-4 h-4" />}
@@ -537,6 +531,12 @@ const AiKnowledgeTab = () => {
             </CardContent>
           </Card>
         ))}
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <p className="text-2xl font-bold">{stats.avgCriticality}</p>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "গড় ক্রিটিক্যালিটি" : "Avg Criticality"}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Merged knowledge table */}
@@ -547,7 +547,11 @@ const AiKnowledgeTab = () => {
       ) : (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{lang === "bn" ? "AI কনটেক্সট ডেটা" : "AI Context Data"}</CardTitle>
+            <CardTitle className="text-sm">
+              {filterCat
+                ? `${lang === "bn" ? "ফিল্টার:" : "Filter:"} ${filterCat.replace(/_/g, " ")} (${displayEntries.length})`
+                : (lang === "bn" ? "AI কনটেক্সট ডেটা" : "AI Context Data")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px]">
@@ -559,10 +563,11 @@ const AiKnowledgeTab = () => {
                     <TableHead className="hidden md:table-cell">{lang === "bn" ? "বিবরণ" : "Description"}</TableHead>
                     <TableHead className="w-[60px] text-center">{lang === "bn" ? "ভার্সন" : "Ver"}</TableHead>
                     <TableHead className="w-[70px] text-center">{lang === "bn" ? "ক্রিটিক্যালিটি" : "Crit"}</TableHead>
+                    <TableHead className="w-[60px] text-center">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {knowledgeData.map((entry: any, idx: number) => (
+                  {displayEntries.map((entry: any, idx: number) => (
                     <TableRow key={`${entry.entity_category}-${entry.entity_name}-${idx}`}>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
@@ -578,6 +583,11 @@ const AiKnowledgeTab = () => {
                           {entry.criticality_score}/5
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={entry.is_active ? "default" : "secondary"} className="text-[10px]">
+                          {entry.is_active ? "✓" : "✗"}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -586,6 +596,34 @@ const AiKnowledgeTab = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Dependency & History summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <Dna className="w-4 h-4 text-primary" />
+              {lang === "bn" ? "ডিপেন্ডেন্সি গ্রাফ" : "Dependency Graph"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{relations.length}</p>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট রিলেশন (গ্রাফ ট্রাভার্সাল ডেপথ: ৩)" : "Total relations (traversal depth: 3)"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-primary" />
+              {lang === "bn" ? "ভার্সন হিস্টোরি" : "Version History"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{history.length}</p>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট স্ন্যাপশট (সফট ডিলিট + অটো-ভার্সন)" : "Total snapshots (soft-delete + auto-version)"}</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
