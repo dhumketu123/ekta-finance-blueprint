@@ -859,8 +859,7 @@ const AiInsightsTab = () => {
     </div>
   );
 };
-
-
+const SystemDnaTab = () => {
   const { lang } = useLanguage();
   const [populating, setPopulating] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
