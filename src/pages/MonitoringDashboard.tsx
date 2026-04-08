@@ -680,12 +680,12 @@ const AiInsightsTab = () => {
   };
 
   const handleDismiss = async (id: string) => {
-    await supabase.from("ai_insights").update({ status: "dismissed" }).eq("id", id);
+    await supabase.from("ai_insights").update({ status: "dismissed", is_locked: true } as any).eq("id", id);
     refetch();
   };
 
   const handleResolve = async (id: string) => {
-    await supabase.from("ai_insights").update({ status: "resolved" }).eq("id", id);
+    await supabase.from("ai_insights").update({ status: "resolved", is_locked: true } as any).eq("id", id);
     refetch();
   };
 
