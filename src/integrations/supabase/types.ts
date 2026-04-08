@@ -276,11 +276,11 @@ export type Database = {
           created_at: string
           description: string
           entity_id: string | null
-          execution_priority: number | null
           id: string
           insight_type: string
           is_locked: boolean
           metadata: Json
+          priority_score: number | null
           severity_score: number
           status: string
           title: string
@@ -289,11 +289,11 @@ export type Database = {
           created_at?: string
           description: string
           entity_id?: string | null
-          execution_priority?: number | null
           id?: string
           insight_type: string
           is_locked?: boolean
           metadata?: Json
+          priority_score?: number | null
           severity_score?: number
           status?: string
           title: string
@@ -302,11 +302,11 @@ export type Database = {
           created_at?: string
           description?: string
           entity_id?: string | null
-          execution_priority?: number | null
           id?: string
           insight_type?: string
           is_locked?: boolean
           metadata?: Json
+          priority_score?: number | null
           severity_score?: number
           status?: string
           title?: string
