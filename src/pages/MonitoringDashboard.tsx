@@ -648,6 +648,9 @@ const MonitoringDashboard = () => {
         <TabsContent value="launch">
           <LaunchReadinessPanel />
         </TabsContent>
+        <TabsContent value="dna">
+          <SystemDnaTab />
+        </TabsContent>
       </Tabs>
     </AppLayout>
   );
