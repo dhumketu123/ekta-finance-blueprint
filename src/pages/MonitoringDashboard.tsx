@@ -630,6 +630,235 @@ const AiKnowledgeTab = () => {
 };
 
 
+// ── AI Insights Tab ──
+const AiInsightsTab = () => {
+  const { lang } = useLanguage();
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const { data: insights = [], isLoading, refetch } = useQuery({
+    queryKey: ["ai_insights"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_insights")
+        .select("*, system_dna(entity_name, category)")
+        .order("severity_score", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const { data: healthData } = useQuery({
+    queryKey: ["ai_system_health_mat"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_system_health_mat" as any)
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const handleRegenerate = async () => {
+    setGenerating(true);
+    try {
+      const { error } = await supabase.rpc("fn_generate_ai_insights");
+      if (error) throw error;
+      refetch();
+    } catch (e: any) {
+      console.error("Insight generation failed:", e);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDismiss = async (id: string) => {
+    await supabase.from("ai_insights").update({ status: "dismissed" }).eq("id", id);
+    refetch();
+  };
+
+  const handleResolve = async (id: string) => {
+    await supabase.from("ai_insights").update({ status: "resolved" }).eq("id", id);
+    refetch();
+  };
+
+  const filtered = filterType ? insights.filter((i: any) => i.insight_type === filterType) : insights;
+  const activeInsights = insights.filter((i: any) => i.status === "active");
+
+  const typeCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    activeInsights.forEach((i: any) => { c[i.insight_type] = (c[i.insight_type] || 0) + 1; });
+    return c;
+  }, [activeInsights]);
+
+  const typeIcons: Record<string, React.ReactNode> = {
+    risk: <ShieldAlert className="w-4 h-4 text-red-500" />,
+    dependency_warning: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+    anomaly: <Activity className="w-4 h-4 text-purple-500" />,
+    optimization: <Zap className="w-4 h-4 text-emerald-500" />,
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* System Health Card */}
+      {healthData && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-2xl font-bold">{String((healthData as any).total_entities ?? 0)}</p>
+              <p className="text-xs text-muted-foreground">{lang === "bn" ? "মোট এন্টিটি" : "Total Entities"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-2xl font-bold">
+                {(healthData as any).total_entities > 0
+                  ? `${Math.round(((healthData as any).active_entities / (healthData as any).total_entities) * 100)}%`
+                  : "0%"}
+              </p>
+              <p className="text-xs text-muted-foreground">{lang === "bn" ? "অ্যাক্টিভ %" : "Active %"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-2xl font-bold">{String((healthData as any).avg_criticality ?? 0)}</p>
+              <p className="text-xs text-muted-foreground">{lang === "bn" ? "গড় ক্রিটিক্যালিটি" : "Avg Criticality"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-2xl font-bold">{String((healthData as any).high_risk_entities ?? 0)}</p>
+              <p className="text-xs text-muted-foreground">{lang === "bn" ? "হাই রিস্ক" : "High Risk"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs font-mono">{(healthData as any).last_snapshot_time ? format(new Date((healthData as any).last_snapshot_time), "dd MMM HH:mm") : "—"}</p>
+              <p className="text-xs text-muted-foreground">{lang === "bn" ? "শেষ স্ন্যাপশট" : "Last Snapshot"}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Header + Regenerate */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            {lang === "bn" ? "AI ইনসাইটস — রিজনিং ইঞ্জিন" : "AI Insights — Reasoning Engine"}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {lang === "bn" ? `${activeInsights.length} সক্রিয় ইনসাইট` : `${activeInsights.length} active insights`}
+          </p>
+        </div>
+        <Button size="sm" onClick={handleRegenerate} disabled={generating} className="gap-1.5">
+          <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} />
+          {generating ? (lang === "bn" ? "জেনারেট হচ্ছে..." : "Generating...") : (lang === "bn" ? "রিজেনারেট" : "Regenerate")}
+        </Button>
+      </div>
+
+      {/* Type filters */}
+      <div className="flex gap-2 flex-wrap">
+        <Badge
+          variant={filterType === null ? "default" : "outline"}
+          className="cursor-pointer"
+          onClick={() => setFilterType(null)}
+        >
+          {lang === "bn" ? "সব" : "All"} ({activeInsights.length})
+        </Badge>
+        {Object.entries(typeCounts).map(([type, count]) => (
+          <Badge
+            key={type}
+            variant={filterType === type ? "default" : "outline"}
+            className="cursor-pointer gap-1"
+            onClick={() => setFilterType(filterType === type ? null : type)}
+          >
+            {typeIcons[type]}
+            {type.replace(/_/g, " ")} ({String(count)})
+          </Badge>
+        ))}
+      </div>
+
+      {/* Insights table */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="pt-4">
+            <ScrollArea className="h-[450px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">{lang === "bn" ? "ধরন" : "Type"}</TableHead>
+                    <TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
+                    <TableHead className="w-[70px] text-center">{lang === "bn" ? "তীব্রতা" : "Severity"}</TableHead>
+                    <TableHead className="hidden md:table-cell">{lang === "bn" ? "এন্টিটি" : "Entity"}</TableHead>
+                    <TableHead className="w-[80px] text-center">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                    <TableHead className="w-[120px]">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((ins: any) => (
+                    <TableRow key={ins.id} className={ins.status !== "active" ? "opacity-50" : ""}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {typeIcons[ins.insight_type] || <Info className="w-3 h-3" />}
+                          <span className="text-[10px] capitalize">{ins.insight_type?.replace(/_/g, " ")}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">{ins.title}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={ins.severity_score >= 4 ? "destructive" : ins.severity_score >= 3 ? "secondary" : "outline"} className="text-[10px]">
+                          {ins.severity_score}/5
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground">
+                        {ins.system_dna?.entity_name ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={ins.status === "active" ? "default" : "outline"} className="text-[10px]">
+                          {ins.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {ins.status === "active" && (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => handleDismiss(ins.id)}>
+                              {lang === "bn" ? "বাতিল" : "Dismiss"}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => handleResolve(ins.id)}>
+                              {lang === "bn" ? "সমাধান" : "Resolve"}
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filtered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        {lang === "bn" ? "কোনো ইনসাইট পাওয়া যায়নি" : "No insights found"}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
 const SystemDnaTab = () => {
   const { lang } = useLanguage();
   const [populating, setPopulating] = useState(false);
@@ -820,6 +1049,10 @@ const SystemDnaTab = () => {
             <BrainCircuit className="w-3.5 h-3.5" />
             {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
           </TabsTrigger>
+          <TabsTrigger value="ai-insights" className="gap-1.5">
+            <Zap className="w-3.5 h-3.5" />
+            {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
@@ -966,6 +1199,9 @@ const SystemDnaTab = () => {
         </TabsContent>
         <TabsContent value="ai-knowledge">
           <AiKnowledgeTab />
+        </TabsContent>
+        <TabsContent value="ai-insights">
+          <AiInsightsTab />
         </TabsContent>
       </Tabs>
     </AppLayout>

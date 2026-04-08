@@ -271,6 +271,50 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights: {
+        Row: {
+          created_at: string
+          description: string
+          entity_id: string | null
+          id: string
+          insight_type: string
+          metadata: Json
+          severity_score: number
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          entity_id?: string | null
+          id?: string
+          insight_type: string
+          metadata?: Json
+          severity_score?: number
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          entity_id?: string | null
+          id?: string
+          insight_type?: string
+          metadata?: Json
+          severity_score?: number
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "system_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -3640,6 +3684,18 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_system_health_mat: {
+        Row: {
+          active_entities: number | null
+          avg_criticality: number | null
+          high_risk_entities: number | null
+          inactive_dependencies: number | null
+          last_snapshot_time: string | null
+          refreshed_at: string | null
+          total_entities: number | null
+        }
+        Relationships: []
+      }
       ai_system_overview: {
         Row: {
           active_feature_flags: number | null
@@ -3926,6 +3982,7 @@ export type Database = {
           version: number
         }[]
       }
+      fn_generate_ai_insights: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
           p_event_type: string
@@ -4213,6 +4270,7 @@ export type Database = {
       }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
+      refresh_ai_system_health: { Args: never; Returns: undefined }
       refresh_trial_balance_mv: { Args: never; Returns: undefined }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
