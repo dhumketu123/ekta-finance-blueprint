@@ -3693,6 +3693,7 @@ export type Database = {
           last_snapshot_time: string | null
           refreshed_at: string | null
           total_entities: number | null
+          weighted_risk_score: number | null
         }
         Relationships: []
       }
