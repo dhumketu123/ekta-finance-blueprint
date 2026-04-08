@@ -820,6 +820,10 @@ const SystemDnaTab = () => {
             <BrainCircuit className="w-3.5 h-3.5" />
             {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
           </TabsTrigger>
+          <TabsTrigger value="ai-insights" className="gap-1.5">
+            <Zap className="w-3.5 h-3.5" />
+            {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
