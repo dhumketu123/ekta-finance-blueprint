@@ -321,6 +321,27 @@ export type Database = {
           },
         ]
       }
+      ai_pipeline_runs: {
+        Row: {
+          id: number
+          remarks: string | null
+          run_at: string
+          status: string
+        }
+        Insert: {
+          id?: number
+          remarks?: string | null
+          run_at?: string
+          status?: string
+        }
+        Update: {
+          id?: number
+          remarks?: string | null
+          run_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -3872,6 +3893,7 @@ export type Database = {
         Returns: string
       }
       can_export: { Args: never; Returns: boolean }
+      check_ai_pipeline_health: { Args: never; Returns: Json }
       check_and_apply_overdue_penalty: {
         Args: { _penalty_percent?: number }
         Returns: Json
