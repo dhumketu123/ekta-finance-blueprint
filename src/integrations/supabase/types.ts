@@ -1015,6 +1015,48 @@ export type Database = {
           },
         ]
       }
+      entity_relations: {
+        Row: {
+          created_at: string
+          id: string
+          relation_type: string
+          source_entity_id: string
+          target_entity_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          relation_type: string
+          source_entity_id: string
+          target_entity_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          relation_type?: string
+          source_entity_id?: string
+          target_entity_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_relations_source_entity_id_fkey"
+            columns: ["source_entity_id"]
+            isOneToOne: false
+            referencedRelation: "system_dna"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relations_target_entity_id_fkey"
+            columns: ["target_entity_id"]
+            isOneToOne: false
+            referencedRelation: "system_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_sourcing: {
         Row: {
           action: string
@@ -3057,29 +3099,71 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          criticality_score: number
           description: string
           entity_name: string
           id: string
+          is_active: boolean
+          is_deleted: boolean
           metadata: Json
+          tenant_id: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           category: string
           created_at?: string
+          criticality_score?: number
           description?: string
           entity_name: string
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           metadata?: Json
+          tenant_id?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           category?: string
           created_at?: string
+          criticality_score?: number
           description?: string
           entity_name?: string
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           metadata?: Json
+          tenant_id?: string | null
           updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      system_dna_history: {
+        Row: {
+          changed_at: string
+          dna_id: string
+          id: string
+          snapshot: Json
+          tenant_id: string | null
+          version: number
+        }
+        Insert: {
+          changed_at?: string
+          dna_id: string
+          id?: string
+          snapshot: Json
+          tenant_id?: string | null
+          version: number
+        }
+        Update: {
+          changed_at?: string
+          dna_id?: string
+          id?: string
+          snapshot?: Json
+          tenant_id?: string | null
+          version?: number
         }
         Relationships: []
       }
