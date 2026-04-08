@@ -3053,6 +3053,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_dna: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          entity_name: string
+          id: string
+          metadata: Json
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string
+          entity_name: string
+          id?: string
+          metadata?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          entity_name?: string
+          id?: string
+          metadata?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_health_logs: {
         Row: {
           check_name: string
@@ -3482,6 +3512,22 @@ export type Database = {
       }
     }
     Views: {
+      ai_system_overview: {
+        Row: {
+          active_feature_flags: number | null
+          active_loans: number | null
+          defaulted_loans: number | null
+          failed_notifications_7d: number | null
+          generated_at: string | null
+          notifications_7d: number | null
+          total_business_rules_indexed: number | null
+          total_edge_functions_indexed: number | null
+          total_feature_flags_indexed: number | null
+          total_loans: number | null
+          total_tables_indexed: number | null
+        }
+        Relationships: []
+      }
       loan_financial_summary: {
         Row: {
           client_id: string | null

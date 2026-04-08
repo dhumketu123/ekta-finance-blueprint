@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle,
   BarChart3, Server, ShieldAlert, Rocket, HeartPulse, Wrench, Info,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Dna, Database, Code2, Settings2, Flag,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -459,6 +459,145 @@ const MonitoringDashboard = () => {
     ledger_entry: { en: "Ledger Entry", bn: "লেজার এন্ট্রি" },
   };
 
+// ── System DNA Tab ──
+const SystemDnaTab = () => {
+  const { lang } = useLanguage();
+  const [populating, setPopulating] = useState(false);
+  const [lastResult, setLastResult] = useState<any>(null);
+
+  const { data: dnaEntries = [], isLoading, refetch } = useQuery({
+    queryKey: ["system_dna_entries"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("system_dna")
+        .select("*")
+        .order("category")
+        .order("entity_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const handlePopulate = async () => {
+    setPopulating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("populate-system-dna");
+      if (error) throw error;
+      setLastResult(data);
+      refetch();
+    } catch (e: any) {
+      setLastResult({ status: "error", message: e?.message });
+    } finally {
+      setPopulating(false);
+    }
+  };
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    dnaEntries.forEach((e: any) => { counts[e.category] = (counts[e.category] || 0) + 1; });
+    return counts;
+  }, [dnaEntries]);
+
+  const categoryIcons: Record<string, React.ReactNode> = {
+    database_table: <Database className="w-4 h-4 text-blue-500" />,
+    edge_function: <Code2 className="w-4 h-4 text-purple-500" />,
+    business_rule: <Settings2 className="w-4 h-4 text-orange-500" />,
+    feature_flag: <Flag className="w-4 h-4 text-emerald-500" />,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{lang === "bn" ? "সিস্টেম DNA ইনডেক্স" : "System DNA Index"}</h3>
+          <p className="text-xs text-muted-foreground">{lang === "bn" ? "অ্যাপ্লিকেশনের আর্কিটেকচার, ডাটাবেস, এবং বিজনেস রুলসের স্ট্রাকচারড ইনডেক্স" : "Structured index of app architecture, database, and business rules"}</p>
+        </div>
+        <Button size="sm" onClick={handlePopulate} disabled={populating} className="gap-1.5">
+          <Dna className={`w-4 h-4 ${populating ? "animate-spin" : ""}`} />
+          {populating ? (lang === "bn" ? "পপুলেট হচ্ছে..." : "Populating...") : (lang === "bn" ? "DNA পপুলেট করুন" : "Populate DNA")}
+        </Button>
+      </div>
+
+      {lastResult && (
+        <Card className={lastResult.status === "success" ? "border-emerald-500/50" : "border-destructive/50"}>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              {lastResult.status === "success" ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-destructive" />}
+              <span className="text-sm font-medium">{lastResult.message}</span>
+            </div>
+            {lastResult.stats && (
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <span>📊 {lang === "bn" ? "টেবিল" : "Tables"}: {lastResult.stats.tables}</span>
+                <span>⚡ {lang === "bn" ? "এজ ফাংশন" : "Edge Fns"}: {lastResult.stats.edge_functions}</span>
+                <span>📋 {lang === "bn" ? "বিজনেস রুল" : "Rules"}: {lastResult.stats.business_rules}</span>
+                <span>🚩 {lang === "bn" ? "ফিচার ফ্ল্যাগ" : "Flags"}: {lastResult.stats.feature_flags}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {Object.entries(categoryCounts).map(([cat, count]) => (
+          <Card key={cat}>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-2">
+                {categoryIcons[cat] || <Info className="w-4 h-4" />}
+                <div>
+                  <p className="text-xl font-bold">{count}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{cat.replace(/_/g, " ")}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* DNA Entries Table */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+        </div>
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{lang === "bn" ? `মোট ${dnaEntries.length} এন্ট্রি ইনডেক্সড` : `${dnaEntries.length} Total Entries Indexed`}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
+                    <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
+                    <TableHead className="hidden md:table-cell">{lang === "bn" ? "বিবরণ" : "Description"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dnaEntries.map((entry: any) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {categoryIcons[entry.category] || <Info className="w-3 h-3" />}
+                          <Badge variant="outline" className="text-[10px]">{entry.category.replace(/_/g, " ")}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{entry.entity_name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[300px] truncate">{entry.description}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -502,6 +641,10 @@ const MonitoringDashboard = () => {
           <TabsTrigger value="launch" className="gap-1.5">
             <Rocket className="w-3.5 h-3.5" />
             {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
+          </TabsTrigger>
+          <TabsTrigger value="dna" className="gap-1.5">
+            <Dna className="w-3.5 h-3.5" />
+            {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
           </TabsTrigger>
         </TabsList>
 
@@ -643,6 +786,9 @@ const MonitoringDashboard = () => {
 
         <TabsContent value="launch">
           <LaunchReadinessPanel />
+        </TabsContent>
+        <TabsContent value="dna">
+          <SystemDnaTab />
         </TabsContent>
       </Tabs>
     </AppLayout>
