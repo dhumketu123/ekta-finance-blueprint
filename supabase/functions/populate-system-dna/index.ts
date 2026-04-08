@@ -328,6 +328,21 @@ Deno.serve(async (req) => {
 
     const nullMetadataCount = validation?.length ?? 0;
 
+    // ═══════════════════════════════════════
+    // STEP 8: AI Reasoning Pass
+    // ═══════════════════════════════════════
+    let insightsResult = null;
+    try {
+      const { data: ir, error: irErr } = await supabase.rpc("fn_generate_ai_insights");
+      if (irErr) {
+        stats.errors.push(`ai_insights: ${irErr.message}`);
+      } else {
+        insightsResult = ir;
+      }
+    } catch (e) {
+      stats.errors.push(`ai_insights: ${String(e)}`);
+    }
+
     return new Response(
       JSON.stringify({
         status: "success",
@@ -337,6 +352,7 @@ Deno.serve(async (req) => {
           null_metadata_count: nullMetadataCount,
           total_indexed: stats.tables + stats.edge_functions + stats.business_rules + stats.feature_flags,
         },
+        ai_insights: insightsResult,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
