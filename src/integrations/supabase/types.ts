@@ -3692,7 +3692,7 @@ export type Database = {
           active_entities: number | null
           avg_criticality: number | null
           high_risk_entities: number | null
-          inactive_dependencies: number | null
+          last_engine_run: string | null
           last_snapshot_time: string | null
           refreshed_at: string | null
           total_entities: number | null
