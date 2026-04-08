@@ -646,6 +646,11 @@ const SystemDnaTab = () => {
             <Dna className="w-3.5 h-3.5" />
             {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
           </TabsTrigger>
+          <TabsTrigger value="ai-knowledge" className="gap-1.5">
+            <BrainCircuit className="w-3.5 h-3.5" />
+            {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
+          </TabsTrigger>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
@@ -789,6 +794,9 @@ const SystemDnaTab = () => {
         </TabsContent>
         <TabsContent value="dna">
           <SystemDnaTab />
+        </TabsContent>
+        <TabsContent value="ai-knowledge">
+          <AiKnowledgeTab />
         </TabsContent>
       </Tabs>
     </AppLayout>
