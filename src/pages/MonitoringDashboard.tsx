@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle,
   BarChart3, Server, ShieldAlert, Rocket, HeartPulse, Wrench, Info,
-  ChevronLeft, ChevronRight, Dna, Database, Code2, Settings2, Flag,
+  ChevronLeft, ChevronRight, Dna, Database, Code2, Settings2, Flag, BrainCircuit,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
