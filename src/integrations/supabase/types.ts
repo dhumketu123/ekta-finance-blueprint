@@ -278,6 +278,7 @@ export type Database = {
           entity_id: string | null
           id: string
           insight_type: string
+          is_locked: boolean
           metadata: Json
           severity_score: number
           status: string
@@ -289,6 +290,7 @@ export type Database = {
           entity_id?: string | null
           id?: string
           insight_type: string
+          is_locked?: boolean
           metadata?: Json
           severity_score?: number
           status?: string
@@ -300,6 +302,7 @@ export type Database = {
           entity_id?: string | null
           id?: string
           insight_type?: string
+          is_locked?: boolean
           metadata?: Json
           severity_score?: number
           status?: string
