@@ -276,6 +276,7 @@ export type Database = {
           created_at: string
           description: string
           entity_id: string | null
+          execution_priority: number | null
           id: string
           insight_type: string
           is_locked: boolean
@@ -288,6 +289,7 @@ export type Database = {
           created_at?: string
           description: string
           entity_id?: string | null
+          execution_priority?: number | null
           id?: string
           insight_type: string
           is_locked?: boolean
@@ -300,6 +302,7 @@ export type Database = {
           created_at?: string
           description?: string
           entity_id?: string | null
+          execution_priority?: number | null
           id?: string
           insight_type?: string
           is_locked?: boolean
