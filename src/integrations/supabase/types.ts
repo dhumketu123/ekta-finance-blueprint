@@ -3690,6 +3690,19 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_dashboard_metrics_mat: {
+        Row: {
+          active_insights_count: number | null
+          dismissed_insights_count: number | null
+          last_engine_run: string | null
+          last_snapshot_time: string | null
+          locked_insights_count: number | null
+          resolved_insights_count: number | null
+          stale_insights_count: number | null
+          weighted_risk_score: number | null
+        }
+        Relationships: []
+      }
       ai_system_health_mat: {
         Row: {
           active_entities: number | null
@@ -4277,6 +4290,7 @@ export type Database = {
       }
       process_weekly_batch: { Args: { p_payload: Json }; Returns: Json }
       reconcile_savings_balances: { Args: never; Returns: Json }
+      refresh_ai_dashboard_metrics: { Args: never; Returns: undefined }
       refresh_ai_system_health: { Args: never; Returns: undefined }
       refresh_trial_balance_mv: { Args: never; Returns: undefined }
       reject_financial_transaction: {
