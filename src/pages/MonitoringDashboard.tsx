@@ -650,7 +650,6 @@ const SystemDnaTab = () => {
             <BrainCircuit className="w-3.5 h-3.5" />
             {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
           </TabsTrigger>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
