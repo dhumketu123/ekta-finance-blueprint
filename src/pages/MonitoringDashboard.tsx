@@ -1198,6 +1198,9 @@ const AiInsightsTab = () => {
         <TabsContent value="dna">
           <SystemDnaTab />
         </TabsContent>
+        <TabsContent value="ai-knowledge">
+          <AiKnowledgeTab />
+        </TabsContent>
         <TabsContent value="ai-insights">
           <AiInsightsTab />
         </TabsContent>
