@@ -27,6 +27,7 @@ import {
   useHealthTrend, useHealthRealtime,
 } from "@/hooks/useSystemHealth";
 import { format } from "date-fns";
+import { useAiBrainContext } from "@/hooks/useAiBrainContext";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Legend, BarChart, Bar, Tooltip as RechartsTooltip,
