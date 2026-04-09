@@ -212,6 +212,50 @@ export function getQuickActions(): SuggestedAction[] {
 }
 
 /**
+ * Gap detection — identifies missing/anomalous data & produces actionable alerts
+ */
+export function detectGaps(ctx: AssistantContext): string[] {
+  const gaps: string[] = [];
+
+  if (!ctx.trendData?.length) gaps.push("⚠️ সর্বশেষ সংগ্রহ ডেটা নেই — ট্রানজেকশন সিস্টেম যাচাই করুন।");
+  if (!ctx.collection30d) gaps.push("⚠️ ৩০-দিন তুলনামূলক ডেটা অনুপস্থিত।");
+  if (!ctx.loanKPIs) gaps.push("⚠️ লোন KPI ডেটা লোড হয়নি।");
+  if (!ctx.riskData?.length) gaps.push("⚠️ রিস্ক ডিস্ট্রিবিউশন ডেটা পাওয়া যায়নি।");
+  if (!ctx.topClients?.length) gaps.push("⚠️ টপ ক্লায়েন্ট ডেটা নেই।");
+
+  return gaps;
+}
+
+/**
+ * Predictive suggestions — context-aware recommended next actions
+ */
+export function getPredictiveSuggestions(ctx: AssistantContext): SuggestedAction[] {
+  const suggestions: SuggestedAction[] = [];
+  const risk = ctx.riskData ?? [];
+  const critical = risk.find((r) => r.name === "critical")?.value ?? 0;
+  const high = risk.find((r) => r.name === "high")?.value ?? 0;
+
+  if (critical + high > 5) {
+    suggestions.push({ label: `🚨 ${critical + high} হাই রিস্ক দেখুন`, icon: "alert", query: "হাই রিস্ক ক্লায়েন্ট" });
+  }
+
+  const c30 = ctx.collection30d;
+  if (c30 && c30.growthPct < -10) {
+    suggestions.push({ label: `📉 সংগ্রহ ${Math.abs(c30.growthPct)}% কমেছে`, icon: "chart", query: "সংগ্রহ ট্রেন্ড" });
+  }
+
+  if (ctx.loanKPIs && ctx.loanKPIs.defaultRate > 10) {
+    suggestions.push({ label: `⚠️ ডিফল্ট হার ${ctx.loanKPIs.defaultRate}%`, icon: "loan", query: "লোন সারাংশ" });
+  }
+
+  if (!suggestions.length) {
+    suggestions.push({ label: "সিস্টেম স্ট্যাটাস", icon: "info", query: "সিস্টেম স্ট্যাটাস" });
+  }
+
+  return suggestions;
+}
+
+/**
  * Build context summary for LLM
  */
 export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> {
@@ -249,5 +293,6 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       total: c.total,
       count: c.count,
     })),
+    data_gaps: detectGaps(ctx),
   };
 }
