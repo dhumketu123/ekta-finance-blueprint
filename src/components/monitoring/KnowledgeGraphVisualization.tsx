@@ -7,11 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import {
   Database, Code2, Settings2, Flag, Search, X, ArrowRight,
-  AlertTriangle, CheckCircle2, Info, Zap, Link2, Eye, EyeOff,
+  AlertTriangle, CheckCircle2, Info, Zap, Link2, Eye, EyeOff, RefreshCw,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 
 interface KnowledgeEntity {
   id: string;
@@ -300,11 +301,13 @@ function AuditPanel({ entities }: { entities: KnowledgeEntity[] }) {
 
 export default function KnowledgeGraphVisualization() {
   const { lang } = useLanguage();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterCriticality, setFilterCriticality] = useState<string | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [showRelationsOnly, setShowRelationsOnly] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const { data: entities = [], isLoading } = useQuery({
     queryKey: ["knowledge_graph_visualization"],
@@ -393,6 +396,20 @@ export default function KnowledgeGraphVisualization() {
     setFilterCriticality(null);
   }, []);
 
+  const handleManualSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("knowledge-sync");
+      if (error) throw error;
+      toast.success("নলেজ গ্রাফ সিঙ্ক সম্পূর্ণ", { description: `${data?.total_nodes ?? 0} নোড প্রসেস হয়েছে` });
+      queryClient.invalidateQueries({ queryKey: ["knowledge_graph_visualization"] });
+    } catch (err) {
+      toast.error("সিঙ্ক ব্যর্থ", { description: err instanceof Error ? err.message : "অজানা ত্রুটি" });
+    } finally {
+      setSyncing(false);
+    }
+  }, [queryClient]);
+
   const selectedEntityObj = entities.find((e) => e.entity_name === selectedEntity);
 
   if (isLoading) {
@@ -408,13 +425,25 @@ export default function KnowledgeGraphVisualization() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🕸️ {lang === "bn" ? "নলেজ গ্রাফ ভিজ্যুয়ালাইজেশন" : "Knowledge Graph Visualization"}
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {stats.total} {lang === "bn" ? "এন্টিটি" : "entities"} · ইন্টারেক্টিভ ম্যাপ
-          </p>
+        <div className="flex items-center gap-2">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              🕸️ {lang === "bn" ? "নলেজ গ্রাফ ভিজ্যুয়ালাইজেশন" : "Knowledge Graph Visualization"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {stats.total} {lang === "bn" ? "এন্টিটি" : "entities"} · ইন্টারেক্টিভ ম্যাপ
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs ml-auto"
+            onClick={handleManualSync}
+            disabled={syncing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "সিঙ্ক হচ্ছে..." : "ম্যানুয়াল সিঙ্ক"}
+          </Button>
         </div>
       </div>
 
