@@ -283,7 +283,7 @@ async function alertAdmin(supabase: ReturnType<typeof createClient>, message: st
         event_type: "system_health_alert",
         source_module: "system-health",
         role: "admin",
-        priority: level === "critical" ? "CRITICAL" : "HIGH",
+        priority: "HIGH",
       }));
       await supabase.from("in_app_notifications").insert(notifications);
     }
