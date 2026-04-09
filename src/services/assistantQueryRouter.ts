@@ -360,6 +360,23 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
   const risk = ctx.riskData ?? [];
   const t = ctx.trendData ?? [];
   const k = ctx.loanKPIs;
+  const kg = ctx.knowledgeEntities ?? [];
+
+  // Build knowledge graph summary for LLM
+  const kgByCategory: Record<string, number> = {};
+  const kgByCriticality: Record<string, number> = {};
+  const criticalEntities: string[] = [];
+  const activeFlags: string[] = [];
+
+  kg.forEach((e) => {
+    kgByCategory[e.entity_category] = (kgByCategory[e.entity_category] || 0) + 1;
+    const crit = (e.metadata?.criticality as string) ?? "unknown";
+    kgByCriticality[crit] = (kgByCriticality[crit] || 0) + 1;
+    if (crit === "critical") criticalEntities.push(e.entity_name);
+    if (e.entity_category === "feature_flag" && e.metadata?.is_enabled) {
+      activeFlags.push(e.entity_name);
+    }
+  });
 
   return {
     risk_summary: {
@@ -391,6 +408,13 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       total: c.total,
       count: c.count,
     })),
+    knowledge_graph: {
+      total_entities: kg.length,
+      by_category: kgByCategory,
+      by_criticality: kgByCriticality,
+      critical_entities: criticalEntities,
+      active_feature_flags: activeFlags,
+    },
     data_gaps: detectGaps(ctx),
   };
 }
