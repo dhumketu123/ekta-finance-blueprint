@@ -1952,6 +1952,65 @@ export type Database = {
           },
         ]
       }
+      ledger_mismatches: {
+        Row: {
+          affected_entry_count: number
+          created_at: string
+          detected_at: string
+          id: string
+          reference_id: string | null
+          reference_type: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          tenant_id: string
+          total_credit: number
+          total_debit: number
+          variance: number
+        }
+        Insert: {
+          affected_entry_count?: number
+          created_at?: string
+          detected_at?: string
+          id?: string
+          reference_id?: string | null
+          reference_type: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          tenant_id: string
+          total_credit?: number
+          total_debit?: number
+          variance?: number
+        }
+        Update: {
+          affected_entry_count?: number
+          created_at?: string
+          detected_at?: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          tenant_id?: string
+          total_credit?: number
+          total_debit?: number
+          variance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_mismatches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_products: {
         Row: {
           compulsory_savings_amount: number | null
@@ -4324,6 +4383,10 @@ export type Database = {
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
+      fn_daily_ledger_reconciliation: {
+        Args: { p_tenant_id?: string }
+        Returns: Json
+      }
       fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
       fn_enqueue_sms: {
         Args: {
@@ -4351,6 +4414,7 @@ export type Database = {
       fn_generate_ai_insights: { Args: never; Returns: Json }
       fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
+      fn_get_reconciliation_status: { Args: never; Returns: Json }
       fn_mark_sms_failed: {
         Args: { p_error?: string; p_queue_id: string }
         Returns: undefined
@@ -4360,6 +4424,15 @@ export type Database = {
         Returns: undefined
       }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
+      fn_resolve_mismatch: {
+        Args: {
+          p_mismatch_id: string
+          p_notes: string
+          p_resolved_by: string
+          p_status?: string
+        }
+        Returns: undefined
+      }
       generate_event_hash: {
         Args: {
           p_event_type: string
