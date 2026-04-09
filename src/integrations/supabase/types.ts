@@ -4309,6 +4309,13 @@ export type Database = {
           policy_value: string
         }[]
       }
+      get_loan_portfolio_counts: {
+        Args: never
+        Returns: {
+          cnt: number
+          status: string
+        }[]
+      }
       get_profit_loss: {
         Args: { p_from?: string; p_tenant_id?: string; p_to?: string }
         Returns: {
