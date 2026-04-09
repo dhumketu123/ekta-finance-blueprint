@@ -4060,7 +4060,9 @@ export type Database = {
         Args: { p_cutoff: string }
         Returns: number
       }
-      assert_pipeline_idempotency: { Args: never; Returns: undefined }
+      assert_pipeline_idempotency:
+        | { Args: never; Returns: undefined }
+        | { Args: { auto_fix?: boolean }; Returns: undefined }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
