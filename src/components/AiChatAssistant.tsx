@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
-import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSuggestions, detectGaps, type SuggestedAction, type AssistantContext } from "@/services/assistantQueryRouter";
+import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSuggestions, detectGaps, type SuggestedAction, type AssistantContext, type KnowledgeEntry } from "@/services/assistantQueryRouter";
+import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -158,9 +161,22 @@ export default function AiChatAssistant() {
   const { data: loanKPIs } = useLoanKPIs();
   const { data: collection30d } = useCollectionSummary30d();
 
+  const { data: knowledgeEntities } = useQuery({
+    queryKey: ["ai_chat_knowledge_entities"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_assistant_knowledge")
+        .select("entity_category, entity_name, description, metadata")
+        .order("entity_name");
+      if (error) throw error;
+      return (data ?? []) as unknown as KnowledgeEntry[];
+    },
+    staleTime: 5 * 60_000,
+  });
+
   const highRiskCount = (riskData ?? []).filter((r) => r.name === "critical" || r.name === "high").reduce((s, r) => s + r.value, 0);
 
-  const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7, collection30d };
+  const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7, collection30d, knowledgeEntities };
 
   // Initialize welcome message with context-aware gap detection & predictive suggestions
   useEffect(() => {
