@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +15,7 @@ import {
   Activity, Flame, ArrowUpRight, ArrowDownRight, Percent, Clock,
   BarChart3, Target,
 } from "lucide-react";
-import { format } from "date-fns";
+import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs } from "@/hooks/useAssistantDataBundle";
 
 // ── Types ──
 type TransactionBucket = "repayments" | "interest" | "penalty";
