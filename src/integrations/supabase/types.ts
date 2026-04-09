@@ -688,6 +688,30 @@ export type Database = {
           },
         ]
       }
+      circuit_breaker_state: {
+        Row: {
+          failure_count: number | null
+          id: string
+          last_trip_at: string | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          failure_count?: number | null
+          id: string
+          last_trip_at?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          failure_count?: number | null
+          id?: string
+          last_trip_at?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       client_risk: {
         Row: {
           client_id: string
@@ -3265,6 +3289,7 @@ export type Database = {
           created_at: string
           current_step: number
           error_log: Json | null
+          execution_fingerprint: string | null
           global_context_id: string | null
           id: string
           saga_type: string
@@ -3284,6 +3309,7 @@ export type Database = {
           created_at?: string
           current_step?: number
           error_log?: Json | null
+          execution_fingerprint?: string | null
           global_context_id?: string | null
           id?: string
           saga_type: string
@@ -3303,6 +3329,7 @@ export type Database = {
           created_at?: string
           current_step?: number
           error_log?: Json | null
+          execution_fingerprint?: string | null
           global_context_id?: string | null
           id?: string
           saga_type?: string
@@ -3886,6 +3913,7 @@ export type Database = {
           event_type: string
           id: string
           last_error: string | null
+          lock_acquired_at: string | null
           max_attempts: number
           next_retry_at: string | null
           overload_blocked: boolean | null
@@ -3894,6 +3922,7 @@ export type Database = {
           processed: boolean
           processed_at: string | null
           processing_lock: string | null
+          sequence_no: number
           source_module: string
           status: string
         }
@@ -3906,6 +3935,7 @@ export type Database = {
           event_type: string
           id?: string
           last_error?: string | null
+          lock_acquired_at?: string | null
           max_attempts?: number
           next_retry_at?: string | null
           overload_blocked?: boolean | null
@@ -3914,6 +3944,7 @@ export type Database = {
           processed?: boolean
           processed_at?: string | null
           processing_lock?: string | null
+          sequence_no?: never
           source_module: string
           status?: string
         }
@@ -3926,6 +3957,7 @@ export type Database = {
           event_type?: string
           id?: string
           last_error?: string | null
+          lock_acquired_at?: string | null
           max_attempts?: number
           next_retry_at?: string | null
           overload_blocked?: boolean | null
@@ -3934,6 +3966,7 @@ export type Database = {
           processed?: boolean
           processed_at?: string | null
           processing_lock?: string | null
+          sequence_no?: never
           source_module?: string
           status?: string
         }
@@ -4746,6 +4779,7 @@ export type Database = {
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
+      fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
       fn_daily_ledger_reconciliation: {
         Args: { p_tenant_id?: string }
         Returns: Json
@@ -4851,6 +4885,7 @@ export type Database = {
           event_type: string
           id: string
           last_error: string | null
+          lock_acquired_at: string | null
           max_attempts: number
           next_retry_at: string | null
           overload_blocked: boolean | null
@@ -4859,6 +4894,7 @@ export type Database = {
           processed: boolean
           processed_at: string | null
           processing_lock: string | null
+          sequence_no: number
           source_module: string
           status: string
         }[]
@@ -4877,6 +4913,16 @@ export type Database = {
           p_status?: string
         }
         Returns: undefined
+      }
+      fn_safe_refill_calc: {
+        Args: {
+          p_current: number
+          p_elapsed: number
+          p_interval: number
+          p_max: number
+          p_rate: number
+        }
+        Returns: number
       }
       fn_saga_compensate: { Args: { p_saga_id: string }; Returns: Json }
       fn_saga_execute_step: { Args: { p_saga_id: string }; Returns: Json }
