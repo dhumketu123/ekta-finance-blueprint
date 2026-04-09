@@ -372,7 +372,8 @@ Deno.serve(async (req) => {
         return { data, error };
       }),
       measure(async () => {
-        const { data, error } = await supabase.from("loans").select("status").is("deleted_at", null);
+        // Optimized: fetch only status counts instead of all rows
+        const { data, error } = await supabase.rpc("get_loan_portfolio_counts");
         return { data, error };
       }),
       measure(async () => {
@@ -454,17 +455,27 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 7. Loans
+    // 7. Loans (optimized: server-side aggregation via RPC)
     {
       const { data, error } = loans.result;
       if (error) {
         checks.push({ name: "loan_portfolio", status: "fail", detail: error.message, latency_ms: loans.ms });
       } else {
-        const total = data?.length ?? 0;
-        const def = data?.filter((l: any) => l.status === "default").length ?? 0;
-        const act = data?.filter((l: any) => l.status === "active").length ?? 0;
+        const counts: Record<string, number> = {};
+        let total = 0;
+        for (const row of (data as any[] ?? [])) {
+          counts[row.status] = Number(row.cnt);
+          total += Number(row.cnt);
+        }
+        const def = counts["default"] ?? 0;
+        const act = counts["active"] ?? 0;
         const dr = total > 0 ? (def / total) * 100 : 0;
-        checks.push({ name: "loan_portfolio", status: total === 0 ? "pass" : dr > 15 ? "fail" : dr > 5 ? "warn" : "pass", detail: total === 0 ? "No loans in portfolio" : `${total} total, ${act} active, ${def} defaulted (${dr.toFixed(1)}%)`, latency_ms: loans.ms });
+        checks.push({
+          name: "loan_portfolio",
+          status: total === 0 ? "pass" : dr > 15 ? "fail" : dr > 5 ? "warn" : "pass",
+          detail: total === 0 ? "No loans in portfolio" : `${total} total, ${act} active, ${def} defaulted (${dr.toFixed(1)}%)`,
+          latency_ms: loans.ms,
+        });
       }
     }
 
