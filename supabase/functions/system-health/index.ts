@@ -526,7 +526,7 @@ Deno.serve(async (req) => {
         checks,
         thresholds,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: overallStatus === "unhealthy" ? 503 : 200 },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
     return new Response(
