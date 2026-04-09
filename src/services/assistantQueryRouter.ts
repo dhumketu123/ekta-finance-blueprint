@@ -7,6 +7,14 @@ export interface AssistantContext {
   loanKPIs?: LoanKPIs | null;
   period: number;
   collection30d?: { current30d: number; previous30d: number; growthPct: number } | null;
+  knowledgeEntities?: KnowledgeEntry[];
+}
+
+export interface KnowledgeEntry {
+  entity_category: string;
+  entity_name: string;
+  description: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 export interface RouterResult {
@@ -157,9 +165,96 @@ const routes: RouteMatch[] = [
     }),
   },
   {
+    pattern: /knowledge|নলেজ|গ্রাফ|graph|dna|ডিএনএ|entity|এন্টিটি/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      if (!entries.length) return { answer: "নলেজ গ্রাফ ডেটা লোড হয়নি। মনিটরিং ড্যাশবোর্ড থেকে সিঙ্ক করুন।" };
+
+      const byCategory: Record<string, number> = {};
+      const byCriticality: Record<string, number> = {};
+      entries.forEach((e) => {
+        byCategory[e.entity_category] = (byCategory[e.entity_category] || 0) + 1;
+        const crit = (e.metadata?.criticality as string) ?? "unknown";
+        byCriticality[crit] = (byCriticality[crit] || 0) + 1;
+      });
+
+      let answer = `🧠 **নলেজ গ্রাফ সারাংশ:**\n• মোট এন্টিটি: ${entries.length}`;
+      Object.entries(byCategory).forEach(([cat, count]) => {
+        answer += `\n• ${cat.replace(/_/g, " ")}: ${count}`;
+      });
+      answer += "\n\n**ক্রিটিক্যালিটি:**";
+      Object.entries(byCriticality).forEach(([crit, count]) => {
+        const emoji = crit === "critical" ? "🔴" : crit === "high" ? "🟠" : crit === "medium" ? "🟡" : "🟢";
+        answer += `\n${emoji} ${crit}: ${count}`;
+      });
+
+      return {
+        answer,
+        actions: [
+          { label: "ক্রিটিকাল এন্টিটি", icon: "alert" as const, query: "ক্রিটিকাল এন্টিটি" },
+          { label: "ফিচার ফ্ল্যাগ", icon: "info" as const, query: "ফিচার ফ্ল্যাগ স্ট্যাটাস" },
+        ],
+      };
+    },
+  },
+  {
+    pattern: /critical\s*entity|ক্রিটিকাল\s*এন্টিটি|critical\s*table|ক্রিটিকাল\s*টেবিল/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      const criticals = entries.filter((e) => (e.metadata?.criticality as string) === "critical");
+      if (!criticals.length) return { answer: "কোনো ক্রিটিকাল এন্টিটি পাওয়া যায়নি।" };
+
+      const lines = criticals.map((e) => `• **${e.entity_name}** (${e.entity_category.replace(/_/g, " ")}) — ${e.description?.slice(0, 60) ?? ""}`);
+      return {
+        answer: `🔴 **ক্রিটিকাল এন্টিটি (${criticals.length}):**\n${lines.join("\n")}`,
+        actions: [
+          { label: "নলেজ গ্রাফ", icon: "info" as const, query: "নলেজ গ্রাফ" },
+          { label: "সিস্টেম স্ট্যাটাস", icon: "info" as const, query: "সিস্টেম স্ট্যাটাস" },
+        ],
+      };
+    },
+  },
+  {
+    pattern: /feature\s*flag|ফিচার\s*ফ্ল্যাগ|ff\s*status/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      const flags = entries.filter((e) => e.entity_category === "feature_flag");
+      if (!flags.length) return { answer: "ফিচার ফ্ল্যাগ ডেটা নেই।" };
+
+      const lines = flags.map((e) => {
+        const enabled = e.metadata?.is_enabled;
+        const role = e.metadata?.enabled_for_role ?? "all";
+        return `• ${enabled ? "✅" : "❌"} **${e.entity_name}** — রোল: ${role}`;
+      });
+      return {
+        answer: `🚩 **ফিচার ফ্ল্যাগ (${flags.length}):**\n${lines.join("\n")}`,
+        actions: [
+          { label: "নলেজ গ্রাফ", icon: "info" as const, query: "নলেজ গ্রাফ" },
+        ],
+      };
+    },
+  },
+  {
+    pattern: /edge\s*function|এজ\s*ফাংশন|backend\s*function/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      const fns = entries.filter((e) => e.entity_category === "edge_function");
+      if (!fns.length) return { answer: "এজ ফাংশন ডেটা নেই।" };
+
+      const lines = fns.map((e) => {
+        const crit = (e.metadata?.criticality as string) ?? "medium";
+        const emoji = crit === "critical" ? "🔴" : crit === "high" ? "🟠" : "🟡";
+        return `${emoji} **${e.entity_name}** — ${e.description?.slice(0, 50) ?? ""}`;
+      });
+      return {
+        answer: `⚡ **এজ ফাংশন (${fns.length}):**\n${lines.join("\n")}`,
+      };
+    },
+  },
+  {
     pattern: /help|সাহায্য|কি করতে পার|কি জানো/i,
     handler: () => ({
-      answer: `🤝 আমি আপনাকে যেসব বিষয়ে সাহায্য করতে পারি:\n\n📊 **ডেটা বিশ্লেষণ:**\n• রিস্ক রিপোর্ট ও ক্লায়েন্ট ঝুঁকি বিশ্লেষণ\n• সংগ্রহ ট্রেন্ড ও কালেকশন পারফরম্যান্স\n• লোন সারাংশ ও KPI মেট্রিক্স\n\n💡 **পরামর্শ:**\n• আর্থিক পরিকল্পনা ও কৌশল\n• ঝুঁকি ব্যবস্থাপনা\n• কালেকশন অপ্টিমাইজেশন\n\n🔍 **যেকোনো প্রশ্ন:**\n• বাংলায় বা ইংরেজিতে জিজ্ঞাসা করুন\n• আমি AI ব্যবহার করে উত্তর দিতে পারি`,
+      answer: `🤝 আমি আপনাকে যেসব বিষয়ে সাহায্য করতে পারি:\n\n📊 **ডেটা বিশ্লেষণ:**\n• রিস্ক রিপোর্ট ও ক্লায়েন্ট ঝুঁকি বিশ্লেষণ\n• সংগ্রহ ট্রেন্ড ও কালেকশন পারফরম্যান্স\n• লোন সারাংশ ও KPI মেট্রিক্স\n\n🧠 **নলেজ গ্রাফ:**\n• সিস্টেম এন্টিটি ও ডিপেন্ডেন্সি\n• ক্রিটিকাল টেবিল ও এজ ফাংশন\n• ফিচার ফ্ল্যাগ স্ট্যাটাস\n\n💡 **পরামর্শ:**\n• আর্থিক পরিকল্পনা ও কৌশল\n• ঝুঁকি ব্যবস্থাপনা\n\n🔍 বাংলায় বা ইংরেজিতে জিজ্ঞাসা করুন`,
       actions: QUICK_ACTIONS,
     }),
   },
@@ -178,8 +273,11 @@ const routes: RouteMatch[] = [
         const arrow = c30.growthPct >= 0 ? "↑" : "↓";
         growthLine = `\n• ৩০দিন পরিবর্তন: ${arrow} ${Math.abs(c30.growthPct)}%`;
       }
+
+      const kgCount = ctx.knowledgeEntities?.length ?? 0;
+
       return {
-        answer: `📋 সিস্টেম ওভারভিউ:\n• লোন: ${k?.totalLoans ?? "?"}টি | সক্রিয়: ${k?.activeRate ?? "?"}%\n• সংগ্রহ (${ctx.period}d): ${fmt(total)}${growthLine}\n• রিস্ক: ক্রিটিকাল ${critical}, হাই ${high}\n• বকেয়া: ${fmt(k?.totalOutstanding ?? 0)}\n• AI Pipeline: ✅ অপারেশনাল`,
+        answer: `📋 সিস্টেম ওভারভিউ:\n• লোন: ${k?.totalLoans ?? "?"}টি | সক্রিয়: ${k?.activeRate ?? "?"}%\n• সংগ্রহ (${ctx.period}d): ${fmt(total)}${growthLine}\n• রিস্ক: ক্রিটিকাল ${critical}, হাই ${high}\n• বকেয়া: ${fmt(k?.totalOutstanding ?? 0)}\n• নলেজ গ্রাফ: ${kgCount} এন্টিটি\n• AI Pipeline: ✅ অপারেশনাল`,
         actions: QUICK_ACTIONS.slice(0, 3),
       };
     },
@@ -262,6 +360,23 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
   const risk = ctx.riskData ?? [];
   const t = ctx.trendData ?? [];
   const k = ctx.loanKPIs;
+  const kg = ctx.knowledgeEntities ?? [];
+
+  // Build knowledge graph summary for LLM
+  const kgByCategory: Record<string, number> = {};
+  const kgByCriticality: Record<string, number> = {};
+  const criticalEntities: string[] = [];
+  const activeFlags: string[] = [];
+
+  kg.forEach((e) => {
+    kgByCategory[e.entity_category] = (kgByCategory[e.entity_category] || 0) + 1;
+    const crit = (e.metadata?.criticality as string) ?? "unknown";
+    kgByCriticality[crit] = (kgByCriticality[crit] || 0) + 1;
+    if (crit === "critical") criticalEntities.push(e.entity_name);
+    if (e.entity_category === "feature_flag" && e.metadata?.is_enabled) {
+      activeFlags.push(e.entity_name);
+    }
+  });
 
   return {
     risk_summary: {
@@ -293,6 +408,13 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       total: c.total,
       count: c.count,
     })),
+    knowledge_graph: {
+      total_entities: kg.length,
+      by_category: kgByCategory,
+      by_criticality: kgByCriticality,
+      critical_entities: criticalEntities,
+      active_feature_flags: activeFlags,
+    },
     data_gaps: detectGaps(ctx),
   };
 }

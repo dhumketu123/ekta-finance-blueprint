@@ -23,6 +23,7 @@ import AnomalyIntelligencePanel from "@/components/analytics/AnomalyIntelligence
 import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
 import LaunchReadinessPanel from "@/components/ops/LaunchReadinessPanel";
 import LiveTrendingTab from "@/components/analytics/LiveTrendingTab";
+import KnowledgeGraphVisualization from "@/components/monitoring/KnowledgeGraphVisualization";
 import {
   useSystemHealth, useAutoFixLogs, useHealthHistory,
   useHealthTrend, useHealthRealtime,
@@ -1058,6 +1059,10 @@ const SystemDnaTab = () => {
             <BarChart3 className="w-3.5 h-3.5" />
             {lang === "bn" ? "লাইভ ট্রেন্ড" : "Live Trending"}
           </TabsTrigger>
+          <TabsTrigger value="knowledge-graph" className="gap-1.5">
+            🕸️
+            {lang === "bn" ? "নলেজ গ্রাফ" : "Knowledge Graph"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
@@ -1210,6 +1215,9 @@ const SystemDnaTab = () => {
         </TabsContent>
         <TabsContent value="live-trending">
           <LiveTrendingTab />
+        </TabsContent>
+        <TabsContent value="knowledge-graph">
+          <KnowledgeGraphVisualization />
         </TabsContent>
       </Tabs>
     </AppLayout>
