@@ -3997,6 +3997,7 @@ export type Database = {
         Args: { p_cutoff: string }
         Returns: number
       }
+      assert_pipeline_idempotency: { Args: never; Returns: undefined }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
@@ -4155,6 +4156,7 @@ export type Database = {
         }[]
       }
       fn_generate_ai_insights: { Args: never; Returns: Json }
+      fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
@@ -4454,6 +4456,7 @@ export type Database = {
       reconcile_savings_balances: { Args: never; Returns: Json }
       refresh_ai_dashboard_metrics: { Args: never; Returns: undefined }
       refresh_ai_system_health: { Args: never; Returns: undefined }
+      refresh_ai_views_safe: { Args: never; Returns: undefined }
       refresh_trial_balance_mv: { Args: never; Returns: undefined }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
