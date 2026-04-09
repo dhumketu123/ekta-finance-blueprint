@@ -1,0 +1,1 @@
+ALTER FUNCTION public.refresh_ai_views_safe() SET search_path = public;
