@@ -1083,6 +1083,21 @@ export type Database = {
           },
         ]
       }
+      cron_global_locks: {
+        Row: {
+          job_name: string
+          locked_at: string | null
+        }
+        Insert: {
+          job_name: string
+          locked_at?: string | null
+        }
+        Update: {
+          job_name?: string
+          locked_at?: string | null
+        }
+        Relationships: []
+      }
       cron_heartbeats: {
         Row: {
           created_at: string
@@ -1363,6 +1378,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_failure_clusters: {
+        Row: {
+          event_type: string
+          failure_count: number | null
+          id: string
+          last_seen: string | null
+          metadata: Json | null
+          source_module: string
+        }
+        Insert: {
+          event_type: string
+          failure_count?: number | null
+          id?: string
+          last_seen?: string | null
+          metadata?: Json | null
+          source_module: string
+        }
+        Update: {
+          event_type?: string
+          failure_count?: number | null
+          id?: string
+          last_seen?: string | null
+          metadata?: Json | null
+          source_module?: string
+        }
+        Relationships: []
       }
       event_sourcing: {
         Row: {
@@ -3228,6 +3270,7 @@ export type Database = {
           saga_type: string
           started_at: string
           status: string
+          step_state: Json | null
           steps: Json
           tenant_id: string | null
           timeout_at: string | null
@@ -3246,6 +3289,7 @@ export type Database = {
           saga_type: string
           started_at?: string
           status?: string
+          step_state?: Json | null
           steps?: Json
           tenant_id?: string | null
           timeout_at?: string | null
@@ -3264,6 +3308,7 @@ export type Database = {
           saga_type?: string
           started_at?: string
           status?: string
+          step_state?: Json | null
           steps?: Json
           tenant_id?: string | null
           timeout_at?: string | null
@@ -3684,6 +3729,7 @@ export type Database = {
           id: string
           read_only_mode: boolean
           reason: string | null
+          singleton_key: boolean | null
           sms_paused: boolean
           system_status: string
         }
@@ -3695,6 +3741,7 @@ export type Database = {
           id?: string
           read_only_mode?: boolean
           reason?: string | null
+          singleton_key?: boolean | null
           sms_paused?: boolean
           system_status?: string
         }
@@ -3706,6 +3753,7 @@ export type Database = {
           id?: string
           read_only_mode?: boolean
           reason?: string | null
+          singleton_key?: boolean | null
           sms_paused?: boolean
           system_status?: string
         }
@@ -3840,10 +3888,12 @@ export type Database = {
           last_error: string | null
           max_attempts: number
           next_retry_at: string | null
+          overload_blocked: boolean | null
           payload: Json
           priority: string
           processed: boolean
           processed_at: string | null
+          processing_lock: string | null
           source_module: string
           status: string
         }
@@ -3858,10 +3908,12 @@ export type Database = {
           last_error?: string | null
           max_attempts?: number
           next_retry_at?: string | null
+          overload_blocked?: boolean | null
           payload?: Json
           priority?: string
           processed?: boolean
           processed_at?: string | null
+          processing_lock?: string | null
           source_module: string
           status?: string
         }
@@ -3876,10 +3928,12 @@ export type Database = {
           last_error?: string | null
           max_attempts?: number
           next_retry_at?: string | null
+          overload_blocked?: boolean | null
           payload?: Json
           priority?: string
           processed?: boolean
           processed_at?: string | null
+          processing_lock?: string | null
           source_module?: string
           status?: string
         }
@@ -4799,10 +4853,12 @@ export type Database = {
           last_error: string | null
           max_attempts: number
           next_retry_at: string | null
+          overload_blocked: boolean | null
           payload: Json
           priority: string
           processed: boolean
           processed_at: string | null
+          processing_lock: string | null
           source_module: string
           status: string
         }[]
@@ -4836,6 +4892,10 @@ export type Database = {
         Returns: Json
       }
       fn_snapshot_system_metrics: { Args: never; Returns: Json }
+      fn_system_circuit_guard: {
+        Args: { p_queue_depth: number }
+        Returns: Json
+      }
       fn_system_health_status: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
