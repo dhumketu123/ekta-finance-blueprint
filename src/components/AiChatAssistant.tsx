@@ -141,10 +141,11 @@ export default function AiChatAssistant() {
   const { data: trendData } = useCollectionTrend(7);
   const { data: topClients } = useTopClients(7);
   const { data: loanKPIs } = useLoanKPIs();
+  const { data: collection30d } = useCollectionSummary30d();
 
   const highRiskCount = (riskData ?? []).filter((r) => r.name === "critical" || r.name === "high").reduce((s, r) => s + r.value, 0);
 
-  const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7 };
+  const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7, collection30d };
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
