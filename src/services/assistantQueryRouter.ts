@@ -235,6 +235,106 @@ const routes: RouteMatch[] = [
     },
   },
   {
+    pattern: /impact|ইমপ্যাক্ট|predictive|প্রেডিক্টিভ|প্রভাব\s*বিশ্লেষণ|dependency\s*impact/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      if (!entries.length) return { answer: "নলেজ গ্রাফ ডেটা লোড হয়নি।" };
+
+      // Calculate impact scores based on graph connectivity
+      const impactScores = entries.map((e) => {
+        const relations = (e.metadata?.relations as string[]) ?? [];
+        const affects = (e.metadata?.affects_entities as string[]) ?? [];
+        const flags = (e.metadata?.related_feature_flags as string[]) ?? [];
+        const crit = (e.metadata?.criticality as string) ?? "medium";
+        const critWeight = crit === "critical" ? 4 : crit === "high" ? 3 : crit === "medium" ? 2 : 1;
+
+        // Inbound connections: how many entities point TO this one
+        const inbound = entries.filter((other) => {
+          const otherRels = (other.metadata?.relations as string[]) ?? [];
+          const otherAffects = (other.metadata?.affects_entities as string[]) ?? [];
+          return otherRels.includes(e.entity_name) || otherAffects.includes(e.entity_name);
+        }).length;
+
+        const score = (relations.length * 2) + (affects.length * 3) + (flags.length * 2) + (inbound * 2) + (critWeight * 3);
+        return { name: e.entity_name, category: e.entity_category, criticality: crit, score, relations: relations.length, affects: affects.length, inbound };
+      }).sort((a, b) => b.score - a.score);
+
+      const top10 = impactScores.slice(0, 10);
+      let answer = `🔮 **প্রেডিক্টিভ ইমপ্যাক্ট বিশ্লেষণ:**\n\n**সর্বোচ্চ ইমপ্যাক্ট নোড (টপ ১০):**`;
+      top10.forEach((item, i) => {
+        const emoji = item.criticality === "critical" ? "🔴" : item.criticality === "high" ? "🟠" : item.criticality === "medium" ? "🟡" : "🟢";
+        answer += `\n${i + 1}. ${emoji} **${item.name}** — স্কোর: ${item.score} (↗${item.relations} ↙${item.inbound} ⚡${item.affects})`;
+      });
+
+      // Risk summary
+      const highImpact = impactScores.filter((s) => s.score >= 15);
+      const avgScore = Math.round(impactScores.reduce((s, i) => s + i.score, 0) / impactScores.length);
+      answer += `\n\n📊 **সারাংশ:**\n• গড় ইমপ্যাক্ট স্কোর: ${avgScore}\n• হাই-ইমপ্যাক্ট নোড: ${highImpact.length}\n• মোট নোড: ${impactScores.length}`;
+
+      return {
+        answer,
+        actions: [
+          { label: "ক্রিটিকাল এন্টিটি", icon: "alert" as const, query: "ক্রিটিকাল এন্টিটি" },
+          { label: "নলেজ গ্রাফ", icon: "info" as const, query: "নলেজ গ্রাফ" },
+        ],
+      };
+    },
+  },
+  {
+    pattern: /orphan|অরফ্যান|isolated|বিচ্ছিন্ন|cyclic|সার্কুলার/i,
+    handler: (ctx) => {
+      const entries = ctx.knowledgeEntities ?? [];
+      if (!entries.length) return { answer: "নলেজ গ্রাফ ডেটা লোড হয়নি।" };
+
+      // Orphans
+      const orphans = entries.filter((e) => {
+        if (e.entity_category === "feature_flag") return false;
+        const rels = (e.metadata?.relations as string[]) ?? [];
+        return rels.length === 0;
+      });
+
+      // Circular dependencies
+      const circularPairs: string[] = [];
+      for (const e of entries) {
+        const rels = (e.metadata?.relations as string[]) ?? [];
+        for (const r of rels) {
+          const target = entries.find((x) => x.entity_name === r);
+          if (target) {
+            const targetRels = (target.metadata?.relations as string[]) ?? [];
+            if (targetRels.includes(e.entity_name)) {
+              const pair = [e.entity_name, r].sort().join(" ↔ ");
+              if (!circularPairs.includes(pair)) circularPairs.push(pair);
+            }
+          }
+        }
+      }
+
+      let answer = `🔍 **গ্রাফ অডিট রিপোর্ট:**`;
+      answer += `\n\n📌 **অরফ্যান নোড (${orphans.length}):**`;
+      if (orphans.length === 0) {
+        answer += "\n✅ কোনো অরফ্যান নেই!";
+      } else {
+        orphans.slice(0, 8).forEach((o) => { answer += `\n• ${o.entity_name} (${o.entity_category})`; });
+        if (orphans.length > 8) answer += `\n• ...আরো ${orphans.length - 8}টি`;
+      }
+
+      answer += `\n\n🔄 **সার্কুলার ডিপেন্ডেন্সি (${circularPairs.length}):**`;
+      if (circularPairs.length === 0) {
+        answer += "\n✅ কোনো সার্কুলার নেই!";
+      } else {
+        circularPairs.slice(0, 5).forEach((p) => { answer += `\n• ${p}`; });
+      }
+
+      return {
+        answer,
+        actions: [
+          { label: "ইমপ্যাক্ট বিশ্লেষণ", icon: "chart" as const, query: "প্রেডিক্টিভ ইমপ্যাক্ট" },
+          { label: "নলেজ গ্রাফ", icon: "info" as const, query: "নলেজ গ্রাফ" },
+        ],
+      };
+    },
+  },
+  {
     pattern: /edge\s*function|এজ\s*ফাংশন|backend\s*function/i,
     handler: (ctx) => {
       const entries = ctx.knowledgeEntities ?? [];
