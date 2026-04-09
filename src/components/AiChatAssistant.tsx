@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
-import { assistantQueryRouter, getQuickActions, buildLlmContext, type SuggestedAction, type AssistantContext } from "@/services/assistantQueryRouter";
+import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSuggestions, detectGaps, type SuggestedAction, type AssistantContext } from "@/services/assistantQueryRouter";
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -22,12 +22,26 @@ interface Message {
   isStreaming?: boolean;
 }
 
-const WELCOME_MSG: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "👋 আসসালামু আলাইকুম! আমি **একতা AI** — আপনার ফাইনান্সিয়াল অ্যাসিস্ট্যান্ট।\n\nআমি ডেটা বিশ্লেষণ, ঝুঁকি রিপোর্ট, এবং যেকোনো আর্থিক প্রশ্নের উত্তর দিতে পারি। নিচের বাটনগুলো ব্যবহার করুন অথবা নিজের প্রশ্ন লিখুন!",
-  timestamp: new Date(),
-  actions: getQuickActions(),
+const getWelcomeMessage = (ctx: AssistantContext): Message => {
+  const predictive = getPredictiveSuggestions(ctx);
+  const gaps = detectGaps(ctx);
+  let content = "👋 আসসালামু আলাইকুম! আমি **একতা AI** — আপনার ফাইনান্সিয়াল অ্যাসিস্ট্যান্ট।\n\nআমি ডেটা বিশ্লেষণ, ঝুঁকি রিপোর্ট, এবং যেকোনো আর্থিক প্রশ্নের উত্তর দিতে পারি।";
+
+  if (gaps.length > 0) {
+    content += `\n\n🔍 **সিস্টেম গ্যাপ সনাক্ত:**\n${gaps.join("\n")}`;
+  }
+
+  if (predictive.length > 0 && predictive[0].icon !== "info") {
+    content += "\n\n⚡ **প্রস্তাবিত অ্যাকশন:**";
+  }
+
+  return {
+    id: "welcome",
+    role: "assistant",
+    content,
+    timestamp: new Date(),
+    actions: predictive.length > 0 && predictive[0].icon !== "info" ? predictive : getQuickActions(),
+  };
 };
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -129,7 +143,8 @@ function ChatInput({ input, setInput, onSend, disabled, inputRef }: {
 
 export default function AiChatAssistant() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MSG]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -146,6 +161,14 @@ export default function AiChatAssistant() {
   const highRiskCount = (riskData ?? []).filter((r) => r.name === "critical" || r.name === "high").reduce((s, r) => s + r.value, 0);
 
   const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7, collection30d };
+
+  // Initialize welcome message with context-aware gap detection & predictive suggestions
+  useEffect(() => {
+    if (!initialized && (riskData || trendData || loanKPIs)) {
+      setMessages([getWelcomeMessage({ riskData, trendData, topClients, loanKPIs, period: 7, collection30d })]);
+      setInitialized(true);
+    }
+  }, [initialized, riskData, trendData, topClients, loanKPIs, collection30d]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
