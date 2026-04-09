@@ -3202,6 +3202,121 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_dead_letter: {
+        Row: {
+          created_at: string
+          failed_at: string
+          gateway_responses: Json | null
+          id: string
+          last_error: string | null
+          message_body: string
+          original_queue_id: string
+          recipient_phone: string
+          reference_id: string | null
+          reference_type: string | null
+          tenant_id: string
+          total_attempts: number
+        }
+        Insert: {
+          created_at?: string
+          failed_at?: string
+          gateway_responses?: Json | null
+          id?: string
+          last_error?: string | null
+          message_body: string
+          original_queue_id: string
+          recipient_phone: string
+          reference_id?: string | null
+          reference_type?: string | null
+          tenant_id: string
+          total_attempts?: number
+        }
+        Update: {
+          created_at?: string
+          failed_at?: string
+          gateway_responses?: Json | null
+          id?: string
+          last_error?: string | null
+          message_body?: string
+          original_queue_id?: string
+          recipient_phone?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          tenant_id?: string
+          total_attempts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_dead_letter_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_delivery_queue: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          gateway_response: Json | null
+          id: string
+          last_error: string | null
+          max_attempts: number
+          message_body: string
+          next_retry_at: string
+          recipient_phone: string
+          reference_id: string | null
+          reference_type: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          gateway_response?: Json | null
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          message_body: string
+          next_retry_at?: string
+          recipient_phone: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          gateway_response?: Json | null
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          message_body?: string
+          next_retry_at?: string
+          recipient_phone?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_delivery_queue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_logs: {
         Row: {
           created_at: string
@@ -4208,7 +4323,18 @@ export type Database = {
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
       fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
+      fn_enqueue_sms: {
+        Args: {
+          p_body: string
+          p_phone: string
+          p_ref_id?: string
+          p_ref_type?: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
@@ -4225,6 +4351,15 @@ export type Database = {
       fn_generate_ai_insights: { Args: never; Returns: Json }
       fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
+      fn_mark_sms_failed: {
+        Args: { p_error?: string; p_queue_id: string }
+        Returns: undefined
+      }
+      fn_mark_sms_sent: {
+        Args: { p_gateway_response?: Json; p_queue_id: string }
+        Returns: undefined
+      }
+      fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       generate_event_hash: {
         Args: {
           p_event_type: string
