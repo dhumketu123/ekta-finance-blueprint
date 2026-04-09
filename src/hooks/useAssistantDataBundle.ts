@@ -25,6 +25,36 @@ export interface LoanKPIs {
   defaultRate: number;
 }
 
+// ── 30-Day Collection Summary (for growth comparison) ──
+export const useCollectionSummary30d = () =>
+  useQuery({
+    queryKey: ["collection_summary_30d"],
+    queryFn: async (): Promise<{ current30d: number; previous30d: number; growthPct: number }> => {
+      const now = new Date();
+      const d30 = new Date(); d30.setDate(now.getDate() - 30);
+      const d60 = new Date(); d60.setDate(now.getDate() - 60);
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("transaction_date, amount")
+        .is("deleted_at", null)
+        .gte("transaction_date", d60.toISOString().slice(0, 10));
+      if (error) throw error;
+
+      let current30d = 0, previous30d = 0;
+      const d30Str = d30.toISOString().slice(0, 10);
+      (data ?? []).forEach((tx: any) => {
+        const amt = Number(tx.amount) || 0;
+        if (tx.transaction_date >= d30Str) current30d += amt;
+        else previous30d += amt;
+      });
+
+      const growthPct = previous30d > 0 ? Math.round(((current30d - previous30d) / previous30d) * 100) : 0;
+      return { current30d: Math.round(current30d), previous30d: Math.round(previous30d), growthPct };
+    },
+    staleTime: 60_000,
+  });
+
 // ── Risk Distribution ──
 export const useRiskDistribution = () =>
   useQuery({

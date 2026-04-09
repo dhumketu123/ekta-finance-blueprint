@@ -6,6 +6,7 @@ export interface AssistantContext {
   topClients?: TopClient[];
   loanKPIs?: LoanKPIs | null;
   period: number;
+  collection30d?: { current30d: number; previous30d: number; growthPct: number } | null;
 }
 
 export interface RouterResult {
@@ -96,6 +97,14 @@ const routes: RouteMatch[] = [
         answer += `\n• সর্বোচ্চ দিন: ${bestDay.date} — ${fmt(bestDay.total)}`;
       }
 
+      // 30-day comparison
+      const c30 = ctx.collection30d;
+      if (c30) {
+        const arrow = c30.growthPct >= 0 ? "↑" : "↓";
+        const emoji = c30.growthPct >= 0 ? "📈" : "📉";
+        answer += `\n\n${emoji} ৩০-দিন তুলনা:\n• বর্তমান ৩০দিন: ${fmt(c30.current30d)}\n• আগের ৩০দিন: ${fmt(c30.previous30d)}\n• পরিবর্তন: ${arrow} ${Math.abs(c30.growthPct)}%`;
+      }
+
       return {
         answer,
         actions: [
@@ -163,8 +172,14 @@ const routes: RouteMatch[] = [
       const high = risk.find((r) => r.name === "high")?.value ?? 0;
       const t = ctx.trendData ?? [];
       const total = t.reduce((s, d) => s + d.total, 0);
+      const c30 = ctx.collection30d;
+      let growthLine = "";
+      if (c30) {
+        const arrow = c30.growthPct >= 0 ? "↑" : "↓";
+        growthLine = `\n• ৩০দিন পরিবর্তন: ${arrow} ${Math.abs(c30.growthPct)}%`;
+      }
       return {
-        answer: `📋 সিস্টেম ওভারভিউ:\n• লোন: ${k?.totalLoans ?? "?"}টি | সক্রিয়: ${k?.activeRate ?? "?"}%\n• সংগ্রহ (${ctx.period}d): ${fmt(total)}\n• রিস্ক: ক্রিটিকাল ${critical}, হাই ${high}\n• বকেয়া: ${fmt(k?.totalOutstanding ?? 0)}\n• AI Pipeline: ✅ অপারেশনাল`,
+        answer: `📋 সিস্টেম ওভারভিউ:\n• লোন: ${k?.totalLoans ?? "?"}টি | সক্রিয়: ${k?.activeRate ?? "?"}%\n• সংগ্রহ (${ctx.period}d): ${fmt(total)}${growthLine}\n• রিস্ক: ক্রিটিকাল ${critical}, হাই ${high}\n• বকেয়া: ${fmt(k?.totalOutstanding ?? 0)}\n• AI Pipeline: ✅ অপারেশনাল`,
         actions: QUICK_ACTIONS.slice(0, 3),
       };
     },
@@ -217,6 +232,7 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       total: t.reduce((s, d) => s + d.total, 0),
       daily_avg: t.length ? Math.round(t.reduce((s, d) => s + d.total, 0) / t.length) : 0,
       tx_count: t.reduce((s, d) => s + d.count, 0),
+      thirty_day_comparison: ctx.collection30d ?? null,
     },
     loan_kpis: k
       ? {
