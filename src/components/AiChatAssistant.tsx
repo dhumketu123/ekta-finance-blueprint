@@ -12,7 +12,6 @@ import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSu
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
