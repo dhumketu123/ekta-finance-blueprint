@@ -325,6 +325,7 @@ export type Database = {
         Row: {
           alert_time: string
           escalation_sent_at: string | null
+          fingerprint: string | null
           id: number
           message: string | null
           severity: string
@@ -332,6 +333,7 @@ export type Database = {
         Insert: {
           alert_time?: string
           escalation_sent_at?: string | null
+          fingerprint?: string | null
           id?: number
           message?: string | null
           severity?: string
@@ -339,6 +341,7 @@ export type Database = {
         Update: {
           alert_time?: string
           escalation_sent_at?: string | null
+          fingerprint?: string | null
           id?: number
           message?: string | null
           severity?: string
@@ -369,6 +372,42 @@ export type Database = {
           max_active_insights?: number
           max_stale_minutes?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_pipeline_metrics: {
+        Row: {
+          alerts_generated: number | null
+          duration_ms: number | null
+          id: number
+          insights_generated: number | null
+          metadata: Json | null
+          metric_type: string
+          recorded_at: string
+          run_id: number | null
+          status: string | null
+        }
+        Insert: {
+          alerts_generated?: number | null
+          duration_ms?: number | null
+          id?: number
+          insights_generated?: number | null
+          metadata?: Json | null
+          metric_type?: string
+          recorded_at?: string
+          run_id?: number | null
+          status?: string | null
+        }
+        Update: {
+          alerts_generated?: number | null
+          duration_ms?: number | null
+          id?: number
+          insights_generated?: number | null
+          metadata?: Json | null
+          metric_type?: string
+          recorded_at?: string
+          run_id?: number | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -3802,6 +3841,17 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_pipeline_trend_24h: {
+        Row: {
+          avg_duration_ms: number | null
+          failure_rate_pct: number | null
+          hour_bucket: string | null
+          run_count: number | null
+          total_alerts: number | null
+          total_insights: number | null
+        }
+        Relationships: []
+      }
       ai_system_health_mat: {
         Row: {
           active_entities: number | null
@@ -4250,6 +4300,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_deduplicated_alert: {
+        Args: {
+          p_fingerprint: string
+          p_message: string
+          p_severity: string
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_owner: { Args: never; Returns: boolean }
       is_assigned_to_client: { Args: { _client_id: string }; Returns: boolean }
@@ -4447,6 +4506,7 @@ export type Database = {
         }
         Returns: string
       }
+      simulate_pipeline_test: { Args: never; Returns: Json }
       snooze_installment: {
         Args: { p_promised_date: string; p_schedule_id: string }
         Returns: Json
