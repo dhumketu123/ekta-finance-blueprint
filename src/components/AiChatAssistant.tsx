@@ -7,7 +7,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs } from "@/hooks/useAssistantDataBundle";
+import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
 import { assistantQueryRouter, getQuickActions, buildLlmContext, type SuggestedAction, type AssistantContext } from "@/services/assistantQueryRouter";
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { cn } from "@/lib/utils";
