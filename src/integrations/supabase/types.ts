@@ -3045,6 +3045,48 @@ export type Database = {
           },
         ]
       }
+      rate_limit_buckets: {
+        Row: {
+          bucket_key: string
+          created_at: string
+          current_tokens: number
+          id: string
+          last_refill_at: string
+          max_tokens: number
+          module: string
+          refill_interval_seconds: number
+          refill_rate: number
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket_key: string
+          created_at?: string
+          current_tokens?: number
+          id?: string
+          last_refill_at?: string
+          max_tokens?: number
+          module: string
+          refill_interval_seconds?: number
+          refill_rate?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket_key?: string
+          created_at?: string
+          current_tokens?: number
+          id?: string
+          last_refill_at?: string
+          max_tokens?: number
+          module?: string
+          refill_interval_seconds?: number
+          refill_rate?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reopen_requests: {
         Row: {
           approved_at: string | null
@@ -3172,6 +3214,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saga_transactions: {
+        Row: {
+          completed_at: string | null
+          context: Json | null
+          correlation_id: string
+          created_at: string
+          current_step: number
+          error_log: Json | null
+          id: string
+          saga_type: string
+          started_at: string
+          status: string
+          steps: Json
+          tenant_id: string | null
+          total_steps: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          context?: Json | null
+          correlation_id: string
+          created_at?: string
+          current_step?: number
+          error_log?: Json | null
+          id?: string
+          saga_type: string
+          started_at?: string
+          status?: string
+          steps?: Json
+          tenant_id?: string | null
+          total_steps?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          context?: Json | null
+          correlation_id?: string
+          created_at?: string
+          current_step?: number
+          error_log?: Json | null
+          id?: string
+          saga_type?: string
+          started_at?: string
+          status?: string
+          steps?: Json
+          tenant_id?: string | null
+          total_steps?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       savings_accounts: {
         Row: {
@@ -3648,39 +3741,102 @@ export type Database = {
         }
         Relationships: []
       }
+      system_event_dead_letter: {
+        Row: {
+          attempts: number
+          correlation_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          failed_at: string
+          id: string
+          last_error: string | null
+          original_event_id: string
+          payload: Json | null
+          source_module: string
+        }
+        Insert: {
+          attempts?: number
+          correlation_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          failed_at?: string
+          id?: string
+          last_error?: string | null
+          original_event_id: string
+          payload?: Json | null
+          source_module: string
+        }
+        Update: {
+          attempts?: number
+          correlation_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          failed_at?: string
+          id?: string
+          last_error?: string | null
+          original_event_id?: string
+          payload?: Json | null
+          source_module?: string
+        }
+        Relationships: []
+      }
       system_events: {
         Row: {
+          attempts: number
           correlation_id: string | null
           created_at: string
           entity_id: string | null
           entity_type: string | null
           event_type: string
           id: string
+          last_error: string | null
+          max_attempts: number
+          next_retry_at: string | null
           payload: Json
           processed: boolean
+          processed_at: string | null
           source_module: string
+          status: string
         }
         Insert: {
+          attempts?: number
           correlation_id?: string | null
           created_at?: string
           entity_id?: string | null
           entity_type?: string | null
           event_type: string
           id?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_retry_at?: string | null
           payload?: Json
           processed?: boolean
+          processed_at?: string | null
           source_module: string
+          status?: string
         }
         Update: {
+          attempts?: number
           correlation_id?: string | null
           created_at?: string
           entity_id?: string | null
           entity_type?: string | null
           event_type?: string
           id?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_retry_at?: string | null
           payload?: Json
           processed?: boolean
+          processed_at?: string | null
           source_module?: string
+          status?: string
         }
         Relationships: []
       }
@@ -3778,6 +3934,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_metrics_ts: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          snapshot_at: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value?: number
+          snapshot_at?: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          snapshot_at?: string
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {
@@ -4472,6 +4652,14 @@ export type Database = {
         Returns: Json
       }
       fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
+      fn_detect_degradation: {
+        Args: {
+          p_lookback_minutes?: number
+          p_metric_type?: string
+          p_threshold_drop?: number
+        }
+        Returns: Json
+      }
       fn_detect_financial_anomalies: { Args: never; Returns: Json }
       fn_emit_event: {
         Args: {
@@ -4521,6 +4709,22 @@ export type Database = {
         Returns: undefined
       }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
+      fn_process_system_events: {
+        Args: { p_batch_size?: number }
+        Returns: Json
+      }
+      fn_rate_limit_check: {
+        Args: {
+          p_bucket_key: string
+          p_max_tokens?: number
+          p_module?: string
+          p_refill_interval?: number
+          p_refill_rate?: number
+          p_tenant_id?: string
+          p_tokens_needed?: number
+        }
+        Returns: Json
+      }
       fn_record_heartbeat: {
         Args: {
           p_duration_ms?: number
@@ -4538,15 +4742,21 @@ export type Database = {
           p_to?: string
         }
         Returns: {
+          attempts: number
           correlation_id: string | null
           created_at: string
           entity_id: string | null
           entity_type: string | null
           event_type: string
           id: string
+          last_error: string | null
+          max_attempts: number
+          next_retry_at: string | null
           payload: Json
           processed: boolean
+          processed_at: string | null
           source_module: string
+          status: string
         }[]
         SetofOptions: {
           from: "*"
@@ -4564,6 +4774,9 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_saga_compensate: { Args: { p_saga_id: string }; Returns: Json }
+      fn_saga_execute_step: { Args: { p_saga_id: string }; Returns: Json }
+      fn_snapshot_system_metrics: { Args: never; Returns: Json }
       fn_system_health_status: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
