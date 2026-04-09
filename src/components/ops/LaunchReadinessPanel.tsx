@@ -19,6 +19,7 @@ import {
   Activity,
   Timer,
   TrendingUp,
+  BrainCircuit,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -47,7 +48,8 @@ const CHECK_META: Record<string, { icon: React.ElementType; labelEn: string; lab
   cron_activity:   { icon: Timer,     labelEn: "Background Jobs (24h)", labelBn: "ব্যাকগ্রাউন্ড জব (২৪ঘ)" },
   notifications:   { icon: Bell,      labelEn: "Notification Delivery", labelBn: "বিজ্ঞপ্তি ডেলিভারি" },
   loan_portfolio:  { icon: Wallet,    labelEn: "Loan Portfolio Health",  labelBn: "ঋণ পোর্টফোলিও স্বাস্থ্য" },
-  rls_enforcement: { icon: Shield,    labelEn: "Security (RLS)",        labelBn: "নিরাপত্তা (RLS)" },
+  rls_enforcement: { icon: Shield,       labelEn: "Security (RLS)",        labelBn: "নিরাপত্তা (RLS)" },
+  knowledge_sync:  { icon: BrainCircuit, labelEn: "Knowledge Sync",        labelBn: "নলেজ সিঙ্ক" },
 };
 
 const STATUS_CFG = {
