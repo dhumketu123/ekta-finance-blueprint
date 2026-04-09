@@ -19,8 +19,15 @@ import {
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 
-// ── Transaction Type Map (future-safe) ──
-const TX_TYPE_MAP: Record<string, "repayments" | "interest" | "penalty"> = {
+// ── Types ──
+interface TransactionBuckets {
+  repayments: number;
+  interest: number;
+  penalty: number;
+}
+
+// ── TX TYPE MAPPING (future-proof) ──
+const TX_TYPE_MAP: Record<string, keyof TransactionBuckets> = {
   loan_repayment: "repayments",
   loan_principal: "repayments",
   loan_interest: "interest",
@@ -59,7 +66,7 @@ const useCollectionTrend = (days: number) =>
         .order("transaction_date", { ascending: true });
       if (error) throw error;
 
-      const dailyMap = new Map<string, { repayments: number; interest: number; penalty: number; count: number }>();
+      const dailyMap = new Map<string, TransactionBuckets & { count: number }>();
       (data ?? []).forEach((tx: any) => {
         const day = tx.transaction_date;
         const entry = dailyMap.get(day) || { repayments: 0, interest: 0, penalty: 0, count: 0 };
@@ -116,7 +123,7 @@ const useTopClients = (days: number) =>
       const nameMap = new Map((clients ?? []).map((c) => [c.id, { bn: c.name_bn, en: c.name_en }]));
       return sorted.map((s) => ({
         ...s,
-        name: nameMap.get(s.client_id)?.bn || nameMap.get(s.client_id)?.en || "—",
+        name: nameMap.get(s.client_id)?.bn || nameMap.get(s.client_id)?.en || `Client_${s.client_id.slice(0, 6)}`,
       }));
     },
     staleTime: 30_000,
@@ -189,7 +196,6 @@ export default function LiveTrendingTab() {
   const { data: topClients } = useTopClients(period);
   const { data: loanKPIs, isLoading: loanLoading } = useLoanKPIs();
 
-  // Period comparison: current vs previous
   const { data: prevTrendData } = useCollectionTrend(period * 2);
 
   const metrics = useMemo(() => {
@@ -201,7 +207,6 @@ export default function LiveTrendingTab() {
     const txCount = trendData.reduce((s, d) => s + d.count, 0);
     const avgRepayment = txCount > 0 ? Math.round(totalCurrent / txCount) : 0;
 
-    // Compare with previous period
     let totalPrev = 0;
     if (prevTrendData && prevTrendData.length > 0) {
       const cutoff = format(subDays(new Date(), period), "yyyy-MM-dd");
@@ -261,7 +266,7 @@ export default function LiveTrendingTab() {
         )}
       </div>
 
-      {/* Summary Cards — 2 rows */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard
           title="মোট সংগ্রহ"
@@ -451,7 +456,7 @@ export default function LiveTrendingTab() {
           </CardContent>
         </Card>
 
-        {/* Loan Summary with KPIs */}
+        {/* Loan Summary */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
