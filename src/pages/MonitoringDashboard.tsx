@@ -1026,49 +1026,51 @@ const SystemDnaTab = () => {
       />
 
       <Tabs defaultValue="health">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="health" className="gap-1.5">
-            <HeartPulse className="w-3.5 h-3.5" />
-            {lang === "bn" ? "লাইভ হেলথ" : "Live Health"}
-          </TabsTrigger>
-          <TabsTrigger value="overview">{lang === "bn" ? "ওভারভিউ" : "Overview"}</TabsTrigger>
-          <TabsTrigger value="anomaly" className="gap-1.5">
-            <ShieldAlert className="w-3.5 h-3.5" />
-            {lang === "bn" ? "অ্যানোমালি" : "Anomaly Intel"}
-          </TabsTrigger>
-          <TabsTrigger value="integrity" className="gap-1.5">
-            <Activity className="w-3.5 h-3.5" />
-            {lang === "bn" ? "ইন্টেগ্রিটি" : "Ledger Integrity"}
-          </TabsTrigger>
-          <TabsTrigger value="launch" className="gap-1.5">
-            <Rocket className="w-3.5 h-3.5" />
-            {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
-          </TabsTrigger>
-          <TabsTrigger value="dna" className="gap-1.5">
-            <Dna className="w-3.5 h-3.5" />
-            {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
-          </TabsTrigger>
-          <TabsTrigger value="ai-knowledge" className="gap-1.5">
-            <BrainCircuit className="w-3.5 h-3.5" />
-            {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
-          </TabsTrigger>
-          <TabsTrigger value="ai-insights" className="gap-1.5">
-            <Zap className="w-3.5 h-3.5" />
-            {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
-          </TabsTrigger>
-          <TabsTrigger value="live-trending" className="gap-1.5">
-            <BarChart3 className="w-3.5 h-3.5" />
-            {lang === "bn" ? "লাইভ ট্রেন্ড" : "Live Trending"}
-          </TabsTrigger>
-          <TabsTrigger value="knowledge-graph" className="gap-1.5">
-            🕸️
-            {lang === "bn" ? "নলেজ গ্রাফ" : "Knowledge Graph"}
-          </TabsTrigger>
-          <TabsTrigger value="sandbox" className="gap-1.5">
-            <FlaskConical className="w-3.5 h-3.5" />
-            {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
-          </TabsTrigger>
-        </TabsList>
+        <ScrollArea className="w-full">
+          <TabsList className="inline-flex h-auto w-max gap-1 p-1">
+            <TabsTrigger value="health" className="gap-1.5 whitespace-nowrap">
+              <HeartPulse className="w-3.5 h-3.5" />
+              {lang === "bn" ? "লাইভ হেলথ" : "Live Health"}
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="whitespace-nowrap">{lang === "bn" ? "ওভারভিউ" : "Overview"}</TabsTrigger>
+            <TabsTrigger value="anomaly" className="gap-1.5 whitespace-nowrap">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              {lang === "bn" ? "অ্যানোমালি" : "Anomaly Intel"}
+            </TabsTrigger>
+            <TabsTrigger value="integrity" className="gap-1.5 whitespace-nowrap">
+              <Activity className="w-3.5 h-3.5" />
+              {lang === "bn" ? "ইন্টেগ্রিটি" : "Ledger Integrity"}
+            </TabsTrigger>
+            <TabsTrigger value="launch" className="gap-1.5 whitespace-nowrap">
+              <Rocket className="w-3.5 h-3.5" />
+              {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
+            </TabsTrigger>
+            <TabsTrigger value="dna" className="gap-1.5 whitespace-nowrap">
+              <Dna className="w-3.5 h-3.5" />
+              {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
+            </TabsTrigger>
+            <TabsTrigger value="ai-knowledge" className="gap-1.5 whitespace-nowrap">
+              <BrainCircuit className="w-3.5 h-3.5" />
+              {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
+            </TabsTrigger>
+            <TabsTrigger value="ai-insights" className="gap-1.5 whitespace-nowrap">
+              <Zap className="w-3.5 h-3.5" />
+              {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
+            </TabsTrigger>
+            <TabsTrigger value="live-trending" className="gap-1.5 whitespace-nowrap">
+              <BarChart3 className="w-3.5 h-3.5" />
+              {lang === "bn" ? "লাইভ ট্রেন্ড" : "Live Trending"}
+            </TabsTrigger>
+            <TabsTrigger value="knowledge-graph" className="gap-1.5 whitespace-nowrap">
+              🕸️
+              {lang === "bn" ? "নলেজ গ্রাফ" : "Knowledge Graph"}
+            </TabsTrigger>
+            <TabsTrigger value="sandbox" className="gap-1.5 whitespace-nowrap">
+              <FlaskConical className="w-3.5 h-3.5" />
+              {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
+            </TabsTrigger>
+          </TabsList>
+        </ScrollArea>
 
         <TabsContent value="health" className="space-y-6">
           <LiveHealthTab />
