@@ -4248,6 +4248,7 @@ export type Database = {
       }
       generate_preventive_recommendations: { Args: never; Returns: Json }
       generate_receipt_number: { Args: never; Returns: string }
+      generate_risk_alerts: { Args: never; Returns: Json }
       generate_weekly_intelligence_summary: { Args: never; Returns: Json }
       get_anomaly_alerts: { Args: { p_limit?: number }; Returns: Json }
       get_balance_sheet: {
