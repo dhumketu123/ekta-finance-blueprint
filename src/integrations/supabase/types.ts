@@ -4094,6 +4094,7 @@ export type Database = {
         Returns: Json
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
+      check_graph_integrity: { Args: never; Returns: Json }
       create_client_secure: { Args: { p_data: Json }; Returns: string }
       create_investor_secure: {
         Args: {
