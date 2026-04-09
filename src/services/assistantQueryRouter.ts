@@ -97,6 +97,14 @@ const routes: RouteMatch[] = [
         answer += `\n• সর্বোচ্চ দিন: ${bestDay.date} — ${fmt(bestDay.total)}`;
       }
 
+      // 30-day comparison
+      const c30 = ctx.collection30d;
+      if (c30) {
+        const arrow = c30.growthPct >= 0 ? "↑" : "↓";
+        const emoji = c30.growthPct >= 0 ? "📈" : "📉";
+        answer += `\n\n${emoji} ৩০-দিন তুলনা:\n• বর্তমান ৩০দিন: ${fmt(c30.current30d)}\n• আগের ৩০দিন: ${fmt(c30.previous30d)}\n• পরিবর্তন: ${arrow} ${Math.abs(c30.growthPct)}%`;
+      }
+
       return {
         answer,
         actions: [
