@@ -1,9 +1,11 @@
-import { ReactNode } from "react";
+import { ReactNode, lazy, Suspense } from "react";
 import AppSidebarNew from "./sidebar/AppSidebarNew";
 import TopHeader from "./TopHeader";
 import BottomNav from "./BottomNav";
 import { SidebarStateProvider } from "@/contexts/SidebarContext";
 import SubscriptionLockOverlay from "./SubscriptionLockOverlay";
+
+const AiChatAssistant = lazy(() => import("./AiChatAssistant"));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -23,6 +25,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </main>
         <BottomNav />
+        <Suspense fallback={null}>
+          <AiChatAssistant />
+        </Suspense>
       </div>
     </SidebarStateProvider>
   );
