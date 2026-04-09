@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AnomalyIntelligencePanel from "@/components/analytics/AnomalyIntelligencePanel";
 import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
 import LaunchReadinessPanel from "@/components/ops/LaunchReadinessPanel";
+import LiveTrendingTab from "@/components/analytics/LiveTrendingTab";
 import {
   useSystemHealth, useAutoFixLogs, useHealthHistory,
   useHealthTrend, useHealthRealtime,
@@ -1053,6 +1054,10 @@ const SystemDnaTab = () => {
             <Zap className="w-3.5 h-3.5" />
             {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
           </TabsTrigger>
+          <TabsTrigger value="live-trending" className="gap-1.5">
+            <BarChart3 className="w-3.5 h-3.5" />
+            {lang === "bn" ? "লাইভ ট্রেন্ড" : "Live Trending"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
@@ -1202,6 +1207,9 @@ const SystemDnaTab = () => {
         </TabsContent>
         <TabsContent value="ai-insights">
           <AiInsightsTab />
+        </TabsContent>
+        <TabsContent value="live-trending">
+          <LiveTrendingTab />
         </TabsContent>
       </Tabs>
     </AppLayout>
