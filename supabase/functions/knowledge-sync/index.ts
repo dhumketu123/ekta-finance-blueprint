@@ -18,25 +18,48 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing auth header");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) throw new Error("Unauthorized");
+    let tenantId: string;
 
-    const { data: profile } = await userClient
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", user.id)
-      .single();
-    if (!profile?.tenant_id) throw new Error("No tenant found");
-    const tenantId = profile.tenant_id;
+    const authHeader = req.headers.get("Authorization");
+    let authenticatedUser = false;
+
+    if (authHeader) {
+      try {
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user }, error: authErr } = await userClient.auth.getUser();
+        if (!authErr && user) {
+          const { data: profile } = await userClient
+            .from("profiles")
+            .select("tenant_id")
+            .eq("id", user.id)
+            .single();
+          if (profile?.tenant_id) {
+            tenantId = profile.tenant_id;
+            authenticatedUser = true;
+          }
+        }
+      } catch (_) {
+        // Auth failed, fall through to cron mode
+      }
+    }
+
+    if (!authenticatedUser) {
+      // Cron/service call — use the first tenant
+      const svcTmp = createClient(supabaseUrl, serviceKey);
+      const { data: firstTenant } = await svcTmp
+        .from("tenants")
+        .select("id")
+        .limit(1)
+        .single();
+      if (!firstTenant?.id) throw new Error("No tenant found for cron sync");
+      tenantId = firstTenant.id;
+    }
 
     const svc = createClient(supabaseUrl, serviceKey);
     const startTime = Date.now();
