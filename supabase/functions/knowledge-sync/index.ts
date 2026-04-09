@@ -347,10 +347,18 @@ serve(async (req) => {
     let updated = 0;
     const errors: string[] = [];
 
+    // ═══════════════════════════════════════
+    // DEDUPLICATE by node_key before upsert
+    // (overloaded PG functions share routine_name → duplicate node_key)
+    // ═══════════════════════════════════════
+    const uniqueNodes = Array.from(
+      new Map(nodes.map((n) => [n.node_key, n])).values()
+    );
+
     // Batch upsert in chunks of 25
     const chunkSize = 25;
-    for (let i = 0; i < nodes.length; i += chunkSize) {
-      const chunk = nodes.slice(i, i + chunkSize).map((n) => ({
+    for (let i = 0; i < uniqueNodes.length; i += chunkSize) {
+      const chunk = uniqueNodes.slice(i, i + chunkSize).map((n) => ({
         ...n,
         last_synced_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -396,7 +404,7 @@ serve(async (req) => {
         .from("knowledge_sync_log")
         .update({
           status: errors.length > 0 ? "completed_with_errors" : "completed",
-          nodes_processed: nodes.length,
+          nodes_processed: uniqueNodes.length,
           nodes_created: created,
           nodes_updated: updated,
           errors,
@@ -416,15 +424,16 @@ serve(async (req) => {
           "Criticality normalization (min 6 for edge functions)",
           "Batch upsert optimization",
         ],
-        total_nodes: nodes.length,
-        tables: nodes.filter((n) => n.node_type === "table").length,
-        triggers: nodes.filter((n) => n.node_type === "trigger").length,
-        functions: nodes.filter((n) => n.node_type === "function").length,
-        components: nodes.filter((n) => n.node_type === "component").length,
-        hooks: nodes.filter((n) => n.node_type === "hook").length,
-        business_rules: nodes.filter((n) => n.node_type === "business_rule").length,
-        kpis: nodes.filter((n) => n.node_type === "kpi").length,
-        edge_functions: nodes.filter((n) => n.node_type === "edge_function").length,
+        total_nodes: uniqueNodes.length,
+        deduplicated_from: nodes.length,
+        tables: uniqueNodes.filter((n) => n.node_type === "table").length,
+        triggers: uniqueNodes.filter((n) => n.node_type === "trigger").length,
+        functions: uniqueNodes.filter((n) => n.node_type === "function").length,
+        components: uniqueNodes.filter((n) => n.node_type === "component").length,
+        hooks: uniqueNodes.filter((n) => n.node_type === "hook").length,
+        business_rules: uniqueNodes.filter((n) => n.node_type === "business_rule").length,
+        kpis: uniqueNodes.filter((n) => n.node_type === "kpi").length,
+        edge_functions: uniqueNodes.filter((n) => n.node_type === "edge_function").length,
         stale_logs_fixed: (staleLogs || []).length,
         errors: errors.length,
         duration_ms: durationMs,
