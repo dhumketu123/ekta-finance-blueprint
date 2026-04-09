@@ -445,11 +445,6 @@ export default function KnowledgeGraphVisualization() {
             {syncing ? "সিঙ্ক হচ্ছে..." : "ম্যানুয়াল সিঙ্ক"}
           </Button>
         </div>
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {stats.total} {lang === "bn" ? "এন্টিটি" : "entities"} · ইন্টারেক্টিভ ম্যাপ
-          </p>
-        </div>
       </div>
 
       {/* Filter Bar */}
