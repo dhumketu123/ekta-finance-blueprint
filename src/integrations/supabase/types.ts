@@ -271,6 +271,47 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_decision_scores: {
+        Row: {
+          action_required: string
+          computed_at: string
+          entity_id: string | null
+          id: string
+          insight_count: number
+          priority_score: number
+          run_id: string | null
+          score_breakdown: Json
+        }
+        Insert: {
+          action_required?: string
+          computed_at?: string
+          entity_id?: string | null
+          id?: string
+          insight_count?: number
+          priority_score?: number
+          run_id?: string | null
+          score_breakdown?: Json
+        }
+        Update: {
+          action_required?: string
+          computed_at?: string
+          entity_id?: string | null
+          id?: string
+          insight_count?: number
+          priority_score?: number
+          run_id?: string | null
+          score_breakdown?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_decision_scores_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "system_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_insights: {
         Row: {
           created_at: string
@@ -3841,6 +3882,28 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_decision_scores_mat: {
+        Row: {
+          action_required: string | null
+          category: string | null
+          computed_at: string | null
+          criticality_score: number | null
+          entity_id: string | null
+          entity_name: string | null
+          insight_count: number | null
+          priority_score: number | null
+          score_breakdown: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_decision_scores_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "system_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_pipeline_trend_24h: {
         Row: {
           avg_duration_ms: number | null
@@ -4142,6 +4205,7 @@ export type Database = {
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      fn_decision_engine: { Args: { p_run_id?: string }; Returns: Json }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
