@@ -162,6 +162,14 @@ export default function AiChatAssistant() {
 
   const ctx: AssistantContext = { riskData, trendData, topClients, loanKPIs, period: 7, collection30d };
 
+  // Initialize welcome message with context-aware gap detection & predictive suggestions
+  useEffect(() => {
+    if (!initialized && (riskData || trendData || loanKPIs)) {
+      setMessages([getWelcomeMessage({ riskData, trendData, topClients, loanKPIs, period: 7, collection30d })]);
+      setInitialized(true);
+    }
+  }, [initialized, riskData, trendData, topClients, loanKPIs, collection30d]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isProcessing]);
