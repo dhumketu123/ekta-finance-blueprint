@@ -25,9 +25,31 @@ serve(async (req) => {
     let tenantId: string;
 
     const authHeader = req.headers.get("Authorization");
-    const isCronCall = !authHeader || authHeader === `Bearer ${anonKey}`;
+    let authenticatedUser = false;
 
-    if (isCronCall) {
+    if (authHeader) {
+      try {
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user }, error: authErr } = await userClient.auth.getUser();
+        if (!authErr && user) {
+          const { data: profile } = await userClient
+            .from("profiles")
+            .select("tenant_id")
+            .eq("id", user.id)
+            .single();
+          if (profile?.tenant_id) {
+            tenantId = profile.tenant_id;
+            authenticatedUser = true;
+          }
+        }
+      } catch (_) {
+        // Auth failed, fall through to cron mode
+      }
+    }
+
+    if (!authenticatedUser) {
       // Cron/service call — use the first tenant
       const svcTmp = createClient(supabaseUrl, serviceKey);
       const { data: firstTenant } = await svcTmp
@@ -37,21 +59,6 @@ serve(async (req) => {
         .single();
       if (!firstTenant?.id) throw new Error("No tenant found for cron sync");
       tenantId = firstTenant.id;
-    } else {
-      // User-initiated call — validate auth
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user }, error: authErr } = await userClient.auth.getUser();
-      if (authErr || !user) throw new Error("Unauthorized");
-
-      const { data: profile } = await userClient
-        .from("profiles")
-        .select("tenant_id")
-        .eq("id", user.id)
-        .single();
-      if (!profile?.tenant_id) throw new Error("No tenant found");
-      tenantId = profile.tenant_id;
     }
 
     const svc = createClient(supabaseUrl, serviceKey);
