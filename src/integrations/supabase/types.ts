@@ -324,21 +324,51 @@ export type Database = {
       ai_pipeline_alerts: {
         Row: {
           alert_time: string
+          escalation_sent_at: string | null
           id: number
           message: string | null
           severity: string
         }
         Insert: {
           alert_time?: string
+          escalation_sent_at?: string | null
           id?: number
           message?: string | null
           severity?: string
         }
         Update: {
           alert_time?: string
+          escalation_sent_at?: string | null
           id?: number
           message?: string | null
           severity?: string
+        }
+        Relationships: []
+      }
+      ai_pipeline_config: {
+        Row: {
+          alert_escalation_enabled: boolean
+          created_at: string
+          id: string
+          max_active_insights: number
+          max_stale_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          alert_escalation_enabled?: boolean
+          created_at?: string
+          id?: string
+          max_active_insights?: number
+          max_stale_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_escalation_enabled?: boolean
+          created_at?: string
+          id?: string
+          max_active_insights?: number
+          max_stale_minutes?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -360,6 +390,33 @@ export type Database = {
           remarks?: string | null
           run_at?: string
           status?: string
+        }
+        Relationships: []
+      }
+      ai_pipeline_versions: {
+        Row: {
+          changes_summary: string | null
+          created_at: string
+          deployed_at: string
+          deployed_by: string | null
+          id: string
+          version: string
+        }
+        Insert: {
+          changes_summary?: string | null
+          created_at?: string
+          deployed_at?: string
+          deployed_by?: string | null
+          id?: string
+          version: string
+        }
+        Update: {
+          changes_summary?: string | null
+          created_at?: string
+          deployed_at?: string
+          deployed_by?: string | null
+          id?: string
+          version?: string
         }
         Relationships: []
       }
@@ -3890,6 +3947,7 @@ export type Database = {
         Args: { p_cutoff: string }
         Returns: number
       }
+      audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
       calculate_credit_score: { Args: { _client_id: string }; Returns: Json }
@@ -4031,6 +4089,7 @@ export type Database = {
         Args: { p_id: string; p_priority: string; p_user_id: string }
         Returns: undefined
       }
+      escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_fetch_ai_knowledge: {
         Args: never
@@ -4477,6 +4536,7 @@ export type Database = {
       verify_all_branches_integrity: { Args: never; Returns: Json }
       verify_event_chain_integrity: { Args: never; Returns: Json }
       verify_ledger_integrity: { Args: { p_branch_id: string }; Returns: Json }
+      verify_required_cron_jobs: { Args: never; Returns: Json }
       verify_transaction_pin: { Args: { _input_pin: string }; Returns: Json }
     }
     Enums: {
