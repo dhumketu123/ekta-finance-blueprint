@@ -4155,6 +4155,7 @@ export type Database = {
         }[]
       }
       fn_generate_ai_insights: { Args: never; Returns: Json }
+      fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
           p_event_type: string
