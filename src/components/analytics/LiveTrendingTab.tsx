@@ -350,7 +350,7 @@ export default function LiveTrendingTab() {
               <>
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart
-                    data={Object.entries(loanKPIs?.summary ?? {}).map(([status, d]) => ({
+                    data={Object.entries(loanKPIs?.summary ?? {}).map(([status, d]: [string, { count: number; amount: number }]) => ({
                       status: STATUS_LABELS[status] || status,
                       count: d.count,
                       amount: Math.round(d.amount / 1000),
@@ -372,7 +372,7 @@ export default function LiveTrendingTab() {
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="grid grid-cols-2 gap-3 mt-3">
-                  {Object.entries(loanKPIs?.summary ?? {}).map(([status, d]) => (
+                  {Object.entries(loanKPIs?.summary ?? {}).map(([status, d]: [string, { count: number; amount: number }]) => (
                     <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                       <div>
                         <p className="text-xs font-medium">{STATUS_LABELS[status] || status}</p>
