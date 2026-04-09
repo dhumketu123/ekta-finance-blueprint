@@ -196,25 +196,25 @@ export default function LiveTrendingTab() {
         <MetricCard
           title="সাপ্তাহিক সংগ্রহ"
           value={`৳${summaryMetrics.totalWeek.toLocaleString()}`}
-          icon={Banknote}
+          icon={<Banknote className="h-5 w-5" />}
           subtitle={summaryMetrics.trend === "up" ? "📈 বৃদ্ধি" : summaryMetrics.trend === "down" ? "📉 হ্রাস" : "📊 স্থিতিশীল"}
         />
         <MetricCard
           title="দৈনিক গড়"
           value={`৳${summaryMetrics.avgDaily.toLocaleString()}`}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5" />}
           subtitle={`${summaryMetrics.txCount} ট্রানজেকশন`}
         />
         <MetricCard
           title="হাই রিস্ক"
           value={`${(riskData ?? []).filter((r) => r.name === "critical" || r.name === "high").reduce((s, r) => s + r.value, 0)}`}
-          icon={AlertTriangle}
+          icon={<AlertTriangle className="h-5 w-5" />}
           subtitle={`মোট ${totalRisk} জন`}
         />
         <MetricCard
           title="মোট লোন"
           value={`${Object.values(loanSummary ?? {}).reduce((s, v) => s + v.count, 0)}`}
-          icon={Activity}
+          icon={<Activity className="h-5 w-5" />}
           subtitle={`৳${Math.round(Object.values(loanSummary ?? {}).reduce((s, v) => s + v.amount, 0)).toLocaleString()}`}
         />
       </div>
