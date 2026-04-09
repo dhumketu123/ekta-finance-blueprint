@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Activity, CheckCircle, XCircle, Clock, RefreshCw, Zap, AlertTriangle,
   BarChart3, Server, ShieldAlert, Rocket, HeartPulse, Wrench, Info,
-  ChevronLeft, ChevronRight, Dna, Database, Code2, Settings2, Flag, BrainCircuit,
+  ChevronLeft, ChevronRight, Dna, Database, Code2, Settings2, Flag, BrainCircuit, FlaskConical,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ import LedgerIntegrityPanel from "@/components/analytics/LedgerIntegrityPanel";
 import LaunchReadinessPanel from "@/components/ops/LaunchReadinessPanel";
 import LiveTrendingTab from "@/components/analytics/LiveTrendingTab";
 import KnowledgeGraphVisualization from "@/components/monitoring/KnowledgeGraphVisualization";
+import KnowledgeGraphSandbox from "@/components/monitoring/KnowledgeGraphSandbox";
 import {
   useSystemHealth, useAutoFixLogs, useHealthHistory,
   useHealthTrend, useHealthRealtime,
@@ -1063,6 +1064,10 @@ const SystemDnaTab = () => {
             🕸️
             {lang === "bn" ? "নলেজ গ্রাফ" : "Knowledge Graph"}
           </TabsTrigger>
+          <TabsTrigger value="sandbox" className="gap-1.5">
+            <FlaskConical className="w-3.5 h-3.5" />
+            {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="space-y-6">
@@ -1218,6 +1223,9 @@ const SystemDnaTab = () => {
         </TabsContent>
         <TabsContent value="knowledge-graph">
           <KnowledgeGraphVisualization />
+        </TabsContent>
+        <TabsContent value="sandbox">
+          <KnowledgeGraphSandbox />
         </TabsContent>
       </Tabs>
     </AppLayout>

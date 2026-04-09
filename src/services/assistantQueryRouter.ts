@@ -41,6 +41,7 @@ const QUICK_ACTIONS: SuggestedAction[] = [
   { label: "লোন সারাংশ", icon: "loan", query: "লোন সারাংশ" },
   { label: "সংগ্রহ ট্রেন্ড", icon: "chart", query: "সংগ্রহ ট্রেন্ড" },
   { label: "টপ ক্লায়েন্ট", icon: "user", query: "টপ ক্লায়েন্ট" },
+  { label: "ইমপ্যাক্ট বিশ্লেষণ", icon: "chart", query: "প্রেডিক্টিভ ইমপ্যাক্ট" },
   { label: "সিস্টেম স্ট্যাটাস", icon: "info", query: "সিস্টেম স্ট্যাটাস" },
 ];
 
