@@ -314,40 +314,55 @@ export type Database = {
       }
       ai_insights: {
         Row: {
+          accountable_entity: string | null
+          auto_escalated: boolean
+          classification_tier: string
           created_at: string
           description: string
           entity_id: string | null
           id: string
+          impact_estimate: string | null
           insight_type: string
           is_locked: boolean
           metadata: Json
           priority_score: number | null
+          recommended_action: string | null
           severity_score: number
           status: string
           title: string
         }
         Insert: {
+          accountable_entity?: string | null
+          auto_escalated?: boolean
+          classification_tier?: string
           created_at?: string
           description: string
           entity_id?: string | null
           id?: string
+          impact_estimate?: string | null
           insight_type: string
           is_locked?: boolean
           metadata?: Json
           priority_score?: number | null
+          recommended_action?: string | null
           severity_score?: number
           status?: string
           title: string
         }
         Update: {
+          accountable_entity?: string | null
+          auto_escalated?: boolean
+          classification_tier?: string
           created_at?: string
           description?: string
           entity_id?: string | null
           id?: string
+          impact_estimate?: string | null
           insight_type?: string
           is_locked?: boolean
           metadata?: Json
           priority_score?: number | null
+          recommended_action?: string | null
           severity_score?: number
           status?: string
           title?: string
@@ -1067,6 +1082,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cron_heartbeats: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          job_name: string
+          last_run_at: string
+          max_delay_minutes: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_name: string
+          last_run_at?: string
+          max_delay_minutes?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_name?: string
+          last_run_at?: string
+          max_delay_minutes?: number
+          status?: string
+        }
+        Relationships: []
       }
       daily_financial_summary: {
         Row: {
@@ -3600,6 +3648,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_events: {
+        Row: {
+          correlation_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean
+          source_module: string
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          processed?: boolean
+          source_module: string
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean
+          source_module?: string
+        }
+        Relationships: []
+      }
       system_health_logs: {
         Row: {
           check_name: string
@@ -4388,6 +4472,18 @@ export type Database = {
         Returns: Json
       }
       fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
+      fn_detect_financial_anomalies: { Args: never; Returns: Json }
+      fn_emit_event: {
+        Args: {
+          p_correlation_id?: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_event_type: string
+          p_payload?: Json
+          p_source_module: string
+        }
+        Returns: string
+      }
       fn_enqueue_sms: {
         Args: {
           p_body: string
@@ -4398,6 +4494,7 @@ export type Database = {
         }
         Returns: string
       }
+      fn_event_aggregation: { Args: { p_hours?: number }; Returns: Json }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
@@ -4424,6 +4521,40 @@ export type Database = {
         Returns: undefined
       }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
+      fn_record_heartbeat: {
+        Args: {
+          p_duration_ms?: number
+          p_error_message?: string
+          p_job_name: string
+          p_status?: string
+        }
+        Returns: undefined
+      }
+      fn_replay_events: {
+        Args: {
+          p_event_type?: string
+          p_from?: string
+          p_limit?: number
+          p_to?: string
+        }
+        Returns: {
+          correlation_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean
+          source_module: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "system_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       fn_resolve_mismatch: {
         Args: {
           p_mismatch_id: string
@@ -4433,6 +4564,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_system_health_status: { Args: never; Returns: Json }
       generate_event_hash: {
         Args: {
           p_event_type: string
