@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,17 +17,13 @@ import {
   Activity, Flame, ArrowUpRight, ArrowDownRight, Percent, Clock,
   BarChart3, Target,
 } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 
 // ── Types ──
-interface TransactionBuckets {
-  repayments: number;
-  interest: number;
-  penalty: number;
-}
+type TransactionBucket = "repayments" | "interest" | "penalty";
 
 // ── TX TYPE MAPPING (future-proof) ──
-const TX_TYPE_MAP: Record<string, keyof TransactionBuckets> = {
+const TX_TYPE_MAP: Record<string, TransactionBucket> = {
   loan_repayment: "repayments",
   loan_principal: "repayments",
   loan_interest: "interest",
@@ -57,18 +53,19 @@ const useCollectionTrend = (days: number) =>
   useQuery({
     queryKey: ["live_collection_trend", days],
     queryFn: async () => {
-      const startDate = subDays(new Date(), days);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
       const { data, error } = await supabase
         .from("transactions")
         .select("transaction_date, amount, type")
         .is("deleted_at", null)
-        .gte("transaction_date", format(startDate, "yyyy-MM-dd"))
+        .gte("transaction_date", startDate.toISOString().slice(0, 10))
         .order("transaction_date", { ascending: true });
       if (error) throw error;
 
-      const dailyMap = new Map<string, TransactionBuckets & { count: number }>();
+      const dailyMap = new Map<string, { repayments: number; interest: number; penalty: number; count: number }>();
       (data ?? []).forEach((tx: any) => {
-        const day = tx.transaction_date;
+        const day = new Date(tx.transaction_date).toISOString().slice(0, 10);
         const entry = dailyMap.get(day) || { repayments: 0, interest: 0, penalty: 0, count: 0 };
         entry.count++;
         const amt = Number(tx.amount) || 0;
@@ -96,12 +93,13 @@ const useTopClients = (days: number) =>
   useQuery({
     queryKey: ["live_top_clients", days],
     queryFn: async () => {
-      const startDate = subDays(new Date(), days);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
       const { data, error } = await supabase
         .from("transactions")
         .select("client_id, amount")
         .is("deleted_at", null)
-        .gte("transaction_date", format(startDate, "yyyy-MM-dd"));
+        .gte("transaction_date", startDate.toISOString().slice(0, 10));
       if (error) throw error;
 
       const clientMap = new Map<string, { total: number; count: number }>();
@@ -187,16 +185,34 @@ const STATUS_LABELS: Record<string, string> = {
   overdue: "ওভারডিউ",
 };
 
+// ── Auto-alert hook ──
+const useRiskAlerts = (riskData: { name: string; value: number }[] = []) => {
+  const prevAlertRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    riskData.forEach((r) => {
+      if ((r.name === "critical" || r.name === "high") && r.value > 0) {
+        const key = `${r.name}-${r.value}`;
+        if (!prevAlertRef.current.has(key)) {
+          prevAlertRef.current.add(key);
+          console.log(`[RISK ALERT] ${r.name}: ${r.value} clients flagged`);
+        }
+      }
+    });
+  }, [riskData]);
+};
+
 // ── Component ──
 export default function LiveTrendingTab() {
   const [period, setPeriod] = useState<7 | 30>(7);
 
-  const { data: riskData, isLoading: riskLoading } = useRiskDistribution();
-  const { data: trendData, isLoading: trendLoading } = useCollectionTrend(period);
+  const { data: riskData, isLoading: riskLoading, error: riskError } = useRiskDistribution();
+  const { data: trendData, isLoading: trendLoading, error: trendError } = useCollectionTrend(period);
   const { data: topClients } = useTopClients(period);
   const { data: loanKPIs, isLoading: loanLoading } = useLoanKPIs();
 
   const { data: prevTrendData } = useCollectionTrend(period * 2);
+
+  useRiskAlerts(riskData);
 
   const metrics = useMemo(() => {
     if (!trendData || trendData.length === 0)
@@ -209,8 +225,10 @@ export default function LiveTrendingTab() {
 
     let totalPrev = 0;
     if (prevTrendData && prevTrendData.length > 0) {
-      const cutoff = format(subDays(new Date(), period), "yyyy-MM-dd");
-      totalPrev = prevTrendData.filter((d) => d.rawDate < cutoff).reduce((s, d) => s + d.total, 0);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - period);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      totalPrev = prevTrendData.filter((d) => d.rawDate < cutoffStr).reduce((s, d) => s + d.total, 0);
     }
 
     const growthPct = totalPrev > 0 ? Math.round(((totalCurrent - totalPrev) / totalPrev) * 100) : 0;
@@ -224,6 +242,15 @@ export default function LiveTrendingTab() {
     () => (riskData ?? []).filter((r) => r.name === "critical" || r.name === "high").reduce((s, r) => s + r.value, 0),
     [riskData]
   );
+
+  if (riskError || trendError) {
+    return (
+      <div className="flex items-center justify-center p-8 text-destructive">
+        <AlertTriangle className="h-5 w-5 mr-2" />
+        <span className="text-sm">ডেটা লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।</span>
+      </div>
+    );
+  }
 
   if (riskLoading || trendLoading) {
     return (
