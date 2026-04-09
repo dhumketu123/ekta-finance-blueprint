@@ -4205,7 +4205,7 @@ export type Database = {
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
-      fn_decision_engine: { Args: { p_run_id?: string }; Returns: Json }
+      fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
