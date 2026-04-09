@@ -3223,12 +3223,14 @@ export type Database = {
           created_at: string
           current_step: number
           error_log: Json | null
+          global_context_id: string | null
           id: string
           saga_type: string
           started_at: string
           status: string
           steps: Json
           tenant_id: string | null
+          timeout_at: string | null
           total_steps: number
           updated_at: string
         }
@@ -3239,12 +3241,14 @@ export type Database = {
           created_at?: string
           current_step?: number
           error_log?: Json | null
+          global_context_id?: string | null
           id?: string
           saga_type: string
           started_at?: string
           status?: string
           steps?: Json
           tenant_id?: string | null
+          timeout_at?: string | null
           total_steps?: number
           updated_at?: string
         }
@@ -3255,12 +3259,14 @@ export type Database = {
           created_at?: string
           current_step?: number
           error_log?: Json | null
+          global_context_id?: string | null
           id?: string
           saga_type?: string
           started_at?: string
           status?: string
           steps?: Json
           tenant_id?: string | null
+          timeout_at?: string | null
           total_steps?: number
           updated_at?: string
         }
@@ -3669,6 +3675,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_control: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          created_at: string
+          events_paused: boolean
+          id: string
+          read_only_mode: boolean
+          reason: string | null
+          sms_paused: boolean
+          system_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          events_paused?: boolean
+          id?: string
+          read_only_mode?: boolean
+          reason?: string | null
+          sms_paused?: boolean
+          system_status?: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          created_at?: string
+          events_paused?: boolean
+          id?: string
+          read_only_mode?: boolean
+          reason?: string | null
+          sms_paused?: boolean
+          system_status?: string
+        }
+        Relationships: []
+      }
       system_dna: {
         Row: {
           category: string
@@ -3799,6 +3841,7 @@ export type Database = {
           max_attempts: number
           next_retry_at: string | null
           payload: Json
+          priority: string
           processed: boolean
           processed_at: string | null
           source_module: string
@@ -3816,6 +3859,7 @@ export type Database = {
           max_attempts?: number
           next_retry_at?: string | null
           payload?: Json
+          priority?: string
           processed?: boolean
           processed_at?: string | null
           source_module: string
@@ -3833,6 +3877,7 @@ export type Database = {
           max_attempts?: number
           next_retry_at?: string | null
           payload?: Json
+          priority?: string
           processed?: boolean
           processed_at?: string | null
           source_module?: string
@@ -4683,6 +4728,7 @@ export type Database = {
         Returns: string
       }
       fn_event_aggregation: { Args: { p_hours?: number }; Returns: Json }
+      fn_event_intelligence_feedback: { Args: never; Returns: Json }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
@@ -4708,6 +4754,7 @@ export type Database = {
         Args: { p_gateway_response?: Json; p_queue_id: string }
         Returns: undefined
       }
+      fn_metrics_self_adapt: { Args: never; Returns: Json }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       fn_process_system_events: {
         Args: { p_batch_size?: number }
@@ -4753,6 +4800,7 @@ export type Database = {
           max_attempts: number
           next_retry_at: string | null
           payload: Json
+          priority: string
           processed: boolean
           processed_at: string | null
           source_module: string
@@ -4776,6 +4824,17 @@ export type Database = {
       }
       fn_saga_compensate: { Args: { p_saga_id: string }; Returns: Json }
       fn_saga_execute_step: { Args: { p_saga_id: string }; Returns: Json }
+      fn_saga_timeout_sweep: { Args: never; Returns: Json }
+      fn_set_emergency_mode: {
+        Args: {
+          p_events_paused?: boolean
+          p_read_only?: boolean
+          p_reason?: string
+          p_sms_paused?: boolean
+          p_status?: string
+        }
+        Returns: Json
+      }
       fn_snapshot_system_metrics: { Args: never; Returns: Json }
       fn_system_health_status: { Args: never; Returns: Json }
       generate_event_hash: {
