@@ -4630,9 +4630,10 @@ export type Database = {
         Args: { p_cutoff: string }
         Returns: number
       }
-      assert_pipeline_idempotency:
-        | { Args: never; Returns: undefined }
-        | { Args: { auto_fix?: boolean }; Returns: undefined }
+      assert_pipeline_idempotency: {
+        Args: { auto_fix?: boolean }
+        Returns: undefined
+      }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
@@ -4693,55 +4694,29 @@ export type Database = {
         Args: { p_data: Json }
         Returns: string
       }
-      create_ledger_entry:
-        | {
-            Args: {
-              _branch_id: string
-              _created_by?: string
-              _entries: Json
-              _reference_id: string
-              _reference_type: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_entries: Json
-              p_reference_id: string
-              p_reference_type: string
-            }
-            Returns: Json
-          }
-      create_notification:
-        | {
-            Args: {
-              p_action_payload?: Json
-              p_event_type: string
-              p_message: string
-              p_priority?: string
-              p_role: string
-              p_source_module: string
-              p_tenant_id: string
-              p_title: string
-              p_user_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_action_payload?: Json
-              p_event_type: string
-              p_message: string
-              p_priority?: string
-              p_reference?: string
-              p_role: string
-              p_source_module: string
-              p_tenant_id: string
-              p_title: string
-              p_user_id: string
-            }
-            Returns: string
-          }
+      create_ledger_entry: {
+        Args: {
+          p_entries: Json
+          p_reference_id: string
+          p_reference_type: string
+        }
+        Returns: Json
+      }
+      create_notification: {
+        Args: {
+          p_action_payload?: Json
+          p_event_type: string
+          p_message: string
+          p_priority?: string
+          p_reference?: string
+          p_role: string
+          p_source_module: string
+          p_tenant_id: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       create_or_update_transaction_pin: {
         Args: { _new_pin: string }
         Returns: Json
@@ -5178,26 +5153,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      process_investor_dividend:
-        | {
-            Args: {
-              p_actor_id?: string
-              p_amount: number
-              p_investor_id: string
-              p_reinvest?: boolean
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_accrue_profit?: number
-              p_actor_id?: string
-              p_amount: number
-              p_investor_id: string
-              p_reinvest: boolean
-            }
-            Returns: undefined
-          }
+      process_investor_dividend: {
+        Args: {
+          p_accrue_profit?: number
+          p_actor_id?: string
+          p_amount: number
+          p_investor_id: string
+          p_reinvest: boolean
+        }
+        Returns: undefined
+      }
       process_investor_reinvest: {
         Args: { _investor_id: string }
         Returns: undefined
@@ -5206,34 +5171,20 @@ export type Database = {
         Args: { p_actor_id?: string; p_amount: number; p_investor_id: string }
         Returns: undefined
       }
-      process_owner_exit:
-        | {
-            Args: {
-              _accrued_profit?: number
-              _early_exit_penalty?: number
-              _legal_doc_url?: string
-              _loyalty_bonus?: number
-              _non_compete_months?: number
-              _notes?: string
-              _owner_user_id: string
-              _total_capital: number
-              _total_profit_earned?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _early_exit_penalty?: number
-              _legal_doc_url?: string
-              _loyalty_bonus?: number
-              _non_compete_months?: number
-              _notes?: string
-              _owner_user_id: string
-              _total_capital: number
-              _total_profit_earned: number
-            }
-            Returns: Json
-          }
+      process_owner_exit: {
+        Args: {
+          _accrued_profit?: number
+          _early_exit_penalty?: number
+          _legal_doc_url?: string
+          _loyalty_bonus?: number
+          _non_compete_months?: number
+          _notes?: string
+          _owner_user_id: string
+          _total_capital: number
+          _total_profit_earned?: number
+        }
+        Returns: Json
+      }
       process_savings_transaction: {
         Args: {
           _amount: number
