@@ -6,6 +6,7 @@ export interface AssistantContext {
   topClients?: TopClient[];
   loanKPIs?: LoanKPIs | null;
   period: number;
+  collection30d?: { current30d: number; previous30d: number; growthPct: number } | null;
 }
 
 export interface RouterResult {
