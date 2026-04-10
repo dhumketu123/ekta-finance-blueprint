@@ -123,7 +123,11 @@ export function useUIWatchdog({
 
     const onScroll = () => runCheck("scroll");
     const onResize = () => runCheck("resize");
-    const onVisibility = () => runCheck("visibility");
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        runCheck("visibility");
+      }
+    };
 
     scrollEl.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
