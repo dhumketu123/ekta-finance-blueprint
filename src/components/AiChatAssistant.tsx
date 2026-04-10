@@ -81,7 +81,7 @@ function ChatMessages({
   messages: Message[]; typing: boolean; scrollRef: React.RefObject<HTMLDivElement>; onAction: (query: string) => void;
 }) {
   return (
-    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 [overflow-anchor:none]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 [overflow-anchor:none]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
       {messages.map((msg) => (
         <div key={msg.id} className={cn("flex gap-2", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
           <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1", msg.role === "user" ? "bg-primary/10" : "bg-accent/20")}>
@@ -125,7 +125,7 @@ function ChatInput({ input, setInput, onSend, disabled, inputRef }: {
   input: string; setInput: (v: string) => void; onSend: () => void; disabled: boolean; inputRef: React.RefObject<HTMLInputElement>;
 }) {
   return (
-    <div className="flex gap-2 p-4 border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 16px))" }}>
+    <div className="shrink-0 flex gap-2 p-4 border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 16px))" }}>
       <input
         ref={inputRef}
         type="text"
