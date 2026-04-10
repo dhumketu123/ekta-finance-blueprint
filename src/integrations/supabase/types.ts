@@ -1710,6 +1710,36 @@ export type Database = {
           },
         ]
       }
+      gap_definition_lock: {
+        Row: {
+          audit_rules: Json | null
+          excluded_from_gap: string[] | null
+          id: string
+          is_locked: boolean | null
+          locked_at: string | null
+          valid_gap_types: string[] | null
+          version: string
+        }
+        Insert: {
+          audit_rules?: Json | null
+          excluded_from_gap?: string[] | null
+          id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          valid_gap_types?: string[] | null
+          version?: string
+        }
+        Update: {
+          audit_rules?: Json | null
+          excluded_from_gap?: string[] | null
+          id?: string
+          is_locked?: boolean | null
+          locked_at?: string | null
+          valid_gap_types?: string[] | null
+          version?: string
+        }
+        Relationships: []
+      }
       governance_action_logs: {
         Row: {
           action: string
@@ -4984,6 +5014,10 @@ export type Database = {
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_audit_execute_master: { Args: never; Returns: Json }
+      fn_audit_recursion_guard: {
+        Args: { p_target_table: string }
+        Returns: boolean
+      }
       fn_bootstrap_truth_authority: { Args: never; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
       fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
@@ -5055,6 +5089,7 @@ export type Database = {
       fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
+      fn_is_valid_gap: { Args: { p_gap_type: string }; Returns: boolean }
       fn_log_anomaly_master: {
         Args: { p_category: string; p_entity: string; p_message: string }
         Returns: undefined
