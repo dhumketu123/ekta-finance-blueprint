@@ -5341,6 +5341,7 @@ export type Database = {
         Returns: string
       }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
+      fn_get_secure_ledger_summary: { Args: never; Returns: Json }
       fn_increment_retry: {
         Args: { p_error: string; p_reference: string }
         Returns: undefined
