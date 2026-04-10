@@ -215,6 +215,20 @@ export default function AiChatAssistant() {
     prevScrollHeightRef.current = el.scrollHeight;
   }, []);
 
+  // Keep anchored on resize (mobile keyboard safe)
+  useEffect(() => {
+    const handleResize = () => {
+      const el = scrollRef.current;
+      if (!el) return;
+      if (isNearBottomRef.current) {
+        el.scrollTop = el.scrollHeight - el.clientHeight;
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Listen to user scroll to update near-bottom tracker
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
