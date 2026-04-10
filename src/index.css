@@ -5,10 +5,20 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    overflow: hidden;
+  html {
     height: 100%;
+    overflow: hidden;
     overscroll-behavior: none;
+  }
+  body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  #root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   :root {
