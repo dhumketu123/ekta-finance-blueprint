@@ -622,6 +622,9 @@
   border-radius: 16px;
   box-sizing: border-box;
   transform: translateZ(0);
+  scrollbar-gutter: stable;
+  isolation: isolate;
+  backdrop-filter: blur(10px);
 }
 
 @media (max-width: 640px) {
