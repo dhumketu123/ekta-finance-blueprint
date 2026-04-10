@@ -568,8 +568,30 @@ export type Database = {
           },
         ]
       }
+      audit_snapshots: {
+        Row: {
+          created_at: string
+          entity_count: number
+          id: string
+          snapshot_data: Json
+        }
+        Insert: {
+          created_at?: string
+          entity_count?: number
+          id?: string
+          snapshot_data: Json
+        }
+        Update: {
+          created_at?: string
+          entity_count?: number
+          id?: string
+          snapshot_data?: Json
+        }
+        Relationships: []
+      }
       audit_verification_state: {
         Row: {
+          behavioral_signature: string | null
           created_at: string
           entity_hash: string
           entity_name: string
@@ -578,11 +600,13 @@ export type Database = {
           id: string
           last_verified_at: string
           notes: string | null
+          snapshot_id: string | null
           updated_at: string
           verification_status: string
           verified_by: string | null
         }
         Insert: {
+          behavioral_signature?: string | null
           created_at?: string
           entity_hash: string
           entity_name: string
@@ -591,11 +615,13 @@ export type Database = {
           id?: string
           last_verified_at?: string
           notes?: string | null
+          snapshot_id?: string | null
           updated_at?: string
           verification_status?: string
           verified_by?: string | null
         }
         Update: {
+          behavioral_signature?: string | null
           created_at?: string
           entity_hash?: string
           entity_name?: string
@@ -604,11 +630,20 @@ export type Database = {
           id?: string
           last_verified_at?: string
           notes?: string | null
+          snapshot_id?: string | null
           updated_at?: string
           verification_status?: string
           verified_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_verification_state_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "audit_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auto_fix_logs: {
         Row: {
@@ -5000,6 +5035,10 @@ export type Database = {
         Returns: Json
       }
       fn_system_health_status: { Args: never; Returns: Json }
+      fn_verify_unknown_entities: {
+        Args: { p_snapshot_id?: string }
+        Returns: number
+      }
       generate_event_hash: {
         Args: {
           p_event_type: string
