@@ -81,7 +81,7 @@ function ChatMessages({
   messages: Message[]; typing: boolean; scrollRef: React.RefObject<HTMLDivElement>; onAction: (query: string) => void;
 }) {
   return (
-    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
+    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
       {messages.map((msg) => (
         <div key={msg.id} className={cn("flex gap-2", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
           <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1", msg.role === "user" ? "bg-primary/10" : "bg-accent/20")}>
@@ -185,9 +185,17 @@ export default function AiChatAssistant() {
     }
   }, [initialized, riskData, trendData, topClients, loanKPIs, collection30d]);
 
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isProcessing]);
+    scrollToBottom();
+  }, [messages, isProcessing, scrollToBottom]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
@@ -354,7 +362,7 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="max-h-[92dvh]">
+          <DrawerContent className="max-h-[92dvh] flex flex-col">
             <DrawerHeader className="border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
               {headerContent}
