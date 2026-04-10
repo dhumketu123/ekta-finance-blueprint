@@ -37,12 +37,11 @@ interface RouteMatch {
 const fmt = (n: number) => `৳${n.toLocaleString("bn-BD")}`;
 
 const QUICK_ACTIONS: SuggestedAction[] = [
-  { label: "হাই রিস্ক", icon: "alert", query: "হাই রিস্ক ক্লায়েন্ট" },
-  { label: "লোন সারাংশ", icon: "loan", query: "লোন সারাংশ" },
-  { label: "সংগ্রহ ট্রেন্ড", icon: "chart", query: "সংগ্রহ ট্রেন্ড" },
-  { label: "টপ ক্লায়েন্ট", icon: "user", query: "টপ ক্লায়েন্ট" },
-  { label: "ইমপ্যাক্ট বিশ্লেষণ", icon: "chart", query: "প্রেডিক্টিভ ইমপ্যাক্ট" },
-  { label: "সিস্টেম স্ট্যাটাস", icon: "info", query: "সিস্টেম স্ট্যাটাস" },
+  { label: "রিস্ক রিপোর্ট চেক করুন", icon: "alert", query: "রিস্ক রিপোর্ট দেখান" },
+  { label: "লোন পারফরম্যান্স দেখুন", icon: "loan", query: "লোন পারফরম্যান্স রিপোর্ট" },
+  { label: "কালেকশন স্ট্যাটাস", icon: "chart", query: "কালেকশন স্ট্যাটাস দেখান" },
+  { label: "অনুমোদন রিপোর্ট", icon: "info", query: "অনুমোদন রিপোর্ট দেখান" },
+  { label: "AI বিশ্লেষণ চালান", icon: "chart", query: "AI বিশ্লেষণ চালান" },
 ];
 
 const routes: RouteMatch[] = [

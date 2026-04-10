@@ -260,7 +260,7 @@ function FloatingOrbInner({ onTap, badgeCount, hidden }: FloatingOrbProps) {
         hidden && "scale-0 opacity-0 pointer-events-none",
         !hidden && "scale-100 opacity-100"
       )}
-      aria-label="AI অ্যাসিস্ট্যান্ট খুলুন"
+      aria-label="VINCI AI অ্যাসিস্ট্যান্ট খুলুন"
     >
       <MessageCircle className="h-6 w-6 text-primary-foreground pointer-events-none" />
       {badgeCount > 0 && (

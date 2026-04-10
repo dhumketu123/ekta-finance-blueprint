@@ -140,9 +140,9 @@ export function ChatPanel({
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <span className="font-semibold text-base">একতা AI</span>
+          <span className="font-semibold text-base">VINCI</span>
           <span className="ml-2 text-[10px] text-muted-foreground">
-            {isProcessing ? "চিন্তা করছে..." : "অনলাইন"}
+            {isProcessing ? "বিশ্লেষণ করছে..." : "অনলাইন"}
           </span>
         </div>
       </div>
@@ -175,7 +175,7 @@ export function ChatPanel({
       <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
         <DrawerContent className="flex flex-col h-full min-h-0 overflow-hidden bg-destructive/5">
           <DrawerHeader className="flex-none shrink-0 overflow-hidden border-b border-border/40">
-            <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
+            <DrawerTitle className="sr-only">VINCI AI</DrawerTitle>
             {headerContent}
           </DrawerHeader>
           <ChatMessages
@@ -205,7 +205,7 @@ export function ChatPanel({
         className="flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5"
       >
         <SheetHeader className="flex-none shrink-0 overflow-hidden px-4 py-3 border-b border-border/40">
-          <SheetTitle className="sr-only">একতা AI</SheetTitle>
+          <SheetTitle className="sr-only">VINCI AI</SheetTitle>
           {headerContent}
         </SheetHeader>
         <ChatMessages
