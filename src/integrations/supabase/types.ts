@@ -2782,6 +2782,7 @@ export type Database = {
           occurrence_count: number | null
           root_key: string | null
           severity: number | null
+          suppression_state: string
         }
         Insert: {
           category: string
@@ -2792,6 +2793,7 @@ export type Database = {
           occurrence_count?: number | null
           root_key?: string | null
           severity?: number | null
+          suppression_state?: string
         }
         Update: {
           category?: string
@@ -2802,6 +2804,7 @@ export type Database = {
           occurrence_count?: number | null
           root_key?: string | null
           severity?: number | null
+          suppression_state?: string
         }
         Relationships: []
       }
@@ -4139,6 +4142,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_governance_state: {
+        Row: {
+          anomaly_logging_enabled: boolean | null
+          id: string
+          observability_enabled: boolean | null
+          truth_lock_enabled: boolean | null
+        }
+        Insert: {
+          anomaly_logging_enabled?: boolean | null
+          id?: string
+          observability_enabled?: boolean | null
+          truth_lock_enabled?: boolean | null
+        }
+        Update: {
+          anomaly_logging_enabled?: boolean | null
+          id?: string
+          observability_enabled?: boolean | null
+          truth_lock_enabled?: boolean | null
+        }
+        Relationships: []
+      }
       system_health_logs: {
         Row: {
           check_name: string
@@ -5144,6 +5168,7 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_should_emit_event: { Args: { p_root_key: string }; Returns: boolean }
       fn_snapshot_system_metrics: { Args: never; Returns: Json }
       fn_system_circuit_guard: {
         Args: { p_queue_depth: number }
