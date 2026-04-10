@@ -234,7 +234,10 @@ const DEFAULT_FEATURE_FLAGS: Array<{ feature_name: string; is_enabled: boolean; 
 // ── Pipeline Health: consecutive failure tracking + alert dedup ──
 const PIPELINE_ALERT_DEDUP_MINUTES = 30;
 const PIPELINE_CONSECUTIVE_FAIL_THRESHOLD = 3;
-const PIPELINE_STALE_THRESHOLD_MINUTES = 60; // configurable
+const PIPELINE_STALE_THRESHOLD_MINUTES = 60;
+const PIPELINE_RECOVERY_SUPPRESSION_MINUTES = 15;
+const PIPELINE_ALERT_LOCK_KEY = "pipelineHealthAlert:v1";
+const PIPELINE_RECOVERY_LOCK_KEY = "pipelineRecoveryLock:v1";
 
 async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): Promise<{
   status: "pass" | "warn" | "fail";
@@ -374,6 +377,7 @@ async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): P
 /** Auto-recovery: restart pipeline worker + re-enqueue pending jobs */
 async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): Promise<boolean> {
   try {
+    // Rate-limit recovery itself
     if (await wasRecentlyTriggered(supabase, "restartPipelineWorker", PIPELINE_ALERT_DEDUP_MINUTES)) {
       console.info("[auto-fix] restartPipelineWorker skipped — rate-limited (30min dedup)");
       return false;
@@ -396,6 +400,8 @@ async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): P
 
     console.info("[auto-fix] restartPipelineWorker: recovery completed");
     await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", true, "Stuck runs cleared + heartbeat inserted", Date.now() - start);
+    // Log recovery lock so alerts are suppressed for 15min
+    await logAutoFix(supabase, PIPELINE_RECOVERY_LOCK_KEY, "ai_pipeline", true, "Recovery suppression window started");
     return true;
   } catch (e: any) {
     console.error("[auto-fix] restartPipelineWorker failed:", e?.message);
@@ -404,22 +410,36 @@ async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): P
   }
 }
 
-/** Pipeline alert dedup: only fire consolidated alert if outside dedup window */
+/** Pipeline alert dedup: atomic lock + recovery suppression + single source of truth */
 async function sendPipelineAlert(
   supabase: ReturnType<typeof createClient>,
   pipelineResult: { status: string; detail: string; failureCount: number; recoveryTriggered: boolean }
 ) {
   if (pipelineResult.status !== "fail") return;
 
-  // Dedup: skip if alert sent within 30 minutes
-  if (await wasRecentlyTriggered(supabase, "pipelineHealthAlert", PIPELINE_ALERT_DEDUP_MINUTES)) {
+  // 1. Recovery suppression: if recovery was just triggered, suppress alerts for 15min
+  if (pipelineResult.recoveryTriggered) {
+    console.info("[pipeline-alert] Suppressed — recovery just triggered, waiting 15min");
+    return;
+  }
+
+  // 2. Check if recovery was recently triggered (within suppression window)
+  if (await wasRecentlyTriggered(supabase, PIPELINE_RECOVERY_LOCK_KEY, PIPELINE_RECOVERY_SUPPRESSION_MINUTES)) {
+    console.info("[pipeline-alert] Suppressed — within recovery suppression window (15min)");
+    return;
+  }
+
+  // 3. Global alert lock: dedup within 30min using unique key
+  if (await wasRecentlyTriggered(supabase, PIPELINE_ALERT_LOCK_KEY, PIPELINE_ALERT_DEDUP_MINUTES)) {
     console.info("[pipeline-alert] Suppressed — within 30min dedup window");
     return;
   }
 
+  // 4. Fire single consolidated alert
   const msg = `Pipeline Degraded: ${pipelineResult.detail} | Failures: ${pipelineResult.failureCount} | Recovery: ${pipelineResult.recoveryTriggered ? "Yes" : "No"}`;
   await alertAdmin(supabase, msg, "warning");
-  await logAutoFix(supabase, "pipelineHealthAlert", "ai_pipeline", true, msg);
+  // Log with the unique lock key so future dedup checks find it
+  await logAutoFix(supabase, PIPELINE_ALERT_LOCK_KEY, "ai_pipeline", true, msg);
 }
 
 async function loadDefaultFeatureFlags(supabase: ReturnType<typeof createClient>) {
