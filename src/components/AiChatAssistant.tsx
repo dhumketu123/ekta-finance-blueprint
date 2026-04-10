@@ -188,7 +188,7 @@ export default function AiChatAssistant() {
     const rect = orbRef.current?.getBoundingClientRect();
     if (!rect) return;
     orbOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    orbRef.current?.setPointerCapture?.(e.pointerId);
   }, []);
 
   useEffect(() => {
