@@ -81,7 +81,7 @@ function ChatMessages({
   messages: Message[]; typing: boolean; scrollRef: React.RefObject<HTMLDivElement>; onAction: (query: string) => void;
 }) {
   return (
-    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 [overflow-anchor:none]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
+    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 [overflow-anchor:none]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", contain: "strict", willChange: "scroll-position" }}>
       {messages.map((msg) => (
         <div key={msg.id} className={cn("flex gap-2", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
           <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1", msg.role === "user" ? "bg-primary/10" : "bg-accent/20")}>
