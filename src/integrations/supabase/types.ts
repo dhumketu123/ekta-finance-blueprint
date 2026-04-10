@@ -2313,6 +2313,7 @@ export type Database = {
       }
       ledger_guard_queue: {
         Row: {
+          claimed_at: string | null
           last_error: string | null
           processed_at: string | null
           processing: boolean | null
@@ -2321,6 +2322,7 @@ export type Database = {
           retry_count: number | null
         }
         Insert: {
+          claimed_at?: string | null
           last_error?: string | null
           processed_at?: string | null
           processing?: boolean | null
@@ -2329,6 +2331,7 @@ export type Database = {
           retry_count?: number | null
         }
         Update: {
+          claimed_at?: string | null
           last_error?: string | null
           processed_at?: string | null
           processing?: boolean | null
@@ -5179,7 +5182,12 @@ export type Database = {
       }
       fn_bootstrap_truth_authority: { Args: never; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
-      fn_claim_queue_batch: { Args: { p_limit?: number }; Returns: string[] }
+      fn_claim_queue: {
+        Args: { p_limit?: number }
+        Returns: {
+          reference_id: string
+        }[]
+      }
       fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
       fn_compute_schema_snapshot: {
         Args: never
