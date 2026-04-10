@@ -2348,35 +2348,47 @@ export type Database = {
         Row: {
           claimed_at: string | null
           last_error: string | null
+          last_recovery_at: string | null
+          max_recovery_attempts: number
           processed_at: string | null
           processing: boolean | null
           queued_at: string | null
           recovered_at: string | null
+          recovery_attempts: number
           recovery_flag: boolean
           reference_id: string
           retry_count: number | null
+          stuck_reason: string | null
         }
         Insert: {
           claimed_at?: string | null
           last_error?: string | null
+          last_recovery_at?: string | null
+          max_recovery_attempts?: number
           processed_at?: string | null
           processing?: boolean | null
           queued_at?: string | null
           recovered_at?: string | null
+          recovery_attempts?: number
           recovery_flag?: boolean
           reference_id: string
           retry_count?: number | null
+          stuck_reason?: string | null
         }
         Update: {
           claimed_at?: string | null
           last_error?: string | null
+          last_recovery_at?: string | null
+          max_recovery_attempts?: number
           processed_at?: string | null
           processing?: boolean | null
           queued_at?: string | null
           recovered_at?: string | null
+          recovery_attempts?: number
           recovery_flag?: boolean
           reference_id?: string
           retry_count?: number | null
+          stuck_reason?: string | null
         }
         Relationships: []
       }
