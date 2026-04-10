@@ -568,6 +568,48 @@ export type Database = {
           },
         ]
       }
+      audit_verification_state: {
+        Row: {
+          created_at: string
+          entity_hash: string
+          entity_name: string
+          entity_schema: string
+          entity_type: string
+          id: string
+          last_verified_at: string
+          notes: string | null
+          updated_at: string
+          verification_status: string
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_hash: string
+          entity_name: string
+          entity_schema?: string
+          entity_type: string
+          id?: string
+          last_verified_at?: string
+          notes?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_hash?: string
+          entity_name?: string
+          entity_schema?: string
+          entity_type?: string
+          id?: string
+          last_verified_at?: string
+          notes?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       auto_fix_logs: {
         Row: {
           action_name: string
@@ -1700,6 +1742,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      intentional_duplicates_registry: {
+        Row: {
+          duplicate_reason: string
+          entity_name: string
+          entity_type: string
+          id: string
+          registered_at: string
+          registered_by: string | null
+          signatures: string[]
+        }
+        Insert: {
+          duplicate_reason: string
+          entity_name: string
+          entity_type: string
+          id?: string
+          registered_at?: string
+          registered_by?: string | null
+          signatures?: string[]
+        }
+        Update: {
+          duplicate_reason?: string
+          entity_name?: string
+          entity_type?: string
+          id?: string
+          registered_at?: string
+          registered_by?: string | null
+          signatures?: string[]
+        }
+        Relationships: []
       }
       investor_weekly_transactions: {
         Row: {
@@ -4755,6 +4827,15 @@ export type Database = {
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
       fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
+      fn_compute_schema_snapshot: {
+        Args: never
+        Returns: {
+          entity_hash: string
+          entity_name: string
+          entity_schema: string
+          entity_type: string
+        }[]
+      }
       fn_daily_ledger_reconciliation: {
         Args: { p_tenant_id?: string }
         Returns: Json
@@ -4889,6 +4970,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_run_delta_audit: { Args: never; Returns: Json }
       fn_safe_refill_calc: {
         Args: {
           p_current: number
