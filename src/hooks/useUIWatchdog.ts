@@ -5,6 +5,7 @@ type WatchdogOptions = {
   orbRef?: React.RefObject<HTMLElement>;
   getState?: () => any;
   onRecover?: (reason: string) => void;
+  onResetOrb?: () => void;
 };
 
 export function useUIWatchdog({
@@ -12,28 +13,32 @@ export function useUIWatchdog({
   orbRef,
   getState,
   onRecover,
+  onResetOrb,
 }: WatchdogOptions) {
-  const lastGoodStateRef = useRef<any>(null);
+  const lastGoodStateRef = useRef<string | null>(null);
   const stuckCounterRef = useRef(0);
+
+  // Store latest callbacks in refs to keep effect dependency-free
+  const onRecoverRef = useRef(onRecover);
+  const getStateRef = useRef(getState);
+  const onResetOrbRef = useRef(onResetOrb);
+  onRecoverRef.current = onRecover;
+  getStateRef.current = getState;
+  onResetOrbRef.current = onResetOrb;
 
   useEffect(() => {
     const interval = setInterval(() => {
       const scrollEl = scrollRef?.current;
       const orbEl = orbRef?.current;
 
-      let issues: string[] = [];
+      const issues: string[] = [];
 
       // -----------------------------
       // 1. Scroll freeze detection
       // -----------------------------
       if (scrollEl) {
-        const isScrollable =
-          scrollEl.scrollHeight > scrollEl.clientHeight;
-
-        const isStuck =
-          isScrollable && scrollEl.scrollTop === 0;
-
-        if (isStuck && isScrollable) {
+        const isScrollable = scrollEl.scrollHeight > scrollEl.clientHeight;
+        if (isScrollable && scrollEl.scrollTop === 0) {
           issues.push("SCROLL_STUCK_TOP");
         }
       }
@@ -43,7 +48,6 @@ export function useUIWatchdog({
       // -----------------------------
       if (scrollEl) {
         const rect = scrollEl.getBoundingClientRect();
-
         if (rect.height === 0 || rect.width === 0) {
           issues.push("LAYOUT_COLLAPSED");
         }
@@ -54,7 +58,6 @@ export function useUIWatchdog({
       // -----------------------------
       if (orbEl) {
         const rect = orbEl.getBoundingClientRect();
-
         if (
           rect.left < -500 ||
           rect.top < -500 ||
@@ -66,19 +69,17 @@ export function useUIWatchdog({
       }
 
       // -----------------------------
-      // 4. State drift detection
+      // 4. State no-update stall detection
       // -----------------------------
-      const state = getState?.();
+      const state = getStateRef.current?.();
       if (state) {
         const serialized = JSON.stringify(state);
-
         if (lastGoodStateRef.current === serialized) {
           stuckCounterRef.current++;
         } else {
           stuckCounterRef.current = 0;
           lastGoodStateRef.current = serialized;
         }
-
         if (stuckCounterRef.current > 20) {
           issues.push("STATE_NO_CHANGE_STUCK");
         }
@@ -88,22 +89,29 @@ export function useUIWatchdog({
       // 5. Recovery action
       // -----------------------------
       if (issues.length > 0) {
-        onRecover?.(issues.join(","));
+        onRecoverRef.current?.(issues.join(","));
 
-        // soft recovery strategy
         try {
+          // Only auto-scroll if user is already near bottom
           if (scrollRef?.current) {
-            scrollRef.current.scrollTop =
-              scrollRef.current.scrollHeight;
+            const el = scrollRef.current;
+            const nearBottom =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            if (nearBottom) {
+              el.scrollTop = el.scrollHeight;
+            }
           }
 
-          if (orbEl) {
-            orbEl.style.transform = "translate3d(0,0,0)";
+          // Delegate orb reset to caller instead of direct DOM mutation
+          if (issues.includes("ORB_OUT_OF_BOUNDS")) {
+            onResetOrbRef.current?.();
           }
         } catch {}
       }
-    }, 3000); // every 3s lightweight watchdog
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [scrollRef, orbRef, getState, onRecover]);
+    // Refs are stable — no deps needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }
