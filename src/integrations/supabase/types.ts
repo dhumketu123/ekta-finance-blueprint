@@ -1411,6 +1411,8 @@ export type Database = {
           currency: string
           debit: number
           id: string
+          integrity_checked_at: string | null
+          isolated: boolean
           narration: string | null
           reference_id: string | null
           reference_type: string
@@ -1427,6 +1429,8 @@ export type Database = {
           currency?: string
           debit?: number
           id?: string
+          integrity_checked_at?: string | null
+          isolated?: boolean
           narration?: string | null
           reference_id?: string | null
           reference_type: string
@@ -1443,6 +1447,8 @@ export type Database = {
           currency?: string
           debit?: number
           id?: string
+          integrity_checked_at?: string | null
+          isolated?: boolean
           narration?: string | null
           reference_id?: string | null
           reference_type?: string
@@ -2229,6 +2235,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ledger_integrity_state: {
+        Row: {
+          auto_action_taken: string | null
+          batch_reference: string
+          detected_at: string
+          id: string
+          imbalance: number
+          resolved_at: string | null
+          status: string
+          total_credit: number
+          total_debit: number
+        }
+        Insert: {
+          auto_action_taken?: string | null
+          batch_reference: string
+          detected_at?: string
+          id?: string
+          imbalance?: number
+          resolved_at?: string | null
+          status?: string
+          total_credit?: number
+          total_debit?: number
+        }
+        Update: {
+          auto_action_taken?: string | null
+          batch_reference?: string
+          detected_at?: string
+          id?: string
+          imbalance?: number
+          resolved_at?: string | null
+          status?: string
+          total_credit?: number
+          total_debit?: number
+        }
+        Relationships: []
       }
       ledger_mismatches: {
         Row: {
@@ -5090,6 +5132,7 @@ export type Database = {
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
       fn_is_valid_gap: { Args: { p_gap_type: string }; Returns: boolean }
+      fn_ledger_integrity_guard: { Args: never; Returns: Json }
       fn_log_anomaly_master: {
         Args: { p_category: string; p_entity: string; p_message: string }
         Returns: undefined
