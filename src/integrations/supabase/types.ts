@@ -2313,16 +2313,25 @@ export type Database = {
       }
       ledger_guard_queue: {
         Row: {
+          last_error: string | null
+          processed_at: string | null
           queued_at: string | null
           reference_id: string
+          retry_count: number | null
         }
         Insert: {
+          last_error?: string | null
+          processed_at?: string | null
           queued_at?: string | null
           reference_id: string
+          retry_count?: number | null
         }
         Update: {
+          last_error?: string | null
+          processed_at?: string | null
           queued_at?: string | null
           reference_id?: string
+          retry_count?: number | null
         }
         Relationships: []
       }
@@ -5245,6 +5254,10 @@ export type Database = {
         Returns: string
       }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
+      fn_increment_retry: {
+        Args: { p_error: string; p_reference: string }
+        Returns: undefined
+      }
       fn_is_valid_gap: { Args: { p_gap_type: string }; Returns: boolean }
       fn_ledger_integrity_guard: { Args: never; Returns: Json }
       fn_light_hash: { Args: { text_input: string }; Returns: string }
