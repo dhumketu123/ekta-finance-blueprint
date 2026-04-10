@@ -2351,6 +2351,7 @@ export type Database = {
           imbalance: number
           integrity_hash: string | null
           previous_hash: string | null
+          processed_at: string | null
           quarantine_reason: string | null
           quarantined_at: string | null
           resolved_at: string | null
@@ -2367,6 +2368,7 @@ export type Database = {
           imbalance?: number
           integrity_hash?: string | null
           previous_hash?: string | null
+          processed_at?: string | null
           quarantine_reason?: string | null
           quarantined_at?: string | null
           resolved_at?: string | null
@@ -2383,6 +2385,7 @@ export type Database = {
           imbalance?: number
           integrity_hash?: string | null
           previous_hash?: string | null
+          processed_at?: string | null
           quarantine_reason?: string | null
           quarantined_at?: string | null
           resolved_at?: string | null
@@ -5292,6 +5295,7 @@ export type Database = {
       }
       fn_process_ledger_guard: { Args: never; Returns: Json }
       fn_process_ledger_guard_safe: { Args: never; Returns: Json }
+      fn_process_ledger_guard_v5: { Args: never; Returns: Json }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       fn_process_system_events: {
         Args: { p_batch_size?: number }
