@@ -2158,6 +2158,33 @@ export type Database = {
           },
         ]
       }
+      ledger_change_audit: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: number
+          ledger_id: string | null
+          new_data: Json | null
+          old_data: Json | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: number
+          ledger_id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: number
+          ledger_id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Relationships: []
+      }
       ledger_entries: {
         Row: {
           account_id: string
@@ -2236,35 +2263,65 @@ export type Database = {
           },
         ]
       }
+      ledger_guard_queue: {
+        Row: {
+          queued_at: string | null
+          reference_id: string
+        }
+        Insert: {
+          queued_at?: string | null
+          reference_id: string
+        }
+        Update: {
+          queued_at?: string | null
+          reference_id?: string
+        }
+        Relationships: []
+      }
       ledger_integrity_state: {
         Row: {
+          anomaly_score: number | null
           auto_action_taken: string | null
           batch_reference: string
           detected_at: string
           id: string
           imbalance: number
+          integrity_hash: string | null
+          previous_hash: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
           resolved_at: string | null
           status: string
           total_credit: number
           total_debit: number
         }
         Insert: {
+          anomaly_score?: number | null
           auto_action_taken?: string | null
           batch_reference: string
           detected_at?: string
           id?: string
           imbalance?: number
+          integrity_hash?: string | null
+          previous_hash?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           resolved_at?: string | null
           status?: string
           total_credit?: number
           total_debit?: number
         }
         Update: {
+          anomaly_score?: number | null
           auto_action_taken?: string | null
           batch_reference?: string
           detected_at?: string
           id?: string
           imbalance?: number
+          integrity_hash?: string | null
+          previous_hash?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           resolved_at?: string | null
           status?: string
           total_credit?: number
@@ -5130,6 +5187,15 @@ export type Database = {
       fn_generate_ai_insights: { Args: never; Returns: Json }
       fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
+      fn_generate_integrity_hash: {
+        Args: {
+          p_prev_hash: string
+          p_reference: string
+          p_total_credit: number
+          p_total_debit: number
+        }
+        Returns: string
+      }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
       fn_is_valid_gap: { Args: { p_gap_type: string }; Returns: boolean }
       fn_ledger_integrity_guard: { Args: never; Returns: Json }
@@ -5150,6 +5216,7 @@ export type Database = {
         Args: { p_entity: string }
         Returns: string
       }
+      fn_process_ledger_guard: { Args: never; Returns: Json }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       fn_process_system_events: {
         Args: { p_batch_size?: number }
