@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
-import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSuggestions, detectGaps, type AssistantContext, type KnowledgeEntry } from "@/services/assistantQueryRouter";
+import { assistantQueryRouter, getQuickActions, buildLlmContext, type AssistantContext, type KnowledgeEntry } from "@/services/assistantQueryRouter";
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
