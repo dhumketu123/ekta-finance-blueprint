@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 type WatchdogOptions = {
   scrollRef?: React.RefObject<HTMLElement>;
@@ -15,10 +15,10 @@ export function useUIWatchdog({
   onRecover,
   onResetOrb,
 }: WatchdogOptions) {
-  const lastGoodStateRef = useRef<string | null>(null);
+  const lastStateRef = useRef<string | null>(null);
   const stuckCounterRef = useRef(0);
 
-  // Store latest callbacks in refs to keep effect dependency-free
+  // Store latest callbacks in refs for stable effect
   const onRecoverRef = useRef(onRecover);
   const getStateRef = useRef(getState);
   const onResetOrbRef = useRef(onResetOrb);
@@ -26,92 +26,120 @@ export function useUIWatchdog({
   getStateRef.current = getState;
   onResetOrbRef.current = onResetOrb;
 
+  const runCheck = useCallback((source: string) => {
+    const issues: string[] = [];
+
+    const scrollEl = scrollRef?.current;
+    const orbEl = orbRef?.current;
+
+    // -------------------------
+    // Scroll anomaly
+    // -------------------------
+    if (scrollEl) {
+      const isScrollable = scrollEl.scrollHeight > scrollEl.clientHeight;
+      if (isScrollable && scrollEl.scrollTop === 0) {
+        issues.push("SCROLL_STUCK_TOP");
+      }
+    }
+
+    // -------------------------
+    // Layout anomaly
+    // -------------------------
+    if (scrollEl) {
+      const rect = scrollEl.getBoundingClientRect();
+      if (rect.height === 0 || rect.width === 0) {
+        issues.push("LAYOUT_COLLAPSED");
+      }
+    }
+
+    // -------------------------
+    // Orb anomaly
+    // -------------------------
+    if (orbEl) {
+      const rect = orbEl.getBoundingClientRect();
+      if (
+        rect.left < -500 ||
+        rect.top < -500 ||
+        rect.left > window.innerWidth + 500 ||
+        rect.top > window.innerHeight + 500
+      ) {
+        issues.push("ORB_OUT_OF_BOUNDS");
+      }
+    }
+
+    // -------------------------
+    // State no-update stall detection
+    // -------------------------
+    const state = getStateRef.current?.();
+    if (state) {
+      const serialized = JSON.stringify(state);
+
+      if (lastStateRef.current === serialized) {
+        stuckCounterRef.current++;
+      } else {
+        stuckCounterRef.current = 0;
+        lastStateRef.current = serialized;
+      }
+
+      if (stuckCounterRef.current > 20) {
+        issues.push("STATE_NO_CHANGE_STALL");
+      }
+    }
+
+    // -------------------------
+    // Recovery
+    // -------------------------
+    if (issues.length > 0) {
+      onRecoverRef.current?.(`${source}:${issues.join(",")}`);
+
+      try {
+        // Safe scroll correction (only near bottom)
+        if (scrollEl) {
+          const nearBottom =
+            scrollEl.scrollHeight -
+              scrollEl.scrollTop -
+              scrollEl.clientHeight <
+            80;
+
+          if (nearBottom) {
+            scrollEl.scrollTop = scrollEl.scrollHeight;
+          }
+        }
+
+        // Delegated orb reset
+        if (issues.includes("ORB_OUT_OF_BOUNDS")) {
+          onResetOrbRef.current?.();
+        }
+      } catch {}
+    }
+  }, [scrollRef, orbRef]);
+
+  // -------------------------
+  // EVENT DRIVEN HOOKS
+  // -------------------------
   useEffect(() => {
-    const interval = setInterval(() => {
-      const scrollEl = scrollRef?.current;
-      const orbEl = orbRef?.current;
+    const scrollEl = scrollRef?.current;
+    if (!scrollEl) return;
 
-      const issues: string[] = [];
+    const onScroll = () => runCheck("scroll");
+    const onResize = () => runCheck("resize");
+    const onVisibility = () => runCheck("visibility");
 
-      // -----------------------------
-      // 1. Scroll freeze detection
-      // -----------------------------
-      if (scrollEl) {
-        const isScrollable = scrollEl.scrollHeight > scrollEl.clientHeight;
-        if (isScrollable && scrollEl.scrollTop === 0) {
-          issues.push("SCROLL_STUCK_TOP");
-        }
-      }
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    document.addEventListener("visibilitychange", onVisibility);
 
-      // -----------------------------
-      // 2. Layout sanity check
-      // -----------------------------
-      if (scrollEl) {
-        const rect = scrollEl.getBoundingClientRect();
-        if (rect.height === 0 || rect.width === 0) {
-          issues.push("LAYOUT_COLLAPSED");
-        }
-      }
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [runCheck, scrollRef]);
 
-      // -----------------------------
-      // 3. Orb validity check
-      // -----------------------------
-      if (orbEl) {
-        const rect = orbEl.getBoundingClientRect();
-        if (
-          rect.left < -500 ||
-          rect.top < -500 ||
-          rect.left > window.innerWidth + 500 ||
-          rect.top > window.innerHeight + 500
-        ) {
-          issues.push("ORB_OUT_OF_BOUNDS");
-        }
-      }
+  // Optional manual trigger (for drag / orb movement)
+  const triggerCheck = useCallback(() => {
+    runCheck("manual");
+  }, [runCheck]);
 
-      // -----------------------------
-      // 4. State no-update stall detection
-      // -----------------------------
-      const state = getStateRef.current?.();
-      if (state) {
-        const serialized = JSON.stringify(state);
-        if (lastGoodStateRef.current === serialized) {
-          stuckCounterRef.current++;
-        } else {
-          stuckCounterRef.current = 0;
-          lastGoodStateRef.current = serialized;
-        }
-        if (stuckCounterRef.current > 20) {
-          issues.push("STATE_NO_CHANGE_STUCK");
-        }
-      }
-
-      // -----------------------------
-      // 5. Recovery action
-      // -----------------------------
-      if (issues.length > 0) {
-        onRecoverRef.current?.(issues.join(","));
-
-        try {
-          // Only auto-scroll if user is already near bottom
-          if (scrollRef?.current) {
-            const el = scrollRef.current;
-            const nearBottom =
-              el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-            if (nearBottom) {
-              el.scrollTop = el.scrollHeight;
-            }
-          }
-
-          // Delegate orb reset to caller instead of direct DOM mutation
-          if (issues.includes("ORB_OUT_OF_BOUNDS")) {
-            onResetOrbRef.current?.();
-          }
-        } catch {}
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-    // Refs are stable — no deps needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  return { triggerCheck };
 }
