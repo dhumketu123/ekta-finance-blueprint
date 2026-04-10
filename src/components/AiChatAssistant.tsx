@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter,
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
@@ -362,27 +362,31 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="relative flex flex-col h-[100dvh] max-h-[92dvh] w-full overflow-hidden overscroll-none bg-destructive/5">
-            <DrawerHeader className="shrink-0 overflow-hidden border-b border-border/40">
+          <DrawerContent className="flex flex-col h-[100dvh] max-h-[92dvh] w-full overflow-hidden overscroll-none bg-destructive/5">
+            {/* ZONE 1: HEADER — flex-none shrink-0, no scroll */}
+            <DrawerHeader className="flex-none shrink-0 overflow-hidden border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
               {headerContent}
             </DrawerHeader>
-            <DrawerBody className="min-h-0 flex-1 overflow-hidden p-0">
-              <ChatMessages messages={messages} typing={isProcessing && !messages.some((m) => m.isStreaming)} scrollRef={scrollRef} onAction={handleSend} />
-            </DrawerBody>
-            <DrawerFooter className="shrink-0 overflow-hidden p-0">
+            {/* ZONE 2: MAIN — flex-1 min-h-0, sole scroll source */}
+            <ChatMessages messages={messages} typing={isProcessing && !messages.some((m) => m.isStreaming)} scrollRef={scrollRef} onAction={handleSend} />
+            {/* ZONE 3: INPUT — flex-none shrink-0, docked bottom */}
+            <DrawerFooter className="flex-none shrink-0 overflow-hidden p-0">
               <ChatInput input={input} setInput={setInput} onSend={() => handleSend()} disabled={isProcessing} inputRef={inputRef} />
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
       ) : (
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="right" className="relative flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5">
-            <SheetHeader className="shrink-0 overflow-hidden px-4 py-3 border-b border-border/40">
+          <SheetContent side="right" className="flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5">
+            {/* ZONE 1: HEADER */}
+            <SheetHeader className="flex-none shrink-0 overflow-hidden px-4 py-3 border-b border-border/40">
               <SheetTitle className="sr-only">একতা AI</SheetTitle>
               {headerContent}
             </SheetHeader>
+            {/* ZONE 2: MAIN */}
             <ChatMessages messages={messages} typing={isProcessing && !messages.some((m) => m.isStreaming)} scrollRef={scrollRef} onAction={handleSend} />
+            {/* ZONE 3: INPUT */}
             <ChatInput input={input} setInput={setInput} onSend={() => handleSend()} disabled={isProcessing} inputRef={inputRef} />
           </SheetContent>
         </Sheet>
