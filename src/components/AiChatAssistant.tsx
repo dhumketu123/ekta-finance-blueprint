@@ -156,6 +156,66 @@ export default function AiChatAssistant() {
   const isNearBottomRef = useRef(true);
   const isMobile = useIsMobile();
 
+  // --- Draggable orb state ---
+  const orbRef = useRef<HTMLDivElement>(null);
+  const orbSize = isMobile ? 48 : 56;
+  const [orbPos, setOrbPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem("ai-orb-pos");
+      if (saved) return JSON.parse(saved) as { x: number; y: number };
+    } catch {}
+    return { x: -1, y: -1 }; // sentinel: will be set on first render
+  });
+  const orbDragging = useRef(false);
+  const orbOffset = useRef({ x: 0, y: 0 });
+  const orbDidDrag = useRef(false);
+
+  // Set default position on mount if sentinel
+  useEffect(() => {
+    if (orbPos.x === -1) {
+      setOrbPos({
+        x: window.innerWidth - orbSize - 24,
+        y: isMobile ? window.innerHeight - orbSize - 80 : window.innerHeight - orbSize - 24,
+      });
+    }
+  }, [orbPos.x, orbSize, isMobile]);
+
+  const onOrbPointerDown = useCallback((e: React.PointerEvent) => {
+    orbDragging.current = true;
+    orbDidDrag.current = false;
+    const rect = orbRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    orbOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!orbDragging.current) return;
+      orbDidDrag.current = true;
+      const x = Math.max(0, Math.min(window.innerWidth - orbSize, e.clientX - orbOffset.current.x));
+      const y = Math.max(0, Math.min(window.innerHeight - orbSize, e.clientY - orbOffset.current.y));
+      setOrbPos({ x, y });
+    };
+    const onUp = () => {
+      if (!orbDragging.current) return;
+      orbDragging.current = false;
+      setOrbPos((prev) => {
+        const centerX = prev.x + orbSize / 2;
+        const snappedX = centerX < window.innerWidth / 2 ? 16 : window.innerWidth - orbSize - 16;
+        const final = { x: snappedX, y: prev.y };
+        localStorage.setItem("ai-orb-pos", JSON.stringify(final));
+        return final;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [orbSize]);
+
   const { data: riskData } = useRiskDistribution();
   const { data: trendData } = useCollectionTrend(7);
   const { data: topClients } = useTopClients(7);
@@ -384,28 +444,38 @@ export default function AiChatAssistant() {
 
   return (
     <>
-      {/* Floating Orb Button */}
-      <button
-        onClick={() => setOpen(true)}
+      {/* Draggable Floating Orb */}
+      <div
+        ref={orbRef}
+        onPointerDown={onOrbPointerDown}
+        onClick={() => { if (!orbDidDrag.current) setOpen(true); }}
+        style={{
+          position: "fixed",
+          left: orbPos.x,
+          top: orbPos.y,
+          width: orbSize,
+          height: orbSize,
+          zIndex: 100,
+          touchAction: "none",
+          transition: orbDragging.current ? "none" : "left 0.3s ease, top 0.05s ease, transform 0.2s ease, opacity 0.2s ease",
+        }}
         className={cn(
-          "fixed z-[100] rounded-full shadow-lg transition-all duration-300",
-          "bg-primary text-primary-foreground hover:scale-105 active:scale-95",
+          "rounded-full shadow-lg cursor-grab active:cursor-grabbing",
+          "bg-gradient-to-br from-primary via-primary/80 to-accent",
           "flex items-center justify-center",
-          "hover:shadow-xl hover:shadow-primary/20",
-          isMobile ? "bottom-20 right-4 h-12 w-12" : "bottom-6 right-6 h-14 w-14",
+          "shadow-xl shadow-primary/20",
           open && "scale-0 opacity-0 pointer-events-none"
         )}
         aria-label="AI অ্যাসিস্ট্যান্ট খুলুন"
       >
-        <MessageCircle className="h-6 w-6" />
+        <MessageCircle className="h-6 w-6 text-primary-foreground" />
         {highRiskCount > 0 && (
           <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center animate-pulse">
             {highRiskCount > 99 ? "99+" : highRiskCount}
           </Badge>
         )}
-        {/* Pulse ring */}
         <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping opacity-30 pointer-events-none" />
-      </button>
+      </div>
 
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
