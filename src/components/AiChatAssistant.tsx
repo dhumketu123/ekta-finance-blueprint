@@ -362,7 +362,7 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="flex flex-col h-full overflow-hidden bg-destructive/5">
+          <DrawerContent className="flex flex-col h-full min-h-0 overflow-hidden bg-destructive/5">
             {/* ZONE 1: HEADER — flex-none shrink-0, no scroll */}
             <DrawerHeader className="flex-none shrink-0 overflow-hidden border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
