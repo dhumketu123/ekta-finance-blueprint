@@ -2351,6 +2351,8 @@ export type Database = {
           processed_at: string | null
           processing: boolean | null
           queued_at: string | null
+          recovered_at: string | null
+          recovery_flag: boolean
           reference_id: string
           retry_count: number | null
         }
@@ -2360,6 +2362,8 @@ export type Database = {
           processed_at?: string | null
           processing?: boolean | null
           queued_at?: string | null
+          recovered_at?: string | null
+          recovery_flag?: boolean
           reference_id: string
           retry_count?: number | null
         }
@@ -2369,6 +2373,8 @@ export type Database = {
           processed_at?: string | null
           processing?: boolean | null
           queued_at?: string | null
+          recovered_at?: string | null
+          recovery_flag?: boolean
           reference_id?: string
           retry_count?: number | null
         }
@@ -5376,6 +5382,10 @@ export type Database = {
           p_status?: string
         }
         Returns: undefined
+      }
+      fn_recover_stuck_ledger_jobs: {
+        Args: { p_stuck_minutes?: number }
+        Returns: Json
       }
       fn_replay_events: {
         Args: {
