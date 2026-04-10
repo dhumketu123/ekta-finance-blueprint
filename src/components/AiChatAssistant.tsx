@@ -223,6 +223,7 @@ export default function AiChatAssistant() {
       if (isNearBottomRef.current) {
         el.scrollTop = el.scrollHeight - el.clientHeight;
       }
+      prevScrollHeightRef.current = el.scrollHeight;
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
