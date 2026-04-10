@@ -47,6 +47,7 @@ export default function AiChatAssistant() {
   const [initialized, setInitialized] = useState(false);
   const [input, setInput] = useState("");
   const abortRef = useRef<AbortController | null>(null);
+  const routerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // --- Data layer ---
   const { data: riskData } = useRiskDistribution();
@@ -127,7 +128,7 @@ export default function AiChatAssistant() {
       const routerResult = assistantQueryRouter(trimmed, ctx);
 
       if (routerResult.matched && routerResult.answer) {
-        setTimeout(() => {
+        routerTimerRef.current = setTimeout(() => {
           setMessages((prev) => [
             ...prev,
             {
@@ -212,10 +213,11 @@ export default function AiChatAssistant() {
     [input, uiState.thinking, ctx, getChatHistory, setThinking]
   );
 
-  // Cleanup on unmount
+  // Cleanup all async resources on unmount
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      if (routerTimerRef.current) clearTimeout(routerTimerRef.current);
     };
   }, []);
 

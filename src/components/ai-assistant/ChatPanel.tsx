@@ -38,6 +38,8 @@ export function ChatPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
   const isNearBottomRef = useRef(true);
+  const smartScrollRafRef = useRef(0);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // --- Streaming-safe scroll anchor system ---
   const checkNearBottom = useCallback(() => {
@@ -48,7 +50,8 @@ export function ChatPanel({
   }, []);
 
   const smartScroll = useCallback(() => {
-    requestAnimationFrame(() => {
+    cancelAnimationFrame(smartScrollRafRef.current);
+    smartScrollRafRef.current = requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
       const newHeight = el.scrollHeight;
@@ -70,7 +73,7 @@ export function ChatPanel({
     prevScrollHeightRef.current = el.scrollHeight;
   }, []);
 
-  // Resize anchor (mobile keyboard safe)
+  // Resize anchor — uses visualViewport on mobile for keyboard safety
   useEffect(() => {
     const handleResize = () => {
       const el = scrollRef.current;
@@ -80,8 +83,18 @@ export function ChatPanel({
       }
       prevScrollHeightRef.current = el.scrollHeight;
     };
+
+    // Prefer visualViewport for mobile keyboard events
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", handleResize);
+    }
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    return () => {
+      if (vv) vv.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   // Listen to user scroll
@@ -98,13 +111,27 @@ export function ChatPanel({
     smartScroll();
   }, [messages.length, isProcessing, smartScroll]);
 
-  // Focus input on open
+  // Focus input on open — with cleanup
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 300);
+    if (open) {
+      focusTimerRef.current = setTimeout(
+        () => inputRef.current?.focus(),
+        300
+      );
+    }
+    return () => {
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    };
   }, [open]);
 
-  const typing =
-    isProcessing && !messages.some((m) => m.isStreaming);
+  // Cleanup RAF on unmount
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(smartScrollRafRef.current);
+    };
+  }, []);
+
+  const typing = isProcessing && !messages.some((m) => m.isStreaming);
 
   const headerContent = (
     <div className="flex items-center justify-between w-full">
