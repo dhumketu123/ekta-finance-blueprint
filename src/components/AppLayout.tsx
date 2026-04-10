@@ -1,4 +1,4 @@
-import { ReactNode, lazy, Suspense } from "react";
+import { ReactNode, lazy, Suspense, useEffect } from "react";
 import AppSidebarNew from "./sidebar/AppSidebarNew";
 import TopHeader from "./TopHeader";
 import BottomNav from "./BottomNav";
@@ -12,6 +12,16 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      document.documentElement.style.setProperty("--app-height", `${vv.height}px`);
+    };
+    onResize();
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
   return (
     <SidebarStateProvider>
         <div className="flex min-h-0 h-full w-full bg-background overflow-x-clip">
