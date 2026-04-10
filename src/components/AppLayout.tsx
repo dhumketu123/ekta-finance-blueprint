@@ -14,12 +14,12 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <SidebarStateProvider>
-        <div className="flex h-full w-full bg-background overflow-x-clip">
+        <div className="flex min-h-0 h-full w-full bg-background overflow-x-clip">
         <AppSidebarNew />
         <TopHeader />
         <SubscriptionLockOverlay />
         <main
-          className="flex-1 min-w-0 mt-16 md:ml-[260px] overflow-y-auto animate-page-enter"
+          className="flex-1 min-w-0 min-h-0 mt-16 md:ml-[260px] overflow-y-auto animate-page-enter"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
