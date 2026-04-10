@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRiskDistribution, useCollectionTrend, useTopClients, useLoanKPIs, useCollectionSummary30d } from "@/hooks/useAssistantDataBundle";
-import { assistantQueryRouter, getQuickActions, buildLlmContext, getPredictiveSuggestions, detectGaps, type AssistantContext, type KnowledgeEntry } from "@/services/assistantQueryRouter";
+import { assistantQueryRouter, getQuickActions, buildLlmContext, type AssistantContext, type KnowledgeEntry } from "@/services/assistantQueryRouter";
 import { streamLlmResponse, type ChatMessage } from "@/services/assistantLlmService";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,27 +14,29 @@ import type { Message } from "./ai-assistant/types";
 // Welcome message builder
 // ---------------------------------------------------------------------------
 function getWelcomeMessage(ctx: AssistantContext): Message {
-  const predictive = getPredictiveSuggestions(ctx);
-  const gaps = detectGaps(ctx);
-  let content =
-    "👋 আসসালামু আলাইকুম! আমি **একতা AI** — আপনার ফাইনান্সিয়াল অ্যাসিস্ট্যান্ট।\n\nআমি ডেটা বিশ্লেষণ, ঝুঁকি রিপোর্ট, এবং যেকোনো আর্থিক প্রশ্নের উত্তর দিতে পারি।";
+  const highRisk = (ctx.riskData ?? [])
+    .filter((r) => r.name === "critical" || r.name === "high")
+    .reduce((s, r) => s + r.value, 0);
+  const criticalCount = (ctx.riskData ?? [])
+    .filter((r) => r.name === "critical")
+    .reduce((s, r) => s + r.value, 0);
+  const highCount = highRisk - criticalCount;
 
-  if (gaps.length > 0) {
-    content += `\n\n🔍 **সিস্টেম গ্যাপ সনাক্ত:**\n${gaps.join("\n")}`;
-  }
-  if (predictive.length > 0 && predictive[0].icon !== "info") {
-    content += "\n\n⚡ **প্রস্তাবিত অ্যাকশন:**";
-  }
+  let content =
+    "👋 স্বাগতম! আমি **ভিঞ্চি (VINCI)**—আপনার ইন্টেলিজেন্ট ফিন্যান্সিয়াল অ্যাসিস্ট্যান্ট। আমি ডেটা বিশ্লেষণ, রিস্ক অ্যানালাইসিস এবং আর্থিক সিদ্ধান্তে সাহায্য করতে প্রস্তুত। আজ আপনাকে কীভাবে সাহায্য করতে পারি?";
+
+  content += `\n\n📡 **System Insight Panel:**`;
+  content += `\n• কিছু ট্রানজেকশন ও লোন ডেটা আপডেট পেন্ডিং আছে`;
+  content += `\n• মোট **${highRisk}টি** হাই-রিস্ক ইস্যু শনাক্ত করা হয়েছে`;
+  content += `\n• **${criticalCount}টি** Critical, **${highCount}টি** High Risk কেস অ্যাক্টিভ`;
+  content += `\n• সিস্টেম রিয়েল-টাইম মনিটরিং মোডে আছে`;
 
   return {
     id: "welcome",
     role: "assistant",
     content,
     timestamp: new Date(),
-    actions:
-      predictive.length > 0 && predictive[0].icon !== "info"
-        ? predictive
-        : getQuickActions(),
+    actions: getQuickActions(),
   };
 }
 
