@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
   :root {
     --bottom-nav-height: 72px;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
