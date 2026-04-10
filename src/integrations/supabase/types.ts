@@ -4975,6 +4975,7 @@ export type Database = {
       }
       fn_event_aggregation: { Args: { p_hours?: number }; Returns: Json }
       fn_event_intelligence_feedback: { Args: never; Returns: Json }
+      fn_execute_audit_safe: { Args: { p_batch_size?: number }; Returns: Json }
       fn_fetch_ai_knowledge: {
         Args: never
         Returns: {
