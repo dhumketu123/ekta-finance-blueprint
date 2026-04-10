@@ -2263,6 +2263,39 @@ export type Database = {
           },
         ]
       }
+      ledger_event_log: {
+        Row: {
+          batch_reference: string
+          created_at: string | null
+          credit: number | null
+          debit: number | null
+          event_id: string
+          event_type: string
+          imbalance: number | null
+          status: string
+        }
+        Insert: {
+          batch_reference: string
+          created_at?: string | null
+          credit?: number | null
+          debit?: number | null
+          event_id?: string
+          event_type: string
+          imbalance?: number | null
+          status: string
+        }
+        Update: {
+          batch_reference?: string
+          created_at?: string | null
+          credit?: number | null
+          debit?: number | null
+          event_id?: string
+          event_type?: string
+          imbalance?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       ledger_guard_config: {
         Row: {
           auto_isolation: boolean | null
