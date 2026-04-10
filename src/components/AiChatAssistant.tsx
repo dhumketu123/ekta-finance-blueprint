@@ -159,30 +159,32 @@ export default function AiChatAssistant() {
   // --- Draggable orb state ---
   const orbRef = useRef<HTMLDivElement>(null);
   const orbSize = isMobile ? 48 : 56;
-  const [orbPos, setOrbPos] = useState(() => {
+  const [orbPos, setOrbPos] = useState<{ x: number; y: number } | null>(() => {
     try {
       const saved = localStorage.getItem("ai-orb-pos");
-      if (saved) return JSON.parse(saved) as { x: number; y: number };
+      if (saved) return JSON.parse(saved);
     } catch {}
-    return { x: -1, y: -1 }; // sentinel: will be set on first render
+    return null;
   });
   const orbDragging = useRef(false);
   const orbOffset = useRef({ x: 0, y: 0 });
   const orbDidDrag = useRef(false);
+  const dragStartTime = useRef(0);
 
-  // Set default position on mount if sentinel
+  // Set default position on mount if null
   useEffect(() => {
-    if (orbPos.x === -1) {
+    if (!orbPos) {
       setOrbPos({
         x: window.innerWidth - orbSize - 24,
         y: isMobile ? window.innerHeight - orbSize - 80 : window.innerHeight - orbSize - 24,
       });
     }
-  }, [orbPos.x, orbSize, isMobile]);
+  }, [orbPos, orbSize, isMobile]);
 
   const onOrbPointerDown = useCallback((e: React.PointerEvent) => {
     orbDragging.current = true;
     orbDidDrag.current = false;
+    dragStartTime.current = Date.now();
     const rect = orbRef.current?.getBoundingClientRect();
     if (!rect) return;
     orbOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -442,13 +444,20 @@ export default function AiChatAssistant() {
     </div>
   );
 
+  if (!orbPos) {
+    return null;
+  }
+
   return (
     <>
       {/* Draggable Floating Orb */}
       <div
         ref={orbRef}
         onPointerDown={onOrbPointerDown}
-        onClick={() => { if (!orbDidDrag.current) setOpen(true); }}
+        onClick={() => {
+          const isClick = !orbDidDrag.current && Date.now() - dragStartTime.current < 250;
+          if (isClick) setOpen(true);
+        }}
         style={{
           position: "fixed",
           left: orbPos.x,
