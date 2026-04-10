@@ -203,7 +203,7 @@ export default function AiChatAssistant() {
       const delta = newHeight - prevScrollHeightRef.current;
       prevScrollHeightRef.current = newHeight;
       if (isNearBottomRef.current && delta > 0) {
-        el.scrollTop = el.scrollHeight - el.clientHeight;
+        el.scrollTo({ top: el.scrollHeight - el.clientHeight, behavior: "auto" });
       }
     });
   }, []);
@@ -240,7 +240,7 @@ export default function AiChatAssistant() {
   // Auto-scroll on message/typing changes (respects user scroll position)
   useEffect(() => {
     smartScroll();
-  }, [messages, isProcessing, smartScroll]);
+  }, [messages.length, isProcessing, smartScroll]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
