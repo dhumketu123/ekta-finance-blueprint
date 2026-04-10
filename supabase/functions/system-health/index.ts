@@ -529,7 +529,7 @@ Deno.serve(async (req) => {
     const runId = crypto.randomUUID();
     const thresholds = await loadSyncThresholds(supabase);
 
-    const [db, tr, qc, ff, cron, notif, loans, rls, ksync] = await Promise.all([
+    const [db, tr, qc, ff, cron, notif, loans, rls, ksync, pipelineHealth] = await Promise.all([
       measure(async () => {
         const { error } = await supabase.from("profiles").select("id").limit(1);
         return error;
@@ -563,7 +563,6 @@ Deno.serve(async (req) => {
         return { data, error };
       }),
       measure(async () => {
-        // Optimized: fetch only status counts instead of all rows
         const { data, error } = await supabase.rpc("get_loan_portfolio_counts");
         return { data, error };
       }),
@@ -583,6 +582,8 @@ Deno.serve(async (req) => {
           .order("started_at", { ascending: false }).limit(1).maybeSingle();
         return { data, error };
       }),
+      // 10. AI Pipeline Health Check
+      measure(() => checkPipelineHealth(supabase)),
     ]);
 
     const checks: any[] = [];
