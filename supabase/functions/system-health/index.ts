@@ -234,7 +234,10 @@ const DEFAULT_FEATURE_FLAGS: Array<{ feature_name: string; is_enabled: boolean; 
 // ── Pipeline Health: consecutive failure tracking + alert dedup ──
 const PIPELINE_ALERT_DEDUP_MINUTES = 30;
 const PIPELINE_CONSECUTIVE_FAIL_THRESHOLD = 3;
-const PIPELINE_STALE_THRESHOLD_MINUTES = 60; // configurable
+const PIPELINE_STALE_THRESHOLD_MINUTES = 60;
+const PIPELINE_RECOVERY_SUPPRESSION_MINUTES = 15;
+const PIPELINE_ALERT_LOCK_KEY = "pipelineHealthAlert:v1";
+const PIPELINE_RECOVERY_LOCK_KEY = "pipelineRecoveryLock:v1";
 
 async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): Promise<{
   status: "pass" | "warn" | "fail";
