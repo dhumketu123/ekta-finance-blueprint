@@ -228,6 +228,8 @@ export default function AiChatAssistant() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Listen to user scroll to update near-bottom tracker
+  useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const handler = () => checkNearBottom();
