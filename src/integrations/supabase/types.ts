@@ -5031,6 +5031,10 @@ export type Database = {
       fn_generate_ai_insights_core: { Args: never; Returns: Json }
       fn_generate_ai_insights_dry_run: { Args: never; Returns: Json }
       fn_get_reconciliation_status: { Args: never; Returns: Json }
+      fn_log_anomaly_master: {
+        Args: { p_category: string; p_entity: string; p_message: string }
+        Returns: undefined
+      }
       fn_mark_sms_failed: {
         Args: { p_error?: string; p_queue_id: string }
         Returns: undefined
