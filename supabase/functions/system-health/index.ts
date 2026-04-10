@@ -377,6 +377,7 @@ async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): P
 /** Auto-recovery: restart pipeline worker + re-enqueue pending jobs */
 async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): Promise<boolean> {
   try {
+    // Rate-limit recovery itself
     if (await wasRecentlyTriggered(supabase, "restartPipelineWorker", PIPELINE_ALERT_DEDUP_MINUTES)) {
       console.info("[auto-fix] restartPipelineWorker skipped — rate-limited (30min dedup)");
       return false;
@@ -399,6 +400,8 @@ async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): P
 
     console.info("[auto-fix] restartPipelineWorker: recovery completed");
     await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", true, "Stuck runs cleared + heartbeat inserted", Date.now() - start);
+    // Log recovery lock so alerts are suppressed for 15min
+    await logAutoFix(supabase, PIPELINE_RECOVERY_LOCK_KEY, "ai_pipeline", true, "Recovery suppression window started");
     return true;
   } catch (e: any) {
     console.error("[auto-fix] restartPipelineWorker failed:", e?.message);
