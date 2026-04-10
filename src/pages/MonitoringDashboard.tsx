@@ -456,6 +456,9 @@ const MonitoringDashboard = () => {
   }, [notifLogs]);
 
   const refetchAll = () => { refetchNotif(); refetchAudit(); };
+  const ensureTabVisible = (element: HTMLElement) => {
+    element.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+  };
 
   const cronLabels: Record<string, { en: string; bn: string }> = {
     predict_loan_risk: { en: "Risk Scoring", bn: "ঝুঁকি স্কোরিং" },
@@ -1029,44 +1032,44 @@ const SystemDnaTab = () => {
         <div className="relative w-full min-w-0 overflow-hidden">
           <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide pb-1">
             <TabsList className="inline-flex h-auto min-w-max gap-1 p-1 pr-4">
-            <TabsTrigger value="health" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="health" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <HeartPulse className="w-3.5 h-3.5" />
               {lang === "bn" ? "লাইভ হেলথ" : "Live Health"}
             </TabsTrigger>
-            <TabsTrigger value="overview" className="whitespace-nowrap">{lang === "bn" ? "ওভারভিউ" : "Overview"}</TabsTrigger>
-            <TabsTrigger value="anomaly" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="overview" className="whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>{lang === "bn" ? "ওভারভিউ" : "Overview"}</TabsTrigger>
+            <TabsTrigger value="anomaly" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <ShieldAlert className="w-3.5 h-3.5" />
               {lang === "bn" ? "অ্যানোমালি" : "Anomaly Intel"}
             </TabsTrigger>
-            <TabsTrigger value="integrity" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="integrity" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <Activity className="w-3.5 h-3.5" />
               {lang === "bn" ? "ইন্টেগ্রিটি" : "Ledger Integrity"}
             </TabsTrigger>
-            <TabsTrigger value="launch" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="launch" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <Rocket className="w-3.5 h-3.5" />
               {lang === "bn" ? "লঞ্চ রেডিনেস" : "Launch Readiness"}
             </TabsTrigger>
-            <TabsTrigger value="dna" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="dna" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <Dna className="w-3.5 h-3.5" />
               {lang === "bn" ? "সিস্টেম DNA" : "System DNA"}
             </TabsTrigger>
-            <TabsTrigger value="ai-knowledge" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="ai-knowledge" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <BrainCircuit className="w-3.5 h-3.5" />
               {lang === "bn" ? "AI নলেজ" : "AI Knowledge"}
             </TabsTrigger>
-            <TabsTrigger value="ai-insights" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="ai-insights" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <Zap className="w-3.5 h-3.5" />
               {lang === "bn" ? "AI ইনসাইটস" : "AI Insights"}
             </TabsTrigger>
-            <TabsTrigger value="live-trending" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="live-trending" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <BarChart3 className="w-3.5 h-3.5" />
               {lang === "bn" ? "লাইভ ট্রেন্ড" : "Live Trending"}
             </TabsTrigger>
-            <TabsTrigger value="knowledge-graph" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="knowledge-graph" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               🕸️
               {lang === "bn" ? "নলেজ গ্রাফ" : "Knowledge Graph"}
             </TabsTrigger>
-            <TabsTrigger value="sandbox" className="gap-1.5 whitespace-nowrap">
+            <TabsTrigger value="sandbox" className="gap-1.5 whitespace-nowrap" onClick={(e) => ensureTabVisible(e.currentTarget)} onFocus={(e) => ensureTabVisible(e.currentTarget)}>
               <FlaskConical className="w-3.5 h-3.5" />
               {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
             </TabsTrigger>
