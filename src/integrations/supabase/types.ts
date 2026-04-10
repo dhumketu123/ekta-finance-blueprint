@@ -515,6 +515,33 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_control_plane: {
+        Row: {
+          emergency_override: boolean | null
+          freeze_reason: string | null
+          freeze_state: boolean | null
+          id: string
+          overridden_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          emergency_override?: boolean | null
+          freeze_reason?: string | null
+          freeze_state?: boolean | null
+          id?: string
+          overridden_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          emergency_override?: boolean | null
+          freeze_reason?: string | null
+          freeze_state?: boolean | null
+          id?: string
+          overridden_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -4482,6 +4509,45 @@ export type Database = {
           },
         ]
       }
+      truth_authority_registry: {
+        Row: {
+          authority_source: string
+          behavioral_hash: string | null
+          created_at: string | null
+          entity_name: string
+          entity_schema: string
+          entity_type: string
+          id: string
+          last_verified_at: string | null
+          structural_hash: string
+          verification_level: string | null
+        }
+        Insert: {
+          authority_source: string
+          behavioral_hash?: string | null
+          created_at?: string | null
+          entity_name: string
+          entity_schema: string
+          entity_type: string
+          id?: string
+          last_verified_at?: string | null
+          structural_hash: string
+          verification_level?: string | null
+        }
+        Update: {
+          authority_source?: string
+          behavioral_hash?: string | null
+          created_at?: string | null
+          entity_name?: string
+          entity_schema?: string
+          entity_type?: string
+          id?: string
+          last_verified_at?: string | null
+          structural_hash?: string
+          verification_level?: string | null
+        }
+        Relationships: []
+      }
       user_devices: {
         Row: {
           created_at: string
@@ -4860,6 +4926,7 @@ export type Database = {
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      fn_bootstrap_truth_authority: { Args: never; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
       fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
       fn_compute_schema_snapshot: {
@@ -5006,6 +5073,7 @@ export type Database = {
         Returns: undefined
       }
       fn_run_delta_audit: { Args: never; Returns: Json }
+      fn_safe_audit_guard: { Args: never; Returns: boolean }
       fn_safe_refill_calc: {
         Args: {
           p_current: number
