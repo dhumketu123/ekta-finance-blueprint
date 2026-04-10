@@ -2772,6 +2772,39 @@ export type Database = {
         }
         Relationships: []
       }
+      observability_root_causes: {
+        Row: {
+          category: string
+          description: string | null
+          first_seen: string | null
+          id: string
+          last_seen: string | null
+          occurrence_count: number | null
+          root_key: string | null
+          severity: number | null
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          occurrence_count?: number | null
+          root_key?: string | null
+          severity?: number | null
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          occurrence_count?: number | null
+          root_key?: string | null
+          severity?: number | null
+        }
+        Relationships: []
+      }
       officer_metrics: {
         Row: {
           alert_frequency: number
@@ -4926,6 +4959,7 @@ export type Database = {
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      fn_audit_execute_master: { Args: never; Returns: Json }
       fn_bootstrap_truth_authority: { Args: never; Returns: undefined }
       fn_check_sms_sla: { Args: { p_window_hours?: number }; Returns: Json }
       fn_cleanup_stale_processing_locks: { Args: never; Returns: Json }
@@ -4943,6 +4977,10 @@ export type Database = {
         Returns: Json
       }
       fn_decision_engine: { Args: { p_run_id: string }; Returns: Json }
+      fn_dedupe_anomaly: {
+        Args: { p_category: string; p_key: string }
+        Returns: undefined
+      }
       fn_detect_degradation: {
         Args: {
           p_lookback_minutes?: number
@@ -5002,6 +5040,10 @@ export type Database = {
         Returns: undefined
       }
       fn_metrics_self_adapt: { Args: never; Returns: Json }
+      fn_normalize_version_churn: {
+        Args: { p_entity: string }
+        Returns: string
+      }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       fn_process_system_events: {
         Args: { p_batch_size?: number }
