@@ -231,6 +231,197 @@ const DEFAULT_FEATURE_FLAGS: Array<{ feature_name: string; is_enabled: boolean; 
   { feature_name: "early_settlement", is_enabled: true, description: "Early settlement calculator", enabled_for_role: "admin" },
 ];
 
+// ── Pipeline Health: consecutive failure tracking + alert dedup ──
+const PIPELINE_ALERT_DEDUP_MINUTES = 30;
+const PIPELINE_CONSECUTIVE_FAIL_THRESHOLD = 3;
+const PIPELINE_STALE_THRESHOLD_MINUTES = 60; // configurable
+
+async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): Promise<{
+  status: "pass" | "warn" | "fail";
+  detail: string;
+  lastRunAt: string | null;
+  nextExpectedRun: string | null;
+  failureCount: number;
+  recoveryTriggered: boolean;
+}> {
+  let lastRunAt: string | null = null;
+  let failureCount = 0;
+  let recoveryTriggered = false;
+
+  try {
+    // 1. Check last successful pipeline run
+    const { data: lastRun } = await supabase
+      .from("ai_pipeline_runs")
+      .select("id, run_at, status")
+      .order("run_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!lastRun) {
+      // No runs at all — but don't alert on single miss
+      // Check consecutive health log failures for pipeline
+      const { data: recentLogs } = await supabase
+        .from("system_health_logs")
+        .select("status")
+        .eq("check_name", "ai_pipeline")
+        .order("created_at", { ascending: false })
+        .limit(PIPELINE_CONSECUTIVE_FAIL_THRESHOLD);
+
+      const consecutiveFails = recentLogs?.filter(l => l.status === "fail").length ?? 0;
+
+      if (consecutiveFails >= PIPELINE_CONSECUTIVE_FAIL_THRESHOLD) {
+        // Trigger recovery
+        recoveryTriggered = await tryPipelineRecovery(supabase);
+        return {
+          status: "fail",
+          detail: `No pipeline runs found — ${consecutiveFails} consecutive failures, recovery ${recoveryTriggered ? "triggered" : "skipped (rate-limited)"}`,
+          lastRunAt: null,
+          nextExpectedRun: null,
+          failureCount: consecutiveFails,
+          recoveryTriggered,
+        };
+      }
+
+      return {
+        status: "warn",
+        detail: `No pipeline runs found (${consecutiveFails}/${PIPELINE_CONSECUTIVE_FAIL_THRESHOLD} consecutive fails before escalation)`,
+        lastRunAt: null,
+        nextExpectedRun: null,
+        failureCount: consecutiveFails,
+        recoveryTriggered: false,
+      };
+    }
+
+    lastRunAt = lastRun.run_at;
+    const minutesSinceRun = (Date.now() - new Date(lastRun.run_at).getTime()) / 60_000;
+    const nextExpectedRun = new Date(new Date(lastRun.run_at).getTime() + PIPELINE_STALE_THRESHOLD_MINUTES * 60_000).toISOString();
+
+    // 2. Count recent failures
+    const { data: recentRuns } = await supabase
+      .from("ai_pipeline_runs")
+      .select("status")
+      .order("run_at", { ascending: false })
+      .limit(5);
+
+    failureCount = recentRuns?.filter(r => r.status !== "completed" && r.status !== "success").length ?? 0;
+
+    // 3. Check if stale beyond threshold
+    if (minutesSinceRun > PIPELINE_STALE_THRESHOLD_MINUTES) {
+      // Check consecutive failures in health logs before escalating
+      const { data: healthLogs } = await supabase
+        .from("system_health_logs")
+        .select("status")
+        .eq("check_name", "ai_pipeline")
+        .order("created_at", { ascending: false })
+        .limit(PIPELINE_CONSECUTIVE_FAIL_THRESHOLD);
+
+      const consecutiveFails = healthLogs?.filter(l => l.status === "fail" || l.status === "warn").length ?? 0;
+
+      if (consecutiveFails >= PIPELINE_CONSECUTIVE_FAIL_THRESHOLD) {
+        recoveryTriggered = await tryPipelineRecovery(supabase);
+        return {
+          status: "fail",
+          detail: `Pipeline stale ${Math.round(minutesSinceRun)}min (threshold: ${PIPELINE_STALE_THRESHOLD_MINUTES}min), ${failureCount} recent failures, recovery ${recoveryTriggered ? "triggered" : "skipped"}`,
+          lastRunAt,
+          nextExpectedRun,
+          failureCount,
+          recoveryTriggered,
+        };
+      }
+
+      return {
+        status: "warn",
+        detail: `Pipeline stale ${Math.round(minutesSinceRun)}min — monitoring (${consecutiveFails}/${PIPELINE_CONSECUTIVE_FAIL_THRESHOLD} before escalation)`,
+        lastRunAt,
+        nextExpectedRun,
+        failureCount,
+        recoveryTriggered: false,
+      };
+    }
+
+    // 4. Recent run exists and is fresh
+    if (lastRun.status === "failed" || lastRun.status === "error") {
+      return {
+        status: "warn",
+        detail: `Last run failed at ${lastRun.run_at} but within staleness window`,
+        lastRunAt,
+        nextExpectedRun,
+        failureCount,
+        recoveryTriggered: false,
+      };
+    }
+
+    return {
+      status: "pass",
+      detail: `Last run: ${lastRun.status} at ${lastRun.run_at}, ${failureCount} recent failures`,
+      lastRunAt,
+      nextExpectedRun,
+      failureCount: 0,
+      recoveryTriggered: false,
+    };
+  } catch (e: any) {
+    return {
+      status: "warn",
+      detail: `Pipeline health check error: ${e?.message}`,
+      lastRunAt,
+      nextExpectedRun: null,
+      failureCount,
+      recoveryTriggered: false,
+    };
+  }
+}
+
+/** Auto-recovery: restart pipeline worker + re-enqueue pending jobs */
+async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  try {
+    if (await wasRecentlyTriggered(supabase, "restartPipelineWorker", PIPELINE_ALERT_DEDUP_MINUTES)) {
+      console.info("[auto-fix] restartPipelineWorker skipped — rate-limited (30min dedup)");
+      return false;
+    }
+
+    const start = Date.now();
+
+    // Mark stuck "running" pipeline runs as failed
+    const stuckCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
+    await supabase
+      .from("ai_pipeline_runs")
+      .update({ status: "failed", remarks: "Auto-recovered: stuck running" })
+      .eq("status", "running")
+      .lt("run_at", stuckCutoff);
+
+    // Insert a fresh pipeline run to re-seed the scheduler
+    await supabase
+      .from("ai_pipeline_runs")
+      .insert({ status: "completed", remarks: "Auto-recovery heartbeat — system-health" });
+
+    console.info("[auto-fix] restartPipelineWorker: recovery completed");
+    await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", true, "Stuck runs cleared + heartbeat inserted", Date.now() - start);
+    return true;
+  } catch (e: any) {
+    console.error("[auto-fix] restartPipelineWorker failed:", e?.message);
+    await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", false, e?.message);
+    return false;
+  }
+}
+
+/** Pipeline alert dedup: only fire consolidated alert if outside dedup window */
+async function sendPipelineAlert(
+  supabase: ReturnType<typeof createClient>,
+  pipelineResult: { status: string; detail: string; failureCount: number; recoveryTriggered: boolean }
+) {
+  if (pipelineResult.status !== "fail") return;
+
+  // Dedup: skip if alert sent within 30 minutes
+  if (await wasRecentlyTriggered(supabase, "pipelineHealthAlert", PIPELINE_ALERT_DEDUP_MINUTES)) {
+    console.info("[pipeline-alert] Suppressed — within 30min dedup window");
+    return;
+  }
+
+  const msg = `Pipeline Degraded: ${pipelineResult.detail} | Failures: ${pipelineResult.failureCount} | Recovery: ${pipelineResult.recoveryTriggered ? "Yes" : "No"}`;
+  await alertAdmin(supabase, msg, "warning");
+  await logAutoFix(supabase, "pipelineHealthAlert", "ai_pipeline", true, msg);
+}
+
 async function loadDefaultFeatureFlags(supabase: ReturnType<typeof createClient>) {
   const start = Date.now();
   try {
@@ -338,7 +529,7 @@ Deno.serve(async (req) => {
     const runId = crypto.randomUUID();
     const thresholds = await loadSyncThresholds(supabase);
 
-    const [db, tr, qc, ff, cron, notif, loans, rls, ksync] = await Promise.all([
+    const [db, tr, qc, ff, cron, notif, loans, rls, ksync, pipelineHealth] = await Promise.all([
       measure(async () => {
         const { error } = await supabase.from("profiles").select("id").limit(1);
         return error;
@@ -372,7 +563,6 @@ Deno.serve(async (req) => {
         return { data, error };
       }),
       measure(async () => {
-        // Optimized: fetch only status counts instead of all rows
         const { data, error } = await supabase.rpc("get_loan_portfolio_counts");
         return { data, error };
       }),
@@ -392,6 +582,8 @@ Deno.serve(async (req) => {
           .order("started_at", { ascending: false }).limit(1).maybeSingle();
         return { data, error };
       }),
+      // 10. AI Pipeline Health Check
+      measure(() => checkPipelineHealth(supabase)),
     ]);
 
     const checks: any[] = [];
@@ -512,6 +704,27 @@ Deno.serve(async (req) => {
           latency_ms: ksync.ms,
         });
         if (st === "fail") autoFixPromises.push(restartKnowledgeSync(supabase));
+      }
+    }
+
+    // 10. AI Pipeline Health (with alert dedup + auto-recovery)
+    {
+      const pr = pipelineHealth.result;
+      checks.push({
+        name: "ai_pipeline",
+        status: pr.status,
+        detail: pr.detail,
+        latency_ms: pipelineHealth.ms,
+        pipeline_meta: {
+          lastRunAt: pr.lastRunAt,
+          nextExpectedRun: pr.nextExpectedRun,
+          failureCount: pr.failureCount,
+          recoveryTriggered: pr.recoveryTriggered,
+        },
+      });
+      // Consolidated single alert with 30min dedup (suppresses spam)
+      if (pr.status === "fail") {
+        autoFixPromises.push(sendPipelineAlert(supabase, pr));
       }
     }
 

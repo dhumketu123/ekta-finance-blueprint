@@ -3,11 +3,19 @@ import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface PipelineMeta {
+  lastRunAt: string | null;
+  nextExpectedRun: string | null;
+  failureCount: number;
+  recoveryTriggered: boolean;
+}
+
 export interface HealthCheck {
   name: string;
   status: "pass" | "warn" | "fail";
   detail?: string;
   latency_ms?: number;
+  pipeline_meta?: PipelineMeta;
 }
 
 export interface SystemHealthData {
