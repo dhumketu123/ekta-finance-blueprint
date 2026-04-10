@@ -15,21 +15,29 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
+    const update = () => {
       document.documentElement.style.setProperty("--app-height", `${vv.height}px`);
     };
-    onResize();
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
+
   return (
     <SidebarStateProvider>
-        <div className="flex min-h-0 h-full w-full bg-background overflow-x-clip">
+      <div
+        className="flex flex-col w-full bg-background overflow-hidden"
+        style={{ height: "var(--app-height, 100dvh)" }}
+      >
         <AppSidebarNew />
         <TopHeader />
         <SubscriptionLockOverlay />
         <main
-          className="flex-1 min-w-0 min-h-0 mt-16 md:ml-[260px] overflow-y-auto animate-page-enter"
+          className="flex-1 min-h-0 min-w-0 mt-16 md:ml-[260px] overflow-y-auto overflow-x-clip animate-page-enter"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",

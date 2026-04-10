@@ -5,17 +5,24 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --app-height: 100dvh;
+  }
+
   html, body {
     height: 100%;
     overflow: hidden;
-    overscroll-behavior: contain;
-    scroll-behavior: smooth;
   }
+
   #root {
-    min-height: 100dvh;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 
   :root {
