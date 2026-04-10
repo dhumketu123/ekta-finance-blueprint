@@ -81,7 +81,7 @@ function ChatMessages({
   messages: Message[]; typing: boolean; scrollRef: React.RefObject<HTMLDivElement>; onAction: (query: string) => void;
 }) {
   return (
-    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 [overflow-anchor:none]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
       {messages.map((msg) => (
         <div key={msg.id} className={cn("flex gap-2", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
           <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1", msg.role === "user" ? "bg-primary/10" : "bg-accent/20")}>
@@ -362,12 +362,12 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="max-h-[92dvh] flex flex-col">
+          <DrawerContent className="max-h-[92dvh] flex flex-col overflow-hidden overscroll-none">
             <DrawerHeader className="border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
               {headerContent}
             </DrawerHeader>
-            <DrawerBody className="p-0">
+            <DrawerBody className="min-h-0 flex-1 overflow-hidden p-0">
               <ChatMessages messages={messages} typing={isProcessing && !messages.some((m) => m.isStreaming)} scrollRef={scrollRef} onAction={handleSend} />
             </DrawerBody>
             <DrawerFooter className="p-0">
@@ -377,7 +377,7 @@ export default function AiChatAssistant() {
         </Drawer>
       ) : (
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="right" className="w-[420px] max-w-[90vw] p-0 flex flex-col">
+          <SheetContent side="right" className="w-[420px] max-w-[90vw] overflow-hidden p-0 flex flex-col">
             <SheetHeader className="px-4 py-3 border-b border-border/40">
               <SheetTitle className="sr-only">একতা AI</SheetTitle>
               {headerContent}
