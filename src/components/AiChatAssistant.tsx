@@ -125,7 +125,7 @@ function ChatInput({ input, setInput, onSend, disabled, inputRef }: {
   input: string; setInput: (v: string) => void; onSend: () => void; disabled: boolean; inputRef: React.RefObject<HTMLInputElement>;
 }) {
   return (
-    <div className="shrink-0 flex gap-2 p-4 border-t border-border/40" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 16px))" }}>
+    <div className="shrink-0 flex gap-2 p-4 border-t border-border/40 bg-background" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 16px))" }}>
       <input
         ref={inputRef}
         type="text"
@@ -362,7 +362,7 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="flex flex-col h-[100dvh] max-h-[92dvh] w-full overflow-hidden overscroll-none bg-destructive/5">
+          <DrawerContent className="relative flex flex-col h-[100dvh] max-h-[92dvh] w-full overflow-hidden overscroll-none bg-destructive/5">
             <DrawerHeader className="shrink-0 border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
               {headerContent}
@@ -377,7 +377,7 @@ export default function AiChatAssistant() {
         </Drawer>
       ) : (
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="right" className="flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5">
+          <SheetContent side="right" className="relative flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5">
             <SheetHeader className="shrink-0 px-4 py-3 border-b border-border/40">
               <SheetTitle className="sr-only">একতা AI</SheetTitle>
               {headerContent}
