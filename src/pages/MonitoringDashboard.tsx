@@ -1070,7 +1070,8 @@ const SystemDnaTab = () => {
               <FlaskConical className="w-3.5 h-3.5" />
               {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
             </TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="health" className="space-y-6">
