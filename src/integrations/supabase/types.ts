@@ -2263,6 +2263,54 @@ export type Database = {
           },
         ]
       }
+      ledger_guard_config: {
+        Row: {
+          auto_isolation: boolean | null
+          hash_enabled: boolean | null
+          id: number
+          mode: string | null
+          queue_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_isolation?: boolean | null
+          hash_enabled?: boolean | null
+          id?: number
+          mode?: string | null
+          queue_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_isolation?: boolean | null
+          hash_enabled?: boolean | null
+          id?: number
+          mode?: string | null
+          queue_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ledger_guard_deadletter: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          id: number
+          reference_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          reference_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          reference_id?: string | null
+        }
+        Relationships: []
+      }
       ledger_guard_queue: {
         Row: {
           queued_at: string | null
@@ -5199,6 +5247,7 @@ export type Database = {
       fn_get_reconciliation_status: { Args: never; Returns: Json }
       fn_is_valid_gap: { Args: { p_gap_type: string }; Returns: boolean }
       fn_ledger_integrity_guard: { Args: never; Returns: Json }
+      fn_light_hash: { Args: { text_input: string }; Returns: string }
       fn_log_anomaly_master: {
         Args: { p_category: string; p_entity: string; p_message: string }
         Returns: undefined
@@ -5217,11 +5266,13 @@ export type Database = {
         Returns: string
       }
       fn_process_ledger_guard: { Args: never; Returns: Json }
+      fn_process_ledger_guard_safe: { Args: never; Returns: Json }
       fn_process_sms_queue: { Args: { p_batch_size?: number }; Returns: Json }
       fn_process_system_events: {
         Args: { p_batch_size?: number }
         Returns: Json
       }
+      fn_queue_watchdog: { Args: never; Returns: undefined }
       fn_rate_limit_check: {
         Args: {
           p_bucket_key: string
