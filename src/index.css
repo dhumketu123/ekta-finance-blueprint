@@ -7,16 +7,15 @@
 @layer base {
   html, body {
     height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: none;
+    overflow: hidden;
+    overscroll-behavior: contain;
     scroll-behavior: smooth;
   }
   #root {
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   :root {
@@ -163,9 +162,7 @@
   }
 
   html, body {
-    overflow-x: hidden;
     max-width: 100%;
-    overflow-y: auto;
   }
 
   body {
