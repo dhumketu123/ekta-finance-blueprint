@@ -2374,6 +2374,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_idempotency: {
+        Row: {
+          batch_reference: string
+          created_at: string | null
+          idempotency_key: string
+          status: string
+        }
+        Insert: {
+          batch_reference: string
+          created_at?: string | null
+          idempotency_key: string
+          status: string
+        }
+        Update: {
+          batch_reference?: string
+          created_at?: string | null
+          idempotency_key?: string
+          status?: string
+        }
+        Relationships: []
+      }
       ledger_integrity_state: {
         Row: {
           anomaly_score: number | null
