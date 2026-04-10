@@ -235,6 +235,8 @@ export default function AiChatAssistant() {
 
   const handleSend = useCallback((overrideText?: string) => {
     const trimmed = (overrideText ?? input).trim();
+    // User just sent — force scroll to bottom for their own message
+    isNearBottomRef.current = true;
     if (!trimmed || isProcessing) return;
 
     const userMsg: Message = {
