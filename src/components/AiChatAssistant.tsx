@@ -128,6 +128,10 @@ export default function AiChatAssistant() {
       const routerResult = assistantQueryRouter(trimmed, ctx);
 
       if (routerResult.matched && routerResult.answer) {
+        // Prevent router race condition — cancel any pending deterministic reply
+        if (routerTimerRef.current) {
+          clearTimeout(routerTimerRef.current);
+        }
         routerTimerRef.current = setTimeout(() => {
           setMessages((prev) => [
             ...prev,
