@@ -608,3 +608,27 @@
     display: none;
   }
 }
+
+/* NOTIFICATION PANEL PROTECTION ZONE */
+.notification-panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  left: auto;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  z-index: 9999;
+  border-radius: 16px;
+  box-sizing: border-box;
+  transform: translateZ(0);
+}
+
+@media (max-width: 640px) {
+  .notification-panel {
+    width: calc(100vw - 20px);
+    right: 10px;
+    top: 10px;
+    max-height: calc(100vh - 20px);
+  }
+}
