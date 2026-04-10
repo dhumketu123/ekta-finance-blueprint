@@ -14,7 +14,7 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <SidebarStateProvider>
-      <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
+      <div className="flex min-h-screen w-full bg-background overflow-x-clip">
         <AppSidebarNew />
         <TopHeader />
         <SubscriptionLockOverlay />
