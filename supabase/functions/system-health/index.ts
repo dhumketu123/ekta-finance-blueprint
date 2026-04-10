@@ -707,6 +707,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 10. AI Pipeline Health (with alert dedup + auto-recovery)
+    {
+      const pr = pipelineHealth.result;
+      checks.push({
+        name: "ai_pipeline",
+        status: pr.status,
+        detail: pr.detail,
+        latency_ms: pipelineHealth.ms,
+        pipeline_meta: {
+          lastRunAt: pr.lastRunAt,
+          nextExpectedRun: pr.nextExpectedRun,
+          failureCount: pr.failureCount,
+          recoveryTriggered: pr.recoveryTriggered,
+        },
+      });
+      // Consolidated single alert with 30min dedup (suppresses spam)
+      if (pr.status === "fail") {
+        autoFixPromises.push(sendPipelineAlert(supabase, pr));
+      }
+    }
+
     const failCount = checks.filter((c) => c.status === "fail").length;
     const warnCount = checks.filter((c) => c.status === "warn").length;
     const passCount = checks.filter((c) => c.status === "pass").length;
