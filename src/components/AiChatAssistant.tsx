@@ -208,7 +208,13 @@ export default function AiChatAssistant() {
     });
   }, []);
 
-  // Listen to user scroll to update near-bottom tracker
+  // Sync initial scroll height (prevents first-render jump)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    prevScrollHeightRef.current = el.scrollHeight;
+  }, []);
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
