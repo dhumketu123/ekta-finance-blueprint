@@ -1025,9 +1025,10 @@ const SystemDnaTab = () => {
         }
       />
 
-      <Tabs defaultValue="health">
-        <div className="w-full overflow-x-auto scrollbar-hide -mx-1 px-1">
-          <TabsList className="inline-flex h-auto w-max gap-1 p-1">
+      <Tabs defaultValue="health" className="w-full min-w-0 overflow-hidden">
+        <div className="relative w-full min-w-0 overflow-hidden">
+          <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide pb-1">
+            <TabsList className="inline-flex h-auto min-w-max gap-1 p-1 pr-4">
             <TabsTrigger value="health" className="gap-1.5 whitespace-nowrap">
               <HeartPulse className="w-3.5 h-3.5" />
               {lang === "bn" ? "লাইভ হেলথ" : "Live Health"}
