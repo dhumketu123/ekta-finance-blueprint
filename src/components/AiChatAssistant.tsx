@@ -362,23 +362,23 @@ export default function AiChatAssistant() {
       {/* Desktop: Sheet, Mobile: Drawer */}
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="max-h-[92dvh] flex flex-col overflow-hidden overscroll-none">
-            <DrawerHeader className="border-b border-border/40">
+          <DrawerContent className="flex flex-col h-[100dvh] max-h-[92dvh] w-full overflow-hidden overscroll-none bg-destructive/5">
+            <DrawerHeader className="shrink-0 border-b border-border/40">
               <DrawerTitle className="sr-only">একতা AI</DrawerTitle>
               {headerContent}
             </DrawerHeader>
             <DrawerBody className="min-h-0 flex-1 overflow-hidden p-0">
               <ChatMessages messages={messages} typing={isProcessing && !messages.some((m) => m.isStreaming)} scrollRef={scrollRef} onAction={handleSend} />
             </DrawerBody>
-            <DrawerFooter className="p-0">
+            <DrawerFooter className="shrink-0 p-0">
               <ChatInput input={input} setInput={setInput} onSend={() => handleSend()} disabled={isProcessing} inputRef={inputRef} />
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
       ) : (
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="right" className="w-[420px] max-w-[90vw] overflow-hidden p-0 flex flex-col">
-            <SheetHeader className="px-4 py-3 border-b border-border/40">
+          <SheetContent side="right" className="flex flex-col h-[100dvh] w-[420px] max-w-[90vw] overflow-hidden p-0 bg-destructive/5">
+            <SheetHeader className="shrink-0 px-4 py-3 border-b border-border/40">
               <SheetTitle className="sr-only">একতা AI</SheetTitle>
               {headerContent}
             </SheetHeader>
