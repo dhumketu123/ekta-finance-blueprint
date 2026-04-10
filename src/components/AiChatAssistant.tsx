@@ -152,6 +152,8 @@ export default function AiChatAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const prevScrollHeightRef = useRef<number>(0);
+  const isNearBottomRef = useRef(true);
   const isMobile = useIsMobile();
 
   const { data: riskData } = useRiskDistribution();
@@ -185,17 +187,40 @@ export default function AiChatAssistant() {
     }
   }, [initialized, riskData, trendData, topClients, loanKPIs, collection30d]);
 
-  const scrollToBottom = useCallback(() => {
+  // Track if user is near bottom (within 60px)
+  const checkNearBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  }, []);
+
+  // Streaming-safe scroll: only auto-scroll if user is near bottom
+  const smartScroll = useCallback(() => {
     requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      if (!el) return;
+      const newHeight = el.scrollHeight;
+      const delta = newHeight - prevScrollHeightRef.current;
+      prevScrollHeightRef.current = newHeight;
+      if (isNearBottomRef.current && delta > 0) {
+        el.scrollTop = el.scrollHeight - el.clientHeight;
       }
     });
   }, []);
 
+  // Listen to user scroll to update near-bottom tracker
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isProcessing, scrollToBottom]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = () => checkNearBottom();
+    el.addEventListener("scroll", handler, { passive: true });
+    return () => el.removeEventListener("scroll", handler);
+  }, [checkNearBottom]);
+
+  // Auto-scroll on message/typing changes (respects user scroll position)
+  useEffect(() => {
+    smartScroll();
+  }, [messages, isProcessing, smartScroll]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
@@ -210,6 +235,8 @@ export default function AiChatAssistant() {
 
   const handleSend = useCallback((overrideText?: string) => {
     const trimmed = (overrideText ?? input).trim();
+    // User just sent — force scroll to bottom for their own message
+    isNearBottomRef.current = true;
     if (!trimmed || isProcessing) return;
 
     const userMsg: Message = {
