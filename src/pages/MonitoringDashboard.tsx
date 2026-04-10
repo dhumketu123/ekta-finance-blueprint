@@ -1070,7 +1070,7 @@ const SystemDnaTab = () => {
               {lang === "bn" ? "স্যান্ডবক্স" : "Sandbox"}
             </TabsTrigger>
           </TabsList>
-        </ScrollArea>
+        </div>
 
         <TabsContent value="health" className="space-y-6">
           <LiveHealthTab />

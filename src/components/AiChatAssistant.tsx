@@ -185,9 +185,17 @@ export default function AiChatAssistant() {
     }
   }, [initialized, riskData, trendData, topClients, loanKPIs, collection30d]);
 
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isProcessing]);
+    scrollToBottom();
+  }, [messages, isProcessing, scrollToBottom]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
