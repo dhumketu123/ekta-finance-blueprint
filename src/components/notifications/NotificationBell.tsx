@@ -257,9 +257,16 @@ export const NotificationBell = () => {
 
       {/* Panel */}
       {open && (
-        <div className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200" style={{ isolation: 'isolate' }}>
+        <div
+          className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex flex-col animate-in slide-in-from-top-2 fade-in duration-200"
+          style={{
+            isolation: 'isolate',
+            maxHeight: 'calc(100vh - var(--bottom-nav-height, 72px) - 80px)',
+            maxHeight: 'calc(100dvh - var(--bottom-nav-height, 72px) - 80px)',
+          }}
+        >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 backdrop-blur-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 backdrop-blur-sm shrink-0">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-primary/10">
                 <Bell className="w-4 h-4 text-primary" />
@@ -301,7 +308,7 @@ export const NotificationBell = () => {
           </div>
 
           {/* ── Content ── */}
-          <ScrollArea className="max-h-[calc(100vh-var(--bottom-nav-height,72px)-140px)] sm:max-h-[calc(70vh-60px)]" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
+          <ScrollArea className="flex-1 min-h-0" style={{ overscrollBehavior: 'contain' }}>
             {isLoading ? (
               <div className="p-10 text-center">
                 <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
