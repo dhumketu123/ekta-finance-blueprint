@@ -257,7 +257,7 @@ export const NotificationBell = () => {
 
       {/* Panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[340px] sm:w-[380px] rounded-xl border border-border/50 bg-popover shadow-2xl shadow-black/10 dark:shadow-black/30 z-50 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className="fixed right-2 sm:right-4 top-14 sm:top-16 w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200 isolation-isolate">
           {/* ── Header ── */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 backdrop-blur-sm">
             <div className="flex items-center gap-2">
