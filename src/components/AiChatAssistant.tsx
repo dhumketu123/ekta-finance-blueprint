@@ -126,6 +126,27 @@ export default function AiChatAssistant() {
       if (!overrideText) setInput("");
       setThinking(true);
 
+      // Step 0: Easter egg — creator/boss query
+      const CREATOR_TRIGGERS = /কে বানিয়েছে|তৈরি করেছে|স্রষ্টা|creator|who made you|who created you|বস কে|ধূমকেতু রবি/i;
+      if (CREATOR_TRIGGERS.test(trimmed)) {
+        if (routerTimerRef.current) clearTimeout(routerTimerRef.current);
+        routerTimerRef.current = setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content:
+                "আমাকে ডিজাইন এবং ডেভেলপ করেছেন এই সিস্টেমের চিফ আর্কিটেক্ট—**ধূমকেতু রবি**। তার লক্ষ্য হলো একতা ফাইন্যান্সের প্রতিটি কাজকে নির্ভুল, দ্রুত এবং সম্পূর্ণ ডেটা-ড্রিভেন করে তোলা। তারই নির্দেশনায় আমি আপনাদের আর্থিক হিসাব ও ঝুঁকি ব্যবস্থাপনাকে সহজ করতে কাজ করে যাচ্ছি।",
+              timestamp: new Date(),
+              easterEgg: "creator",
+            },
+          ]);
+          setThinking(false);
+        }, 300 + Math.random() * 200);
+        return;
+      }
+
       // Step 1: deterministic router
       const routerResult = assistantQueryRouter(trimmed, ctx);
 

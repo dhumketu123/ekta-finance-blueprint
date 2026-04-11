@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "./types";
 import type { SuggestedAction } from "@/services/assistantQueryRouter";
+import { CreatorCard } from "./CreatorCard";
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
   alert: <AlertTriangle className="h-3 w-3" />,
@@ -97,6 +98,9 @@ function ChatMessagesInner({ messages, typing, scrollRef, onAction }: ChatMessag
             </div>
             {msg.isStreaming && (
               <span className="inline-block h-4 w-1 bg-primary/60 animate-pulse ml-0.5 align-text-bottom rounded-full" />
+            )}
+            {msg.easterEgg === "creator" && !msg.isStreaming && (
+              <CreatorCard />
             )}
             {msg.actions && !msg.isStreaming && (
               <ActionButtons actions={msg.actions} onAction={onAction} />
