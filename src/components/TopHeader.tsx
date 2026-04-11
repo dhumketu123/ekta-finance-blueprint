@@ -86,112 +86,119 @@ const TopHeader = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 md:left-[260px] h-14 bg-primary/95 backdrop-blur-xl z-30 flex items-center justify-between px-3 border-b border-primary-foreground/10 shadow-sm overflow-hidden whitespace-nowrap">
-      {/* LEFT: Menu + Brand */}
-      <div className="flex items-center gap-2 min-w-0">
-        <button
-          onClick={(e) => { e.stopPropagation(); toggle(); }}
-          className="p-2 rounded-lg text-primary-foreground/90 hover:bg-primary-foreground/10 active:scale-95 transition-all duration-150 shrink-0"
-          aria-label="Toggle menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        <div className="hidden sm:flex items-center gap-1.5 text-primary-foreground font-semibold text-sm truncate min-w-0">
-          <span>🏦</span>
-          <span className="truncate">{lang === "bn" ? "একতা ফাইন্যান্স" : "Ekta Finance"}</span>
+    <header
+      className="fixed top-0 left-0 right-0 md:left-[260px] h-14 bg-primary/95 backdrop-blur-xl z-50 border-b border-primary-foreground/10 shadow-sm"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        boxSizing: 'border-box',
+        overflow: 'visible',
+      }}
+    >
+      {/* Inner row — strict no-wrap, clips text only */}
+      <div className="flex items-center justify-between w-full h-full px-3 gap-2 whitespace-nowrap overflow-hidden">
+        {/* LEFT: Menu + Brand + Online */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={(e) => { e.stopPropagation(); toggle(); }}
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-[10px] text-primary-foreground/90 hover:bg-primary-foreground/10 active:scale-95 transition-all duration-150 shrink-0"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="hidden sm:flex items-center gap-1.5 text-primary-foreground font-semibold text-sm truncate min-w-0">
+            <span>🏦</span>
+            <span className="truncate">{lang === "bn" ? "একতা ফাইন্যান্স" : "Ekta Finance"}</span>
+          </div>
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full shrink-0 ${isOnline ? "bg-green-500/15" : "bg-destructive/15"}`}>
+            {isOnline ? (
+              <Wifi className="w-3 h-3 text-green-400" />
+            ) : (
+              <WifiOff className="w-3 h-3 text-destructive" />
+            )}
+          </div>
         </div>
-        {/* Online indicator — icon only on mobile */}
-        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full shrink-0 ${isOnline ? "bg-green-500/15" : "bg-destructive/15"}`}>
-          {isOnline ? (
-            <Wifi className="w-3 h-3 text-green-400" />
-          ) : (
-            <WifiOff className="w-3 h-3 text-destructive" />
-          )}
-        </div>
-      </div>
 
-      {/* RIGHT: Controls (strict order) */}
-      <div className="flex items-center gap-1 shrink-0">
-        {/* Language Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLang(lang === "bn" ? "en" : "bn")}
-          className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-          aria-label="Switch language"
-        >
-          <Globe className="w-4 h-4" />
-        </Button>
+        {/* RIGHT: Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Language */}
+          <button
+            onClick={() => setLang(lang === "bn" ? "en" : "bn")}
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-[10px] text-primary-foreground hover:bg-primary-foreground/10 active:scale-95 transition-all duration-150"
+            aria-label="Switch language"
+          >
+            <Globe className="w-4 h-4" />
+          </button>
 
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-          aria-label="Toggle theme"
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </Button>
+          {/* Theme */}
+          <button
+            onClick={toggleTheme}
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-[10px] text-primary-foreground hover:bg-primary-foreground/10 active:scale-95 transition-all duration-150"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
 
-        {/* Notification Bell */}
-        <NotificationBell />
+          {/* Notification — overflow visible for badge */}
+          <div className="relative" style={{ overflow: 'visible' }}>
+            <NotificationBell />
+          </div>
 
-        {/* Profile Avatar Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="ml-1 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/30 shrink-0">
-              <Avatar className="w-8 h-8 ring-2 ring-primary-foreground/20">
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile" className="object-cover" /> : null}
-                <AvatarFallback className="bg-accent text-accent-foreground text-xs font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 z-50 bg-popover">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex items-center gap-3 py-1">
-                <Avatar className="w-10 h-10 shrink-0">
+          {/* Profile Avatar Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="ml-0.5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/30 shrink-0 active:scale-95 transition-transform duration-150">
+                <Avatar className="w-8 h-8 ring-2 ring-primary-foreground/20">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile" className="object-cover" /> : null}
-                  <AvatarFallback className="bg-accent text-accent-foreground text-sm font-bold">
+                  <AvatarFallback className="bg-accent text-accent-foreground text-xs font-bold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">
-                    {displayName || user?.email?.split("@")[0]}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  {roleLabel && (
-                    <span className="inline-block mt-0.5 text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                      {roleLabel}
-                    </span>
-                  )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 z-[9999] bg-popover">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex items-center gap-3 py-1">
+                  <Avatar className="w-10 h-10 shrink-0">
+                    {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile" className="object-cover" /> : null}
+                    <AvatarFallback className="bg-accent text-accent-foreground text-sm font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {displayName || user?.email?.split("@")[0]}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    {roleLabel && (
+                      <span className="inline-block mt-0.5 text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                        {roleLabel}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => fileRef.current?.click()} className="cursor-pointer gap-2">
-              <Camera className="w-4 h-4" />
-              {lang === "bn" ? "ছবি পরিবর্তন করুন" : "Change Photo"}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer gap-2">
-              <User className="w-4 h-4" />
-              {lang === "bn" ? "প্রোফাইল সেটিংস" : "Profile Settings"}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/reset-password")} className="cursor-pointer gap-2">
-              <KeyRound className="w-4 h-4" />
-              {lang === "bn" ? "পাসওয়ার্ড পরিবর্তন" : "Change Password"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10">
-              <LogOut className="w-4 h-4" />
-              {lang === "bn" ? "লগআউট" : "Logout"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <ProfileAvatarUpload ref={fileRef} />
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => fileRef.current?.click()} className="cursor-pointer gap-2">
+                <Camera className="w-4 h-4" />
+                {lang === "bn" ? "ছবি পরিবর্তন করুন" : "Change Photo"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer gap-2">
+                <User className="w-4 h-4" />
+                {lang === "bn" ? "প্রোফাইল সেটিংস" : "Profile Settings"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/reset-password")} className="cursor-pointer gap-2">
+                <KeyRound className="w-4 h-4" />
+                {lang === "bn" ? "পাসওয়ার্ড পরিবর্তন" : "Change Password"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10">
+                <LogOut className="w-4 h-4" />
+                {lang === "bn" ? "লগআউট" : "Logout"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <ProfileAvatarUpload ref={fileRef} />
+        </div>
       </div>
     </header>
   );
