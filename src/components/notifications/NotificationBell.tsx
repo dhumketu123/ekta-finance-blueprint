@@ -257,10 +257,10 @@ export const NotificationBell = () => {
       {/* Panel */}
       {open && (
         <div
-          className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex h-[calc(100dvh-140px)] flex-col overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200 sm:h-auto"
+          className="fixed top-14 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex flex-col overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
             isolation: 'isolate',
-            height: 'calc(100dvh - var(--bottom-nav-height) - 80px)',
+            height: 'min(calc(100dvh - var(--bottom-nav-height, 72px) - 72px), 600px)',
           }}
         >
           {/* ── Header ── */}
