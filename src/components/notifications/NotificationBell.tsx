@@ -261,7 +261,6 @@ export const NotificationBell = () => {
           className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex flex-col animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
             isolation: 'isolate',
-            maxHeight: 'calc(100vh - var(--bottom-nav-height, 72px) - 80px)',
             maxHeight: 'calc(100dvh - var(--bottom-nav-height, 72px) - 80px)',
           }}
         >
