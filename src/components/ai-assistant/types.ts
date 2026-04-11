@@ -13,4 +13,5 @@ export interface Message {
   timestamp: Date;
   actions?: SuggestedAction[];
   isStreaming?: boolean;
+  easterEgg?: "creator";
 }
