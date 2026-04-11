@@ -37,7 +37,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <TopHeader />
         <SubscriptionLockOverlay />
         <main
-          className="flex-1 min-h-0 min-w-0 mt-16 md:ml-[260px] overflow-y-auto overflow-x-clip animate-page-enter"
+          className="flex-1 min-h-0 min-w-0 mt-14 md:ml-[260px] overflow-y-auto overflow-x-clip animate-page-enter"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
