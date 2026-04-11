@@ -49,7 +49,7 @@ export default function AiChatAssistant() {
   const [initialized, setInitialized] = useState(false);
   const [input, setInput] = useState("");
   const abortRef = useRef<AbortController | null>(null);
-  const routerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const routerTimerRef = useRef<NodeJS.Timeout | null>(null);
   const easterEggActiveRef = useRef(false);
 
   // --- Data layer ---
@@ -148,7 +148,7 @@ export default function AiChatAssistant() {
             },
           ]);
           setThinking(false);
-          setTimeout(() => { easterEggActiveRef.current = false; }, 1000);
+          setTimeout(() => { easterEggActiveRef.current = false; }, 1200);
         }, 300);
 
         return;
@@ -251,7 +251,11 @@ export default function AiChatAssistant() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      if (routerTimerRef.current) clearTimeout(routerTimerRef.current);
+      if (routerTimerRef.current) {
+        clearTimeout(routerTimerRef.current);
+        routerTimerRef.current = null;
+      }
+      easterEggActiveRef.current = false;
     };
   }, []);
 
