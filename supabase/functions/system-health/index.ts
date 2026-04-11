@@ -231,13 +231,9 @@ const DEFAULT_FEATURE_FLAGS: Array<{ feature_name: string; is_enabled: boolean; 
   { feature_name: "early_settlement", is_enabled: true, description: "Early settlement calculator", enabled_for_role: "admin" },
 ];
 
-// ── Pipeline Health: consecutive failure tracking + alert dedup ──
-const PIPELINE_ALERT_DEDUP_MINUTES = 30;
-const PIPELINE_CONSECUTIVE_FAIL_THRESHOLD = 3;
-const PIPELINE_STALE_THRESHOLD_MINUTES = 60;
-const PIPELINE_RECOVERY_SUPPRESSION_MINUTES = 15;
-const PIPELINE_ALERT_LOCK_KEY = "pipelineHealthAlert:v1";
-const PIPELINE_RECOVERY_LOCK_KEY = "pipelineRecoveryLock:v1";
+// ── Pipeline Health: simplified, no-spam, enterprise-grade ──
+const PIPELINE_ALERT_LOCK_KEY = "pipelineHealthAlert:v2";
+const PIPELINE_STALE_LIMIT_MINUTES = 60;
 
 async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): Promise<{
   status: "pass" | "warn" | "fail";
@@ -247,21 +243,16 @@ async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): P
   failureCount: number;
   recoveryTriggered: boolean;
 }> {
-  let lastRunAt: string | null = null;
-  let failureCount = 0;
-  const recoveryTriggered = false;
-
   try {
-    // 1. Check total pipeline runs ever — if zero, pipeline is simply not configured
-    const { count, error: countErr } = await supabase
+    // STEP 1: Count total runs — if zero, pipeline is not configured
+    const { count } = await supabase
       .from("ai_pipeline_runs")
       .select("id", { count: "exact", head: true });
 
-    if (countErr || count === null || count === 0) {
-      // Pipeline never configured — NOT a failure, just inactive
+    if (typeof count !== "number" || count === 0) {
       return {
         status: "pass",
-        detail: "AI pipeline not configured — no runs expected",
+        detail: "AI pipeline inactive (no runs configured)",
         lastRunAt: null,
         nextExpectedRun: null,
         failureCount: 0,
@@ -269,16 +260,15 @@ async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): P
       };
     }
 
-    // 2. Get the most recent run
+    // STEP 2: Get last run
     const { data: lastRun } = await supabase
       .from("ai_pipeline_runs")
-      .select("id, run_at, status")
+      .select("run_at, status")
       .order("run_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (!lastRun) {
-      // Should not happen since count > 0, but safety fallback
       return {
         status: "pass",
         detail: "Pipeline data inconsistency — treating as inactive",
@@ -289,150 +279,56 @@ async function checkPipelineHealth(supabase: ReturnType<typeof createClient>): P
       };
     }
 
-    lastRunAt = lastRun.run_at;
     const minutesSinceRun = (Date.now() - new Date(lastRun.run_at).getTime()) / 60_000;
-    const nextExpectedRun = new Date(new Date(lastRun.run_at).getTime() + PIPELINE_STALE_THRESHOLD_MINUTES * 60_000).toISOString();
 
-    // 2. Count recent failures
-    const { data: recentRuns } = await supabase
-      .from("ai_pipeline_runs")
-      .select("status")
-      .order("run_at", { ascending: false })
-      .limit(5);
-
-    failureCount = recentRuns?.filter(r => r.status !== "completed" && r.status !== "success").length ?? 0;
-
-    // 3. Check if stale beyond threshold
-    if (minutesSinceRun > PIPELINE_STALE_THRESHOLD_MINUTES) {
-      // Check consecutive failures in health logs before escalating
-      const { data: healthLogs } = await supabase
-        .from("system_health_logs")
-        .select("status")
-        .eq("check_name", "ai_pipeline")
-        .order("created_at", { ascending: false })
-        .limit(PIPELINE_CONSECUTIVE_FAIL_THRESHOLD);
-
-      const consecutiveFails = healthLogs?.filter(l => l.status === "fail" || l.status === "warn").length ?? 0;
-
-      if (consecutiveFails >= PIPELINE_CONSECUTIVE_FAIL_THRESHOLD) {
-        recoveryTriggered = await tryPipelineRecovery(supabase);
-        return {
-          status: "fail",
-          detail: `Pipeline stale ${Math.round(minutesSinceRun)}min (threshold: ${PIPELINE_STALE_THRESHOLD_MINUTES}min), ${failureCount} recent failures, recovery ${recoveryTriggered ? "triggered" : "skipped"}`,
-          lastRunAt,
-          nextExpectedRun,
-          failureCount,
-          recoveryTriggered,
-        };
-      }
-
+    if (minutesSinceRun > PIPELINE_STALE_LIMIT_MINUTES) {
       return {
         status: "warn",
-        detail: `Pipeline stale ${Math.round(minutesSinceRun)}min — monitoring (${consecutiveFails}/${PIPELINE_CONSECUTIVE_FAIL_THRESHOLD} before escalation)`,
-        lastRunAt,
-        nextExpectedRun,
-        failureCount,
-        recoveryTriggered: false,
-      };
-    }
-
-    // 4. Recent run exists and is fresh
-    if (lastRun.status === "failed" || lastRun.status === "error") {
-      return {
-        status: "warn",
-        detail: `Last run failed at ${lastRun.run_at} but within staleness window`,
-        lastRunAt,
-        nextExpectedRun,
-        failureCount,
+        detail: `Pipeline stale (${Math.round(minutesSinceRun)} min since last run)`,
+        lastRunAt: lastRun.run_at,
+        nextExpectedRun: null,
+        failureCount: 0,
         recoveryTriggered: false,
       };
     }
 
     return {
       status: "pass",
-      detail: `Last run: ${lastRun.status} at ${lastRun.run_at}, ${failureCount} recent failures`,
-      lastRunAt,
-      nextExpectedRun,
+      detail: `Pipeline healthy — last run ${lastRun.status} at ${lastRun.run_at}`,
+      lastRunAt: lastRun.run_at,
+      nextExpectedRun: null,
       failureCount: 0,
       recoveryTriggered: false,
     };
   } catch (e: any) {
+    // Errors in health check itself should NOT escalate
     return {
       status: "warn",
       detail: `Pipeline health check error: ${e?.message}`,
-      lastRunAt,
+      lastRunAt: null,
       nextExpectedRun: null,
-      failureCount,
+      failureCount: 0,
       recoveryTriggered: false,
     };
   }
 }
 
-/** Auto-recovery: restart pipeline worker + re-enqueue pending jobs */
-async function tryPipelineRecovery(supabase: ReturnType<typeof createClient>): Promise<boolean> {
-  try {
-    // Rate-limit recovery itself
-    if (await wasRecentlyTriggered(supabase, "restartPipelineWorker", PIPELINE_ALERT_DEDUP_MINUTES)) {
-      console.info("[auto-fix] restartPipelineWorker skipped — rate-limited (30min dedup)");
-      return false;
-    }
-
-    const start = Date.now();
-
-    // Mark stuck "running" pipeline runs as failed
-    const stuckCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
-    await supabase
-      .from("ai_pipeline_runs")
-      .update({ status: "failed", remarks: "Auto-recovered: stuck running" })
-      .eq("status", "running")
-      .lt("run_at", stuckCutoff);
-
-    // Insert a fresh pipeline run to re-seed the scheduler
-    await supabase
-      .from("ai_pipeline_runs")
-      .insert({ status: "completed", remarks: "Auto-recovery heartbeat — system-health" });
-
-    console.info("[auto-fix] restartPipelineWorker: recovery completed");
-    await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", true, "Stuck runs cleared + heartbeat inserted", Date.now() - start);
-    // Log recovery lock so alerts are suppressed for 15min
-    await logAutoFix(supabase, PIPELINE_RECOVERY_LOCK_KEY, "ai_pipeline", true, "Recovery suppression window started");
-    return true;
-  } catch (e: any) {
-    console.error("[auto-fix] restartPipelineWorker failed:", e?.message);
-    await logAutoFix(supabase, "restartPipelineWorker", "ai_pipeline", false, e?.message);
-    return false;
-  }
-}
-
-/** Pipeline alert dedup: atomic lock + recovery suppression + single source of truth */
+/** Pipeline alert — only fires for real "fail", atomic dedup via DB */
 async function sendPipelineAlert(
   supabase: ReturnType<typeof createClient>,
   pipelineResult: { status: string; detail: string; failureCount: number; recoveryTriggered: boolean }
 ) {
+  // Only "fail" triggers alert — "warn" and "pass" never do
   if (pipelineResult.status !== "fail") return;
 
-  // 1. Recovery suppression: if recovery was just triggered, suppress alerts for 15min
-  if (pipelineResult.recoveryTriggered) {
-    console.info("[pipeline-alert] Suppressed — recovery just triggered, waiting 15min");
+  // Atomic dedup: if same lock key was logged within 60 min, skip
+  if (await wasRecentlyTriggered(supabase, PIPELINE_ALERT_LOCK_KEY, 60)) {
+    console.info("[pipeline-alert] Suppressed — within 60min dedup window");
     return;
   }
 
-  // 2. Check if recovery was recently triggered (within suppression window)
-  if (await wasRecentlyTriggered(supabase, PIPELINE_RECOVERY_LOCK_KEY, PIPELINE_RECOVERY_SUPPRESSION_MINUTES)) {
-    console.info("[pipeline-alert] Suppressed — within recovery suppression window (15min)");
-    return;
-  }
-
-  // 3. Global alert lock: dedup within 30min using unique key
-  if (await wasRecentlyTriggered(supabase, PIPELINE_ALERT_LOCK_KEY, PIPELINE_ALERT_DEDUP_MINUTES)) {
-    console.info("[pipeline-alert] Suppressed — within 30min dedup window");
-    return;
-  }
-
-  // 4. Fire single consolidated alert
-  const msg = `Pipeline Degraded: ${pipelineResult.detail} | Failures: ${pipelineResult.failureCount} | Recovery: ${pipelineResult.recoveryTriggered ? "Yes" : "No"}`;
+  const msg = `Pipeline Critical: ${pipelineResult.detail}`;
   await alertAdmin(supabase, msg, "warning");
-  // Log with the unique lock key so future dedup checks find it
   await logAutoFix(supabase, PIPELINE_ALERT_LOCK_KEY, "ai_pipeline", true, msg);
 }
 
