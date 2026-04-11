@@ -50,6 +50,7 @@ export default function AiChatAssistant() {
   const [input, setInput] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const routerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const easterEggActiveRef = useRef(false);
 
   // --- Data layer ---
   const { data: riskData } = useRiskDistribution();
@@ -129,7 +130,11 @@ export default function AiChatAssistant() {
       // Step 0: Easter egg — creator/boss query
       const CREATOR_TRIGGERS = /কে বানিয়েছে|তৈরি করেছে|স্রষ্টা|creator|who made you|who created you|বস কে|ধূমকেতু রবি/i;
       if (CREATOR_TRIGGERS.test(trimmed)) {
+        if (easterEggActiveRef.current) return;
+        easterEggActiveRef.current = true;
+
         if (routerTimerRef.current) clearTimeout(routerTimerRef.current);
+
         routerTimerRef.current = setTimeout(() => {
           setMessages((prev) => [
             ...prev,
@@ -143,7 +148,9 @@ export default function AiChatAssistant() {
             },
           ]);
           setThinking(false);
-        }, 300 + Math.random() * 200);
+          setTimeout(() => { easterEggActiveRef.current = false; }, 1000);
+        }, 300);
+
         return;
       }
 
