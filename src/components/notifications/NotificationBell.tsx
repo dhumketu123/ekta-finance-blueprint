@@ -301,7 +301,7 @@ export const NotificationBell = () => {
           </div>
 
           {/* ── Content ── */}
-          <ScrollArea className="max-h-[calc(70vh-60px)]">
+          <ScrollArea className="max-h-[calc(100vh-var(--bottom-nav-height,72px)-140px)] sm:max-h-[calc(70vh-60px)]" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
             {isLoading ? (
               <div className="p-10 text-center">
                 <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
