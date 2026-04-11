@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -258,10 +257,10 @@ export const NotificationBell = () => {
       {/* Panel */}
       {open && (
         <div
-          className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex flex-col animate-in slide-in-from-top-2 fade-in duration-200"
+          className="fixed top-14 sm:top-16 right-[max(8px,env(safe-area-inset-right,8px))] w-[calc(100vw-16px)] sm:w-[380px] max-w-[420px] rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/30 z-[9999] flex h-[calc(100dvh-140px)] flex-col overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200 sm:h-auto"
           style={{
             isolation: 'isolate',
-            maxHeight: 'calc(100dvh - var(--bottom-nav-height, 72px) - 80px)',
+            height: 'calc(100dvh - var(--bottom-nav-height) - 80px)',
           }}
         >
           {/* ── Header ── */}
@@ -307,7 +306,13 @@ export const NotificationBell = () => {
           </div>
 
           {/* ── Content ── */}
-          <ScrollArea className="flex-1 min-h-0" style={{ overscrollBehavior: 'contain' }}>
+          <div
+            className="custom-scrollbar flex-1 min-h-0 h-full w-full overflow-y-auto overscroll-contain"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollbarGutter: 'stable',
+            }}
+          >
             {isLoading ? (
               <div className="p-10 text-center">
                 <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
@@ -376,11 +381,11 @@ export const NotificationBell = () => {
                 )}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {/* ── Footer ── */}
           {notifications.length > 0 && (
-            <div className="px-4 py-2.5 border-t bg-muted/20 text-center">
+            <div className="shrink-0 px-4 py-2.5 border-t bg-muted/20 text-center">
               <p className="text-[10px] text-muted-foreground/60">
                 {bn
                   ? `সর্বশেষ ${notifications.length}টি বিজ্ঞপ্তি দেখানো হচ্ছে`
