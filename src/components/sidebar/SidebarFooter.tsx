@@ -48,7 +48,7 @@ const SidebarFooter = () => {
 
   return (
     <div
-      className="mt-auto p-4 flex flex-col gap-3 z-50 sticky bottom-0 shrink-0"
+      className="mt-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex flex-col gap-3 z-50 sticky bottom-0 shrink-0"
       style={{
         backgroundColor: "hsl(var(--sidebar-background))",
         borderTop: "1px solid hsl(var(--sidebar-border))",

@@ -101,7 +101,7 @@ const SidebarContainer = () => {
       <Sheet open={isOpen} onOpenChange={(open) => { if (!open) close(); }}>
         <SheetContent
           side="left"
-          className="w-[280px] p-0 flex flex-col border-r-0 will-change-transform"
+          className="w-[280px] p-0 flex flex-col border-r-0 will-change-transform pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
           style={{
             backgroundColor: "hsl(var(--sidebar-background))",
             ...CONTAINMENT_STYLE,
