@@ -192,14 +192,14 @@ const Approvals = () => {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewTx} onOpenChange={(o) => !o && setReviewTx(null)}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-h-[85dvh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{reviewAction === "approve" ? (bn ? "লেনদেন অনুমোদন" : "Approve Transaction") : (bn ? "লেনদেন প্রত্যাখ্যান" : "Reject Transaction")}</DialogTitle>
             <DialogDescription>
               {reviewTx && `৳${reviewTx.amount?.toLocaleString()} — ${typeLabels[reviewTx.type] || reviewTx.type} — Ref: ${reviewTx.reference_id}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-3 py-2">
             <Textarea
               placeholder={reviewAction === "reject" ? (bn ? "প্রত্যাখ্যানের কারণ (আবশ্যক)" : "Rejection reason (required)") : (bn ? "মন্তব্য (ঐচ্ছিক)" : "Comment (optional)")}
               value={reason}
@@ -207,17 +207,17 @@ const Approvals = () => {
               rows={3}
             />
           </div>
-          <DialogFooter>
+          <div className="shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => setReviewTx(null)}>{bn ? "বাতিল" : "Cancel"}</Button>
             <Button
               onClick={handleReview}
               disabled={isProcessing || (reviewAction === "reject" && !reason.trim())}
-              className={reviewAction === "approve" ? "bg-success hover:bg-success/90" : "bg-destructive hover:bg-destructive/90"}
+              className={reviewAction === "approve" ? "bg-success hover:bg-success/90 text-white" : "bg-destructive hover:bg-destructive/90 text-white"}
             >
               {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {reviewAction === "approve" ? (bn ? "অনুমোদন করুন" : "Approve") : (bn ? "প্রত্যাখ্যান করুন" : "Reject")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
