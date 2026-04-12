@@ -128,7 +128,7 @@ export default function AiChatAssistant() {
       setThinking(true);
 
       // Step 0: Easter egg — creator/boss query (ABSOLUTE OVERRIDE)
-      const CREATOR_TRIGGERS = /(স্রষ্টা|সৃষ্টিকর্তা|জন্মদাতা|উদ্ভাবক|কারিগর|রূপকার|নির্মাতা|আর্কিটেক্ট|বানিয়েছে|তৈরি করেছে|বানাইছে|ডেভেলপ করেছে|মালিক|মহাজন|বস|অ্যাডমিন|ডিরেক্টর|এমডি|সিইও|প্রতিষ্ঠাতা|ফাউন্ডার|creator|maker|developer|programmer|who made you|who created you|who built you|boss|owner|admin|founder|ধূমকেতু রবি|রবি|dhumketu|robi)/i;
+      const CREATOR_TRIGGERS = /(স্রষ্টা|সৃষ্টিকর্তা|জন্মদাতা|উদ্ভাবক|কারিগর|রূপকার|নির্মাতা|আর্কিটেক্ট|স্থপতি|বানিয়েছে|তৈরি করেছে|বানাইছে|ডেভেলপ করেছে|মালিক|মহাজন|বস|অ্যাডমিন|ডিরেক্টর|এমডি|সিইও|প্রতিষ্ঠাতা|ফাউন্ডার|ক্রিয়েটর|ভিঞ্চি|ইস্টার\s?এগ|গড\s?মোড|creator|maker|developer|programmer|who made you|who created you|who built you|boss|owner|admin|founder|architect|visionary|god\s?mode|vinci|easter\s?egg|ধূমকেতু রবি|রবি|dhumketu|robi)/i;
       if (CREATOR_TRIGGERS.test(trimmed)) {
         if (easterEggActiveRef.current) return;
         easterEggActiveRef.current = true;
