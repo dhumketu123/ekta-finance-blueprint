@@ -4,7 +4,7 @@
  * Every message includes receipt_number for audit traceability.
  */
 
-import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const SIGN = "— একতা ফাইন্যান্স";
 
@@ -95,7 +95,7 @@ export type ReceiptInput =
 function fmtDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
   try {
-    return format(new Date(dateStr + (dateStr.length === 10 ? "T00:00:00" : "")), "dd/MM/yyyy");
+    return formatLocalDate(dateStr, "bn");
   } catch {
     return "";
   }
@@ -123,16 +123,17 @@ export function buildReceiptMessage(input: ReceiptInput): string {
         ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${currentScore ?? 0})`
         : "";
       const nextStr = fmtDate(nextDueDate);
+      const nextLine = nextStr ? `\nআগামী কিস্তির তারিখ: ${nextStr}` : "";
 
       return loanClosed
         ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ${tk(total)}${pointsLine}\n${ref}\n${SIGN}`
-        : `সম্মানিত ${clientName},\nকিস্তি জমা হয়েছে ✅${dpsLine}\nমোট: ${tk(total)} বকেয়া: ${tk(newOutstanding)}${nextStr ? `\nআগামী কিস্তি: ${nextStr}` : ""}${pointsLine}\n${ref}\n${SIGN}`;
+        : `সম্মানিত ${clientName},\nকিস্তি জমা হয়েছে ✅${dpsLine}\nমোট: ${tk(total)} বকেয়া: ${tk(newOutstanding)}${pointsLine}${nextLine}\n${ref}\n${SIGN}`;
     }
 
     case "loan_disbursement": {
       const { clientName, loanRef, principal, emiAmount, maturityDate, nextDueDate } = input;
       const nextStr = fmtDate(nextDueDate);
-      return `সম্মানিত ${clientName},\nঋণ বিতরণ ✅ নং: ${loanRef}\nআসল: ${tk(principal)} কিস্তি: ${tk(emiAmount)}\nমেয়াদ: ${fmtDate(maturityDate)}${nextStr ? ` প্রথম কিস্তি: ${nextStr}` : ""}\n${ref}\n${SIGN}`;
+      return `সম্মানিত ${clientName},\nঋণ বিতরণ ✅ নং: ${loanRef}\nআসল: ${tk(principal)} কিস্তি: ${tk(emiAmount)}\nমেয়াদ: ${fmtDate(maturityDate)}${nextStr ? `\nপ্রথম কিস্তির তারিখ: ${nextStr}` : ""}\n${ref}\n${SIGN}`;
     }
 
     case "savings_deposit": {
