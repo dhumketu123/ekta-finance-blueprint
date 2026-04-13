@@ -57,27 +57,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // CRITICAL: Block auto-login during password recovery
+        // CRITICAL: Isolate recovery session — no role fetch, no dashboard
         if (event === "PASSWORD_RECOVERY") {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
           navigate("/reset-password");
+          return;
+        }
+
+        // Block recovery session from being promoted on reset page
+        if (window.location.pathname === "/reset-password") {
           setLoading(false);
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setTimeout(() => fetchRole(session.user.id), 0);
-          resetInactivityTimer();
-        } else {
+        if (event === "SIGNED_IN") {
+          setSession(session);
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            setTimeout(() => fetchRole(session.user.id), 0);
+            resetInactivityTimer();
+          }
+        }
+
+        if (event === "SIGNED_OUT") {
+          setSession(null);
+          setUser(null);
           setRole(null);
           if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
         }
+
         setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // Don't promote session if on reset page
+      if (window.location.pathname === "/reset-password") {
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
