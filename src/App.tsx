@@ -89,11 +89,10 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <TenantBrandingProvider>
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <TenantBrandingProvider>
+            <Sonner />
             <Suspense fallback={<PageLoader />}>
               <RouteErrorBoundary>
               <Routes>
