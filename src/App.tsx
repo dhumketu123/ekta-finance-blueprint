@@ -159,9 +159,9 @@ const App = () => (
               </Routes>
               </RouteErrorBoundary>
             </Suspense>
-          </BrowserRouter>
-          </TenantBrandingProvider>
-        </AuthProvider>
+            </TenantBrandingProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
