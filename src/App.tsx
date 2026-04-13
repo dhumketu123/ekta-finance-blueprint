@@ -90,10 +90,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
-        <AuthProvider>
-          <TenantBrandingProvider>
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <TenantBrandingProvider>
+            <Sonner />
             <Suspense fallback={<PageLoader />}>
               <RouteErrorBoundary>
               <Routes>
@@ -160,9 +160,9 @@ const App = () => (
               </Routes>
               </RouteErrorBoundary>
             </Suspense>
-          </BrowserRouter>
-          </TenantBrandingProvider>
-        </AuthProvider>
+            </TenantBrandingProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>

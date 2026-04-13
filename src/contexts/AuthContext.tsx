@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -51,6 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [resetInactivityTimer]);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -59,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          window.location.href = "/reset-password";
+          navigate("/reset-password", { replace: true });
           return;
         }
 
