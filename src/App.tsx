@@ -89,6 +89,7 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <LanguageProvider>
         <BrowserRouter>
           <AuthProvider>
             <TenantBrandingProvider>
@@ -160,6 +161,8 @@ const App = () => (
               </RouteErrorBoundary>
             </Suspense>
             </TenantBrandingProvider>
+          </AuthProvider>
+        </BrowserRouter>
           </AuthProvider>
         </BrowserRouter>
       </LanguageProvider>
