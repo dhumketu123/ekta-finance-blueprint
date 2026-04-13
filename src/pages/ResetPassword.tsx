@@ -25,34 +25,42 @@ const ResetPassword = () => {
   useEffect(() => {
     let active = true;
 
-    const check = async () => {
+    const initRecovery = async () => {
       const hash = window.location.hash;
+
+      // If hash contains recovery token, show UI immediately (permissive)
+      // but still trigger session hydration in background
       if (hash && hash.includes("type=recovery")) {
-        // Permissive: show recovery UI even if session hasn't hydrated yet
         if (active) setIsRecovery(true);
-        // Attempt session hydration in background but never block UI
-        supabase.auth.getSession();
+        // Kick off hydration — Supabase will process the hash tokens
+        await supabase.auth.getSession();
         return;
       }
 
-      let attempts = 0;
-      while (attempts < 3) {
-        const { data } = await supabase.auth.getSession();
-        if (!active) return;
+      // No hash — check if AuthContext already routed us here with a live session
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
 
-        if (data.session?.user) {
-          setIsRecovery(true);
-          return;
-        }
-
-        attempts++;
-        await new Promise(res => setTimeout(res, 300));
+      if (data.session?.user) {
+        setIsRecovery(true);
+        return;
       }
 
-      if (active) navigate("/auth", { replace: true });
+      // Session not ready yet — retry once after delay (hydration race)
+      setTimeout(async () => {
+        if (!active) return;
+        const retry = await supabase.auth.getSession();
+        if (!active) return;
+
+        if (retry.data.session?.user) {
+          setIsRecovery(true);
+        } else {
+          navigate("/auth", { replace: true });
+        }
+      }, 800);
     };
 
-    check();
+    initRecovery();
 
     return () => { active = false; };
   }, [navigate]);
@@ -75,6 +83,16 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
+      // Ensure recovery session is hydrated before updating
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error(
+          lang === "bn"
+            ? "রিকভারি সেশন প্রস্তুত নয়। পুনরায় রিসেট লিংক ব্যবহার করুন।"
+            : "Recovery session not ready. Please use the reset link again."
+        );
+      }
+
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setIsSuccess(true);
