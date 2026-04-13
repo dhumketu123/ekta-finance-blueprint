@@ -51,8 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [resetInactivityTimer]);
 
-  const navigate = useNavigate();
-
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -61,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          navigate("/reset-password");
+          window.location.href = "/reset-password";
           return;
         }
 
