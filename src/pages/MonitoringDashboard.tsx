@@ -30,6 +30,7 @@ import {
   useHealthTrend, useHealthRealtime,
 } from "@/hooks/useSystemHealth";
 import { format } from "date-fns";
+import { formatLocalDate } from "@/lib/date-utils";
 import { useAiBrainContext } from "@/hooks/useAiBrainContext";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -695,8 +696,28 @@ const AiInsightsTab = () => {
     refetch();
   };
 
-  const filtered = filterType ? insights.filter((i: any) => i.insight_type === filterType) : insights;
-  const activeInsights = insights.filter((i: any) => i.status === "active");
+  // ── Deduplicate insights: keep latest per (title + insight_type) ──
+  const dedupedInsights = useMemo(() => {
+    const seen = new Map<string, any>();
+    for (const ins of insights) {
+      const key = `${ins.insight_type}::${ins.title}`;
+      const existing = seen.get(key);
+      if (!existing) {
+        seen.set(key, ins);
+      } else {
+        // Keep the one with "active" status, or the most recent
+        if (ins.status === "active" && existing.status !== "active") {
+          seen.set(key, ins);
+        } else if (ins.status === existing.status && new Date(ins.created_at) > new Date(existing.created_at)) {
+          seen.set(key, ins);
+        }
+      }
+    }
+    return Array.from(seen.values());
+  }, [insights]);
+
+  const filtered = filterType ? dedupedInsights.filter((i: any) => i.insight_type === filterType) : dedupedInsights;
+  const activeInsights = dedupedInsights.filter((i: any) => i.status === "active");
 
   const typeCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -746,7 +767,7 @@ const AiInsightsTab = () => {
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs font-mono">{(healthData as any).last_snapshot_time ? format(new Date((healthData as any).last_snapshot_time), "dd MMM HH:mm") : "—"}</p>
+              <p className="text-xs font-mono">{(healthData as any).last_snapshot_time ? formatLocalDate((healthData as any).last_snapshot_time, lang) : "—"}</p>
               <p className="text-xs text-muted-foreground">{lang === "bn" ? "শেষ স্ন্যাপশট" : "Last Snapshot"}</p>
             </CardContent>
           </Card>
