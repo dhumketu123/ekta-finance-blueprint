@@ -26,6 +26,15 @@ const ResetPassword = () => {
     const hash = window.location.hash;
     if (hash && hash.includes("type=recovery")) setIsRecovery(true);
 
+    // Verify a valid recovery session exists
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        // No session — wait for onAuthStateChange or show invalid state
+      } else {
+        setIsRecovery(true);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
     });
@@ -54,7 +63,11 @@ const ResetPassword = () => {
       if (error) throw error;
       setIsSuccess(true);
       toast({ title: lang === "bn" ? "সফল! 🎉" : "Success! 🎉", description: lang === "bn" ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন।" : "Password updated successfully. You can now sign in with your new password." });
-      setTimeout(() => navigate("/auth"), 3000);
+      // Destroy recovery session — force clean login
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate("/auth");
+      }, 3000);
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
       toast({ title: lang === "bn" ? "ত্রুটি" : "Error", description: errorMsg, variant: "destructive" });
@@ -75,7 +88,7 @@ const ResetPassword = () => {
               <KeyRound className="w-7 h-7 text-amber-400" />
             </div>
             <p className="text-white/80 font-bangla font-medium">{lang === "bn" ? "অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক" : "Invalid or expired reset link"}</p>
-            <p className="text-white/40 text-sm font-bangla">{lang === "bn" ? "অনুগ্রহ করে পুনরায় পাসওয়ার্ড রিসেট করুন অথবা ম্যাজিক লিংক ব্যবহার করুন।" : "Please request a new reset link or use Magic Link login."}</p>
+            <p className="text-white/40 text-sm font-bangla">{lang === "bn" ? "অনুগ্রহ করে পুনরায় পাসওয়ার্ড রিসেট করুন।" : "Please request a new password reset link."}</p>
             <Button onClick={() => navigate("/auth")} className="auth-submit-btn w-full">
               <ArrowLeft size={16} className="mr-2" />
               {lang === "bn" ? "লগইনে ফিরে যান" : "Back to Login"}
