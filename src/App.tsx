@@ -163,8 +163,6 @@ const App = () => (
             </TenantBrandingProvider>
           </AuthProvider>
         </BrowserRouter>
-          </AuthProvider>
-        </BrowserRouter>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
