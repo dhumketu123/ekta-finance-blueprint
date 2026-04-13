@@ -24,17 +24,40 @@ const ResetPassword = () => {
 
   useEffect(() => {
     let active = true;
+    let hydrated = false;
+
+    const TIMEOUT_MS = 5000;
 
     const initRecovery = async () => {
       const hash = window.location.hash;
 
       // If hash contains recovery token, show UI immediately (permissive)
-      // but still trigger session hydration in background
+      // and poll for session hydration with a hard timeout
       if (hash && hash.includes("type=recovery")) {
         if (active) setIsRecovery(true);
-        // Kick off hydration — Supabase will process the hash tokens
-        await supabase.auth.getSession();
-        return;
+
+        const start = Date.now();
+        const interval = setInterval(async () => {
+          if (!active || hydrated) { clearInterval(interval); return; }
+
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.user) {
+            hydrated = true;
+            clearInterval(interval);
+            return;
+          }
+
+          if (Date.now() - start > TIMEOUT_MS) {
+            clearInterval(interval);
+            // Session never arrived — token likely expired
+            if (active) {
+              setIsRecovery(false);
+              navigate("/auth?error=expired_recovery_link", { replace: true });
+            }
+          }
+        }, 500);
+
+        return () => clearInterval(interval);
       }
 
       // No hash — check if AuthContext already routed us here with a live session
@@ -55,7 +78,7 @@ const ResetPassword = () => {
         if (retry.data.session?.user) {
           setIsRecovery(true);
         } else {
-          navigate("/auth", { replace: true });
+          navigate("/auth?error=expired_recovery_link", { replace: true });
         }
       }, 800);
     };

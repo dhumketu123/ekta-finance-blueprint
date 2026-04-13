@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,21 @@ const Auth = () => {
   const { toast } = useToast();
   const { lang } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Show expired recovery link message if redirected from ResetPassword
+  useEffect(() => {
+    if (searchParams.get("error") === "expired_recovery_link") {
+      toast({
+        title: lang === "bn" ? "লিংক মেয়াদোত্তীর্ণ" : "Reset Link Expired",
+        description: lang === "bn"
+          ? "রিসেট লিংকের মেয়াদ শেষ হয়ে গেছে। অনুগ্রহ করে পুনরায় পাসওয়ার্ড রিসেট অনুরোধ করুন।"
+          : "Your password reset link has expired. Please request a new one.",
+        variant: "destructive",
+      });
+      navigate("/auth", { replace: true });
+    }
+  }, [searchParams, toast, lang, navigate]);
 
   const triggerShake = () => {
     setShakeError(true);
