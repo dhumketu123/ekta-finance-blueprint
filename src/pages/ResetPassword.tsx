@@ -36,7 +36,7 @@ const ResetPassword = () => {
       if (!isMounted) return;
 
       if (!data.session?.user) {
-        navigate("/auth");
+        navigate("/auth", { replace: true });
         return;
       }
 
