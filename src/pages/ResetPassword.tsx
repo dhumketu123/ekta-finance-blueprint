@@ -23,29 +23,35 @@ const ResetPassword = () => {
   const passwordValidation = validatePassword(password);
 
   useEffect(() => {
-    let isMounted = true;
+    let active = true;
 
-    const checkSession = async () => {
+    const check = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes("type=recovery")) {
-        if (isMounted) setIsRecovery(true);
+        if (active) setIsRecovery(true);
         return;
       }
 
-      const { data } = await supabase.auth.getSession();
-      if (!isMounted) return;
+      let attempts = 0;
+      while (attempts < 3) {
+        const { data } = await supabase.auth.getSession();
+        if (!active) return;
 
-      if (!data.session?.user) {
-        navigate("/auth", { replace: true });
-        return;
+        if (data.session?.user) {
+          setIsRecovery(true);
+          return;
+        }
+
+        attempts++;
+        await new Promise(res => setTimeout(res, 300));
       }
 
-      setIsRecovery(true);
+      if (active) navigate("/auth", { replace: true });
     };
 
-    checkSession();
+    check();
 
-    return () => { isMounted = false; };
+    return () => { active = false; };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
