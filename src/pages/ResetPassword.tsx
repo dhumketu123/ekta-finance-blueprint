@@ -23,23 +23,30 @@ const ResetPassword = () => {
   const passwordValidation = validatePassword(password);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) setIsRecovery(true);
+    let isMounted = true;
 
-    // Verify a valid recovery session exists
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) {
-        // No session — wait for onAuthStateChange or show invalid state
-      } else {
-        setIsRecovery(true);
+    const checkSession = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes("type=recovery")) {
+        if (isMounted) setIsRecovery(true);
+        return;
       }
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) return;
+
+      if (!data.session?.user) {
+        navigate("/auth");
+        return;
+      }
+
+      setIsRecovery(true);
+    };
+
+    checkSession();
+
+    return () => { isMounted = false; };
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
