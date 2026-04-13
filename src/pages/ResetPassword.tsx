@@ -28,7 +28,10 @@ const ResetPassword = () => {
     const check = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes("type=recovery")) {
+        // Permissive: show recovery UI even if session hasn't hydrated yet
         if (active) setIsRecovery(true);
+        // Attempt session hydration in background but never block UI
+        supabase.auth.getSession();
         return;
       }
 
