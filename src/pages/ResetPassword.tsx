@@ -24,63 +24,33 @@ const ResetPassword = () => {
 
   useEffect(() => {
     let active = true;
-    let hydrated = false;
-
-    const TIMEOUT_MS = 5000;
 
     const initRecovery = async () => {
-      const hash = window.location.hash;
+      const url = new URL(window.location.href);
 
-      // If hash contains recovery token, show UI immediately (permissive)
-      // and poll for session hydration with a hard timeout
-      if (hash && hash.includes("type=recovery")) {
-        if (active) setIsRecovery(true);
+      const hasRecovery =
+        url.hash.includes("type=recovery") ||
+        url.searchParams.get("type") === "recovery" ||
+        !!url.searchParams.get("access_token") ||
+        !!url.searchParams.get("code");
 
-        const start = Date.now();
-        const interval = setInterval(async () => {
-          if (!active || hydrated) { clearInterval(interval); return; }
+      if (!hasRecovery) {
+        // No recovery indicator — check for existing session (AuthContext redirect case)
+        const { data } = await supabase.auth.getSession();
+        if (!active) return;
 
-          const { data } = await supabase.auth.getSession();
-          if (data.session?.user) {
-            hydrated = true;
-            clearInterval(interval);
-            return;
-          }
+        if (data.session?.user) {
+          setIsRecovery(true);
+          return;
+        }
 
-          if (Date.now() - start > TIMEOUT_MS) {
-            clearInterval(interval);
-            // Session never arrived — token likely expired
-            if (active) {
-              setIsRecovery(false);
-              navigate("/auth?error=expired_recovery_link", { replace: true });
-            }
-          }
-        }, 500);
-
-        return () => clearInterval(interval);
-      }
-
-      // No hash — check if AuthContext already routed us here with a live session
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-
-      if (data.session?.user) {
-        setIsRecovery(true);
+        navigate("/auth", { replace: true });
         return;
       }
 
-      // Session not ready yet — retry once after delay (hydration race)
-      setTimeout(async () => {
-        if (!active) return;
-        const retry = await supabase.auth.getSession();
-        if (!active) return;
-
-        if (retry.data.session?.user) {
-          setIsRecovery(true);
-        } else {
-          navigate("/auth?error=expired_recovery_link", { replace: true });
-        }
-      }, 800);
+      // Recovery token present — show UI immediately, kick off session hydration
+      if (active) setIsRecovery(true);
+      await supabase.auth.getSession();
     };
 
     initRecovery();
