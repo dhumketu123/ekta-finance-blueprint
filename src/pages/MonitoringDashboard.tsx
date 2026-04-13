@@ -822,41 +822,41 @@ const AiInsightsTab = () => {
         <Card>
           <CardContent className="pt-4">
             <ScrollArea className="h-[450px]">
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">{lang === "bn" ? "ধরন" : "Type"}</TableHead>
-                    <TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
-                    <TableHead className="w-[70px] text-center">{lang === "bn" ? "তীব্রতা" : "Severity"}</TableHead>
+                    <TableHead className="w-[80px]">{lang === "bn" ? "ধরন" : "Type"}</TableHead>
+                    <TableHead className="min-w-0">{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
+                    <TableHead className="w-[50px] text-center">{lang === "bn" ? "তীব্রতা" : "Sev"}</TableHead>
                     <TableHead className="hidden md:table-cell">{lang === "bn" ? "এন্টিটি" : "Entity"}</TableHead>
-                    <TableHead className="w-[80px] text-center">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
-                    <TableHead className="w-[120px]">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
+                    <TableHead className="w-[60px] text-center">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                    <TableHead className="hidden sm:table-cell w-[100px]">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((ins: any) => (
                     <TableRow key={ins.id} className={ins.status !== "active" ? "opacity-50" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
+                      <TableCell className="px-2">
+                        <div className="flex items-center gap-1">
                           {typeIcons[ins.insight_type] || <Info className="w-3 h-3" />}
-                          <span className="text-[10px] capitalize">{ins.insight_type?.replace(/_/g, " ")}</span>
+                          <span className="text-[10px] capitalize truncate">{ins.insight_type?.replace(/_/g, " ")}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{ins.title}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={ins.severity_score >= 4 ? "destructive" : ins.severity_score >= 3 ? "secondary" : "outline"} className="text-[10px]">
+                      <TableCell className="text-xs truncate min-w-0 max-w-0">{ins.title}</TableCell>
+                      <TableCell className="text-center px-1">
+                        <Badge variant={ins.severity_score >= 4 ? "destructive" : ins.severity_score >= 3 ? "secondary" : "outline"} className="text-[10px] px-1.5">
                           {ins.severity_score}/5
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground truncate">
                         {ins.system_dna?.entity_name ?? "—"}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={ins.status === "active" ? "default" : "outline"} className="text-[10px]">
+                      <TableCell className="text-center px-1">
+                        <Badge variant={ins.status === "active" ? "default" : "outline"} className="text-[10px] px-1.5">
                           {ins.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {ins.status === "active" && (
                           <div className="flex gap-1">
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => handleDismiss(ins.id)}>
