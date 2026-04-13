@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -51,9 +52,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [resetInactivityTimer]);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        // CRITICAL: Block auto-login during password recovery
+        if (event === "PASSWORD_RECOVERY") {
+          navigate("/reset-password");
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
