@@ -133,7 +133,7 @@ export function buildReceiptMessage(input: ReceiptInput): string {
     case "loan_disbursement": {
       const { clientName, loanRef, principal, emiAmount, maturityDate, nextDueDate } = input;
       const nextStr = fmtDate(nextDueDate);
-      return `সম্মানিত ${clientName},\nঋণ বিতরণ ✅ নং: ${loanRef}\nআসল: ${tk(principal)} কিস্তি: ${tk(emiAmount)}\nমেয়াদ: ${fmtDate(maturityDate)}${nextStr ? ` প্রথম কিস্তি: ${nextStr}` : ""}\n${ref}\n${SIGN}`;
+      return `সম্মানিত ${clientName},\nঋণ বিতরণ ✅ নং: ${loanRef}\nআসল: ${tk(principal)} কিস্তি: ${tk(emiAmount)}\nমেয়াদ: ${fmtDate(maturityDate)}${nextStr ? `\nপ্রথম কিস্তির তারিখ: ${nextStr}` : ""}\n${ref}\n${SIGN}`;
     }
 
     case "savings_deposit": {
