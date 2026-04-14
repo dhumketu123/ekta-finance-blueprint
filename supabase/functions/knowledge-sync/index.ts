@@ -17,6 +17,11 @@ const BATCH_SIZE = 100;
 const MAX_DLQ_RETRIES = 3;
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
 
+// Circuit Breaker State (in-memory per invocation)
+let circuitBreakerTripped = false;
+let criticalDlqFailures = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 2; // trip after 2 consecutive DLQ insert failures
+
 /* ══════════════════════════════════════════
    BATCH UPSERT with DLQ
    ══════════════════════════════════════════ */
