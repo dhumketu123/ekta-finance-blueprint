@@ -17,6 +17,11 @@ const BATCH_SIZE = 100;
 const MAX_DLQ_RETRIES = 3;
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
 
+// Circuit Breaker State (in-memory per invocation)
+let circuitBreakerTripped = false;
+let criticalDlqFailures = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 2; // trip after 2 consecutive DLQ insert failures
+
 /* ══════════════════════════════════════════
    BATCH UPSERT with DLQ
    ══════════════════════════════════════════ */
@@ -43,6 +48,12 @@ async function batchUpsertWithDLQ(
       const batchIdx = Math.floor(i / BATCH_SIZE);
       errors.push(`Batch ${batchIdx}: ${error.message}`);
 
+      // ── Circuit Breaker: halt if DLQ itself is failing ──
+      if (circuitBreakerTripped) {
+        errors.push(`CIRCUIT_BREAKER: Skipping DLQ insert for batch ${batchIdx} (breaker tripped)`);
+        continue;
+      }
+
       // Send failed chunk to DLQ
       const dlqRows = chunk.map((n) => ({
         tenant_id: tenantId,
@@ -54,9 +65,30 @@ async function batchUpsertWithDLQ(
         max_retries: MAX_DLQ_RETRIES,
       }));
 
-      await svc.from("knowledge_sync_dlq").insert(dlqRows).throwOnError().catch((dlqErr) => {
-        console.error("[DLQ] Insert failed:", dlqErr);
-      });
+      try {
+        await svc.from("knowledge_sync_dlq").insert(dlqRows).throwOnError();
+        criticalDlqFailures = 0; // reset on success
+      } catch (dlqErr: any) {
+        criticalDlqFailures++;
+        console.error(`[CRITICAL_DLQ_FAILURE] Insert failed (${criticalDlqFailures}/${CIRCUIT_BREAKER_THRESHOLD}):`, dlqErr?.message);
+
+        // Log critical failure to auto_fix_logs for visibility
+        await svc.from("auto_fix_logs").insert({
+          action_name: "CRITICAL_DLQ_FAILURE",
+          triggered_by_check: "knowledge_sync_dlq_insert",
+          success: false,
+          error_message: `DLQ insert failed: ${dlqErr?.message}. Batch ${batchIdx} data lost.`,
+          execution_ms: null,
+          tenant_id: tenantId,
+        }).catch(() => {}); // best-effort
+
+        if (criticalDlqFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+          circuitBreakerTripped = true;
+          errors.push("CIRCUIT_BREAKER_TRIPPED: Halting batch processing — DLQ is unreachable");
+          console.error("[CIRCUIT_BREAKER] Tripped — stopping further batch processing for this invocation");
+          break; // Exit the batch loop entirely
+        }
+      }
     } else {
       created += chunk.length;
     }
@@ -472,33 +504,40 @@ serve(async (req) => {
       }).eq("id", syncLogId);
     }
 
+    const responseBody = {
+      status: circuitBreakerTripped ? "⚠️ সার্কিট ব্রেকার ট্রিপড" : "✅ সম্পূর্ণ",
+      circuit_breaker: circuitBreakerTripped ? "TRIPPED" : "CLOSED",
+      fixes_applied: [
+        "Batch processing (chunk 100)",
+        "Dead Letter Queue for failures",
+        "DLQ retry processor",
+        "Parallel dependency fetching",
+        "Stale log cleanup",
+        "Circuit breaker protection",
+      ],
+      total_nodes: uniqueNodes.length,
+      deduplicated_from: allNodes.length,
+      tables: uniqueNodes.filter((n) => n.node_type === "table").length,
+      triggers: uniqueNodes.filter((n) => n.node_type === "trigger").length,
+      functions: uniqueNodes.filter((n) => n.node_type === "function").length,
+      components: uniqueNodes.filter((n) => n.node_type === "component").length,
+      hooks: uniqueNodes.filter((n) => n.node_type === "hook").length,
+      business_rules: uniqueNodes.filter((n) => n.node_type === "business_rule").length,
+      kpis: uniqueNodes.filter((n) => n.node_type === "kpi").length,
+      edge_functions: uniqueNodes.filter((n) => n.node_type === "edge_function").length,
+      stale_logs_fixed: staleFixed,
+      dlq: dlqResult,
+      errors: allErrors.length,
+      duration_ms: durationMs,
+      sync_log_id: syncLogId,
+    };
+
+    // Return 500 if circuit breaker tripped to signal upstream
+    const statusCode = circuitBreakerTripped ? 500 : 200;
+
     return new Response(
-      JSON.stringify({
-        status: "✅ সম্পূর্ণ",
-        fixes_applied: [
-          "Batch processing (chunk 100)",
-          "Dead Letter Queue for failures",
-          "DLQ retry processor",
-          "Parallel dependency fetching",
-          "Stale log cleanup",
-        ],
-        total_nodes: uniqueNodes.length,
-        deduplicated_from: allNodes.length,
-        tables: uniqueNodes.filter((n) => n.node_type === "table").length,
-        triggers: uniqueNodes.filter((n) => n.node_type === "trigger").length,
-        functions: uniqueNodes.filter((n) => n.node_type === "function").length,
-        components: uniqueNodes.filter((n) => n.node_type === "component").length,
-        hooks: uniqueNodes.filter((n) => n.node_type === "hook").length,
-        business_rules: uniqueNodes.filter((n) => n.node_type === "business_rule").length,
-        kpis: uniqueNodes.filter((n) => n.node_type === "kpi").length,
-        edge_functions: uniqueNodes.filter((n) => n.node_type === "edge_function").length,
-        stale_logs_fixed: staleFixed,
-        dlq: dlqResult,
-        errors: allErrors.length,
-        duration_ms: durationMs,
-        sync_log_id: syncLogId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify(responseBody),
+      { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("knowledge-sync error:", e);
