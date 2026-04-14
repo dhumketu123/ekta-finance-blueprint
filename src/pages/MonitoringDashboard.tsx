@@ -355,7 +355,7 @@ const LiveHealthTab = () => {
           </CardContent>
         </Card>
 
-        {/* Auto-Fix Logs */}
+        {/* Auto-Fix Logs with Escalation */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -364,7 +364,7 @@ const LiveHealthTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="max-h-64">
+            <ScrollArea className="max-h-72">
               {autoFixLogs.length === 0 ? (
                 <p className="text-center py-8 text-muted-foreground text-sm">কোনো অটো-ফিক্স চালানো হয়নি</p>
               ) : (
@@ -378,35 +378,85 @@ const LiveHealthTab = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {autoFixLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="text-xs font-medium">{log.action_name}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{log.triggered_by_check}</TableCell>
-                        <TableCell>
-                          {log.success ? (
-                            <Badge variant="default" className="text-[10px]">✅ সফল</Badge>
-                          ) : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Badge variant="destructive" className="text-[10px]">❌ ব্যর্থ</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p className="text-xs">{log.error_message || "Unknown error"}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-[10px] text-muted-foreground">
-                          {format(new Date(log.created_at), "dd MMM HH:mm")}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {autoFixLogs.map((log) => {
+                      const isCriticalDlq = log.action_name === "CRITICAL_DLQ_FAILURE";
+                      const isCriticalFail = !log.success && (
+                        isCriticalDlq ||
+                        log.action_name.toLowerCase().includes("critical") ||
+                        log.triggered_by_check === "system-health"
+                      );
+
+                      return (
+                        <TableRow key={log.id} className={isCriticalFail ? "bg-destructive/5" : ""}>
+                          <TableCell className="text-xs font-medium">
+                            {isCriticalFail && <ShieldAlert className="inline h-3 w-3 text-destructive mr-1" />}
+                            {log.action_name}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{log.triggered_by_check}</TableCell>
+                          <TableCell>
+                            {log.success ? (
+                              <Badge variant="default" className="text-[10px]">✅ সফল</Badge>
+                            ) : (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="destructive" className="text-[10px]">❌ ব্যর্থ</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    <p className="text-xs">{log.error_message || "Unknown error"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground">
+                            {format(new Date(log.created_at), "dd MMM HH:mm")}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
             </ScrollArea>
+            {/* ── Level 2 Escalation: Critical failures get 1-click patch button ── */}
+            {autoFixLogs.some(l => !l.success && (
+              l.action_name === "CRITICAL_DLQ_FAILURE" ||
+              l.action_name.toLowerCase().includes("critical") ||
+              l.triggered_by_check === "system-health"
+            )) && (
+              <div className="border-t border-border p-3 bg-destructive/5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
+                    <span className="text-xs font-medium text-destructive truncate">
+                      ক্রিটিকাল ব্যর্থতা সনাক্ত — অ্যাডমিন অনুমোদন প্রয়োজন
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="shrink-0 text-xs gap-1"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase.functions.invoke("knowledge-sync");
+                        if (error) throw error;
+                        toast.success("প্যাচ সফলভাবে প্রয়োগ হয়েছে ✅", {
+                          description: "Knowledge Sync পুনরায় চালু করা হয়েছে।",
+                        });
+                      } catch (err: any) {
+                        toast.error("প্যাচ প্রয়োগ ব্যর্থ", {
+                          description: err?.message || "পরে আবার চেষ্টা করুন।",
+                        });
+                      }
+                    }}
+                  >
+                    <Rocket className="h-3 w-3" />
+                    Approve & Apply Patch
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
