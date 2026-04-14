@@ -460,9 +460,26 @@ const LiveHealthTab = () => {
                             .in("id", criticalIds);
                         }
 
+                        // Resolve related AI insights (system-health risks)
+                        const { data: activeInsights } = await supabase
+                          .from("ai_insights")
+                          .select("id")
+                          .eq("status", "active")
+                          .eq("insight_type", "risk")
+                          .or("title.ilike.%system-health%,title.ilike.%system_health%,description.ilike.%system-health%,description.ilike.%system_health%");
+
+                        if (activeInsights && activeInsights.length > 0) {
+                          await supabase
+                            .from("ai_insights")
+                            .update({ status: "resolved" } as any)
+                            .in("id", activeInsights.map(i => i.id));
+                        }
+
                         // Invalidate queries to unmount banner instantly
                         await queryClient.invalidateQueries({ queryKey: ["auto_fix_logs"] });
                         await queryClient.invalidateQueries({ queryKey: ["system_health"] });
+                        await queryClient.invalidateQueries({ queryKey: ["ai_insights"] });
+                        await queryClient.invalidateQueries({ queryKey: ["knowledge_graph"] });
 
                         toast.success("প্যাচ সফলভাবে প্রয়োগ হয়েছে ✅", {
                           description: "Knowledge Sync পুনরায় চালু করা হয়েছে।",
