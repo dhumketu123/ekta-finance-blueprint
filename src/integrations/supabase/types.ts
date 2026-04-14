@@ -2105,6 +2105,51 @@ export type Database = {
           },
         ]
       }
+      knowledge_sync_dlq: {
+        Row: {
+          created_at: string
+          error_message: string
+          id: string
+          last_retry_at: string | null
+          max_retries: number
+          node_key: string
+          node_type: string
+          payload: Json | null
+          resolved: boolean
+          resolved_at: string | null
+          retry_count: number
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number
+          node_key: string
+          node_type?: string
+          payload?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          retry_count?: number
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number
+          node_key?: string
+          node_type?: string
+          payload?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          retry_count?: number
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       knowledge_sync_log: {
         Row: {
           completed_at: string | null
