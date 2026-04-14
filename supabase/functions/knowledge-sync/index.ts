@@ -504,33 +504,40 @@ serve(async (req) => {
       }).eq("id", syncLogId);
     }
 
+    const responseBody = {
+      status: circuitBreakerTripped ? "⚠️ সার্কিট ব্রেকার ট্রিপড" : "✅ সম্পূর্ণ",
+      circuit_breaker: circuitBreakerTripped ? "TRIPPED" : "CLOSED",
+      fixes_applied: [
+        "Batch processing (chunk 100)",
+        "Dead Letter Queue for failures",
+        "DLQ retry processor",
+        "Parallel dependency fetching",
+        "Stale log cleanup",
+        "Circuit breaker protection",
+      ],
+      total_nodes: uniqueNodes.length,
+      deduplicated_from: allNodes.length,
+      tables: uniqueNodes.filter((n) => n.node_type === "table").length,
+      triggers: uniqueNodes.filter((n) => n.node_type === "trigger").length,
+      functions: uniqueNodes.filter((n) => n.node_type === "function").length,
+      components: uniqueNodes.filter((n) => n.node_type === "component").length,
+      hooks: uniqueNodes.filter((n) => n.node_type === "hook").length,
+      business_rules: uniqueNodes.filter((n) => n.node_type === "business_rule").length,
+      kpis: uniqueNodes.filter((n) => n.node_type === "kpi").length,
+      edge_functions: uniqueNodes.filter((n) => n.node_type === "edge_function").length,
+      stale_logs_fixed: staleFixed,
+      dlq: dlqResult,
+      errors: allErrors.length,
+      duration_ms: durationMs,
+      sync_log_id: syncLogId,
+    };
+
+    // Return 500 if circuit breaker tripped to signal upstream
+    const statusCode = circuitBreakerTripped ? 500 : 200;
+
     return new Response(
-      JSON.stringify({
-        status: "✅ সম্পূর্ণ",
-        fixes_applied: [
-          "Batch processing (chunk 100)",
-          "Dead Letter Queue for failures",
-          "DLQ retry processor",
-          "Parallel dependency fetching",
-          "Stale log cleanup",
-        ],
-        total_nodes: uniqueNodes.length,
-        deduplicated_from: allNodes.length,
-        tables: uniqueNodes.filter((n) => n.node_type === "table").length,
-        triggers: uniqueNodes.filter((n) => n.node_type === "trigger").length,
-        functions: uniqueNodes.filter((n) => n.node_type === "function").length,
-        components: uniqueNodes.filter((n) => n.node_type === "component").length,
-        hooks: uniqueNodes.filter((n) => n.node_type === "hook").length,
-        business_rules: uniqueNodes.filter((n) => n.node_type === "business_rule").length,
-        kpis: uniqueNodes.filter((n) => n.node_type === "kpi").length,
-        edge_functions: uniqueNodes.filter((n) => n.node_type === "edge_function").length,
-        stale_logs_fixed: staleFixed,
-        dlq: dlqResult,
-        errors: allErrors.length,
-        duration_ms: durationMs,
-        sync_log_id: syncLogId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify(responseBody),
+      { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("knowledge-sync error:", e);
