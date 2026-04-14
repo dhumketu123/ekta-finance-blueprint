@@ -48,6 +48,12 @@ async function batchUpsertWithDLQ(
       const batchIdx = Math.floor(i / BATCH_SIZE);
       errors.push(`Batch ${batchIdx}: ${error.message}`);
 
+      // ── Circuit Breaker: halt if DLQ itself is failing ──
+      if (circuitBreakerTripped) {
+        errors.push(`CIRCUIT_BREAKER: Skipping DLQ insert for batch ${batchIdx} (breaker tripped)`);
+        continue;
+      }
+
       // Send failed chunk to DLQ
       const dlqRows = chunk.map((n) => ({
         tenant_id: tenantId,
@@ -59,9 +65,30 @@ async function batchUpsertWithDLQ(
         max_retries: MAX_DLQ_RETRIES,
       }));
 
-      await svc.from("knowledge_sync_dlq").insert(dlqRows).throwOnError().catch((dlqErr) => {
-        console.error("[DLQ] Insert failed:", dlqErr);
-      });
+      try {
+        await svc.from("knowledge_sync_dlq").insert(dlqRows).throwOnError();
+        criticalDlqFailures = 0; // reset on success
+      } catch (dlqErr: any) {
+        criticalDlqFailures++;
+        console.error(`[CRITICAL_DLQ_FAILURE] Insert failed (${criticalDlqFailures}/${CIRCUIT_BREAKER_THRESHOLD}):`, dlqErr?.message);
+
+        // Log critical failure to auto_fix_logs for visibility
+        await svc.from("auto_fix_logs").insert({
+          action_name: "CRITICAL_DLQ_FAILURE",
+          triggered_by_check: "knowledge_sync_dlq_insert",
+          success: false,
+          error_message: `DLQ insert failed: ${dlqErr?.message}. Batch ${batchIdx} data lost.`,
+          execution_ms: null,
+          tenant_id: tenantId,
+        }).catch(() => {}); // best-effort
+
+        if (criticalDlqFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+          circuitBreakerTripped = true;
+          errors.push("CIRCUIT_BREAKER_TRIPPED: Halting batch processing — DLQ is unreachable");
+          console.error("[CIRCUIT_BREAKER] Tripped — stopping further batch processing for this invocation");
+          break; // Exit the batch loop entirely
+        }
+      }
     } else {
       created += chunk.length;
     }
