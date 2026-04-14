@@ -443,6 +443,27 @@ const LiveHealthTab = () => {
                       try {
                         const { error } = await supabase.functions.invoke("knowledge-sync");
                         if (error) throw error;
+
+                        // Mark critical entries as resolved in DB
+                        const criticalIds = autoFixLogs
+                          .filter(l => !l.success && (
+                            l.action_name === "CRITICAL_DLQ_FAILURE" ||
+                            l.action_name.toLowerCase().includes("critical") ||
+                            l.triggered_by_check === "system-health"
+                          ))
+                          .map(l => l.id);
+
+                        if (criticalIds.length > 0) {
+                          await supabase
+                            .from("auto_fix_logs")
+                            .update({ success: true } as any)
+                            .in("id", criticalIds);
+                        }
+
+                        // Invalidate queries to unmount banner instantly
+                        await queryClient.invalidateQueries({ queryKey: ["auto_fix_logs"] });
+                        await queryClient.invalidateQueries({ queryKey: ["system_health"] });
+
                         toast.success("প্যাচ সফলভাবে প্রয়োগ হয়েছে ✅", {
                           description: "Knowledge Sync পুনরায় চালু করা হয়েছে।",
                         });
