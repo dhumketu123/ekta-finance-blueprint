@@ -92,6 +92,7 @@ const useLoanStats = () =>
 
 // ── Live Health Tab Component ──
 const LiveHealthTab = () => {
+  const queryClient = useQueryClient();
   const { data: health, isLoading: healthLoading } = useSystemHealth(true, 15_000);
   const { data: autoFixLogs = [] } = useAutoFixLogs(15);
   const { data: healthHistory = [] } = useHealthHistory(50);
