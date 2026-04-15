@@ -21,6 +21,7 @@ export interface LoanPaymentReceiptInput {
   newOutstanding: number;
   loanClosed: boolean;
   nextDueDate?: string | null;
+  installmentDay?: number | null;
   pointsEarned?: number;
   currentScore?: number;
 }
@@ -101,6 +102,54 @@ function fmtDate(dateStr: string | null | undefined): string {
   }
 }
 
+/**
+ * Compute next installment date anchored to loan's installment_day.
+ * Prevents date drift across months (handles 31st → shorter months).
+ */
+export function computeAnchoredNextInstallment(
+  anchorDay: number,
+  referenceDate?: Date,
+): Date {
+  const now = referenceDate ?? new Date();
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  let targetMonth: number;
+  let targetYear: number;
+
+  if (currentDay < anchorDay) {
+    // Still before anchor day this month → use this month
+    targetMonth = currentMonth;
+    targetYear = currentYear;
+  } else {
+    // At or past anchor day → next month
+    targetMonth = currentMonth + 1;
+    targetYear = currentYear;
+    if (targetMonth > 11) {
+      targetMonth = 0;
+      targetYear += 1;
+    }
+  }
+
+  // Clamp anchorDay to max days in target month (handles 31→28/29/30)
+  const maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const safeDay = Math.min(anchorDay, maxDay);
+
+  return new Date(targetYear, targetMonth, safeDay);
+}
+
+/**
+ * Format date in Bengali locale: ১৪ এপ্রিল ২০২৬
+ */
+export function formatBengaliDate(date: Date): string {
+  return new Intl.DateTimeFormat("bn-BD", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 function tk(n: number): string {
   return `৳${n.toLocaleString()}`;
 }
@@ -114,7 +163,7 @@ export function buildReceiptMessage(input: ReceiptInput): string {
 
   switch (input.type) {
     case "loan_payment": {
-      const { clientName, totalPayment, dpsCollected, newOutstanding, loanClosed, nextDueDate, pointsEarned, currentScore } = input;
+      const { clientName, totalPayment, dpsCollected, newOutstanding, loanClosed, nextDueDate, installmentDay, pointsEarned, currentScore } = input;
       const dps = dpsCollected ?? 0;
       const loanPaid = totalPayment;
       const total = dps + loanPaid;
@@ -122,8 +171,16 @@ export function buildReceiptMessage(input: ReceiptInput): string {
       const pointsLine = pointsEarned && pointsEarned !== 0
         ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${currentScore ?? 0})`
         : "";
-      const nextStr = fmtDate(nextDueDate);
-      const nextLine = nextStr ? `\nআগামী কিস্তির তারিখ: ${nextStr}` : "";
+
+      // Compute next installment using anchor-day logic (no date drift)
+      let nextLine = "";
+      if (!loanClosed && installmentDay && installmentDay > 0) {
+        const nextDate = computeAnchoredNextInstallment(installmentDay);
+        nextLine = `\n(আগামী কিস্তি: ${formatBengaliDate(nextDate)})`;
+      } else if (!loanClosed && nextDueDate) {
+        const nextStr = fmtDate(nextDueDate);
+        if (nextStr) nextLine = `\n(আগামী কিস্তি: ${nextStr})`;
+      }
 
       return loanClosed
         ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ${tk(total)}${pointsLine}\n${ref}\n${SIGN}`
