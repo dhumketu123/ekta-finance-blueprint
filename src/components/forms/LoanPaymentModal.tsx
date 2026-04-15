@@ -233,6 +233,10 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
             setClientPhone(client.phone || "");
             setClientName(client.name_bn || client.name_en || "");
           }
+          // Extract installment anchor day from loan
+          if ((loanData as any).installment_day) {
+            setInstallmentDay(Number((loanData as any).installment_day));
+          }
         }
         // Get the next pending installment due_date (locked to loan's anchor day)
         const { data: nextSched } = await supabase
