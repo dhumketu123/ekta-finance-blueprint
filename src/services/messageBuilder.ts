@@ -111,6 +111,8 @@ export function computeAnchoredNextInstallment(
   referenceDate?: Date,
 ): Date {
   const now = referenceDate ?? new Date();
+  // Normalize to midnight — prevents timezone-induced day boundary drift
+  now.setHours(0, 0, 0, 0);
   const currentDay = now.getDate();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();

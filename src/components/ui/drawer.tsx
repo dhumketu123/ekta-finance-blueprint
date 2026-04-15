@@ -31,7 +31,7 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-[110] mt-24 flex max-h-[92dvh] flex-col rounded-t-2xl border bg-background shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.2)]",
+        "fixed inset-x-0 bottom-0 z-[110] mt-24 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-2xl border bg-background shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.2)]",
         className,
       )}
       {...props}
@@ -98,7 +98,7 @@ const DrawerBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4", className)}
+    className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain w-full px-4 py-4", className)}
     {...props}
   />
 ));
