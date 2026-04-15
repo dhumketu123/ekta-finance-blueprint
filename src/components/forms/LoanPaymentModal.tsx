@@ -595,23 +595,21 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
                       <p className="text-xs text-muted-foreground">{bn ? "অবশিষ্ট বকেয়া" : "Remaining Balance"}</p>
                       <p className="text-2xl font-bold text-primary">৳{Number(result.new_outstanding).toLocaleString()}</p>
                     </div>
-
-                    {/* WhatsApp + SMS receipt buttons */}
-                    <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                      {finalPhone && receiptMsg && (
-                        <div className="flex gap-2 w-full">
-                          <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => handleSend("whatsapp")}>
-                            <MessageCircle className="w-4 h-4" /> WhatsApp
-                          </Button>
-                          <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => handleSend("sms")}>
-                            <MessageSquare className="w-4 h-4" /> SMS
-                          </Button>
-                        </div>
-                      )}
-                      <Button variant="outline" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
-                    </div>
                   </div>
                 </DrawerBody>
+                <DrawerFooter className="flex-col gap-2">
+                  {finalPhone && receiptMsg && (
+                    <div className="flex gap-2 w-full">
+                      <Button className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground shadow-lg" onClick={() => handleSend("whatsapp")}>
+                        <MessageCircle className="w-4 h-4" /> WhatsApp
+                      </Button>
+                      <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg" onClick={() => handleSend("sms")}>
+                        <MessageSquare className="w-4 h-4" /> SMS
+                      </Button>
+                    </div>
+                  )}
+                  <Button variant="outline" onClick={handleClose} className="w-full">{bn ? "বন্ধ করুন" : "Close"}</Button>
+                </DrawerFooter>
               </motion.div>
             );
           })()}

@@ -101,6 +101,54 @@ function fmtDate(dateStr: string | null | undefined): string {
   }
 }
 
+/**
+ * Compute next installment date anchored to loan's installment_day.
+ * Prevents date drift across months (handles 31st → shorter months).
+ */
+export function computeAnchoredNextInstallment(
+  anchorDay: number,
+  referenceDate?: Date,
+): Date {
+  const now = referenceDate ?? new Date();
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  let targetMonth: number;
+  let targetYear: number;
+
+  if (currentDay < anchorDay) {
+    // Still before anchor day this month → use this month
+    targetMonth = currentMonth;
+    targetYear = currentYear;
+  } else {
+    // At or past anchor day → next month
+    targetMonth = currentMonth + 1;
+    targetYear = currentYear;
+    if (targetMonth > 11) {
+      targetMonth = 0;
+      targetYear += 1;
+    }
+  }
+
+  // Clamp anchorDay to max days in target month (handles 31→28/29/30)
+  const maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const safeDay = Math.min(anchorDay, maxDay);
+
+  return new Date(targetYear, targetMonth, safeDay);
+}
+
+/**
+ * Format date in Bengali locale: ১৪ এপ্রিল ২০২৬
+ */
+export function formatBengaliDate(date: Date): string {
+  return new Intl.DateTimeFormat("bn-BD", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 function tk(n: number): string {
   return `৳${n.toLocaleString()}`;
 }
