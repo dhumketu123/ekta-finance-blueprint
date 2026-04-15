@@ -103,6 +103,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [nextDueDate, setNextDueDate] = useState<string | null>(null);
+  const [installmentDay, setInstallmentDay] = useState<number | null>(null);
   const [receiptNumber, setReceiptNumber] = useState("");
 
   // PIN state
