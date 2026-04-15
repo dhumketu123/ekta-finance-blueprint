@@ -306,7 +306,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       pointsEarned: result.points_earned,
       currentScore: result.new_score,
     });
-  }, [result, clientName, nextDueDate, receiptNumber]);
+  }, [result, clientName, nextDueDate, installmentDay, receiptNumber]);
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o && !isLocked) handleClose(); }}>
