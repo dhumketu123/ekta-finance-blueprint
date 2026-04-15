@@ -209,8 +209,14 @@ export function buildReceiptMessage(input: ReceiptInput): string {
         const line = formatInstallmentLine(nextDate);
         if (line) nextLine = `\n${line}`;
       } else if (!loanClosed && nextDueDate) {
-        const nextStr = fmtDate(nextDueDate);
-        if (nextStr) nextLine = `\n(আগামী কিস্তি: ${nextStr})`;
+        // Legacy fallback — still uses frozen formatter, no inline strings
+        try {
+          const fallbackDate = new Date(nextDueDate);
+          if (!isNaN(fallbackDate.getTime())) {
+            const line = formatInstallmentLine(fallbackDate);
+            if (line) nextLine = `\n${line}`;
+          }
+        } catch { /* safe fallback — no line shown */ }
       }
 
       return loanClosed
