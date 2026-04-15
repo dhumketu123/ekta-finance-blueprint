@@ -284,6 +284,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
     setClientName("");
     setClientPhone("");
     setNextDueDate(null);
+    setInstallmentDay(null);
     setReceiptNumber("");
     resetPin();
     onClose();
@@ -301,6 +302,7 @@ export default function LoanPaymentModal({ open, onClose, prefilledLoanId, loanI
       newOutstanding: Number(result.new_outstanding),
       loanClosed: result.loan_closed,
       nextDueDate,
+      installmentDay,
       pointsEarned: result.points_earned,
       currentScore: result.new_score,
     });
