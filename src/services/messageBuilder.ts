@@ -21,6 +21,7 @@ export interface LoanPaymentReceiptInput {
   newOutstanding: number;
   loanClosed: boolean;
   nextDueDate?: string | null;
+  installmentDay?: number | null;
   pointsEarned?: number;
   currentScore?: number;
 }
@@ -162,7 +163,7 @@ export function buildReceiptMessage(input: ReceiptInput): string {
 
   switch (input.type) {
     case "loan_payment": {
-      const { clientName, totalPayment, dpsCollected, newOutstanding, loanClosed, nextDueDate, pointsEarned, currentScore } = input;
+      const { clientName, totalPayment, dpsCollected, newOutstanding, loanClosed, nextDueDate, installmentDay, pointsEarned, currentScore } = input;
       const dps = dpsCollected ?? 0;
       const loanPaid = totalPayment;
       const total = dps + loanPaid;
@@ -170,8 +171,16 @@ export function buildReceiptMessage(input: ReceiptInput): string {
       const pointsLine = pointsEarned && pointsEarned !== 0
         ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${currentScore ?? 0})`
         : "";
-      const nextStr = fmtDate(nextDueDate);
-      const nextLine = nextStr ? `\nআগামী কিস্তির তারিখ: ${nextStr}` : "";
+
+      // Compute next installment using anchor-day logic (no date drift)
+      let nextLine = "";
+      if (!loanClosed && installmentDay && installmentDay > 0) {
+        const nextDate = computeAnchoredNextInstallment(installmentDay);
+        nextLine = `\n(আগামী কিস্তি: ${formatBengaliDate(nextDate)})`;
+      } else if (!loanClosed && nextDueDate) {
+        const nextStr = fmtDate(nextDueDate);
+        if (nextStr) nextLine = `\n(আগামী কিস্তি: ${nextStr})`;
+      }
 
       return loanClosed
         ? `সম্মানিত ${clientName},\nআপনার ঋণ সম্পূর্ণ পরিশোধিত ✅${dpsLine}\nমোট: ${tk(total)}${pointsLine}\n${ref}\n${SIGN}`
