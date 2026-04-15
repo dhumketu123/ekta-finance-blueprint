@@ -201,22 +201,13 @@ export function buildReceiptMessage(input: ReceiptInput): string {
         ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${currentScore ?? 0})`
         : "";
 
-      // Compute next installment using anchor-day logic (no date drift)
-      // ⚠️ Uses computeAnchoredNextInstallment (SINGLE SOURCE) + formatInstallmentLine (FROZEN FORMAT)
+      // ⚠️ LOCKED PIPELINE — computeAnchoredNextInstallment (SINGLE SOURCE) + formatInstallmentLine (FROZEN FORMAT)
+      // ❌ NO legacy fallback. NO inline formatting. NO fmtDate for installment.
       let nextLine = "";
       if (!loanClosed && installmentDay && installmentDay > 0) {
         const nextDate = computeAnchoredNextInstallment(installmentDay);
         const line = formatInstallmentLine(nextDate);
         if (line) nextLine = `\n${line}`;
-      } else if (!loanClosed && nextDueDate) {
-        // Legacy fallback — still uses frozen formatter, no inline strings
-        try {
-          const fallbackDate = new Date(nextDueDate);
-          if (!isNaN(fallbackDate.getTime())) {
-            const line = formatInstallmentLine(fallbackDate);
-            if (line) nextLine = `\n${line}`;
-          }
-        } catch { /* safe fallback — no line shown */ }
       }
 
       return loanClosed
