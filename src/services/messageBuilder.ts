@@ -201,24 +201,19 @@ export function buildReceiptMessage(input: ReceiptInput): string {
         ? `\nট্রাস্ট: ${pointsEarned > 0 ? "+" : ""}${pointsEarned} (${currentScore ?? 0})`
         : "";
 
-      // ⚠️ LOCKED PIPELINE — GUARANTEED installment line for ALL active loans
-      // Uses computeAnchoredNextInstallment (SINGLE SOURCE) + formatInstallmentLine (FROZEN FORMAT)
-      // ❌ NO legacy fallback. NO inline formatting. NO fmtDate for installment.
+      // ⚠️ LOCKED PIPELINE — NO FAKE ANCHOR ALLOWED
+      // ✔ Only loan.anchor_day / installmentDay permitted
+      // ❌ NO new Date().getDate() fallback. NO synthetic anchor.
       let nextLine = "";
       if (!loanClosed) {
-        const installmentDaySafe = (installmentDay && installmentDay > 0) ? installmentDay : null;
+        const baseAnchorDay = (installmentDay && installmentDay > 0) ? installmentDay : null;
 
-        if (installmentDaySafe) {
-          // Primary path — anchor-day based calculation
-          const nextDate = computeAnchoredNextInstallment(installmentDaySafe);
-          const line = formatInstallmentLine(nextDate);
-          if (line) nextLine = `\n${line}`;
+        if (baseAnchorDay) {
+          const nextDate = computeAnchoredNextInstallment(baseAnchorDay);
+          nextLine = `\n${formatInstallmentLine(nextDate)}`;
         } else {
-          // 🛡️ SAFETY GUARANTEE — no installmentDay available, derive from today's date
-          // Ensures SMS ALWAYS shows next installment for active loans
-          const todayAnchor = new Date().getDate();
-          const safeDate = computeAnchoredNextInstallment(todayAnchor);
-          if (safeDate) nextLine = `\n${formatInstallmentLine(safeDate)}`;
+          // 🛑 No anchor exists — show explicit safe message, never guess
+          nextLine = "\n(আগামী কিস্তির তারিখ নির্ধারণ করা হয়নি)";
         }
       }
 
