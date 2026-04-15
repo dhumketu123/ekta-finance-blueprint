@@ -103,16 +103,28 @@ function fmtDate(dateStr: string | null | undefined): string {
 }
 
 /**
+ * ⚠️ SINGLE SOURCE OF TRUTH — All installment date calculations MUST use this function.
  * Compute next installment date anchored to loan's installment_day.
  * Prevents date drift across months (handles 31st → shorter months).
+ * Returns null for invalid anchor days.
  */
 export function computeAnchoredNextInstallment(
   anchorDay: number,
   referenceDate?: Date,
-): Date {
+): Date | null {
+  // Defensive guard — reject invalid anchor days
+  if (!anchorDay || anchorDay < 1 || anchorDay > 31) {
+    return null;
+  }
+
   const now = referenceDate ?? new Date();
   // Normalize to midnight — prevents timezone-induced day boundary drift
   now.setHours(0, 0, 0, 0);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Installment Anchor Day:", anchorDay);
+  }
+
   const currentDay = now.getDate();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -143,6 +155,7 @@ export function computeAnchoredNextInstallment(
 
 /**
  * Format date in Bengali locale: ১৪ এপ্রিল ২০২৬
+ * ⚠️ DO NOT use English locale fallback. Bengali only.
  */
 export function formatBengaliDate(date: Date): string {
   return new Intl.DateTimeFormat("bn-BD", {
@@ -150,6 +163,20 @@ export function formatBengaliDate(date: Date): string {
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+/**
+ * ⚠️ FROZEN FORMAT — Single source for installment line in SMS/receipt.
+ * Do NOT duplicate this formatting elsewhere.
+ */
+export function formatInstallmentLine(date: Date | null): string {
+  if (!date) return "";
+  const formatted = new Intl.DateTimeFormat("bn-BD", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return `(আগামী কিস্তি: ${formatted})`;
 }
 
 function tk(n: number): string {
@@ -175,10 +202,12 @@ export function buildReceiptMessage(input: ReceiptInput): string {
         : "";
 
       // Compute next installment using anchor-day logic (no date drift)
+      // ⚠️ Uses computeAnchoredNextInstallment (SINGLE SOURCE) + formatInstallmentLine (FROZEN FORMAT)
       let nextLine = "";
       if (!loanClosed && installmentDay && installmentDay > 0) {
         const nextDate = computeAnchoredNextInstallment(installmentDay);
-        nextLine = `\n(আগামী কিস্তি: ${formatBengaliDate(nextDate)})`;
+        const line = formatInstallmentLine(nextDate);
+        if (line) nextLine = `\n${line}`;
       } else if (!loanClosed && nextDueDate) {
         const nextStr = fmtDate(nextDueDate);
         if (nextStr) nextLine = `\n(আগামী কিস্তি: ${nextStr})`;
