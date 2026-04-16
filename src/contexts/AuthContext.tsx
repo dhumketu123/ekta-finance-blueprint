@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { ROUTES } from "@/config/routes";
@@ -7,14 +7,17 @@ import { ROUTES } from "@/config/routes";
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Deterministic Auth State Machine
- * ─────────────────────────────────
+ * Deterministic Auth State Machine (Phase 1.1.1 — Hardened)
+ * ─────────────────────────────────────────────────────────
  * IDLE             → initial boot, before any auth check
  * AUTH_LOADING     → bootstrapping session from storage / sign-in in flight
- * AUTHENTICATED    → user+session set, role fetch not yet complete (transient)
+ * AUTHENTICATED    → user+session set, role fetch not yet started (transient)
  * ROLE_LOADING     → fetching user_roles row
- * AUTH_READY       → user + session + role all hydrated → safe to render protected UI
- * UNAUTHENTICATED  → no session → must show /auth
+ * AUTH_READY       → STRICT: user !== null AND session !== null AND role !== null
+ * UNAUTHENTICATED  → no session OR role hydration failed → must show /auth
+ *
+ * RULE: AuthContext is STATE ONLY — it performs ZERO navigation side effects.
+ * Navigation is owned exclusively by Auth.tsx (post-login) and ProtectedRoute (guarding).
  */
 export type AuthStateName =
   | "IDLE"
@@ -46,26 +49,9 @@ const INITIAL_STATE: AuthState = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Routes that the state-machine navigator must NOT touch
-const NAV_BLOCKLIST = new Set<string>([ROUTES.RESET_PASSWORD]);
-
-const routeForRole = (role: string | null): string => {
-  switch (role) {
-    case "investor":
-      return ROUTES.INVESTOR_WALLET;
-    case "field_officer":
-      return ROUTES.CLIENTS;
-    case "alumni":
-      return ROUTES.ALUMNI;
-    default:
-      return ROUTES.DASHBOARD;
-  }
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState>(INITIAL_STATE);
   const navigate = useNavigate();
-  const location = useLocation();
 
   // ── Inactivity timer ──
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,17 +65,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── Role fetch — SINGLE SOURCE OF TRUTH ──
+  // STRICT RULE: AUTH_READY is set ONLY if role !== null.
+  // If role is missing/unfetchable, fall back to UNAUTHENTICATED to avoid
+  // any unstable intermediate state that downstream guards could misread.
   const fetchAndApplyRole = useCallback(
     async (user: User, session: Session) => {
       setAuthState({ state: "ROLE_LOADING", user, session, role: null });
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const role = (data?.role as string | undefined) ?? null;
-      setAuthState({ state: "AUTH_READY", user, session, role });
-      resetInactivityTimer();
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const role = (data?.role as string | undefined) ?? null;
+
+        if (error || !role) {
+          // Role hydration failed → SAFE FALLBACK. Never promote to AUTH_READY with null role.
+          setAuthState({
+            state: "UNAUTHENTICATED",
+            user: null,
+            session: null,
+            role: null,
+          });
+          return;
+        }
+
+        setAuthState({ state: "AUTH_READY", user, session, role });
+        resetInactivityTimer();
+      } catch {
+        setAuthState({
+          state: "UNAUTHENTICATED",
+          user: null,
+          session: null,
+          role: null,
+        });
+      }
     },
     [resetInactivityTimer]
   );
@@ -108,6 +119,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── Auth bootstrap + state machine driver ──
   useEffect(() => {
     let cancelled = false;
+    // Track current authenticated user id to detect identity changes on TOKEN_REFRESHED
+    let currentUserId: string | null = null;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // CRITICAL: Recovery session is isolated — never promote to AUTH_READY
@@ -118,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           session: session ?? null,
           role: null,
         });
+        // Recovery navigation is the ONE permitted exception (out-of-band auth flow).
         navigate(ROUTES.RESET_PASSWORD, { replace: true });
         return;
       }
@@ -128,6 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === "SIGNED_IN" && session?.user) {
+        currentUserId = session.user.id;
         setAuthState({
           state: "AUTHENTICATED",
           user: session.user,
@@ -142,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (event === "SIGNED_OUT") {
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+        currentUserId = null;
         setAuthState({
           state: "UNAUTHENTICATED",
           user: null,
@@ -151,7 +167,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === "TOKEN_REFRESHED" && session) {
-        // Keep the existing role; only refresh session/user references.
+        // SAFE RULE:
+        // - If same user identity AND already AUTH_READY → only refresh session/user refs.
+        // - If user identity changed → revalidate role (fresh hydration).
+        // - Otherwise → leave state untouched (don't manufacture AUTH_READY here).
+        const refreshedUserId = session.user?.id ?? null;
+        if (currentUserId && refreshedUserId && refreshedUserId !== currentUserId) {
+          currentUserId = refreshedUserId;
+          setAuthState({
+            state: "AUTHENTICATED",
+            user: session.user,
+            session,
+            role: null,
+          });
+          setTimeout(() => {
+            if (!cancelled) fetchAndApplyRole(session.user, session);
+          }, 0);
+          return;
+        }
+        currentUserId = refreshedUserId;
         setAuthState((prev) =>
           prev.state === "AUTH_READY"
             ? { ...prev, session, user: session.user }
@@ -174,6 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       if (session?.user) {
+        currentUserId = session.user.id;
         setAuthState({
           state: "AUTHENTICATED",
           user: session.user,
@@ -197,24 +232,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAndApplyRole]);
-
-  // ── Centralized navigation: only fires on AUTH_READY transitions from /auth ──
-  const lastNavigatedFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (authState.state !== "AUTH_READY") {
-      lastNavigatedFor.current = null;
-      return;
-    }
-    if (NAV_BLOCKLIST.has(location.pathname)) return;
-    // Only auto-navigate away from the auth page; respect user's current location otherwise.
-    if (location.pathname !== ROUTES.AUTH) return;
-
-    const userKey = authState.user?.id ?? "anon";
-    if (lastNavigatedFor.current === userKey) return;
-    lastNavigatedFor.current = userKey;
-
-    navigate(routeForRole(authState.role), { replace: true });
-  }, [authState.state, authState.role, authState.user?.id, location.pathname, navigate]);
 
   const signOut = useCallback(async () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);

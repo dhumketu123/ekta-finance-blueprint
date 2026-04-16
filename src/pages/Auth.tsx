@@ -6,8 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROUTES } from "@/config/routes";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
+
+const routeForRole = (role: string | null): string => {
+  switch (role) {
+    case "investor":
+      return ROUTES.INVESTOR_WALLET;
+    case "field_officer":
+      return ROUTES.CLIENTS;
+    case "alumni":
+      return ROUTES.ALUMNI;
+    default:
+      return ROUTES.DASHBOARD;
+  }
+};
 
 type AuthMode = "login" | "signup" | "forgot";
 type LoginMethod = "email" | "phone";
@@ -33,9 +48,21 @@ const Auth = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { state: authStateName, role } = useAuth();
 
-  // NOTE: Post-login navigation is fully owned by AuthContext state machine.
-  // Auth.tsx no longer reads `user` or `role`, no longer navigates after login.
+  // ── SINGLE NAVIGATION AUTHORITY (post-login) ──
+  // AuthContext is state-only and performs no navigation. Auth.tsx routes the user
+  // exactly once, when the state machine reaches AUTH_READY (role guaranteed non-null).
+  const hasNavigatedRef = useRef(false);
+  useEffect(() => {
+    if (authStateName !== "AUTH_READY") {
+      hasNavigatedRef.current = false;
+      return;
+    }
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    navigate(routeForRole(role), { replace: true });
+  }, [authStateName, role, navigate]);
 
   // Show expired recovery link message if redirected from ResetPassword
   useEffect(() => {

@@ -18,13 +18,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { state, role } = useAuth();
   const location = useLocation();
 
-  // Any non-terminal state → show loader. ProtectedRoute does NOT fetch roles.
-  if (
-    state === "IDLE" ||
-    state === "AUTH_LOADING" ||
-    state === "AUTHENTICATED" ||
-    state === "ROLE_LOADING"
-  ) {
+  // Pure renderer: ProtectedRoute does NOT fetch roles, mutate state, or trigger side effects.
+  // Any non-terminal state → loader.
+  if (state !== "AUTH_READY" && state !== "UNAUTHENTICATED") {
     return <Loader />;
   }
 
@@ -32,7 +28,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to={ROUTES.AUTH} replace state={{ from: location }} />;
   }
 
-  // state === "AUTH_READY" — role hydrated, enforce role gates.
+  // state === "AUTH_READY" — role guaranteed non-null by AuthContext. Enforce role gates only.
   if (role === "alumni" && allowedRoles && !allowedRoles.includes("alumni")) {
     return <Navigate to={ROUTES.ALUMNI} replace />;
   }
