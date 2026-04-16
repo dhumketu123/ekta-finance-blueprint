@@ -170,6 +170,79 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOutRef.current = signOut;
   }, []);
 
+  // ─────────────────────────────────────
+  // AUTH STATE LISTENER
+  // ─────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        // PASSWORD RECOVERY FLOW
+        if (event === "PASSWORD_RECOVERY") {
+          setAuthState(UNAUTHENTICATED_STATE);
+          if (typeof window !== "undefined") {
+            window.location.replace("/reset-password");
+          }
+          return;
+        }
+
+        // SIGNED IN — route directly to ROLE_LOADING (no AUTHENTICATED flicker)
+        if (event === "SIGNED_IN" && session?.user) {
+          setTimeout(() => {
+            if (!cancelled) fetchAndApplyRole(session.user, session);
+          }, 0);
+          return;
+        }
+
+        // SIGNED OUT
+        if (event === "SIGNED_OUT") {
+          clearTimers();
+          retryCountRef.current = 0;
+          inFlightRef.current = false;
+          activeUserIdRef.current = null;
+          setAuthState(UNAUTHENTICATED_STATE);
+          return;
+        }
+
+        // TOKEN REFRESH — only refresh tokens on already-READY state
+        if (event === "TOKEN_REFRESHED" && session?.user) {
+          setAuthState((prev) =>
+            prev.state === AUTH_STATES.READY
+              ? { ...prev, session, user: session.user }
+              : prev
+          );
+        }
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // ─────────────────────────────────────
+  // BOOTSTRAP SESSION ON LOAD
+  // ─────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+
+      if (session?.user) {
+        fetchAndApplyRole(session.user, session);
+      } else {
+        setAuthState(UNAUTHENTICATED_STATE);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const events = ["mousedown", "keydown", "touchstart", "scroll"];
 
