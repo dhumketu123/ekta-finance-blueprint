@@ -38,9 +38,6 @@ const UNAUTHENTICATED_STATE: AuthState = {
   role: null,
 };
 
-const RETRY_DELAYS_MS = [2000, 3000, 5000] as const;
-const MAX_RETRIES = RETRY_DELAYS_MS.length;
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -48,17 +45,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const retryCountRef = useRef(0);
-
-  // SINGLE SOURCE LOCK (only this exists now)
-  const currentUserRef = useRef<string | null>(null);
+  // ── HARD EXECUTION LOCK (single source of truth) ──
+  const lockRef = useRef(false);
+  const userRef = useRef<string | null>(null);
 
   const signOutRef = useRef<() => void>(() => {});
 
-  // ── SAFE STATE SETTER ──
-  const setAuthState = (next: AuthState | ((p: AuthState) => AuthState)) => {
+  // ── SAFE STATE SETTER (READY INVARIANT GUARANTEE) ──
+  const setAuthState = (
+    next: AuthState | ((p: AuthState) => AuthState)
+  ) => {
     setAuthStateRaw((prev) => {
       const candidate = typeof next === "function" ? next(prev) : next;
 
@@ -73,26 +70,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const clearAllTimers = () => {
+  const clearTimers = () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     if (watchdogRef.current) clearTimeout(watchdogRef.current);
-    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
   };
 
-  // ── CORE ROLE FETCH ──
+  // ── CORE ROLE FETCH (SINGLE SOURCE OF TRUTH) ──
   const fetchAndApplyRole = async (user: User, session: Session) => {
     if (!user || !session?.user) {
-      currentUserRef.current = null;
-      retryCountRef.current = 0;
+      lockRef.current = false;
+      userRef.current = null;
       setAuthState(UNAUTHENTICATED_STATE);
       return;
     }
 
-    // HARD GATE (prevents duplicate + race)
-    if (currentUserRef.current === user.id) return;
-    currentUserRef.current = user.id;
+    // HARD GUARD (prevents duplicate + stale execution)
+    if (lockRef.current && userRef.current === user.id) return;
 
-    clearAllTimers();
+    lockRef.current = true;
+    userRef.current = user.id;
+
+    clearTimers();
 
     setAuthState({
       state: AUTH_STATES.ROLE_LOADING,
@@ -101,13 +99,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       role: null,
     });
 
-    // ── WATCHDOG ──
+    // ── WATCHDOG (anti-hang safety net) ──
     watchdogRef.current = setTimeout(() => {
       setAuthState((prev) => {
         if (prev.state !== AUTH_STATES.ROLE_LOADING) return prev;
 
-        currentUserRef.current = null;
-        retryCountRef.current = 0;
+        lockRef.current = false;
+        userRef.current = null;
 
         return UNAUTHENTICATED_STATE;
       });
@@ -120,21 +118,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (currentUserRef.current !== user.id) return;
+      // stale request protection
+      if (userRef.current !== user.id) return;
 
       const role = (data?.role as string | undefined) ?? null;
 
       if (error || !role) {
-        currentUserRef.current = null;
-        retryCountRef.current = 0;
-        clearAllTimers();
+        lockRef.current = false;
+        userRef.current = null;
+        clearTimers();
         setAuthState(UNAUTHENTICATED_STATE);
         return;
       }
 
-      retryCountRef.current = 0;
-      currentUserRef.current = null;
-      clearAllTimers();
+      lockRef.current = false;
+      userRef.current = null;
+      clearTimers();
 
       setAuthState({
         state: AUTH_STATES.READY,
@@ -143,9 +142,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role,
       });
     } catch {
-      currentUserRef.current = null;
-      retryCountRef.current = 0;
-      clearAllTimers();
+      lockRef.current = false;
+      userRef.current = null;
+      clearTimers();
       setAuthState(UNAUTHENTICATED_STATE);
     }
   };
@@ -156,9 +155,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ── SIGN OUT ──
   const signOut = async () => {
-    clearAllTimers();
-    retryCountRef.current = 0;
-    currentUserRef.current = null;
+    clearTimers();
+    lockRef.current = false;
+    userRef.current = null;
 
     try {
       await supabase.auth.signOut();
@@ -171,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOutRef.current = signOut;
   }, [signOut]);
 
-  // ── INACTIVITY ──
+  // ── INACTIVITY HANDLER ──
   useEffect(() => {
     const events = ["mousedown", "keydown", "touchstart", "scroll"];
 
@@ -187,13 +186,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       events.forEach((e) => window.removeEventListener(e, reset));
-      clearAllTimers();
+      clearTimers();
     };
   }, []);
 
   // ── AUTH LISTENER ──
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
         setTimeout(() => {
           triggerRoleFetchOnce(session.user, session);
@@ -201,9 +202,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === "SIGNED_OUT") {
-        clearAllTimers();
-        currentUserRef.current = null;
-        retryCountRef.current = 0;
+        clearTimers();
+        lockRef.current = false;
+        userRef.current = null;
         setAuthState(UNAUTHENTICATED_STATE);
       }
 
