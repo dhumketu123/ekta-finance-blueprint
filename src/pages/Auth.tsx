@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,21 +33,9 @@ const Auth = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, role } = useAuth();
-  const awaitingLoginRef = useRef(false);
 
-  // Post-login navigation: wait until AuthContext has hydrated user + role
-  useEffect(() => {
-    if (!awaitingLoginRef.current) return;
-    if (!user) return;
-    if (role === null) return; // role still hydrating
-
-    awaitingLoginRef.current = false;
-    if (role === "investor") navigate("/wallet", { replace: true });
-    else if (role === "field_officer") navigate("/clients", { replace: true });
-    else if (role === "alumni") navigate("/alumni", { replace: true });
-    else navigate("/", { replace: true });
-  }, [user, role, navigate]);
+  // NOTE: Post-login navigation is fully owned by AuthContext state machine.
+  // Auth.tsx no longer reads `user` or `role`, no longer navigates after login.
 
   // Show expired recovery link message if redirected from ResetPassword
   useEffect(() => {
@@ -92,8 +79,7 @@ const Auth = () => {
     }
 
     failCountRef.current = 0;
-    // Navigation is handled by the post-login effect (waits for AuthContext role hydration)
-    awaitingLoginRef.current = true;
+    // Navigation is fully owned by AuthContext state machine on AUTH_READY transition.
   };
 
   const handleSignup = async () => {
