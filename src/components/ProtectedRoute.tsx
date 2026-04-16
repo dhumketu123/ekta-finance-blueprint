@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   // Pure renderer: ProtectedRoute does NOT fetch roles, mutate state, or trigger side effects.
   // Any non-terminal state → loader.
-  if (state !== "AUTH_READY" && state !== "UNAUTHENTICATED") {
+  if (state !== "READY" && state !== "UNAUTHENTICATED") {
     return <Loader />;
   }
 
@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to={ROUTES.AUTH} replace state={{ from: location }} />;
   }
 
-  // state === "AUTH_READY" — role guaranteed non-null by AuthContext. Enforce role gates only.
+  // state === "READY" — role guaranteed non-null by AuthContext invariant. Enforce role gates only.
   if (role === "alumni" && allowedRoles && !allowedRoles.includes("alumni")) {
     return <Navigate to={ROUTES.ALUMNI} replace />;
   }

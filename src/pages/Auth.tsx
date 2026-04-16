@@ -52,10 +52,10 @@ const Auth = () => {
 
   // ── SINGLE NAVIGATION AUTHORITY (post-login) ──
   // AuthContext is state-only and performs no navigation. Auth.tsx routes the user
-  // exactly once, when the state machine reaches AUTH_READY (role guaranteed non-null).
+  // exactly once, when the state machine reaches READY (role guaranteed non-null).
   const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (authStateName !== "AUTH_READY") {
+    if (authStateName !== "READY") {
       hasNavigatedRef.current = false;
       return;
     }
