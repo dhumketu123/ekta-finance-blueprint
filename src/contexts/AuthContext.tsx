@@ -21,11 +21,19 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
  */
 export type AuthStateName =
   | "IDLE"
-  | "AUTH_LOADING"
+  | "LOADING"
   | "AUTHENTICATED"
   | "ROLE_LOADING"
-  | "AUTH_READY"
+  | "READY"
   | "UNAUTHENTICATED";
+
+/**
+ * Backward-compat aliases: legacy state names used by older consumers map
+ * 1:1 to the new canonical names. These exist ONLY to avoid breaking external
+ * string comparisons; new code MUST use the canonical names above.
+ */
+const LEGACY_AUTH_LOADING = "AUTH_LOADING" as const;
+const LEGACY_AUTH_READY = "AUTH_READY" as const;
 
 export interface AuthState {
   state: AuthStateName;
