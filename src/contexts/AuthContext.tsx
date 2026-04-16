@@ -133,12 +133,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     async (user: User, session: Session) => {
       // Guard: refuse to start with missing inputs
       if (!user || !session?.user) {
+        roleFetchInProgressRef.current = false;
         activeFetchUserIdRef.current = null;
         retryCountRef.current = 0;
         clearRetryTimer();
         setAuthState(UNAUTHENTICATED_STATE);
         return;
       }
+
+      // ❗ IN-FLIGHT LOCK — prevents overlapping fetches from concurrent retries
+      if (roleFetchInProgressRef.current) return;
+      roleFetchInProgressRef.current = true;
 
       activeFetchUserIdRef.current = user.id;
 
@@ -157,12 +162,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         // Stale guard: identity changed or signed out during fetch
-        if (activeFetchUserIdRef.current !== user.id) return;
+        if (activeFetchUserIdRef.current !== user.id) {
+          roleFetchInProgressRef.current = false;
+          return;
+        }
 
         const role = (data?.role as string | undefined) ?? null;
 
         // ❗ FAILURE PATH — retry with exponential backoff, then give up
         if (error || !role) {
+          roleFetchInProgressRef.current = false;
+
           if (retryCountRef.current >= MAX_RETRIES) {
             retryCountRef.current = 0;
             activeFetchUserIdRef.current = null;
@@ -186,6 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // ✅ SUCCESS — atomic READY assignment, all three guaranteed non-null
         retryCountRef.current = 0;
+        roleFetchInProgressRef.current = false;
         clearRetryTimer();
 
         setAuthState({
@@ -197,7 +208,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         resetInactivityTimer();
       } catch {
         // Stale guard
-        if (activeFetchUserIdRef.current !== user.id) return;
+        if (activeFetchUserIdRef.current !== user.id) {
+          roleFetchInProgressRef.current = false;
+          return;
+        }
+
+        roleFetchInProgressRef.current = false;
 
         if (retryCountRef.current >= MAX_RETRIES) {
           retryCountRef.current = 0;
@@ -217,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }, delay);
       }
     },
-    [resetInactivityTimer, clearRetryTimer]
+    [resetInactivityTimer, clearRetryTimer, setAuthState]
   );
 
   // ── Activity listeners for inactivity timeout ──
