@@ -92,20 +92,8 @@ const Auth = () => {
     }
 
     failCountRef.current = 0;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      const role = roleData?.role;
-      if (role === "investor") navigate("/wallet");
-      else if (role === "field_officer") navigate("/clients");
-      else navigate("/");
-    }
+    // Navigation is handled by the post-login effect (waits for AuthContext role hydration)
+    awaitingLoginRef.current = true;
   };
 
   const handleSignup = async () => {
