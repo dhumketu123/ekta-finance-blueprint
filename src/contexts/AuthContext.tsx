@@ -99,7 +99,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        setAuthState({ state: "AUTH_READY", user, session, role });
+        // RUNTIME INVARIANT: READY must NEVER be set with a null role.
+        if (!user || !session || !role) {
+          setAuthState({
+            state: "UNAUTHENTICATED",
+            user: null,
+            session: null,
+            role: null,
+          });
+          return;
+        }
+        setAuthState({ state: "READY", user, session, role });
         resetInactivityTimer();
       } catch {
         setAuthState({
@@ -195,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         currentUserId = refreshedUserId;
         setAuthState((prev) =>
-          prev.state === "AUTH_READY"
+          prev.state === "READY"
             ? { ...prev, session, user: session.user }
             : prev
         );
@@ -203,7 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Initial bootstrap
-    setAuthState((prev) => (prev.state === "IDLE" ? { ...prev, state: "AUTH_LOADING" } : prev));
+    setAuthState((prev) => (prev.state === "IDLE" ? { ...prev, state: "LOADING" } : prev));
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return;
       if (window.location.pathname === ROUTES.RESET_PASSWORD) {
