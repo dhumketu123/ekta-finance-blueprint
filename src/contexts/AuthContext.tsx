@@ -7,20 +7,22 @@ import { ROUTES } from "@/config/routes";
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Deterministic Auth State Machine (Phase 1.1.2 — Final Stability Patch)
+ * Deterministic Auth State Machine — Single Source of Truth
  * ──────────────────────────────────────────────────────────────────────
  * IDLE             → initial boot, before any auth check
  * LOADING          → bootstrapping session from storage / sign-in in flight
  * AUTHENTICATED    → user+session set, role fetch not yet started (transient)
- * ROLE_LOADING     → fetching user_roles row
+ * ROLE_LOADING     → fetching user_roles row (incl. retry window)
  * READY            → STRICT: user !== null AND session !== null AND role !== null (IMMUTABLE TERMINAL)
- * UNAUTHENTICATED  → no session OR role hydration failed → must show /auth
+ * UNAUTHENTICATED  → no session OR role hydration failed (after retries exhausted)
  *
  * RULES:
  *   1. READY is IMMUTABLE — once set, never mutated until SIGNED_OUT or identity change
- *   2. AuthContext is STATE ONLY — performs ZERO navigation side effects
+ *   2. AuthContext is STATE ONLY — performs ZERO navigation (except PASSWORD_RECOVERY)
  *   3. Navigation is owned exclusively by Auth.tsx and ProtectedRoute
- *   4. ALL state names use AUTH_STATES constants — never raw strings
+ *   4. Role fetch lives ONLY in AuthContext — no other file may query user_roles
+ *   5. On role fetch failure → exponential backoff (2s, 3s, 5s) → then UNAUTHENTICATED
+ *   6. TOKEN_REFRESHED on READY state → only refresh session/user, never re-fetch role
  */
 export const AUTH_STATES = {
   IDLE: "IDLE",
@@ -60,6 +62,10 @@ const UNAUTHENTICATED_STATE: AuthState = {
   role: null,
 };
 
+// Exponential backoff schedule for role fetch retries
+const RETRY_DELAYS_MS = [2000, 3000, 5000] as const;
+const MAX_RETRIES = RETRY_DELAYS_MS.length;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -70,9 +76,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signOutRef = useRef(async () => {});
 
-  // ── Role fetch retry control ──
+  // ── Role fetch control refs ──
   const retryCountRef = useRef(0);
-  const MAX_RETRIES = 5;
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the user.id whose role fetch is currently in-flight; guards against
+  // stale retries firing after sign-out or identity switch.
+  const activeFetchUserIdRef = useRef<string | null>(null);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
@@ -81,16 +90,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, SESSION_TIMEOUT_MS);
   }, []);
 
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, []);
+
   // ── Role fetch — SINGLE SOURCE OF TRUTH ──
-  // STRICT RULE: READY is set ONLY after ALL three (user, session, role) are validated.
-  // Role fetch failures retry with backoff up to MAX_RETRIES before falling back to UNAUTHENTICATED.
+  // STRICT RULE: READY is set ONLY after ALL three (user, session, role) are validated
+  // in a single atomic state update. No post-READY corrections allowed.
   const fetchAndApplyRole = useCallback(
     async (user: User, session: Session) => {
-      // Safety check
+      // Guard: refuse to start with missing inputs
       if (!user || !session?.user) {
+        activeFetchUserIdRef.current = null;
+        retryCountRef.current = 0;
+        clearRetryTimer();
         setAuthState(UNAUTHENTICATED_STATE);
         return;
       }
+
+      activeFetchUserIdRef.current = user.id;
 
       setAuthState({
         state: AUTH_STATES.ROLE_LOADING,
@@ -106,34 +127,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", user.id)
           .maybeSingle();
 
+        // Stale guard: identity changed or signed out during fetch
+        if (activeFetchUserIdRef.current !== user.id) return;
+
         const role = (data?.role as string | undefined) ?? null;
 
-        // ❗ ROLE FAILURE HANDLING (SAFE RETRY WITH LIMIT)
+        // ❗ FAILURE PATH — retry with exponential backoff, then give up
         if (error || !role) {
           if (retryCountRef.current >= MAX_RETRIES) {
             retryCountRef.current = 0;
+            activeFetchUserIdRef.current = null;
             setAuthState(UNAUTHENTICATED_STATE);
             return;
           }
 
+          const delay = RETRY_DELAYS_MS[retryCountRef.current];
           retryCountRef.current += 1;
 
-          setAuthState({
-            state: AUTH_STATES.ROLE_LOADING,
-            user,
-            session,
-            role: null,
-          });
-
-          setTimeout(() => {
-            fetchAndApplyRole(user, session);
-          }, 2000);
+          clearRetryTimer();
+          retryTimerRef.current = setTimeout(() => {
+            // Re-check stale guard before retrying
+            if (activeFetchUserIdRef.current === user.id) {
+              fetchAndApplyRole(user, session);
+            }
+          }, delay);
 
           return;
         }
 
-        // ✅ SUCCESS PATH
+        // ✅ SUCCESS — atomic READY assignment, all three guaranteed non-null
         retryCountRef.current = 0;
+        clearRetryTimer();
 
         setAuthState({
           state: AUTH_STATES.READY,
@@ -141,30 +165,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           session,
           role,
         });
-
         resetInactivityTimer();
       } catch {
+        // Stale guard
+        if (activeFetchUserIdRef.current !== user.id) return;
+
         if (retryCountRef.current >= MAX_RETRIES) {
           retryCountRef.current = 0;
+          activeFetchUserIdRef.current = null;
           setAuthState(UNAUTHENTICATED_STATE);
           return;
         }
 
+        const delay = RETRY_DELAYS_MS[retryCountRef.current];
         retryCountRef.current += 1;
 
-        setAuthState({
-          state: AUTH_STATES.ROLE_LOADING,
-          user,
-          session,
-          role: null,
-        });
-
-        setTimeout(() => {
-          fetchAndApplyRole(user, session);
-        }, 3000);
+        clearRetryTimer();
+        retryTimerRef.current = setTimeout(() => {
+          if (activeFetchUserIdRef.current === user.id) {
+            fetchAndApplyRole(user, session);
+          }
+        }, delay);
       }
     },
-    [resetInactivityTimer]
+    [resetInactivityTimer, clearRetryTimer]
   );
 
   // ── Activity listeners for inactivity timeout ──
@@ -181,12 +205,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── Auth bootstrap + state machine driver ──
   useEffect(() => {
     let cancelled = false;
-    // Track current authenticated user id to detect identity changes on TOKEN_REFRESHED
     let currentUserId: string | null = null;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // CRITICAL: Recovery session is isolated — never promote to READY
       if (event === "PASSWORD_RECOVERY") {
+        retryCountRef.current = 0;
+        activeFetchUserIdRef.current = null;
+        clearRetryTimer();
         setAuthState({
           state: AUTH_STATES.UNAUTHENTICATED,
           user: session?.user ?? null,
@@ -205,6 +231,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (event === "SIGNED_IN" && session?.user) {
         currentUserId = session.user.id;
+        retryCountRef.current = 0;
+        clearRetryTimer();
         setAuthState({
           state: AUTH_STATES.AUTHENTICATED,
           user: session.user,
@@ -219,18 +247,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (event === "SIGNED_OUT") {
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+        clearRetryTimer();
+        retryCountRef.current = 0;
+        activeFetchUserIdRef.current = null;
         currentUserId = null;
         setAuthState(UNAUTHENTICATED_STATE);
       }
 
       if (event === "TOKEN_REFRESHED" && session) {
-        // SAFE RULE:
-        // - If same user identity AND already READY → only refresh session/user refs.
-        // - If user identity changed → revalidate role (fresh hydration).
-        // - Otherwise → leave state untouched (don't manufacture READY here).
         const refreshedUserId = session.user?.id ?? null;
+
+        // Identity changed → revalidate role from scratch
         if (currentUserId && refreshedUserId && refreshedUserId !== currentUserId) {
           currentUserId = refreshedUserId;
+          retryCountRef.current = 0;
+          clearRetryTimer();
           setAuthState({
             state: AUTH_STATES.AUTHENTICATED,
             user: session.user,
@@ -242,7 +273,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
           return;
         }
+
         currentUserId = refreshedUserId;
+        // Same identity: if READY, only refresh session/user refs — do NOT re-fetch role,
+        // do NOT change state. Otherwise leave state untouched.
         setAuthState((prev) =>
           prev.state === AUTH_STATES.READY
             ? { ...prev, session, user: session.user }
@@ -268,6 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       if (session?.user) {
         currentUserId = session.user.id;
+        retryCountRef.current = 0;
         setAuthState({
           state: AUTH_STATES.AUTHENTICATED,
           user: session.user,
@@ -283,19 +318,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       cancelled = true;
       subscription.unsubscribe();
+      clearRetryTimer();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAndApplyRole]);
 
   const signOut = useCallback(async () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    clearRetryTimer();
+    retryCountRef.current = 0;
+    activeFetchUserIdRef.current = null;
     try {
       await supabase.auth.signOut();
     } catch {
       // Ignore errors (e.g. expired refresh token)
     }
     setAuthState(UNAUTHENTICATED_STATE);
-  }, []);
+  }, [clearRetryTimer]);
 
   // Keep ref in sync for inactivity timer callback
   useEffect(() => {
