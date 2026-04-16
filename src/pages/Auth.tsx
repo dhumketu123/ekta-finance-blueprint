@@ -106,7 +106,7 @@ const Auth = () => {
     }
 
     failCountRef.current = 0;
-    // Navigation is fully owned by AuthContext state machine on AUTH_READY transition.
+    // Navigation is handled by the AUTH_READY effect above (single navigation authority).
   };
 
   const handleSignup = async () => {
