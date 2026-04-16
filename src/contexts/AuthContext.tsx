@@ -204,7 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           clearTimers();
           retryCountRef.current = 0;
           inFlightRef.current = false;
-          activeUserIdRef.current = null;
+          executionLockRef.current = null;
           setAuthState(UNAUTHENTICATED_STATE);
           return;
         }
