@@ -277,9 +277,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === "SIGNED_IN" && session?.user) {
         currentUserId = session.user.id;
         retryCountRef.current = 0;
+        roleFetchInProgressRef.current = false;
         clearRetryTimer();
+        // Route directly through ROLE_LOADING — eliminates AUTHENTICATED+null-role flicker.
         setAuthState({
-          state: AUTH_STATES.AUTHENTICATED,
+          state: AUTH_STATES.ROLE_LOADING,
           user: session.user,
           session,
           role: null,
