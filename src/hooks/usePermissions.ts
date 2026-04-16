@@ -120,8 +120,12 @@ export const getPermissionsByRole = (role?: AppRole | null): PermissionMatrix =>
   return PERMISSION_MAP[role];
 };
 
-export const usePermissions = (): PermissionMatrix & { role: AppRole | null } => {
+export const usePermissions = () => {
   const { role } = useAuth();
-  const perms = getPermissionsByRole(role as AppRole | null);
-  return { ...perms, role: (role as AppRole) ?? null };
+  const permissions = getPermissionsByRole(role as AppRole | null);
+  return {
+    ...permissions,      // backward-compat: const { canViewClients } = usePermissions()
+    permissions,         // structured access: const { permissions } = usePermissions()
+    role: (role as AppRole) ?? null,
+  };
 };
