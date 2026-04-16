@@ -274,7 +274,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo<AuthContextType>(
     () => ({
       ...authState,
-      loading: authState.state === "IDLE" || authState.state === "AUTH_LOADING",
+      loading: authState.state === "IDLE" || authState.state === "LOADING",
       signOut,
     }),
     [authState, signOut]
