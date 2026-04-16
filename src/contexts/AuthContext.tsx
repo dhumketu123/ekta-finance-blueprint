@@ -70,6 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signOutRef = useRef(async () => {});
 
+  // ── Role fetch retry control ──
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 5;
+
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     inactivityTimer.current = setTimeout(() => {
@@ -78,12 +82,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── Role fetch — SINGLE SOURCE OF TRUTH ──
-  // STRICT RULE: READY is set ONLY after ALL three (user, session, role) are validated
-  // in a single atomic state update. No post-READY corrections allowed.
+  // STRICT RULE: READY is set ONLY after ALL three (user, session, role) are validated.
+  // Role fetch failures retry with backoff up to MAX_RETRIES before falling back to UNAUTHENTICATED.
   const fetchAndApplyRole = useCallback(
     async (user: User, session: Session) => {
-      // Pre-validation: refuse to even start if inputs are missing
-      if (!user || !session) return;
+      // Safety check
+      if (!user || !session?.user) {
+        setAuthState(UNAUTHENTICATED_STATE);
+        return;
+      }
 
       setAuthState({
         state: AUTH_STATES.ROLE_LOADING,
@@ -101,35 +108,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const role = (data?.role as string | undefined) ?? null;
 
-        // ✅ SAFE RULE: NEVER LOGOUT ON ROLE FAILURE — stay in ROLE_LOADING and retry with backoff
+        // ❗ ROLE FAILURE HANDLING (SAFE RETRY WITH LIMIT)
         if (error || !role) {
+          if (retryCountRef.current >= MAX_RETRIES) {
+            retryCountRef.current = 0;
+            setAuthState(UNAUTHENTICATED_STATE);
+            return;
+          }
+
+          retryCountRef.current += 1;
+
           setAuthState({
             state: AUTH_STATES.ROLE_LOADING,
             user,
             session,
             role: null,
           });
+
           setTimeout(() => {
             fetchAndApplyRole(user, session);
           }, 2000);
+
           return;
         }
 
-        // ✅ ONLY VALID READY STATE — all three guaranteed non-null
+        // ✅ SUCCESS PATH
+        retryCountRef.current = 0;
+
         setAuthState({
           state: AUTH_STATES.READY,
           user,
           session,
           role,
         });
+
         resetInactivityTimer();
       } catch {
+        if (retryCountRef.current >= MAX_RETRIES) {
+          retryCountRef.current = 0;
+          setAuthState(UNAUTHENTICATED_STATE);
+          return;
+        }
+
+        retryCountRef.current += 1;
+
         setAuthState({
           state: AUTH_STATES.ROLE_LOADING,
           user,
           session,
           role: null,
         });
+
         setTimeout(() => {
           fetchAndApplyRole(user, session);
         }, 3000);
