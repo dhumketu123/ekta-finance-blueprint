@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import type { AppRole } from "@/hooks/usePermissions";
 
@@ -20,15 +20,15 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   // Pure renderer: ProtectedRoute does NOT fetch roles, mutate state, or trigger side effects.
   // Any non-terminal state → loader.
-  if (state !== "READY" && state !== "UNAUTHENTICATED") {
+  if (state !== AUTH_STATES.READY && state !== AUTH_STATES.UNAUTHENTICATED) {
     return <Loader />;
   }
 
-  if (state === "UNAUTHENTICATED") {
+  if (state === AUTH_STATES.UNAUTHENTICATED) {
     return <Navigate to={ROUTES.AUTH} replace state={{ from: location }} />;
   }
 
-  // state === "READY" — role guaranteed non-null by AuthContext invariant. Enforce role gates only.
+  // state === READY — role guaranteed non-null by AuthContext invariant. Enforce role gates only.
   if (role === "alumni" && allowedRoles && !allowedRoles.includes("alumni")) {
     return <Navigate to={ROUTES.ALUMNI} replace />;
   }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
@@ -55,7 +55,7 @@ const Auth = () => {
   // exactly once, when the state machine reaches READY (role guaranteed non-null).
   const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (authStateName !== "READY") {
+    if (authStateName !== AUTH_STATES.READY) {
       hasNavigatedRef.current = false;
       return;
     }
