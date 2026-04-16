@@ -34,6 +34,21 @@ const Auth = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, role } = useAuth();
+  const awaitingLoginRef = useRef(false);
+
+  // Post-login navigation: wait until AuthContext has hydrated user + role
+  useEffect(() => {
+    if (!awaitingLoginRef.current) return;
+    if (!user) return;
+    if (role === null) return; // role still hydrating
+
+    awaitingLoginRef.current = false;
+    if (role === "investor") navigate("/wallet", { replace: true });
+    else if (role === "field_officer") navigate("/clients", { replace: true });
+    else if (role === "alumni") navigate("/alumni", { replace: true });
+    else navigate("/", { replace: true });
+  }, [user, role, navigate]);
 
   // Show expired recovery link message if redirected from ResetPassword
   useEffect(() => {
