@@ -296,6 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
         clearRetryTimer();
         retryCountRef.current = 0;
+        roleFetchInProgressRef.current = false;
         activeFetchUserIdRef.current = null;
         currentUserId = null;
         setAuthState(UNAUTHENTICATED_STATE);
