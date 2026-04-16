@@ -69,7 +69,7 @@ const MAX_RETRIES = RETRY_DELAYS_MS.length;
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [authState, setAuthState] = useState<AuthState>(INITIAL_STATE);
+  const [authState, setAuthStateRaw] = useState<AuthState>(INITIAL_STATE);
   const navigate = useNavigate();
 
   // ── Inactivity timer ──
@@ -79,9 +79,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── Role fetch control refs ──
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // In-flight guard: prevents overlapping role fetches from concurrent retries
+  const roleFetchInProgressRef = useRef(false);
   // Tracks the user.id whose role fetch is currently in-flight; guards against
   // stale retries firing after sign-out or identity switch.
   const activeFetchUserIdRef = useRef<string | null>(null);
+
+  // ── READY INVARIANT GUARD ──
+  // Final safety net: if ANY caller attempts to set state=READY without all three
+  // (user, session, role) populated, the setter rejects the mutation and forces
+  // UNAUTHENTICATED. Mathematically guarantees READY is always safe to consume.
+  const setAuthState = useCallback(
+    (next: AuthState | ((prev: AuthState) => AuthState)) => {
+      setAuthStateRaw((prev) => {
+        const candidate = typeof next === "function" ? next(prev) : next;
+        if (
+          candidate.state === AUTH_STATES.READY &&
+          (!candidate.user || !candidate.session || !candidate.role)
+        ) {
+          if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[AuthContext] READY invariant violated — forcing UNAUTHENTICATED",
+              { user: !!candidate.user, session: !!candidate.session, role: candidate.role }
+            );
+          }
+          return UNAUTHENTICATED_STATE;
+        }
+        return candidate;
+      });
+    },
+    []
+  );
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
