@@ -379,6 +379,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     clearRetryTimer();
     retryCountRef.current = 0;
+    roleFetchInProgressRef.current = false;
     activeFetchUserIdRef.current = null;
     try {
       await supabase.auth.signOut();
@@ -386,7 +387,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Ignore errors (e.g. expired refresh token)
     }
     setAuthState(UNAUTHENTICATED_STATE);
-  }, [clearRetryTimer]);
+  }, [clearRetryTimer, setAuthState]);
 
   // Keep ref in sync for inactivity timer callback
   useEffect(() => {
