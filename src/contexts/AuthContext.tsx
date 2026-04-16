@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (cancelled) return;
 
       if (session?.user) {
-        fetchAndApplyRole(session.user, session);
+        triggerRoleFetchOnce(session.user, session);
       } else {
         setAuthState(UNAUTHENTICATED_STATE);
       }
