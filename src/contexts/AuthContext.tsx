@@ -161,7 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     clearTimers();
     retryCountRef.current = 0;
     inFlightRef.current = false;
-    activeUserIdRef.current = null;
+    executionLockRef.current = null;
 
     try {
       await supabase.auth.signOut();
