@@ -48,11 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const retryCountRef = useRef(0);
-  const activeUserIdRef = useRef<string | null>(null);
+  const executionLockRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
-  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const signOutRef = useRef<() => void>(() => {});
 
@@ -78,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchAndApplyRole = async (user: User, session: Session) => {
     if (!user || !session?.user) {
+      executionLockRef.current = null;
       setAuthState(UNAUTHENTICATED_STATE);
       return;
     }
@@ -85,17 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
 
-    activeUserIdRef.current = user.id;
-
     clearTimers();
-
-    // 🔥 WATCHDOG (NO HANG GUARANTEE)
-    watchdogRef.current = setTimeout(() => {
-      if (authState.state === AUTH_STATES.ROLE_LOADING) {
-        inFlightRef.current = false;
-        setAuthState(UNAUTHENTICATED_STATE);
-      }
-    }, 15000);
 
     setAuthState({
       state: AUTH_STATES.ROLE_LOADING,
@@ -104,6 +95,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       role: null,
     });
 
+    // 🔥 WATCHDOG (NO HANG GUARANTEE)
+    watchdogRef.current = setTimeout(() => {
+      setAuthState((prev) => {
+        if (prev.state !== AUTH_STATES.ROLE_LOADING) return prev;
+
+        executionLockRef.current = null;
+        inFlightRef.current = false;
+
+        return UNAUTHENTICATED_STATE;
+      });
+    }, 15000);
+
     try {
       const { data, error } = await supabase
         .from("user_roles")
@@ -111,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (activeUserIdRef.current !== user.id) {
+      if (executionLockRef.current !== user.id) {
         inFlightRef.current = false;
         return;
       }
@@ -119,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const role = (data?.role as string | undefined) ?? null;
 
       if (error || !role) {
+        executionLockRef.current = null;
         inFlightRef.current = false;
         clearTimers();
         setAuthState(UNAUTHENTICATED_STATE);
@@ -126,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       retryCountRef.current = 0;
+      executionLockRef.current = null;
       inFlightRef.current = false;
       clearTimers();
 
@@ -136,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role,
       });
     } catch {
+      executionLockRef.current = null;
       inFlightRef.current = false;
       clearTimers();
       setAuthState(UNAUTHENTICATED_STATE);
@@ -143,10 +149,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const triggerRoleFetchOnce = (user: User, session: Session) => {
-    if (inFlightRef.current) return;
-    if (activeUserIdRef.current !== user.id) {
-      activeUserIdRef.current = user.id;
-    }
+    const key = user.id;
+
+    if (executionLockRef.current === key) return;
+
+    executionLockRef.current = key;
     fetchAndApplyRole(user, session);
   };
 
@@ -154,7 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     clearTimers();
     retryCountRef.current = 0;
     inFlightRef.current = false;
-    activeUserIdRef.current = null;
+    executionLockRef.current = null;
 
     try {
       await supabase.auth.signOut();
@@ -197,7 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           clearTimers();
           retryCountRef.current = 0;
           inFlightRef.current = false;
-          activeUserIdRef.current = null;
+          executionLockRef.current = null;
           setAuthState(UNAUTHENTICATED_STATE);
           return;
         }
