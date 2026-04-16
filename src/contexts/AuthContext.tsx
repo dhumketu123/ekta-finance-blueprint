@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // SIGNED IN — route directly to ROLE_LOADING (no AUTHENTICATED flicker)
         if (event === "SIGNED_IN" && session?.user) {
           setTimeout(() => {
-            if (!cancelled) fetchAndApplyRole(session.user, session);
+            if (!cancelled) triggerRoleFetchOnce(session.user, session);
           }, 0);
           return;
         }
