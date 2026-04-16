@@ -353,8 +353,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         currentUserId = session.user.id;
         retryCountRef.current = 0;
+        roleFetchInProgressRef.current = false;
+        // Route directly through ROLE_LOADING — no AUTHENTICATED+null-role intermediate.
         setAuthState({
-          state: AUTH_STATES.AUTHENTICATED,
+          state: AUTH_STATES.ROLE_LOADING,
           user: session.user,
           session,
           role: null,
