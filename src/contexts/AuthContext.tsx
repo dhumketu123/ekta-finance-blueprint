@@ -305,13 +305,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === "TOKEN_REFRESHED" && session) {
         const refreshedUserId = session.user?.id ?? null;
 
-        // Identity changed → revalidate role from scratch
+        // Identity changed → revalidate role through ROLE_LOADING (no AUTHENTICATED flicker)
         if (currentUserId && refreshedUserId && refreshedUserId !== currentUserId) {
           currentUserId = refreshedUserId;
           retryCountRef.current = 0;
+          roleFetchInProgressRef.current = false;
+          activeFetchUserIdRef.current = null;
           clearRetryTimer();
           setAuthState({
-            state: AUTH_STATES.AUTHENTICATED,
+            state: AUTH_STATES.ROLE_LOADING,
             user: session.user,
             session,
             role: null,
