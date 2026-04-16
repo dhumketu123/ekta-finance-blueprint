@@ -98,10 +98,30 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
   },
 };
 
-const DEFAULT_PERMS: PermissionMatrix = PERMISSION_MAP.field_officer;
+// ====================================================
+// 🔐 STRICT ROLE SECURITY POLICY (NO FALLBACK ALLOWED)
+// Blueprint V2 — Part 7: Unknown role = Access Blocked
+// ====================================================
+const DENY_ALL_PERMS: PermissionMatrix = Object.keys(
+  PERMISSION_MAP.field_officer
+).reduce((acc, key) => {
+  acc[key as keyof PermissionMatrix] = false;
+  return acc;
+}, {} as PermissionMatrix);
+
+// ====================================================
+// 🧠 SAFE ROLE RESOLUTION LOGIC
+// ====================================================
+export const getPermissionsByRole = (role?: AppRole | null): PermissionMatrix => {
+  // 🚨 HARD FAIL-SECURE: Unknown / missing role = NO ACCESS
+  if (!role || !PERMISSION_MAP[role]) {
+    return DENY_ALL_PERMS;
+  }
+  return PERMISSION_MAP[role];
+};
 
 export const usePermissions = (): PermissionMatrix & { role: AppRole | null } => {
   const { role } = useAuth();
-  const perms = role ? PERMISSION_MAP[role as AppRole] ?? DEFAULT_PERMS : DEFAULT_PERMS;
+  const perms = getPermissionsByRole(role as AppRole | null);
   return { ...perms, role: (role as AppRole) ?? null };
 };
