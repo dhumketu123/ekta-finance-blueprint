@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOutRef = useRef<() => void>(() => {});
 
+  // ── SAFE STATE SETTER (READY INVARIANT GUARANTEE) ──
   const setAuthState = (next: AuthState | ((prev: AuthState) => AuthState)) => {
     setAuthStateRaw((prev) => {
       const candidate = typeof next === "function" ? next(prev) : next;
@@ -76,15 +77,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (watchdogRef.current) clearTimeout(watchdogRef.current);
   };
 
+  // ── CORE ROLE FETCH (SINGLE SOURCE OF TRUTH) ──
   const fetchAndApplyRole = async (user: User, session: Session) => {
     if (!user || !session?.user) {
       executionLockRef.current = null;
+      inFlightRef.current = false;
       setAuthState(UNAUTHENTICATED_STATE);
       return;
     }
 
     if (inFlightRef.current) return;
     inFlightRef.current = true;
+
+    executionLockRef.current = user.id;
 
     clearTimers();
 
@@ -95,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       role: null,
     });
 
-    // 🔥 WATCHDOG (NO HANG GUARANTEE)
+    // ── WATCHDOG (NO HANG GUARANTEE) ──
     watchdogRef.current = setTimeout(() => {
       setAuthState((prev) => {
         if (prev.state !== AUTH_STATES.ROLE_LOADING) return prev;
@@ -148,20 +153,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // ── SINGLE EXECUTION GATE ──
   const triggerRoleFetchOnce = (user: User, session: Session) => {
-    const key = user.id;
+    if (executionLockRef.current === user.id) return;
 
-    if (executionLockRef.current === key) return;
-
-    executionLockRef.current = key;
+    executionLockRef.current = user.id;
     fetchAndApplyRole(user, session);
   };
 
   const signOut = async () => {
     clearTimers();
     retryCountRef.current = 0;
-    inFlightRef.current = false;
     executionLockRef.current = null;
+    inFlightRef.current = false;
 
     try {
       await supabase.auth.signOut();
@@ -172,81 +176,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     signOutRef.current = signOut;
-  }, []);
+  }, [signOut]);
 
-  // ─────────────────────────────────────
-  // AUTH STATE LISTENER
-  // ─────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // PASSWORD RECOVERY FLOW
-        if (event === "PASSWORD_RECOVERY") {
-          setAuthState(UNAUTHENTICATED_STATE);
-          if (typeof window !== "undefined") {
-            window.location.replace("/reset-password");
-          }
-          return;
-        }
-
-        // SIGNED IN — route directly to ROLE_LOADING (no AUTHENTICATED flicker)
-        if (event === "SIGNED_IN" && session?.user) {
-          setTimeout(() => {
-            if (!cancelled) triggerRoleFetchOnce(session.user, session);
-          }, 0);
-          return;
-        }
-
-        // SIGNED OUT
-        if (event === "SIGNED_OUT") {
-          clearTimers();
-          retryCountRef.current = 0;
-          inFlightRef.current = false;
-          executionLockRef.current = null;
-          setAuthState(UNAUTHENTICATED_STATE);
-          return;
-        }
-
-        // TOKEN REFRESH — only refresh tokens on already-READY state
-        if (event === "TOKEN_REFRESHED" && session?.user) {
-          setAuthState((prev) =>
-            prev.state === AUTH_STATES.READY
-              ? { ...prev, session, user: session.user }
-              : prev
-          );
-        }
-      }
-    );
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // ─────────────────────────────────────
-  // BOOTSTRAP SESSION ON LOAD
-  // ─────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled) return;
-
-      if (session?.user) {
-        triggerRoleFetchOnce(session.user, session);
-      } else {
-        setAuthState(UNAUTHENTICATED_STATE);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+  // ── INACTIVITY TIMER ──
   useEffect(() => {
     const events = ["mousedown", "keydown", "touchstart", "scroll"];
 
@@ -266,6 +198,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // ── AUTH LISTENER ──
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        setTimeout(() => {
+          triggerRoleFetchOnce(session.user, session);
+        }, 0);
+      }
+
+      if (event === "SIGNED_OUT") {
+        clearTimers();
+        executionLockRef.current = null;
+        inFlightRef.current = false;
+        setAuthState(UNAUTHENTICATED_STATE);
+      }
+
+      if (event === "TOKEN_REFRESHED" && session?.user) {
+        setAuthState((prev) =>
+          prev.state === AUTH_STATES.READY
+            ? { ...prev, session, user: session.user }
+            : prev
+        );
+      }
+
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthState(UNAUTHENTICATED_STATE);
+        window.location.replace("/reset-password");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ── BOOTSTRAP ──
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        triggerRoleFetchOnce(session.user, session);
+      } else {
+        setAuthState(UNAUTHENTICATED_STATE);
+      }
+    });
+  }, []);
+
   return (
     <AuthContext.Provider value={{ ...authState, signOut }}>
       {children}
@@ -274,7 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };
