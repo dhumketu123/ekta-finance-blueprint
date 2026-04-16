@@ -92,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // 🔥 WATCHDOG (NO HANG GUARANTEE)
     watchdogRef.current = setTimeout(() => {
       if (authState.state === AUTH_STATES.ROLE_LOADING) {
+        inFlightRef.current = false;
         setAuthState(UNAUTHENTICATED_STATE);
       }
     }, 15000);
@@ -119,26 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error || !role) {
         inFlightRef.current = false;
-
-        if (retryCountRef.current >= MAX_RETRIES) {
-          retryCountRef.current = 0;
-          setAuthState(UNAUTHENTICATED_STATE);
-          return;
-        }
-
-        const delay = RETRY_DELAYS_MS[retryCountRef.current];
-        retryCountRef.current += 1;
-
-        retryTimerRef.current = setTimeout(() => {
-          fetchAndApplyRole(user, session);
-        }, delay);
-
+        clearTimers();
+        setAuthState(UNAUTHENTICATED_STATE);
         return;
       }
 
       retryCountRef.current = 0;
       inFlightRef.current = false;
-
       clearTimers();
 
       setAuthState({
@@ -149,8 +137,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } catch {
       inFlightRef.current = false;
+      clearTimers();
       setAuthState(UNAUTHENTICATED_STATE);
     }
+  };
+
+  const triggerRoleFetchOnce = (user: User, session: Session) => {
+    if (inFlightRef.current) return;
+    if (activeUserIdRef.current !== user.id) {
+      activeUserIdRef.current = user.id;
+    }
+    fetchAndApplyRole(user, session);
   };
 
   const signOut = async () => {
@@ -190,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // SIGNED IN — route directly to ROLE_LOADING (no AUTHENTICATED flicker)
         if (event === "SIGNED_IN" && session?.user) {
           setTimeout(() => {
-            if (!cancelled) fetchAndApplyRole(session.user, session);
+            if (!cancelled) triggerRoleFetchOnce(session.user, session);
           }, 0);
           return;
         }
@@ -232,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (cancelled) return;
 
       if (session?.user) {
-        fetchAndApplyRole(session.user, session);
+        triggerRoleFetchOnce(session.user, session);
       } else {
         setAuthState(UNAUTHENTICATED_STATE);
       }
