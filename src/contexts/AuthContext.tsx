@@ -83,10 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchAndApplyRole = useCallback(
     async (user: User, session: Session) => {
       // Pre-validation: refuse to even start if inputs are missing
-      if (!user || !session) {
-        setAuthState(UNAUTHENTICATED_STATE);
-        return;
-      }
+      if (!user || !session) return;
 
       setAuthState({
         state: AUTH_STATES.ROLE_LOADING,
@@ -104,13 +101,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const role = (data?.role as string | undefined) ?? null;
 
-        // RUNTIME INVARIANT: READY requires ALL three non-null. Validated BEFORE the setState.
-        if (error || !role || !user || !session) {
-          setAuthState(UNAUTHENTICATED_STATE);
+        // ✅ SAFE RULE: NEVER LOGOUT ON ROLE FAILURE — stay in ROLE_LOADING and retry with backoff
+        if (error || !role) {
+          setAuthState({
+            state: AUTH_STATES.ROLE_LOADING,
+            user,
+            session,
+            role: null,
+          });
+          setTimeout(() => {
+            fetchAndApplyRole(user, session);
+          }, 2000);
           return;
         }
 
-        // Atomic READY assignment — all three guaranteed non-null at this point.
+        // ✅ ONLY VALID READY STATE — all three guaranteed non-null
         setAuthState({
           state: AUTH_STATES.READY,
           user,
@@ -119,7 +124,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         resetInactivityTimer();
       } catch {
-        setAuthState(UNAUTHENTICATED_STATE);
+        setAuthState({
+          state: AUTH_STATES.ROLE_LOADING,
+          user,
+          session,
+          role: null,
+        });
+        setTimeout(() => {
+          fetchAndApplyRole(user, session);
+        }, 3000);
       }
     },
     [resetInactivityTimer]
