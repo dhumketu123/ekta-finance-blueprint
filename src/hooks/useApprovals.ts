@@ -128,31 +128,38 @@ export const useDecideApprovalRequest = () => {
   });
 };
 
-/** Execute an APPROVED request via the secure router RPC (race-safe, idempotent). */
-export const useProcessApprovedRequest = () => {
+/** Execute an APPROVED request via execution_engine_v3 (TTL-locked, registry-dispatched). */
+export const useExecuteApproval = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string }) => {
-      const { data, error } = await supabase.rpc("execution_engine_v1" as any, {
+      const { data, error } = await supabase.rpc("execution_engine_v3" as any, {
         p_request_id: input.id,
       });
       if (error) throw error;
-      return data as { status: "EXECUTED" | "ALREADY_EXECUTED" | "NOT_IMPLEMENTED"; entity_type?: string };
+      return data as {
+        status: "EXECUTED" | "ALREADY_EXECUTED" | "NOT_IMPLEMENTED";
+        entity_type?: string;
+      };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["approval_requests"] });
       qc.invalidateQueries({ queryKey: ["approval_requests_pending_count"] });
-      if (data?.status === "ALREADY_EXECUTED") {
-        toast.info("ইতিমধ্যে কার্যকর করা হয়েছে");
-      } else if (data?.status === "NOT_IMPLEMENTED") {
-        toast.warning(`এই ফিচারটি এখনও সক্রিয় নয়${data.entity_type ? ` (${data.entity_type})` : ""}`);
-      } else {
+
+      if (data?.status === "EXECUTED") {
         toast.success("সফলভাবে কার্যকর হয়েছে");
+      } else if (data?.status === "ALREADY_EXECUTED") {
+        toast.info("ইতিমধ্যে কার্যকর হয়েছে");
+      } else if (data?.status === "NOT_IMPLEMENTED") {
+        toast.warning(`এই ফিচার এখনো প্রস্তুত নয়${data.entity_type ? ` (${data.entity_type})` : ""}`);
       }
     },
-    onError: (e: any) => toast.error(e?.message ?? "কার্যকর করা ব্যর্থ"),
+    onError: (e: any) => toast.error(e?.message ?? "কার্যকর করতে ব্যর্থ"),
   });
 };
+
+/** @deprecated Use useExecuteApproval instead. Kept as alias for backward compatibility. */
+export const useProcessApprovedRequest = useExecuteApproval;
 
 /** Retry an EXECUTION_FAILED request — resets state to APPROVED and re-runs router. */
 export const useRetryFailedExecution = () => {
