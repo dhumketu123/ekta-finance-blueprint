@@ -128,7 +128,7 @@ export const useDecideApprovalRequest = () => {
   });
 };
 
-/** Execute (or retry) an APPROVED / EXECUTION_FAILED request via the secure router RPC. */
+/** Execute an APPROVED request via the secure router RPC (race-safe, idempotent). */
 export const useProcessApprovedRequest = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -149,5 +149,25 @@ export const useProcessApprovedRequest = () => {
       }
     },
     onError: (e: any) => toast.error(e?.message ?? "কার্যকর করা ব্যর্থ"),
+  });
+};
+
+/** Retry an EXECUTION_FAILED request — resets state to APPROVED and re-runs router. */
+export const useRetryFailedExecution = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string }) => {
+      const { data, error } = await supabase.rpc("retry_failed_execution" as any, {
+        p_request_id: input.id,
+      });
+      if (error) throw error;
+      return data as { id: string; status: "EXECUTED" | "ALREADY_EXECUTED" };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["approval_requests"] });
+      qc.invalidateQueries({ queryKey: ["approval_requests_pending_count"] });
+      toast.success("পুনরায় কার্যকর হয়েছে");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "পুনরায় চেষ্টা ব্যর্থ"),
   });
 };

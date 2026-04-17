@@ -5940,6 +5940,7 @@ export type Database = {
       }
       reset_sms_quota: { Args: { p_tenant_id: string }; Returns: undefined }
       resolve_anomaly_alert: { Args: { p_event_id: string }; Returns: boolean }
+      retry_failed_execution: { Args: { p_request_id: string }; Returns: Json }
       reverse_ledger_transaction: {
         Args: {
           _reason: string
