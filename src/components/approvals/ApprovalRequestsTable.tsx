@@ -11,7 +11,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, Clock, Loader2, Play, RefreshCw, AlertTriangle, Info } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Play, RefreshCw, AlertTriangle, Info, History } from "lucide-react";
 import { formatLocalDateTime } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -170,7 +170,61 @@ const ApprovalRequestsTable = ({ status }: Props) => {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
+                    <div className="flex justify-end items-center gap-1.5">
+                      {/* Execution Timeline */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={bn ? "টাইমলাইন" : "Timeline"}
+                          >
+                            <History className="w-3.5 h-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="space-y-1.5 text-[11px]">
+                            <div className="font-semibold mb-1">{bn ? "এক্সিকিউশন টাইমলাইন" : "Execution Timeline"}</div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">{bn ? "তৈরি:" : "Created:"}</span>
+                              <span>{formatLocalDateTime(r.created_at, lang)}</span>
+                            </div>
+                            {r.approved_at && (
+                              <div className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3 h-3 text-success" />
+                                <span className="text-muted-foreground">{bn ? "অনুমোদিত:" : "Approved:"}</span>
+                                <span>{formatLocalDateTime(r.approved_at, lang)}</span>
+                              </div>
+                            )}
+                            {r.executed_at && (
+                              <div className="flex items-center gap-1.5">
+                                <Play className="w-3 h-3 text-emerald-500" />
+                                <span className="text-muted-foreground">{bn ? "কার্যকর:" : "Executed:"}</span>
+                                <span>{formatLocalDateTime(r.executed_at, lang)}</span>
+                              </div>
+                            )}
+                            {r.status === "REJECTED" && r.rejection_reason && (
+                              <div className="flex items-start gap-1.5 pt-1 border-t border-border/40">
+                                <XCircle className="w-3 h-3 text-destructive mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="text-muted-foreground">{bn ? "প্রত্যাখ্যানের কারণ:" : "Reason:"}</div>
+                                  <div className="break-words">{r.rejection_reason}</div>
+                                </div>
+                              </div>
+                            )}
+                            {r.status === "EXECUTION_FAILED" && execError && (
+                              <div className="flex items-start gap-1.5 pt-1 border-t border-border/40">
+                                <AlertTriangle className="w-3 h-3 text-destructive mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="text-muted-foreground">{bn ? "ত্রুটি:" : "Error:"}</div>
+                                  <div className="font-mono break-words text-[10px]">{execError}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                       {canDecide && (
                         <>
                           <Button
