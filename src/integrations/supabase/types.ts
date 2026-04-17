@@ -6168,6 +6168,16 @@ export type Database = {
       verify_ledger_integrity: { Args: { p_branch_id: string }; Returns: Json }
       verify_required_cron_jobs: { Args: never; Returns: Json }
       verify_transaction_pin: { Args: { _input_pin: string }; Returns: Json }
+      write_execution_audit: {
+        Args: {
+          p_action: string
+          p_entity_type: string
+          p_error?: string
+          p_request_id: string
+          p_success: boolean
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_code:
