@@ -5428,6 +5428,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      execute_stub_not_ready: {
+        Args: { p_entity_type: string; p_request_id: string }
+        Returns: undefined
+      }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {
