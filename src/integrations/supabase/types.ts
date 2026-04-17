@@ -5375,6 +5375,7 @@ export type Database = {
         Returns: string
       }
       can_export: { Args: never; Returns: boolean }
+      can_retry_execution: { Args: { p_request_id: string }; Returns: boolean }
       check_ai_pipeline_health: { Args: never; Returns: Json }
       check_and_apply_overdue_penalty: {
         Args: { _penalty_percent?: number }
