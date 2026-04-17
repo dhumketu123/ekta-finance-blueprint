@@ -5268,6 +5268,13 @@ export type Database = {
         Args: { auto_fix?: boolean }
         Returns: undefined
       }
+      assign_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
@@ -5801,6 +5808,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_owner: { Args: never; Returns: boolean }
+      is_admin_user: { Args: never; Returns: boolean }
       is_assigned_to_client: { Args: { _client_id: string }; Returns: boolean }
       is_feature_enabled: {
         Args: { _feature_name: string; _user_role?: string }
@@ -5949,6 +5957,13 @@ export type Database = {
         }
         Returns: Json
       }
+      revoke_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       run_retained_earnings_closure: { Args: never; Returns: Json }
       secure_delete_owner: { Args: { _owner_user_id: string }; Returns: Json }
       seed_default_chart_of_accounts: {
@@ -6093,6 +6108,7 @@ export type Database = {
         | "investor"
         | "treasurer"
         | "alumni"
+        | "super_admin"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
       commitment_status: "pending" | "fulfilled" | "rescheduled"
@@ -6284,6 +6300,7 @@ export const Constants = {
         "investor",
         "treasurer",
         "alumni",
+        "super_admin",
       ],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
