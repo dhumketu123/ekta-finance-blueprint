@@ -235,69 +235,48 @@ export const useFieldOfficer = (id: string) =>
     enabled: !!id,
   });
 
-// 🚀 PERF: 60s cache — already uses Promise.all, just stop refetch storms
-export const useDashboardMetrics = () =>
-  useQuery({
-    queryKey: ["dashboard_metrics"],
+// 🚀 PERF V2: Single consolidated RPC (replaces 4-query Promise.all + JS aggregation)
+// Backend does ALL the COUNTs / SUMs in one round-trip via get_dashboard_summary_v2.
+import { useTenantId } from "@/hooks/useTenantId";
+
+export const useDashboardMetrics = () => {
+  const { tenantId } = useTenantId();
+  return useQuery({
+    queryKey: ["dashboard_summary_v2", tenantId],
+    enabled: !!tenantId,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const [clientsRes, investorsRes, transactionsRes, profitTxRes] = await Promise.all([
-        supabase.from("clients").select("id, status, loan_amount").is("deleted_at", null),
-        supabase.from("investors").select("id, capital, principal_amount, accumulated_profit, monthly_profit_percent, reinvest, status").is("deleted_at", null),
-        supabase
-          .from("transactions")
-          .select("id, type, amount, status, transaction_date")
-          .is("deleted_at", null)
-          .gte("transaction_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]),
-        supabase
-          .from("transactions")
-          .select("amount")
-          .eq("type", "investor_profit")
-          .eq("status", "paid")
-          .is("deleted_at", null),
-      ]);
-
-      const clients = clientsRes.data ?? [];
-      const investors = investorsRes.data ?? [];
-      const transactions = transactionsRes.data ?? [];
-      const allProfitTxs = profitTxRes.data ?? [];
-
-      const activeLoans = clients.filter((c) => c.status === "active" && (c.loan_amount ?? 0) > 0);
-      const totalLoanAmount = activeLoans.reduce((s, c) => s + (c.loan_amount ?? 0), 0);
-      const totalCapital = investors.reduce((s, i) => s + i.capital, 0);
-      const totalPrincipalInvested = investors.reduce((s, i) => s + i.principal_amount, 0);
-      const totalAccumulatedProfit = investors.reduce((s, i) => s + i.accumulated_profit, 0);
-      const totalProfitDistributed = allProfitTxs.reduce((s, t) => s + t.amount, 0);
-      const activeInvestorCount = investors.filter((i) => i.status === "active").length;
-      const reinvestorCount = investors.filter((i) => i.reinvest).length;
-      const overdueCount = clients.filter((c) => c.status === "overdue").length;
-      const pendingCount = clients.filter((c) => c.status === "pending").length;
-
-      const savingsThisMonth = transactions
-        .filter((t) => t.type === "savings_deposit" && t.status === "paid")
-        .reduce((s, t) => s + t.amount, 0);
-
-      const profitThisMonth = transactions
-        .filter((t) => t.type === "investor_profit")
-        .reduce((s, t) => s + t.amount, 0);
-
+      const { data, error } = await supabase.rpc("get_dashboard_summary_v2" as any, {
+        p_tenant_id: tenantId,
+      });
+      if (error) throw error;
+      const r = (data ?? {}) as Record<string, any>;
+      // Map RPC keys → existing consumer shape (Index.tsx expects camelCase fields)
       return {
-        totalClients: clients.length,
-        activeLoansCount: activeLoans.length,
-        totalLoanAmount,
-        totalCapital,
-        totalPrincipalInvested,
-        totalAccumulatedProfit,
-        totalProfitDistributed,
-        investorCount: investors.length,
-        activeInvestorCount,
-        reinvestorCount,
-        overdueCount,
-        pendingCount,
-        savingsThisMonth,
-        profitThisMonth,
+        totalClients: Number(r.total_clients ?? 0),
+        activeLoansCount: Number(r.active_loans_count ?? 0),
+        totalLoanAmount: Number(r.total_loan_amount ?? 0),
+        totalCapital: Number(r.total_capital ?? 0),
+        totalPrincipalInvested: Number(r.total_principal_invested ?? 0),
+        totalAccumulatedProfit: Number(r.total_accumulated_profit ?? 0),
+        totalProfitDistributed: Number(r.total_profit_distributed ?? 0),
+        investorCount: Number(r.investor_count ?? 0),
+        activeInvestorCount: Number(r.active_investor_count ?? 0),
+        reinvestorCount: Number(r.reinvestor_count ?? 0),
+        overdueCount: Number(r.overdue_count ?? 0),
+        pendingCount: Number(r.pending_count ?? 0),
+        savingsThisMonth: Number(r.savings_this_month ?? 0),
+        profitThisMonth: Number(r.profit_this_month ?? 0),
+        // Extra fields exposed for cashflow oracle reuse
+        _activeLoans: Number(r.active_loans ?? 0),
+        _defaultLoans: Number(r.default_loans ?? 0),
+        _overdueSchedules: Number(r.overdue_schedules ?? 0),
+        _totalSchedules: Number(r.total_schedules ?? 0),
+        _riskClients: Number(r.risk_clients ?? 0),
+        _monthlyRepayment: (r.monthly_repayment ?? []) as { month: string; amount: number }[],
       };
     },
   });
+};
