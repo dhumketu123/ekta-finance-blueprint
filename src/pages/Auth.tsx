@@ -12,7 +12,8 @@ import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordSt
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
 
 const routeForRole = (role: string | null): string => {
-  switch (role) {
+  const safeRole = role?.toLowerCase()?.trim();
+  switch (safeRole) {
     case "investor":
       return ROUTES.INVESTOR_WALLET;
     case "field_officer":
@@ -25,6 +26,7 @@ const routeForRole = (role: string | null): string => {
     case "manager":
       return ROUTES.DASHBOARD;
     default:
+      // SECURITY SAFETY NET → unknown roles never get privileged access
       return ROUTES.DASHBOARD;
   }
 };
@@ -198,8 +200,8 @@ const Auth = () => {
 
   return (
     <div
-      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 sm:py-10 relative"
-      style={{ WebkitOverflowScrolling: "touch" }}
+      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden overflow-y-auto px-4 sm:px-6 py-6 sm:py-10 relative"
+      style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
       role="main"
     >
       {/* Background Layer */}
