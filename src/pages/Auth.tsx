@@ -198,7 +198,7 @@ const Auth = () => {
 
   return (
     <div
-      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-y-auto px-4 py-6 sm:px-6 sm:py-10 relative"
+      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 sm:py-10 relative"
       style={{ WebkitOverflowScrolling: "touch" }}
       role="main"
     >
