@@ -1674,6 +1674,33 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_registry: {
+        Row: {
+          created_at: string | null
+          entity_type: string
+          executor_name: string
+          is_active: boolean | null
+          permission_role: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_type: string
+          executor_name: string
+          is_active?: boolean | null
+          permission_role?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_type?: string
+          executor_name?: string
+          is_active?: boolean | null
+          permission_role?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       executive_reports: {
         Row: {
           created_at: string
@@ -5415,6 +5442,7 @@ export type Database = {
         Args: { p_entity_type: string; p_request_id: string }
         Returns: undefined
       }
+      execution_engine_v1: { Args: { p_request_id: string }; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {
