@@ -5407,24 +5407,7 @@ export type Database = {
         Returns: undefined
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
-      execute_early_settlement: {
-        Args: { p_request_id: string }
-        Returns: undefined
-      }
-      execute_journal_adjustment: {
-        Args: { p_request_id: string }
-        Returns: undefined
-      }
       execute_loan_disbursement: {
-        Args: { p_request_id: string }
-        Returns: undefined
-      }
-      execute_loan_reschedule: {
-        Args: { p_request_id: string }
-        Returns: undefined
-      }
-      execute_owner_exit: { Args: { p_request_id: string }; Returns: undefined }
-      execute_profit_distribution: {
         Args: { p_request_id: string }
         Returns: undefined
       }
