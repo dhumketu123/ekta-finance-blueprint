@@ -19,6 +19,10 @@ const routeForRole = (role: string | null): string => {
       return ROUTES.CLIENTS;
     case "alumni":
       return ROUTES.ALUMNI;
+    case "admin":
+    case "owner":
+    case "treasurer":
+      return ROUTES.DASHBOARD;
     default:
       return ROUTES.DASHBOARD;
   }
