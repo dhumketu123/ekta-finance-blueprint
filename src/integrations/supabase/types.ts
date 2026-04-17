@@ -5779,6 +5779,7 @@ export type Database = {
       is_investor: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_penalty_suspended: { Args: { _client_id: string }; Returns: boolean }
+      is_privileged_user: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
       lock_accounting_period: {
