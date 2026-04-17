@@ -218,14 +218,14 @@ const Auth = () => {
 
         {/* Glass Card */}
         <Card className="auth-glass-card border-0 !bg-transparent" role="form" aria-label={mode === "login" ? "Login form" : mode === "signup" ? "Signup form" : "Password recovery form"}>
-          <CardHeader className="pb-4 pt-8 px-8">
-            <h2 className="text-xl font-semibold text-white text-center font-bangla">
+          <CardHeader className="pb-4 pt-6 sm:pt-8 px-5 sm:px-8">
+            <h2 className="text-lg sm:text-xl font-semibold text-white text-center font-bangla">
               {mode === "login" && (lang === "bn" ? "আপনার অ্যাকাউন্টে লগইন করুন" : "Sign in to your account")}
               {mode === "signup" && (lang === "bn" ? "নতুন অ্যাকাউন্ট তৈরি করুন" : "Create a new account")}
               {mode === "forgot" && (lang === "bn" ? "পাসওয়ার্ড রিসেট করুন" : "Reset your password")}
             </h2>
           </CardHeader>
-          <CardContent className="px-8 pb-8">
+          <CardContent className="px-5 sm:px-8 pb-6 sm:pb-8">
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               {/* Login method toggle */}
               {mode === "login" && (
