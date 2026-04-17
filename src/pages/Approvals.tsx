@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { useApprovePendingTransaction, useRejectPendingTransaction } from "@/hooks/usePendingTransactions";
+import { useProcessApprovedRequest } from "@/hooks/useApprovals";
+import ApprovalRequestsTable from "@/components/approvals/ApprovalRequestsTable";
 import { usePermissions } from "@/hooks/usePermissions";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,6 +36,12 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   pending: { label: "অপেক্ষমান", icon: Clock, className: "bg-warning/10 text-warning border-warning/30" },
   approved: { label: "অনুমোদিত", icon: CheckCircle2, className: "bg-success/10 text-success border-success/30" },
   rejected: { label: "প্রত্যাখ্যাত", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  PENDING: { label: "অপেক্ষমান", icon: Clock, className: "bg-warning/10 text-warning border-warning/30" },
+  APPROVED: { label: "অনুমোদিত", icon: CheckCircle2, className: "bg-success/10 text-success border-success/30" },
+  REJECTED: { label: "প্রত্যাখ্যাত", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  EXECUTED: { label: "কার্যকর", icon: CheckCircle2, className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+  EXECUTION_FAILED: { label: "ব্যর্থ", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  CANCELLED: { label: "বাতিল", icon: XCircle, className: "bg-muted text-muted-foreground border-border" },
 };
 
 const PAGE_SIZE = 10;
@@ -44,6 +52,7 @@ const Approvals = () => {
   const { lang } = useLanguage();
   const approveMut = useApprovePendingTransaction();
   const rejectMut = useRejectPendingTransaction();
+  const executeMut = useProcessApprovedRequest();
   const bn = lang === "bn";
   const qc = useQueryClient();
 
@@ -123,13 +132,30 @@ const Approvals = () => {
       />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="pending">{bn ? "অপেক্ষমান" : "Pending"}</TabsTrigger>
           <TabsTrigger value="approved">{bn ? "অনুমোদিত" : "Approved"}</TabsTrigger>
           <TabsTrigger value="rejected">{bn ? "প্রত্যাখ্যাত" : "Rejected"}</TabsTrigger>
           <TabsTrigger value="all">{bn ? "সব" : "All"}</TabsTrigger>
+          <TabsTrigger value="maker_checker">{bn ? "মেকার-চেকার" : "Maker-Checker"}</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="maker_checker" className="mt-4 space-y-6">
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{bn ? "অপেক্ষমান অনুরোধ" : "Pending Requests"}</h3>
+            <ApprovalRequestsTable status="PENDING" />
+          </section>
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{bn ? "অনুমোদিত (কার্যকর প্রয়োজন)" : "Approved (awaiting execution)"}</h3>
+            <ApprovalRequestsTable status="APPROVED" />
+          </section>
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-destructive">{bn ? "ব্যর্থ — পুনরায় চেষ্টা করুন" : "Failed — needs retry"}</h3>
+            <ApprovalRequestsTable status="EXECUTION_FAILED" />
+          </section>
+        </TabsContent>
+
+        {tab !== "maker_checker" && (
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
             <TableSkeleton rows={5} cols={6} />
@@ -188,6 +214,7 @@ const Approvals = () => {
             </div>
           )}
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Review Dialog */}

@@ -5400,6 +5400,10 @@ export type Database = {
         Returns: undefined
       }
       escalate_critical_alerts: { Args: never; Returns: Json }
+      execute_loan_disbursement: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {

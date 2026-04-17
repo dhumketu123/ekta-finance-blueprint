@@ -127,3 +127,27 @@ export const useDecideApprovalRequest = () => {
     onError: (e: any) => toast.error(e?.message ?? "সিদ্ধান্ত ব্যর্থ"),
   });
 };
+
+/** Execute (or retry) an APPROVED / EXECUTION_FAILED request via the secure router RPC. */
+export const useProcessApprovedRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string }) => {
+      const { data, error } = await supabase.rpc("process_approved_request" as any, {
+        p_request_id: input.id,
+      });
+      if (error) throw error;
+      return data as { id: string; status: "EXECUTED" | "ALREADY_EXECUTED" };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["approval_requests"] });
+      qc.invalidateQueries({ queryKey: ["approval_requests_pending_count"] });
+      if (data?.status === "ALREADY_EXECUTED") {
+        toast.info("ইতিমধ্যে কার্যকর করা হয়েছে");
+      } else {
+        toast.success("সফলভাবে কার্যকর হয়েছে");
+      }
+    },
+    onError: (e: any) => toast.error(e?.message ?? "কার্যকর করা ব্যর্থ"),
+  });
+};
