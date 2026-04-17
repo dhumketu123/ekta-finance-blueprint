@@ -9,6 +9,7 @@ export type SavingsProduct = Tables<"savings_products">;
 export type Transaction = Tables<"transactions">;
 export type Notification = Tables<"notifications">;
 
+// 🚀 PERF: Cache clients list for 60s — avoid duplicate fetches across pages
 export const useClients = () =>
   useQuery({
     queryKey: ["clients"],
@@ -21,6 +22,9 @@ export const useClients = () =>
       if (error) throw error;
       return data as Client[];
     },
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
 export const useClient = (id: string) =>
@@ -231,9 +235,13 @@ export const useFieldOfficer = (id: string) =>
     enabled: !!id,
   });
 
+// 🚀 PERF: 60s cache — already uses Promise.all, just stop refetch storms
 export const useDashboardMetrics = () =>
   useQuery({
     queryKey: ["dashboard_metrics"],
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const [clientsRes, investorsRes, transactionsRes, profitTxRes] = await Promise.all([
         supabase.from("clients").select("id, status, loan_amount").is("deleted_at", null),

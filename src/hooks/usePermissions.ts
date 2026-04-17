@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer" | "alumni";
@@ -122,10 +123,14 @@ export const getPermissionsByRole = (role?: AppRole | null): PermissionMatrix =>
 
 export const usePermissions = () => {
   const { role } = useAuth();
-  const permissions = getPermissionsByRole(role as AppRole | null);
-  return {
-    ...permissions,      // backward-compat: const { canViewClients } = usePermissions()
-    permissions,         // structured access: const { permissions } = usePermissions()
-    role: (role as AppRole) ?? null,
-  };
+  // 🚀 PERF: Memoize to prevent new object reference on every render.
+  // Sidebar/AppLayout re-render-cascade fix.
+  return useMemo(() => {
+    const permissions = getPermissionsByRole(role as AppRole | null);
+    return {
+      ...permissions,      // backward-compat: const { canViewClients } = usePermissions()
+      permissions,         // structured access: const { permissions } = usePermissions()
+      role: (role as AppRole) ?? null,
+    };
+  }, [role]);
 };
