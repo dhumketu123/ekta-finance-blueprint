@@ -34,6 +34,12 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   pending: { label: "অপেক্ষমান", icon: Clock, className: "bg-warning/10 text-warning border-warning/30" },
   approved: { label: "অনুমোদিত", icon: CheckCircle2, className: "bg-success/10 text-success border-success/30" },
   rejected: { label: "প্রত্যাখ্যাত", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  PENDING: { label: "অপেক্ষমান", icon: Clock, className: "bg-warning/10 text-warning border-warning/30" },
+  APPROVED: { label: "অনুমোদিত", icon: CheckCircle2, className: "bg-success/10 text-success border-success/30" },
+  REJECTED: { label: "প্রত্যাখ্যাত", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  EXECUTED: { label: "কার্যকর", icon: CheckCircle2, className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+  EXECUTION_FAILED: { label: "ব্যর্থ", icon: XCircle, className: "bg-destructive/10 text-destructive border-destructive/30" },
+  CANCELLED: { label: "বাতিল", icon: XCircle, className: "bg-muted text-muted-foreground border-border" },
 };
 
 const PAGE_SIZE = 10;
