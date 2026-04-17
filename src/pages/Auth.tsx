@@ -12,7 +12,8 @@ import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordSt
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
 
 const routeForRole = (role: string | null): string => {
-  switch (role) {
+  const safeRole = role?.toLowerCase()?.trim();
+  switch (safeRole) {
     case "investor":
       return ROUTES.INVESTOR_WALLET;
     case "field_officer":
@@ -25,6 +26,7 @@ const routeForRole = (role: string | null): string => {
     case "manager":
       return ROUTES.DASHBOARD;
     default:
+      // SECURITY SAFETY NET → unknown roles never get privileged access
       return ROUTES.DASHBOARD;
   }
 };
