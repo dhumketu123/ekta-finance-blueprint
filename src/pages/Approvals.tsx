@@ -155,8 +155,8 @@ const Approvals = () => {
           </section>
         </TabsContent>
 
-        <TabsContent value={tab} className="mt-4">
-          {isLoading ? (
+        <TabsContent value={tab} className="mt-4" hidden={tab === "maker_checker"} forceMount={tab === "maker_checker" ? undefined : true as any}>
+          {tab === "maker_checker" ? null : isLoading ? (
             <TableSkeleton rows={5} cols={6} />
           ) : !txs.length ? (
             <p className="text-center text-muted-foreground py-12">{bn ? "কোনো লেনদেন পাওয়া যায়নি" : "No transactions found"}</p>
