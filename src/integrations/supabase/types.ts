@@ -6171,7 +6171,7 @@ export type Database = {
       verify_transaction_pin: { Args: { _input_pin: string }; Returns: Json }
       write_execution_audit: {
         Args: {
-          p_action: string
+          p_action_type: string
           p_entity_type: string
           p_error?: string
           p_request_id: string
