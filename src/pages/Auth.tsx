@@ -64,7 +64,7 @@ const Auth = () => {
       hasNavigatedRef.current = false;
       return;
     }
-    if (hasNavigatedRef.current) return;
+    if (!role || hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
     navigate(routeForRole(role), { replace: true });
   }, [authStateName, role, navigate]);
