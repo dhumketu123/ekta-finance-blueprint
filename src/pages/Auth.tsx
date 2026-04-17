@@ -19,6 +19,10 @@ const routeForRole = (role: string | null): string => {
       return ROUTES.CLIENTS;
     case "alumni":
       return ROUTES.ALUMNI;
+    case "admin":
+    case "owner":
+    case "treasurer":
+      return ROUTES.DASHBOARD;
     default:
       return ROUTES.DASHBOARD;
   }
@@ -192,14 +196,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="auth-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden" role="main">
+    <div
+      className="auth-bg min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-6 py-6 sm:py-10 relative overflow-x-hidden overflow-y-auto"
+      role="main"
+    >
       {/* Animated background */}
       <div className="auth-orb auth-orb-1" aria-hidden="true" />
       <div className="auth-orb auth-orb-2" aria-hidden="true" />
       <div className="auth-orb auth-orb-3" aria-hidden="true" />
       <div className="auth-grid" aria-hidden="true" />
 
-      <div className={`relative z-20 w-full max-w-lg animate-fade-in ${shakeError ? "auth-shake" : ""}`}>
+      <div className={`relative z-20 w-full max-w-md mx-auto animate-fade-in ${shakeError ? "auth-shake" : ""}`}>
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl auth-logo-box mb-4 animate-scale-in">
@@ -211,14 +218,14 @@ const Auth = () => {
 
         {/* Glass Card */}
         <Card className="auth-glass-card border-0 !bg-transparent" role="form" aria-label={mode === "login" ? "Login form" : mode === "signup" ? "Signup form" : "Password recovery form"}>
-          <CardHeader className="pb-4 pt-8 px-8">
-            <h2 className="text-xl font-semibold text-white text-center font-bangla">
+          <CardHeader className="pb-4 pt-6 sm:pt-8 px-5 sm:px-8">
+            <h2 className="text-lg sm:text-xl font-semibold text-white text-center font-bangla">
               {mode === "login" && (lang === "bn" ? "আপনার অ্যাকাউন্টে লগইন করুন" : "Sign in to your account")}
               {mode === "signup" && (lang === "bn" ? "নতুন অ্যাকাউন্ট তৈরি করুন" : "Create a new account")}
               {mode === "forgot" && (lang === "bn" ? "পাসওয়ার্ড রিসেট করুন" : "Reset your password")}
             </h2>
           </CardHeader>
-          <CardContent className="px-8 pb-8">
+          <CardContent className="px-5 sm:px-8 pb-6 sm:pb-8">
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               {/* Login method toggle */}
               {mode === "login" && (
