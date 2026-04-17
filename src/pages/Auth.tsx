@@ -100,6 +100,34 @@ const Auth = () => {
 
   const isSignupDisabled = mode === "signup" && !passwordValidation.isValid;
 
+  // ── UNIFIED OAUTH HANDLER (Lovable Cloud Managed) ──
+  const signInWithProvider = useCallback(
+    async (provider: "google" | "apple") => {
+      try {
+        const result = await lovable.auth.signInWithOAuth(provider, {
+          redirect_uri: window.location.origin,
+        });
+        if (result.error) {
+          const message =
+            result.error instanceof Error ? result.error.message : String(result.error);
+          toast({
+            title: lang === "bn" ? "ত্রুটি" : "Error",
+            description: message,
+            variant: "destructive",
+          });
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast({
+          title: lang === "bn" ? "ত্রুটি" : "Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, lang]
+  );
+
   const handleLogin = async () => {
     if (loginMethod === "email") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
