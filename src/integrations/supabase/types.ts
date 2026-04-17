@@ -1706,14 +1706,17 @@ export type Database = {
       }
       execution_lock: {
         Row: {
+          expires_at: string | null
           locked_at: string | null
           request_id: string
         }
         Insert: {
+          expires_at?: string | null
           locked_at?: string | null
           request_id: string
         }
         Update: {
+          expires_at?: string | null
           locked_at?: string | null
           request_id?: string
         }
@@ -5379,6 +5382,7 @@ export type Database = {
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
       check_graph_integrity: { Args: never; Returns: Json }
+      cleanup_stale_execution_locks: { Args: never; Returns: undefined }
       create_approval_request: {
         Args: {
           p_action_type: string
