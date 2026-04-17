@@ -11,24 +11,20 @@ import { ROUTES } from "@/config/routes";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
 
+const ROLE_ROUTE_MAP: Record<string, string> = {
+  investor: ROUTES.INVESTOR_WALLET,
+  field_officer: ROUTES.CLIENTS,
+  alumni: ROUTES.ALUMNI,
+  admin: ROUTES.DASHBOARD,
+  owner: ROUTES.DASHBOARD,
+  treasurer: ROUTES.DASHBOARD,
+  manager: ROUTES.DASHBOARD,
+};
+
 const routeForRole = (role: string | null): string => {
-  const safeRole = role?.toLowerCase()?.trim();
-  switch (safeRole) {
-    case "investor":
-      return ROUTES.INVESTOR_WALLET;
-    case "field_officer":
-      return ROUTES.CLIENTS;
-    case "alumni":
-      return ROUTES.ALUMNI;
-    case "admin":
-    case "owner":
-    case "treasurer":
-    case "manager":
-      return ROUTES.DASHBOARD;
-    default:
-      // SECURITY SAFETY NET → unknown roles never get privileged access
-      return ROUTES.DASHBOARD;
-  }
+  const safeRole = role?.toLowerCase()?.trim() ?? "";
+  // SAFE FALLBACK → unknown roles never get privileged access
+  return ROLE_ROUTE_MAP[safeRole] ?? ROUTES.DASHBOARD;
 };
 
 type AuthMode = "login" | "signup" | "forgot";
