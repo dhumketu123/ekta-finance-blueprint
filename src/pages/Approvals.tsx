@@ -51,6 +51,7 @@ const Approvals = () => {
   const { lang } = useLanguage();
   const approveMut = useApprovePendingTransaction();
   const rejectMut = useRejectPendingTransaction();
+  const executeMut = useProcessApprovedRequest();
   const bn = lang === "bn";
   const qc = useQueryClient();
 
