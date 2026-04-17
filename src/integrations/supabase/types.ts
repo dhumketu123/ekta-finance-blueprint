@@ -1674,6 +1674,51 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_audit_log: {
+        Row: {
+          action_type: string | null
+          created_at: string | null
+          entity_type: string | null
+          error_message: string | null
+          id: number
+          request_id: string | null
+          success: boolean | null
+        }
+        Insert: {
+          action_type?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: number
+          request_id?: string | null
+          success?: boolean | null
+        }
+        Update: {
+          action_type?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: number
+          request_id?: string | null
+          success?: boolean | null
+        }
+        Relationships: []
+      }
+      execution_lock: {
+        Row: {
+          locked_at: string | null
+          request_id: string
+        }
+        Insert: {
+          locked_at?: string | null
+          request_id: string
+        }
+        Update: {
+          locked_at?: string | null
+          request_id?: string
+        }
+        Relationships: []
+      }
       execution_registry: {
         Row: {
           created_at: string | null
