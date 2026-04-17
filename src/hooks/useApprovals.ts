@@ -137,13 +137,15 @@ export const useProcessApprovedRequest = () => {
         p_request_id: input.id,
       });
       if (error) throw error;
-      return data as { id: string; status: "EXECUTED" | "ALREADY_EXECUTED" };
+      return data as { status: "EXECUTED" | "ALREADY_EXECUTED" | "NOT_IMPLEMENTED"; entity_type?: string };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["approval_requests"] });
       qc.invalidateQueries({ queryKey: ["approval_requests_pending_count"] });
       if (data?.status === "ALREADY_EXECUTED") {
         toast.info("ইতিমধ্যে কার্যকর করা হয়েছে");
+      } else if (data?.status === "NOT_IMPLEMENTED") {
+        toast.warning(`এই ফিচারটি এখনও সক্রিয় নয়${data.entity_type ? ` (${data.entity_type})` : ""}`);
       } else {
         toast.success("সফলভাবে কার্যকর হয়েছে");
       }
