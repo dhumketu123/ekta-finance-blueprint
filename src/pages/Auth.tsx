@@ -197,14 +197,17 @@ const Auth = () => {
 
   return (
     <div
-      className="auth-bg min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-6 py-6 sm:py-10 relative overflow-x-hidden overflow-y-auto"
+      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-y-auto px-4 py-6 sm:px-6 sm:py-10 relative"
+      style={{ WebkitOverflowScrolling: "touch" }}
       role="main"
     >
-      {/* Animated background */}
-      <div className="auth-orb auth-orb-1" aria-hidden="true" />
-      <div className="auth-orb auth-orb-2" aria-hidden="true" />
-      <div className="auth-orb auth-orb-3" aria-hidden="true" />
-      <div className="auth-grid" aria-hidden="true" />
+      {/* Background Layer */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="auth-orb auth-orb-1" aria-hidden="true" />
+        <div className="auth-orb auth-orb-2" aria-hidden="true" />
+        <div className="auth-orb auth-orb-3" aria-hidden="true" />
+        <div className="auth-grid" aria-hidden="true" />
+      </div>
 
       <div className={`relative z-20 w-full max-w-md mx-auto animate-fade-in ${shakeError ? "auth-shake" : ""}`}>
         {/* Branding */}
