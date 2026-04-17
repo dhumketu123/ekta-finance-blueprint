@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { useApprovePendingTransaction, useRejectPendingTransaction } from "@/hooks/usePendingTransactions";
+import { useProcessApprovedRequest } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
