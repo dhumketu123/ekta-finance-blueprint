@@ -133,7 +133,7 @@ export const useProcessApprovedRequest = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string }) => {
-      const { data, error } = await supabase.rpc("process_approved_request" as any, {
+      const { data, error } = await supabase.rpc("execution_engine_v1" as any, {
         p_request_id: input.id,
       });
       if (error) throw error;
