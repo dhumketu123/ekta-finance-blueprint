@@ -5488,6 +5488,7 @@ export type Database = {
         Returns: undefined
       }
       execution_engine_v1: { Args: { p_request_id: string }; Returns: Json }
+      execution_engine_v2: { Args: { p_request_id: string }; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {
