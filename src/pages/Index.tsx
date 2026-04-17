@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
 import ExpenseEntryModal from "@/components/expenses/ExpenseEntryModal";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import PendingApprovalsWidget from "@/components/dashboard/PendingApprovalsWidget";
 
 
 const Dashboard = () => {
@@ -118,6 +119,8 @@ const Dashboard = () => {
           variant="default"
         />
       </div>
+
+      <PendingApprovalsWidget />
 
       {/* Summary Cards Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">

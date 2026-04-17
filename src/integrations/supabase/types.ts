@@ -515,6 +515,71 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_requests: {
+        Row: {
+          action_type: string
+          amount: number | null
+          approved_at: string | null
+          checker_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          executed_at: string | null
+          execution_error: string | null
+          id: string
+          maker_id: string
+          payload: Json
+          rejection_reason: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          amount?: number | null
+          approved_at?: string | null
+          checker_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          executed_at?: string | null
+          execution_error?: string | null
+          id?: string
+          maker_id: string
+          payload?: Json
+          rejection_reason?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          amount?: number | null
+          approved_at?: string | null
+          checker_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          executed_at?: string | null
+          execution_error?: string | null
+          id?: string
+          maker_id?: string
+          payload?: Json
+          rejection_reason?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_control_plane: {
         Row: {
           emergency_override: boolean | null
@@ -5208,6 +5273,16 @@ export type Database = {
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
       check_graph_integrity: { Args: never; Returns: Json }
+      create_approval_request: {
+        Args: {
+          p_action_type: string
+          p_amount?: number
+          p_entity_id?: string
+          p_entity_type: string
+          p_payload: Json
+        }
+        Returns: string
+      }
       create_client_secure: { Args: { p_data: Json }; Returns: string }
       create_investor_secure: {
         Args: {
@@ -5264,6 +5339,10 @@ export type Database = {
         Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      decide_approval_request: {
+        Args: { p_decision: string; p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
       detect_high_risk_clients: { Args: never; Returns: Json }
       detect_officer_burnout: {
         Args: { _failure_threshold?: number; _weekly_threshold?: number }
@@ -5569,6 +5648,7 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: Json
       }
+      get_dashboard_summary_v2: { Args: { p_tenant_id: string }; Returns: Json }
       get_day_close_summary: { Args: { p_date: string }; Returns: Json }
       get_function_dependencies: {
         Args: { _function_name: string }
