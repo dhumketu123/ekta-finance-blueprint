@@ -515,6 +515,33 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_execution_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          executed_at: string
+          id: string
+          request_id: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          request_id: string
+          success: boolean
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          request_id?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       approval_requests: {
         Row: {
           action_type: string
@@ -5831,6 +5858,10 @@ export type Database = {
       populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
       predict_loan_risk: { Args: never; Returns: Json }
+      process_approved_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       process_digest: { Args: never; Returns: undefined }
       process_ghost_penalties: { Args: never; Returns: Json }
       process_investor_capital_injection: {
