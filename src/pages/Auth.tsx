@@ -200,8 +200,8 @@ const Auth = () => {
 
   return (
     <div
-      className="auth-bg min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden overflow-y-auto px-4 sm:px-6 py-6 sm:py-10 relative"
-      style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+      className="auth-bg relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden overflow-y-auto overscroll-contain px-4 sm:px-6 py-6 sm:py-10"
+      style={{ WebkitOverflowScrolling: "touch" }}
       role="main"
     >
       {/* Background Layer */}
