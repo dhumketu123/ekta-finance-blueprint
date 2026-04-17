@@ -132,12 +132,28 @@ const Approvals = () => {
       />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="pending">{bn ? "অপেক্ষমান" : "Pending"}</TabsTrigger>
           <TabsTrigger value="approved">{bn ? "অনুমোদিত" : "Approved"}</TabsTrigger>
           <TabsTrigger value="rejected">{bn ? "প্রত্যাখ্যাত" : "Rejected"}</TabsTrigger>
           <TabsTrigger value="all">{bn ? "সব" : "All"}</TabsTrigger>
+          <TabsTrigger value="maker_checker">{bn ? "মেকার-চেকার" : "Maker-Checker"}</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="maker_checker" className="mt-4 space-y-6">
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{bn ? "অপেক্ষমান অনুরোধ" : "Pending Requests"}</h3>
+            <ApprovalRequestsTable status="PENDING" />
+          </section>
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{bn ? "অনুমোদিত (কার্যকর প্রয়োজন)" : "Approved (awaiting execution)"}</h3>
+            <ApprovalRequestsTable status="APPROVED" />
+          </section>
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-destructive">{bn ? "ব্যর্থ — পুনরায় চেষ্টা করুন" : "Failed — needs retry"}</h3>
+            <ApprovalRequestsTable status="EXECUTION_FAILED" />
+          </section>
+        </TabsContent>
 
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
