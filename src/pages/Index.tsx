@@ -120,6 +120,8 @@ const Dashboard = () => {
         />
       </div>
 
+      <PendingApprovalsWidget />
+
       {/* Summary Cards Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="card-elevated p-5 border-l-4 border-l-destructive">
