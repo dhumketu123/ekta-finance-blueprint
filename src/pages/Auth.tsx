@@ -10,6 +10,7 @@ import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
+import { lovable } from "@/integrations/lovable/index";
 
 const ROLE_ROUTE_MAP: Record<string, string> = {
   investor: ROUTES.INVESTOR_WALLET,
