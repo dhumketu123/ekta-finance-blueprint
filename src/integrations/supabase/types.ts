@@ -5439,7 +5439,7 @@ export type Database = {
         Returns: undefined
       }
       execute_stub_not_ready: {
-        Args: { p_entity_type: string; p_request_id: string }
+        Args: { p_request_id: string }
         Returns: undefined
       }
       execution_engine_v1: { Args: { p_request_id: string }; Returns: Json }
