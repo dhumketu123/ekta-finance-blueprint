@@ -225,12 +225,12 @@ const Auth = () => {
 
   return (
     <div
-      className="relative min-h-[100dvh] w-full flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10 overflow-x-hidden overflow-y-auto overscroll-contain"
+      className="auth-bg relative min-h-[100dvh] w-full flex items-center justify-center px-4 py-4 sm:px-6 sm:py-8 overflow-x-hidden overscroll-contain"
       style={{ WebkitOverflowScrolling: "touch" }}
       role="main"
     >
-      {/* Background Layer */}
-      <div className="absolute inset-0 auth-bg overflow-hidden pointer-events-none">
+      {/* Background Decorative Layer */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="auth-orb auth-orb-1" aria-hidden="true" />
         <div className="auth-orb auth-orb-2" aria-hidden="true" />
         <div className="auth-orb auth-orb-3" aria-hidden="true" />
@@ -239,17 +239,17 @@ const Auth = () => {
 
       <div className={`relative z-10 w-full max-w-md mx-auto animate-fade-in ${shakeError ? "auth-shake" : ""}`}>
         {/* Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl auth-logo-box mb-4 animate-scale-in">
+        <div className="text-center mb-4 md:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl auth-logo-box mb-2 md:mb-4 animate-scale-in">
             <span className="text-white font-bold text-2xl font-bangla">একতা</span>
           </div>
           <h1 className="auth-brand-title font-bangla">একতা ফাইন্যান্স গ্রুপ</h1>
-          <p className="auth-brand-subtitle mt-2 font-bangla">{friendlyCopy[mode]}</p>
+          <p className="auth-brand-subtitle mt-1 md:mt-2 font-bangla">{friendlyCopy[mode]}</p>
         </div>
 
         {/* Glass Card */}
         <Card className="auth-glass-card border-0 !bg-transparent" role="form" aria-label={mode === "login" ? "Login form" : mode === "signup" ? "Signup form" : "Password recovery form"}>
-          <CardHeader className="pb-4 pt-6 sm:pt-8 px-5 sm:px-8">
+          <CardHeader className="pb-3 pt-5 md:pt-8 px-5 md:px-8">
             <h2 className="text-lg sm:text-xl font-semibold text-white text-center font-bangla">
               {mode === "login" && (lang === "bn" ? "আপনার অ্যাকাউন্টে লগইন করুন" : "Sign in to your account")}
               {mode === "signup" && (lang === "bn" ? "নতুন অ্যাকাউন্ট তৈরি করুন" : "Create a new account")}
