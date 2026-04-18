@@ -437,7 +437,7 @@ const Auth = () => {
         </Card>
 
         {/* Footer */}
-        <p className="text-center text-white/30 text-xs mt-6 font-bangla" aria-hidden="true">
+        <p className="text-center text-white/30 text-xs mt-3 md:mt-6 font-bangla" aria-hidden="true">
           © ২০২৫ একতা ফাইন্যান্স গ্রুপ। সর্বস্বত্ব সংরক্ষিত।
         </p>
       </div>
