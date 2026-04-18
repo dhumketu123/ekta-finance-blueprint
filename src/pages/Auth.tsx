@@ -256,8 +256,8 @@ const Auth = () => {
               {mode === "forgot" && (lang === "bn" ? "পাসওয়ার্ড রিসেট করুন" : "Reset your password")}
             </h2>
           </CardHeader>
-          <CardContent className="px-5 md:px-8 pb-5 md:pb-8">
-            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-5" noValidate>
+          <CardContent className="p-5 md:p-8 pt-0 md:pt-0">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {/* Login method toggle */}
               {mode === "login" && (
                 <div className="flex rounded-xl overflow-hidden border border-white/20" role="tablist" aria-label="Login method">
