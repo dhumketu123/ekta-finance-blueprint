@@ -152,6 +152,17 @@ const TopHeader = () => {
             <NotificationBell />
           </div>
 
+          {/* Visible Role Badge — global identity indicator */}
+          {roleLabel && (
+            <span
+              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-primary-foreground/15 text-primary-foreground border border-primary-foreground/20 shrink-0"
+              aria-label={`Logged in as ${roleLabel}`}
+              title={`${lang === "bn" ? "রোল" : "Role"}: ${roleLabel}`}
+            >
+              {roleLabel}
+            </span>
+          )}
+
           {/* Profile Avatar Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

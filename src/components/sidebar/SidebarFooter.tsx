@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const roleLabels: Record<string, { en: string; bn: string }> = {
   admin: { en: "Admin", bn: "অ্যাডমিন" },
   owner: { en: "Owner", bn: "মালিক" },
+  manager: { en: "Manager", bn: "ম্যানেজার" },
   field_officer: { en: "Field Officer", bn: "মাঠকর্মী" },
   investor: { en: "Investor", bn: "বিনিয়োগকারী" },
   treasurer: { en: "Treasurer", bn: "কোষাধ্যক্ষ" },
@@ -72,8 +73,13 @@ const SidebarFooter = () => {
             {userName}
           </span>
           <span
-            className="block text-xs truncate capitalize"
-            style={{ color: "hsl(var(--sidebar-muted))" }}
+            className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
+            style={{
+              backgroundColor: "hsl(var(--sidebar-accent))",
+              color: "hsl(var(--sidebar-primary-foreground))",
+              border: "1px solid hsl(var(--sidebar-border))",
+            }}
+            aria-label={`Role: ${roleDisplay}`}
           >
             {roleDisplay}
           </span>
