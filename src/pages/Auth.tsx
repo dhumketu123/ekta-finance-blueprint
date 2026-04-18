@@ -395,7 +395,7 @@ const Auth = () => {
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/15" /></div>
                   <div className="relative flex justify-center text-xs"><span className="bg-white/5 backdrop-blur-sm px-3 text-white/40 rounded-full">{lang === "bn" ? "অথবা" : "or"}</span></div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-1 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
                     variant="outline"
