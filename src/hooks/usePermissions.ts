@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer" | "alumni";
+export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer" | "alumni" | "manager";
 
 interface PermissionMatrix {
   canViewClients: boolean;
@@ -94,6 +94,17 @@ const PERMISSION_MAP: Record<AppRole, PermissionMatrix> = {
     canViewOwners: false, canViewOfficers: false, canEditOfficers: false,
     canViewNotifications: false, canViewSettings: false, canViewReports: false,
     canApproveTransactions: false, canRecordPayments: false, canDeleteMasterData: false,
+    canViewOwnWallet: false,
+    isAdmin: false, isOwner: false, isTreasurer: false, isFieldOfficer: false, isInvestor: false,
+  },
+  manager: {
+    canViewClients: true, canEditClients: true, canDeleteClients: false,
+    canViewInvestors: true, canEditInvestors: false,
+    canViewLoans: true, canEditLoans: true,
+    canViewSavings: true, canEditSavings: true,
+    canViewOwners: false, canViewOfficers: true, canEditOfficers: false,
+    canViewNotifications: true, canViewSettings: false, canViewReports: true,
+    canApproveTransactions: true, canRecordPayments: true, canDeleteMasterData: false,
     canViewOwnWallet: false,
     isAdmin: false, isOwner: false, isTreasurer: false, isFieldOfficer: false, isInvestor: false,
   },

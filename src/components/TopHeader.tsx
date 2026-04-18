@@ -46,7 +46,16 @@ const TopHeader = () => {
   const avatarUrl = profile?.avatar_url;
   const displayName = lang === "bn" ? (profile?.name_bn || profile?.name_en) : (profile?.name_en || profile?.name_bn);
   const initials = (profile?.name_en?.charAt(0) || user?.email?.charAt(0) || "U").toUpperCase();
-  const roleLabel = role ? (role === "admin" ? (lang === "bn" ? "অ্যাডমিন" : "Admin") : role === "field_officer" ? (lang === "bn" ? "মাঠকর্মী" : "Field Officer") : role === "owner" ? (lang === "bn" ? "মালিক" : "Owner") : role === "investor" ? (lang === "bn" ? "বিনিয়োগকারী" : "Investor") : role === "treasurer" ? (lang === "bn" ? "কোষাধ্যক্ষ" : "Treasurer") : role) : "";
+  const roleLabel = role
+    ? role === "admin" ? (lang === "bn" ? "অ্যাডমিন" : "Admin")
+    : role === "field_officer" ? (lang === "bn" ? "মাঠকর্মী" : "Field Officer")
+    : role === "owner" ? (lang === "bn" ? "মালিক" : "Owner")
+    : role === "investor" ? (lang === "bn" ? "বিনিয়োগকারী" : "Investor")
+    : role === "treasurer" ? (lang === "bn" ? "কোষাধ্যক্ষ" : "Treasurer")
+    : role === "manager" ? (lang === "bn" ? "ম্যানেজার" : "Manager")
+    : role === "alumni" ? (lang === "bn" ? "প্রাক্তন" : "Alumni")
+    : role
+    : "";
 
   const toggleTheme = () => {
     const next = !isDark;
@@ -142,6 +151,17 @@ const TopHeader = () => {
           <div className="relative" style={{ overflow: 'visible' }}>
             <NotificationBell />
           </div>
+
+          {/* Visible Role Badge — global identity indicator */}
+          {roleLabel && (
+            <span
+              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-primary-foreground/15 text-primary-foreground border border-primary-foreground/20 shrink-0"
+              aria-label={`Logged in as ${roleLabel}`}
+              title={`${lang === "bn" ? "রোল" : "Role"}: ${roleLabel}`}
+            >
+              {roleLabel}
+            </span>
+          )}
 
           {/* Profile Avatar Dropdown */}
           <DropdownMenu>

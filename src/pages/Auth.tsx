@@ -11,22 +11,11 @@ import { ROUTES } from "@/config/routes";
 import PasswordStrengthMeter, { validatePassword } from "@/components/PasswordStrengthMeter";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Phone, ArrowLeft, KeyRound } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
+import { getRoleHomeRoute } from "@/config/roleRoutes";
 
-const ROLE_ROUTE_MAP: Record<string, string> = {
-  investor: ROUTES.INVESTOR_WALLET,
-  field_officer: ROUTES.CLIENTS,
-  alumni: ROUTES.ALUMNI,
-  admin: ROUTES.DASHBOARD,
-  owner: ROUTES.DASHBOARD,
-  treasurer: ROUTES.DASHBOARD,
-  manager: ROUTES.DASHBOARD,
-};
-
-const routeForRole = (role: string | null): string => {
-  const safeRole = role?.toLowerCase()?.trim() ?? "";
-  // SAFE FALLBACK → unknown roles never get privileged access
-  return ROLE_ROUTE_MAP[safeRole] ?? ROUTES.DASHBOARD;
-};
+// Post-login redirect routes through the centralized role-route map.
+// Unknown / null roles are sent to /unauthorized — NEVER to a privileged dashboard.
+const routeForRole = (role: string | null): string => getRoleHomeRoute(role);
 
 type AuthMode = "login" | "signup" | "forgot";
 type LoginMethod = "email" | "phone";
