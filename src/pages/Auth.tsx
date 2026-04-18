@@ -225,7 +225,7 @@ const Auth = () => {
 
   return (
     <div
-      className="auth-bg relative min-h-[100dvh] w-full flex items-center justify-center px-4 py-4 sm:px-6 sm:py-8 overflow-x-hidden overscroll-contain"
+      className="auth-bg relative min-h-[100dvh] w-full flex flex-col justify-start pt-8 md:items-center md:justify-center px-4 pb-6 md:px-6 md:pt-10 md:pb-10 overflow-x-hidden overscroll-contain"
       style={{ WebkitOverflowScrolling: "touch" }}
       role="main"
     >
@@ -239,12 +239,12 @@ const Auth = () => {
 
       <div className={`relative z-10 w-full max-w-md mx-auto animate-fade-in ${shakeError ? "auth-shake" : ""}`}>
         {/* Branding */}
-        <div className="text-center mb-4 md:mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl auth-logo-box mb-2 md:mb-4 animate-scale-in">
+        <div className="text-center mb-4 space-y-1">
+          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl auth-logo-box animate-scale-in">
             <span className="text-white font-bold text-2xl font-bangla">একতা</span>
           </div>
           <h1 className="auth-brand-title font-bangla">একতা ফাইন্যান্স গ্রুপ</h1>
-          <p className="auth-brand-subtitle mt-1 md:mt-2 font-bangla">{friendlyCopy[mode]}</p>
+          <p className="auth-brand-subtitle font-bangla">{friendlyCopy[mode]}</p>
         </div>
 
         {/* Glass Card */}
