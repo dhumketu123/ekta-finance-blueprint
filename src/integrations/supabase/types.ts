@@ -6201,6 +6201,7 @@ export type Database = {
         | "treasurer"
         | "alumni"
         | "super_admin"
+        | "manager"
       approval_status: "pending" | "approved" | "rejected"
       client_status: "active" | "pending" | "overdue" | "inactive"
       commitment_status: "pending" | "fulfilled" | "rescheduled"
@@ -6393,6 +6394,7 @@ export const Constants = {
         "treasurer",
         "alumni",
         "super_admin",
+        "manager",
       ],
       approval_status: ["pending", "approved", "rejected"],
       client_status: ["active", "pending", "overdue", "inactive"],
