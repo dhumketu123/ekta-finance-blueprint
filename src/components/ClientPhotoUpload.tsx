@@ -142,7 +142,11 @@ export default function ClientPhotoUpload({
           .from("clients")
           .update({ photo_url: path } as never)
           .eq("id", clientId);
-        if (dbErr) throw dbErr;
+        if (dbErr) {
+          // Cleanup safety: remove orphaned storage object if DB update fails
+          await supabase.storage.from("client-photos").remove([path]).catch(() => {});
+          throw dbErr;
+        }
 
         setPathOverride(path);
         await queryClient.invalidateQueries({ queryKey: ["clients", clientId] });
