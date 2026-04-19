@@ -1,4 +1,5 @@
 import type { RiskItem, TrendItem, TopClient, LoanKPIs } from "@/hooks/useAssistantDataBundle";
+import { searchSystemModules, type SystemModule } from "@/core/system-index";
 
 export interface AssistantContext {
   riskData?: RiskItem[];
@@ -455,8 +456,15 @@ export function getPredictiveSuggestions(ctx: AssistantContext): SuggestedAction
 
 /**
  * Build context summary for LLM
+ *
+ * @param ctx     Assistant data bundle
+ * @param userQuery Optional latest user input — used to inject SYSTEM_INDEX
+ *                  module hints so the LLM understands which app area is in scope.
  */
-export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> {
+export function buildLlmContext(
+  ctx: AssistantContext,
+  userQuery?: string,
+): Record<string, unknown> {
   const risk = ctx.riskData ?? [];
   const t = ctx.trendData ?? [];
   const k = ctx.loanKPIs;
@@ -477,6 +485,20 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       activeFlags.push(e.entity_name);
     }
   });
+
+  // SYSTEM_INDEX module hints (Phase 3 brain map injection)
+  const matchedModules: SystemModule[] = userQuery
+    ? searchSystemModules(userQuery, 3)
+    : [];
+  const system_modules = matchedModules.map((m) => ({
+    id: m.id,
+    title: m.title,
+    route: m.route,
+    description: m.description,
+    primary_tables: m.primary_tables,
+    related_tables: m.related_tables,
+    permissions_hint: m.permissions_hint,
+  }));
 
   return {
     risk_summary: {
@@ -515,6 +537,7 @@ export function buildLlmContext(ctx: AssistantContext): Record<string, unknown> 
       critical_entities: criticalEntities,
       active_feature_flags: activeFlags,
     },
+    system_modules,
     data_gaps: detectGaps(ctx),
   };
 }
