@@ -2,11 +2,15 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import { getRoleHomeRoute } from "@/config/roleRoutes";
-import type { AppRole } from "@/hooks/usePermissions";
+import { canAccessRoute } from "@/config/routeGuard";
+import type { AppRole, AppPermission } from "@/config/rolePermissions";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  /** Role membership gate. Empty/undefined → any valid role passes. */
   allowedRoles?: AppRole[];
+  /** Capability gate (AND semantics). Optional. */
+  requiredPermissions?: AppPermission[];
 }
 
 const Loader = () => (
@@ -15,12 +19,17 @@ const Loader = () => (
   </div>
 );
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+const ProtectedRoute = ({
+  children,
+  allowedRoles,
+  requiredPermissions,
+}: ProtectedRouteProps) => {
   const { state, role } = useAuth();
   const location = useLocation();
 
-  // Pure renderer: ProtectedRoute does NOT fetch roles, mutate state, or trigger side effects.
-  // Any non-terminal state → loader (prevents premature redirect before role is loaded).
+  // Pure renderer. No fetching, no side effects.
+  // Any non-terminal state → loader (prevents premature redirect before role
+  // resolves from the database).
   if (state !== AUTH_STATES.READY && state !== AUTH_STATES.UNAUTHENTICATED) {
     return <Loader />;
   }
@@ -29,24 +38,23 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to={ROUTES.AUTH} replace state={{ from: location }} />;
   }
 
-  // state === READY — role guaranteed non-null by AuthContext invariant.
+  // state === READY → role guaranteed non-null by AuthContext invariant,
+  // but we still validate via the central guard (zero trust).
+  const allowed = canAccessRoute(role, {
+    allowedRoles,
+    requiredPermissions,
+  });
 
-  // No role gate on this route → allow.
-  if (!allowedRoles || allowedRoles.length === 0) {
-    return <>{children}</>;
-  }
+  if (allowed) return <>{children}</>;
 
-  // Role allowed → render.
-  if (role && allowedRoles.includes(role as AppRole)) {
-    return <>{children}</>;
-  }
+  // Denied. Resolve a safe landing route from the central role-route map.
+  // Unknown / invalid roles → /unauthorized (NEVER admin dashboard).
+  const home = getRoleHomeRoute(role);
 
-  // Role denied → redirect to that role's safe home route.
-  // Unknown / invalid roles → /unauthorized (no privilege fallback).
-  const home = role ? getRoleHomeRoute(role) : ROUTES.UNAUTHORIZED;
-
-  // Avoid infinite redirect if the role's home itself is denied.
-  if (home === location.pathname) {
+  // Loop guard: if the role's home itself is the path being denied, or if
+  // we'd redirect to /unauthorized while already there → render unauthorized
+  // directly without another navigation.
+  if (home === location.pathname || location.pathname === ROUTES.UNAUTHORIZED) {
     return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }
 

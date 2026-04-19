@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AppRole } from "@/config/rolePermissions";
 
-export type AppRole = "admin" | "field_officer" | "owner" | "investor" | "treasurer" | "alumni" | "manager";
+// Re-export for backward compatibility — the canonical definition now lives
+// in `src/config/rolePermissions.ts` (single source of truth).
+export type { AppRole };
 
 interface PermissionMatrix {
   canViewClients: boolean;
