@@ -55,7 +55,12 @@ export const logInvalidRoleAccess = (payload: InvalidRolePayload): void => {
 
   const record = {
     timestamp: new Date().toISOString(),
-    ...payload,
+    role: payload.role ?? null,
+    userId: payload.userId ?? null,
+    route: payload.route,
+    reason: payload.reason,
+    requiredPermissions: payload.requiredPermissions ? [...payload.requiredPermissions] : undefined,
+    allowedRoles: payload.allowedRoles ? [...payload.allowedRoles] : undefined,
     userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
   };
 
