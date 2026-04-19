@@ -1,5 +1,6 @@
 import type { RiskItem, TrendItem, TopClient, LoanKPIs } from "@/hooks/useAssistantDataBundle";
 import { resolveModulesForQuery } from "@/core/ruleEngine";
+import { systemMonitor } from "@/core/systemMonitor";
 
 export interface AssistantContext {
   riskData?: RiskItem[];
@@ -490,6 +491,16 @@ export function buildLlmContext(
   // Direct SYSTEM_INDEX scanning is forbidden by SYSTEM CONSTITUTION v1.0.
   const decision = resolveModulesForQuery(userQuery);
   const system_modules = decision.modules;
+
+  // OBSERVABILITY BRIDGE (Governance Patch — Part 2):
+  // Forward RULE_ENGINE traceId into systemMonitor (passive log only).
+  // RULE_ENGINE remains pure; consumer owns the telemetry side-effect.
+  systemMonitor.trackEvent("rule_engine_decision", {
+    traceId: decision.traceId,
+    decision: decision.decision,
+    source: decision.source,
+    moduleCount: decision.modules.length,
+  });
 
   return {
     risk_summary: {
