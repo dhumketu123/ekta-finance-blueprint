@@ -144,7 +144,27 @@ export default function ClientPhotoUpload({
           .eq("id", clientId);
         if (dbErr) {
           // Cleanup safety: remove orphaned storage object if DB update fails
-          await supabase.storage.from("client-photos").remove([path]).catch(() => {});
+          try {
+            const { error: delErr } = await supabase.storage
+              .from("client-photos")
+              .remove([path]);
+            if (delErr) {
+              console.warn("[orphan-cleanup-failed]", {
+                path,
+                error: delErr.message,
+              });
+              // Best-effort audit trail (non-blocking)
+              await supabase.from("audit_logs").insert({
+                action_type: "orphan_cleanup_failed",
+                entity_type: "storage",
+                details: { path, error: delErr.message },
+              } as never).then(({ error }) => {
+                if (error) console.warn("[orphan-cleanup-audit-failed]", error.message);
+              });
+            }
+          } catch (e) {
+            console.warn("[orphan-cleanup-exception]", e);
+          }
           throw dbErr;
         }
 
