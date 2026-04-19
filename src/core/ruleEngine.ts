@@ -1,25 +1,23 @@
 /**
  * RULE_ENGINE — SINGLE BRAIN LAYER
  * ──────────────────────────────────────────────────────────────
- * SYSTEM CONSTITUTION v1.0 — DECISION & ROUTING AUTHORITY
+ * UNIFIED DECISION ARCHITECTURE v3.0 — DECISION & ROUTING AUTHORITY
  *
  * The ONLY layer permitted to make decisions about:
  *   - Module resolution (which SYSTEM_INDEX module applies to a query/route)
  *   - Role-based module filtering (who can see what)
  *   - LLM context derivation (what the assistant is told)
  *
- * STRICT CONTRACT:
- *   1. SYSTEM_INDEX is the ONLY input source of truth.
+ * STRICT CONTRACT v3.0:
+ *   1. SYSTEM_INDEX is the ONLY input source of truth (READ ONLY).
  *   2. RULE_ENGINE is PURE & DETERMINISTIC — same input → same output.
  *   3. RULE_ENGINE owns NO data, performs NO side effects, NO I/O.
  *   4. Execution layers (UI, assistant, navigation) consume its output ONLY.
  *   5. NO module may bypass this engine to read SYSTEM_INDEX directly
  *      for decision-making (read for display is allowed).
- *
- * This file replaces ad-hoc scattered logic across:
- *   - assistantQueryRouter (module matching for LLM)
- *   - navigation consumers (route → module hint)
- *   - any future feature-awareness consumer
+ *   6. NO IMPLICIT FALLBACK — every decision returns an explicit
+ *      `decision` discriminator: "ROUTE" | "QUERY" | "NO_ROUTE".
+ *   7. EVERY decision carries a `traceId` for observability.
  */
 
 import {
@@ -41,11 +39,23 @@ export interface ModuleHint {
   description: string;
 }
 
+/**
+ * Decision discriminator — explicit, no implicit fallback (v3.0).
+ *  - "ROUTE"    → resolved via current route
+ *  - "QUERY"    → resolved via fuzzy query match
+ *  - "NO_ROUTE" → no deterministic match (modules = [])
+ */
+export type DecisionKind = "ROUTE" | "QUERY" | "NO_ROUTE";
+
 export interface RuleEngineDecision {
+  /** Stable trace identifier for observability / dedup / audit. */
+  traceId: string;
   /** Modules ranked by relevance (0–2 entries, dedup-safe). */
   modules: ModuleHint[];
-  /** Source of resolution — useful for telemetry / debugging. */
+  /** Source of resolution — mirrors decision for back-compat. */
   source: "route" | "query" | "none";
+  /** Explicit decision contract — NEVER ambiguous. */
+  decision: DecisionKind;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -65,18 +75,39 @@ function toHint(m: SystemModule): ModuleHint {
 }
 
 /**
+ * Generate a lightweight, dependency-free trace id.
+ * Format: `re_<base36-time>_<base36-rand>` — short, sortable, unique enough
+ * for in-process correlation. Not a security token.
+ */
+function generateTraceId(): string {
+  const t = Date.now().toString(36);
+  const r = Math.random().toString(36).slice(2, 8);
+  return `re_${t}_${r}`;
+}
+
+/**
  * Resolve module(s) for an assistant query.
- * Order: explicit route match > free-text search > none.
+ * Order: explicit route match > free-text search > NO_ROUTE.
+ *
+ * v3.0 CONTRACT: every return path includes `traceId` and an
+ * explicit `decision` — NO implicit fallback, NO ambiguous empty.
  */
 export function resolveModulesForQuery(
   userQuery: string | undefined,
   currentRoute?: string,
 ): RuleEngineDecision {
+  const traceId = generateTraceId();
+
   // 1. Route-anchored resolution (highest precedence)
   if (currentRoute) {
     const routeMatch = findSystemModule(currentRoute);
     if (routeMatch) {
-      return { modules: [toHint(routeMatch)], source: "route" };
+      return {
+        traceId,
+        modules: [toHint(routeMatch)],
+        source: "route",
+        decision: "ROUTE",
+      };
     }
   }
 
@@ -84,12 +115,17 @@ export function resolveModulesForQuery(
   if (userQuery && userQuery.trim()) {
     const matches = searchSystemModules(userQuery, MAX_MODULES);
     if (matches.length) {
-      return { modules: matches.map(toHint), source: "query" };
+      return {
+        traceId,
+        modules: matches.map(toHint),
+        source: "query",
+        decision: "QUERY",
+      };
     }
   }
 
-  // 3. No deterministic match → empty (engine never guesses)
-  return { modules: [], source: "none" };
+  // 3. No deterministic match → explicit NO_ROUTE (engine never guesses)
+  return { traceId, modules: [], source: "none", decision: "NO_ROUTE" };
 }
 
 /**
