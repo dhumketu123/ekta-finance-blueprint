@@ -1,5 +1,5 @@
 import type { RiskItem, TrendItem, TopClient, LoanKPIs } from "@/hooks/useAssistantDataBundle";
-import { searchSystemModules, type SystemModule } from "@/core/system-index";
+import { resolveModulesForQuery } from "@/core/ruleEngine";
 
 export interface AssistantContext {
   riskData?: RiskItem[];
@@ -486,18 +486,10 @@ export function buildLlmContext(
     }
   });
 
-  // SYSTEM_INDEX module hints (Phase 3 brain map injection)
-  // Phase C token discipline: cap at 2 modules, drop tables + permissions,
-  // truncate description to 250 chars to keep LLM payload tight.
-  const matchedModules: SystemModule[] = userQuery
-    ? searchSystemModules(userQuery, 2)
-    : [];
-  const system_modules = matchedModules.slice(0, 2).map((m) => ({
-    id: m.id,
-    title: m.title,
-    route: m.route,
-    description: m.description.slice(0, 250),
-  }));
+  // SYSTEM_INDEX module hints — routed through RULE_ENGINE (single decision layer).
+  // Direct SYSTEM_INDEX scanning is forbidden by SYSTEM CONSTITUTION v1.0.
+  const decision = resolveModulesForQuery(userQuery);
+  const system_modules = decision.modules;
 
   return {
     risk_summary: {
