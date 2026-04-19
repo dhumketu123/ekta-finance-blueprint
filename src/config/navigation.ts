@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import type { AppRole } from "@/hooks/usePermissions";
 import { ROUTES } from "@/config/routes";
+import type { SystemModule } from "@/core/system-index";
 
 export interface NavItem {
   label: string;
@@ -42,8 +43,9 @@ export interface NavItem {
   /**
    * Optional link to SYSTEM_INDEX module id.
    * Used by AI Assistant for context injection. Does NOT affect rendering.
+   * Typed against SystemModule["id"] to prevent silent drift.
    */
-  moduleId?: string;
+  moduleId?: SystemModule["id"];
 }
 
 export interface NavGroup {
