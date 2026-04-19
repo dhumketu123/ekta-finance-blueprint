@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import { getRoleHomeRoute } from "@/config/roleRoutes";
 import { canAccessRoute } from "@/config/routeGuard";
-import type { AppRole, AppPermission } from "@/config/rolePermissions";
+import { ROLE_PERMISSIONS, type AppRole, type AppPermission } from "@/config/rolePermissions";
+import { logInvalidRoleAccess } from "@/security/authAudit";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,26 +26,47 @@ const ProtectedRoute = ({
   allowedRoles,
   requiredPermissions,
 }: ProtectedRouteProps) => {
-  const { state, role } = useAuth();
+  const { state, role, user } = useAuth();
   const location = useLocation();
 
-  // Pure renderer. No fetching, no side effects.
-  // Any non-terminal state → loader (prevents premature redirect before role
-  // resolves from the database).
-  if (state !== AUTH_STATES.READY && state !== AUTH_STATES.UNAUTHENTICATED) {
-    return <Loader />;
-  }
+  const isTerminal =
+    state === AUTH_STATES.READY || state === AUTH_STATES.UNAUTHENTICATED;
+
+  // Zero-trust capability check (only meaningful in READY state).
+  const allowed =
+    state === AUTH_STATES.READY
+      ? canAccessRoute(role, { allowedRoles, requiredPermissions })
+      : false;
+
+  // Fail-safe audit: log invalid/missing/denied role events without blocking
+  // the render path. Skipped during ROLE_LOADING to avoid noise.
+  useEffect(() => {
+    if (state !== AUTH_STATES.READY || allowed) return;
+
+    const normalized = role?.toLowerCase().trim();
+    const reason: "missing_role" | "unknown_role" | "permission_denied" =
+      !normalized
+        ? "missing_role"
+        : !(normalized in ROLE_PERMISSIONS)
+          ? "unknown_role"
+          : "permission_denied";
+
+    logInvalidRoleAccess({
+      role,
+      userId: user?.id ?? null,
+      route: location.pathname,
+      reason,
+      requiredPermissions,
+      allowedRoles,
+    });
+  }, [state, allowed, role, user?.id, location.pathname, requiredPermissions, allowedRoles]);
+
+  // Pure renderer below the audit effect.
+  if (!isTerminal) return <Loader />;
 
   if (state === AUTH_STATES.UNAUTHENTICATED) {
     return <Navigate to={ROUTES.AUTH} replace state={{ from: location }} />;
   }
-
-  // state === READY → role guaranteed non-null by AuthContext invariant,
-  // but we still validate via the central guard (zero trust).
-  const allowed = canAccessRoute(role, {
-    allowedRoles,
-    requiredPermissions,
-  });
 
   if (allowed) return <>{children}</>;
 
@@ -51,9 +74,7 @@ const ProtectedRoute = ({
   // Unknown / invalid roles → /unauthorized (NEVER admin dashboard).
   const home = getRoleHomeRoute(role);
 
-  // Loop guard: if the role's home itself is the path being denied, or if
-  // we'd redirect to /unauthorized while already there → render unauthorized
-  // directly without another navigation.
+  // Loop guard.
   if (home === location.pathname || location.pathname === ROUTES.UNAUTHORIZED) {
     return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }

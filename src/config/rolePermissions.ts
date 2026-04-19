@@ -1,18 +1,33 @@
 /**
  * Role Permission Engine — SINGLE SOURCE OF TRUTH for capability checks.
  *
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  FRONTEND ↔ BACKEND SECURITY CONTRACT                                ║
+ * ║                                                                      ║
+ * ║  This file IS the security contract. The DB enforces the same rules  ║
+ * ║  via RLS policies + `public.has_role(auth.uid(), <role>)`.           ║
+ * ║                                                                      ║
+ * ║  Any change to `ROLE_PERMISSIONS` or `AppRole` MUST be paired with:  ║
+ * ║    1. The DB `app_role` enum (migration).                            ║
+ * ║    2. RLS policies that reference the role via `has_role()`.         ║
+ * ║    3. A Supabase linter + RLS audit run.                             ║
+ * ║                                                                      ║
+ * ║  No parallel "contract" file is permitted — duplication causes drift.║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ *
  * Architecture rules:
  *  - Roles MUST come from the database (user_roles table) only.
  *  - Unknown / null role → ALL permission checks return false.
  *  - "ALL" wildcard belongs to admin & owner ONLY (no privilege escalation
  *    via fallback).
- *  - This file is consumed by `routeGuard.ts`, `ProtectedRoute`, sidebar,
- *    and any UI surface that needs capability checks.
+ *  - Consumed by `routeGuard.ts`, `ProtectedRoute`, sidebar, and any UI
+ *    surface that needs capability checks.
  *
  * To add a new role:
  *  1. Add it to `AppRole` (and the DB `app_role` enum).
  *  2. Add an entry to `ROLE_PERMISSIONS`.
  *  3. Add a home route in `roleRoutes.ts`.
+ *  4. Add/adjust RLS policies referencing `has_role(auth.uid(), '<role>')`.
  */
 
 export type AppRole =
