@@ -487,17 +487,16 @@ export function buildLlmContext(
   });
 
   // SYSTEM_INDEX module hints (Phase 3 brain map injection)
+  // Phase C token discipline: cap at 2 modules, drop tables + permissions,
+  // truncate description to 250 chars to keep LLM payload tight.
   const matchedModules: SystemModule[] = userQuery
-    ? searchSystemModules(userQuery, 3)
+    ? searchSystemModules(userQuery, 2)
     : [];
-  const system_modules = matchedModules.map((m) => ({
+  const system_modules = matchedModules.slice(0, 2).map((m) => ({
     id: m.id,
     title: m.title,
     route: m.route,
-    description: m.description,
-    primary_tables: m.primary_tables,
-    related_tables: m.related_tables,
-    permissions_hint: m.permissions_hint,
+    description: m.description.slice(0, 250),
   }));
 
   return {

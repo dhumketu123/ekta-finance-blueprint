@@ -371,10 +371,14 @@ export function findSystemModule(
 /**
  * Match a free-text query against module ids/titles for assistant context.
  * Returns up to `limit` matches, ranked by simple keyword presence.
+ *
+ * Phase B hardening:
+ *   - Minimum score threshold (>=3) to suppress weak/incidental matches.
+ *   - Hard cap at 2 matches by default to keep LLM context tight.
  */
 export function searchSystemModules(
   query: string,
-  limit = 3,
+  limit = 2,
 ): SystemModule[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
@@ -389,8 +393,40 @@ export function searchSystemModules(
       score += 3;
     return { m, score };
   })
-    .filter((x) => x.score > 0)
+    .filter((x) => x.score >= 3)
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+    .slice(0, Math.min(limit, 2));
   return scored.map((s) => s.m);
+}
+
+// ─────────────────────────────────────────────────────────────
+// DEV-ONLY INTEGRITY GUARDS (no runtime cost in production)
+// Phase A: detect duplicate ids and navigation drift early.
+// ─────────────────────────────────────────────────────────────
+if (import.meta.env?.DEV) {
+  // Duplicate id guard
+  const ids = SYSTEM_INDEX.map((m) => m.id);
+  const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+  if (duplicates.length) {
+    // eslint-disable-next-line no-console
+    console.error("[SYSTEM_INDEX] Duplicate module ids:", duplicates);
+  }
+
+  // Navigation cross-check (lazy import to avoid circular dep at module load)
+  void import("@/config/navigation").then(({ navigationGroups }) => {
+    const knownIds = new Set(SYSTEM_INDEX.map((m) => m.id));
+    navigationGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        if (item.moduleId && !knownIds.has(item.moduleId)) {
+          // eslint-disable-next-line no-console
+          console.error(
+            "[SYSTEM_INDEX] Invalid moduleId in navigation:",
+            item.moduleId,
+            "→",
+            item.path,
+          );
+        }
+      });
+    });
+  });
 }
