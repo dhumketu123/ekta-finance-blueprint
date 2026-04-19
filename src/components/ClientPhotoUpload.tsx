@@ -60,6 +60,33 @@ function getInitial(name?: string | null): string {
   return Array.from(trimmed)[0]?.toUpperCase() ?? "👤";
 }
 
+/**
+ * Safe storage cleanup — removes orphaned object when DB write fails.
+ * Non-blocking: cleanup or audit failures never bubble up to UI.
+ */
+async function safeStorageCleanup(path: string): Promise<void> {
+  try {
+    const { error: delErr } = await supabase.storage
+      .from("client-photos")
+      .remove([path]);
+    if (!delErr) return;
+
+    console.warn("[storage-cleanup-failed]", { path, error: delErr.message });
+
+    // Best-effort audit trail (non-blocking)
+    const { error: auditErr } = await supabase
+      .from("audit_logs")
+      .insert({
+        action_type: "storage_cleanup_failed",
+        entity_type: "client_avatar",
+        details: { path, error: delErr.message },
+      } as never);
+    if (auditErr) console.warn("[audit-failed]", auditErr.message);
+  } catch (e) {
+    console.warn("[cleanup-exception]", e);
+  }
+}
+
 interface Props {
   clientId: string;
   currentPhotoUrl?: string | null;
@@ -143,28 +170,8 @@ export default function ClientPhotoUpload({
           .update({ photo_url: path } as never)
           .eq("id", clientId);
         if (dbErr) {
-          // Cleanup safety: remove orphaned storage object if DB update fails
-          try {
-            const { error: delErr } = await supabase.storage
-              .from("client-photos")
-              .remove([path]);
-            if (delErr) {
-              console.warn("[orphan-cleanup-failed]", {
-                path,
-                error: delErr.message,
-              });
-              // Best-effort audit trail (non-blocking)
-              await supabase.from("audit_logs").insert({
-                action_type: "orphan_cleanup_failed",
-                entity_type: "storage",
-                details: { path, error: delErr.message },
-              } as never).then(({ error }) => {
-                if (error) console.warn("[orphan-cleanup-audit-failed]", error.message);
-              });
-            }
-          } catch (e) {
-            console.warn("[orphan-cleanup-exception]", e);
-          }
+          // CRITICAL SAFETY: DB FAIL → CLEANUP ORPHAN (non-blocking)
+          await safeStorageCleanup(path);
           throw dbErr;
         }
 
