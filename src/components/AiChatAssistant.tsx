@@ -203,7 +203,7 @@ export default function AiChatAssistant() {
 
       streamLlmResponse({
         messages: chatHistory,
-        context: buildLlmContext(ctx),
+        context: buildLlmContext(ctx, trimmed),
         signal: controller.signal,
         onDelta: (chunk) => {
           accumulated += chunk;
