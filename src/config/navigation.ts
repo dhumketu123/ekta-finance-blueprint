@@ -39,6 +39,11 @@ export interface NavItem {
   path: string;
   icon: LucideIcon;
   roles: AppRole[];
+  /**
+   * Optional link to SYSTEM_INDEX module id.
+   * Used by AI Assistant for context injection. Does NOT affect rendering.
+   */
+  moduleId?: string;
 }
 
 export interface NavGroup {
