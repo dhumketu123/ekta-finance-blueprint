@@ -1,6 +1,7 @@
 // src/core/systemMonitor.ts
 // Enterprise-grade runtime + performance baseline
 // Zero dependency | Leak-safe | SSR-guarded | Telemetry-ready
+// Hardened: event deduplication + CLS rolling reset + DEV-visible observer failures
 
 type MetricPayload = {
   name: string;
@@ -15,14 +16,20 @@ type ErrorPayload = {
   colno?: number;
 };
 
+const DEDUPE_WINDOW_MS = 2000;
+const CLS_RESET_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const EVENT_CACHE_MAX = 200;
+
 class SystemMonitor {
   private static instance: SystemMonitor;
   private initialized = false;
   private observers: PerformanceObserver[] = [];
   private clsValue = 0;
+  private clsResetTimer?: number;
   private errorHandler?: (event: ErrorEvent) => void;
   private rejectionHandler?: (event: PromiseRejectionEvent) => void;
   private telemetryAdapter?: (type: "metric" | "error", payload: any) => void;
+  private eventCache: Map<string, number> = new Map();
 
   static getInstance() {
     if (!SystemMonitor.instance) {
@@ -38,6 +45,7 @@ class SystemMonitor {
     this.setupPerformanceObservers();
     this.setupGlobalErrorHandler();
     this.setupUnhandledRejectionHandler();
+    this.setupClsRollingReset();
   }
 
   public destroy() {
@@ -54,12 +62,42 @@ class SystemMonitor {
       this.rejectionHandler = undefined;
     }
 
+    if (this.clsResetTimer) {
+      window.clearInterval(this.clsResetTimer);
+      this.clsResetTimer = undefined;
+    }
+
+    this.eventCache.clear();
     this.telemetryAdapter = undefined;
     this.initialized = false;
   }
 
+  // ----------------------------------
+  // Event Deduplication (Phase 4.1)
+  // ----------------------------------
+  private isDuplicate(key: string): boolean {
+    const now = Date.now();
+    const last = this.eventCache.get(key);
+    if (last && now - last < DEDUPE_WINDOW_MS) {
+      return true;
+    }
+    this.eventCache.set(key, now);
+
+    // Bounded cache — evict oldest when over capacity
+    if (this.eventCache.size > EVENT_CACHE_MAX) {
+      const firstKey = this.eventCache.keys().next().value;
+      if (firstKey !== undefined) this.eventCache.delete(firstKey);
+    }
+    return false;
+  }
+
   public trackEvent(eventName: string, payload?: Record<string, any>) {
     if (!this.initialized) return;
+
+    // Dedup key includes payload signature for granularity
+    const sig = payload ? JSON.stringify(payload) : "";
+    const key = `evt:${eventName}:${sig}`;
+    if (this.isDuplicate(key)) return;
 
     const eventPayload = {
       name: eventName,
@@ -105,7 +143,11 @@ class SystemMonitor {
       });
       observer.observe({ type: "largest-contentful-paint", buffered: true });
       this.observers.push(observer);
-    } catch {}
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("[SystemMonitor] LCP observer failed:", err);
+      }
+    }
   }
 
   private observeCLS() {
@@ -123,7 +165,11 @@ class SystemMonitor {
       });
       observer.observe({ type: "layout-shift", buffered: true });
       this.observers.push(observer);
-    } catch {}
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("[SystemMonitor] CLS observer failed:", err);
+      }
+    }
   }
 
   private observeFID() {
@@ -138,10 +184,28 @@ class SystemMonitor {
       });
       observer.observe({ type: "first-input", buffered: true });
       this.observers.push(observer);
-    } catch {}
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("[SystemMonitor] FID observer failed:", err);
+      }
+    }
+  }
+
+  // Phase 4.2 — CLS rolling reset (avoid unbounded growth on long sessions)
+  private setupClsRollingReset() {
+    this.clsResetTimer = window.setInterval(() => {
+      this.clsValue = 0;
+      if (import.meta.env.DEV) {
+        console.debug("[SystemMonitor] CLS rolling reset");
+      }
+    }, CLS_RESET_INTERVAL_MS);
   }
 
   private reportMetric(metric: MetricPayload) {
+    // Dedupe identical metric within window (e.g. CLS bursts)
+    const key = `metric:${metric.name}:${metric.value.toFixed(4)}`;
+    if (this.isDuplicate(key)) return;
+
     if (import.meta.env.DEV) {
       console.debug("[PerfMetric]", metric);
     }
@@ -183,6 +247,10 @@ class SystemMonitor {
   }
 
   private reportError(error: ErrorPayload) {
+    // Dedupe identical errors within window (prevents flood loops)
+    const key = `err:${error.message}:${error.source ?? ""}:${error.lineno ?? ""}`;
+    if (this.isDuplicate(key)) return;
+
     if (import.meta.env.DEV) {
       console.error("[RuntimeError]", error);
     }
