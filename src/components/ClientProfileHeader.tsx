@@ -137,7 +137,12 @@ const ClientProfileHeaderInner = React.memo(({
       {/* Row 1: Avatar + Identity */}
       <div className="relative flex items-center gap-3 sm:gap-4">
         <ProfileCompletionRing client={c} size={96} strokeWidth={4}>
-          <ClientPhotoUpload clientId={clientId} currentPhotoUrl={c.photo_url} canEdit={canEditClients} />
+          <ClientPhotoUpload
+            clientId={clientId}
+            currentPhotoUrl={c.photo_url}
+            clientName={name}
+            canEdit={canEditClients}
+          />
         </ProfileCompletionRing>
 
         <div className="min-w-0 flex-1">
