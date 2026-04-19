@@ -1,139 +1,179 @@
-import { useRef, useState, useCallback } from "react";
-import { Camera, Loader2, User } from "lucide-react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { Camera, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useClientAvatarUrl } from "@/hooks/useClientAvatarUrl";
+import { useTenantId } from "@/hooks/useTenantId";
 
-const MAX_BEFORE_COMPRESS = 2 * 1024 * 1024; // 2MB hard reject
-const TARGET_SIZE = 380 * 1024;               // 380KB ideal target
-const HARD_CAP = 450 * 1024;                  // 450KB hard cap
-const ACCEPTED = ["image/jpeg", "image/png"];
+/* ── Dev-only guardrail ───────────────────────────────────────────────── */
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[AvatarSystem] Bucket 'client-photos' must remain PRIVATE. Uses signed URLs. Do not switch to getPublicUrl()."
+  );
+}
 
-async function compressToWebP(file: File): Promise<Blob | null> {
+/* ── Upload constraints ───────────────────────────────────────────────── */
+const MAX_INPUT_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_DIMENSION = 2048;
+const WEBP_QUALITY = 0.85;
+const ACCEPTED_MIME = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+
+async function convertToWebP(file: File): Promise<Blob | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX_W = 1000;
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      if (w > MAX_W) { h = Math.round((h * MAX_W) / w); w = MAX_W; }
+      URL.revokeObjectURL(objectUrl);
+      let { naturalWidth: w, naturalHeight: h } = img;
+
+      // Maintain aspect ratio; never upscale small images
+      if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / w, MAX_DIMENSION / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
 
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-
-      const tryQuality = (q: number) =>
-        new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/webp", q));
-
-      (async () => {
-        // Binary search between 0.5–0.95 for ideal size
-        let lo = 0.5, hi = 0.95, best: Blob | null = null;
-        for (let i = 0; i < 7; i++) {
-          const mid = (lo + hi) / 2;
-          const blob = await tryQuality(mid);
-          best = blob;
-          if (blob.size <= TARGET_SIZE) lo = mid;
-          else hi = mid;
-        }
-        // Final check: if still above hard cap, do one more aggressive pass
-        if (best && best.size > HARD_CAP) {
-          const fallback = await tryQuality(0.4);
-          best = fallback.size <= HARD_CAP ? fallback : null;
-        }
-        resolve(best);
-      })();
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(null);
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((b) => resolve(b), "image/webp", WEBP_QUALITY);
     };
-    img.onerror = () => resolve(null);
-    img.src = url;
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+    img.src = objectUrl;
   });
+}
+
+function getInitial(name?: string | null): string {
+  if (!name) return "👤";
+  const trimmed = name.trim();
+  if (!trimmed) return "👤";
+  // Bengali, English, emoji-safe: take first grapheme
+  return Array.from(trimmed)[0]?.toUpperCase() ?? "👤";
 }
 
 interface Props {
   clientId: string;
   currentPhotoUrl?: string | null;
+  clientName?: string | null;
   canEdit?: boolean;
 }
 
-export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit = false }: Props) {
+export default function ClientPhotoUpload({
+  clientId,
+  currentPhotoUrl,
+  clientName,
+  canEdit = false,
+}: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { tenantId } = useTenantId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [localUrl, setLocalUrl] = useState<string | null>(null);
 
-  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (e.target) e.target.value = "";
+  // Local override allows instant re-render with the new path after upload,
+  // without waiting for the parent query to refetch.
+  const [pathOverride, setPathOverride] = useState<string | null>(null);
+  const effectivePath = pathOverride ?? currentPhotoUrl ?? null;
+  const signedUrl = useClientAvatarUrl(effectivePath);
 
-    if (!ACCEPTED.includes(file.type)) {
-      toast({ title: "অসমর্থিত ফরম্যাট", description: "শুধুমাত্র JPG বা PNG ছবি আপলোড করুন", variant: "destructive" });
-      return;
+  // When the parent prop catches up (refetch completes), clear local override
+  useEffect(() => {
+    if (pathOverride && currentPhotoUrl === pathOverride) {
+      setPathOverride(null);
     }
-    if (file.size > MAX_BEFORE_COMPRESS) {
-      toast({ title: "ছবি অনেক বড়", description: "সর্বোচ্চ ২MB এর ফাইল আপলোড করুন", variant: "destructive" });
-      return;
-    }
+  }, [currentPhotoUrl, pathOverride]);
 
-    setUploading(true);
-    try {
-      const blob = await compressToWebP(file);
-      if (!blob) {
-        toast({ title: "কম্প্রেশন ব্যর্থ", description: "ছোট ছবি ব্যবহার করে আবার চেষ্টা করুন", variant: "destructive" });
+  const handleFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (e.target) e.target.value = "";
+      if (!file) return;
+
+      if (!ACCEPTED_MIME.includes(file.type)) {
+        toast({
+          title: "অসমর্থিত ফরম্যাট",
+          description: "শুধু JPG, PNG বা WebP ছবি আপলোড করুন",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (file.size > MAX_INPUT_BYTES) {
+        toast({
+          title: "ছবি অনেক বড়",
+          description: "সর্বোচ্চ ১০MB এর ফাইল আপলোড করুন",
+          variant: "destructive",
+        });
         return;
       }
 
-      const path = `${clientId}.webp`;
-      const { error: upErr } = await supabase.storage
-        .from("client-photos")
-        .upload(path, blob, { upsert: true, contentType: "image/webp" });
-      if (upErr) throw upErr;
+      setUploading(true);
+      try {
+        const blob = await convertToWebP(file);
+        if (!blob) {
+          toast({
+            title: "কম্প্রেশন ব্যর্থ",
+            description: "ছোট ছবি ব্যবহার করে আবার চেষ্টা করুন",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      const { data: urlData } = supabase.storage.from("client-photos").getPublicUrl(path);
-      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+        // Path-only storage; tenant prefix when known, flat fallback otherwise
+        const path = tenantId
+          ? `${tenantId}/${clientId}.webp`
+          : `${clientId}.webp`;
 
-      const { error: dbErr } = await supabase
-        .from("clients")
-        .update({ photo_url: publicUrl } as any)
-        .eq("id", clientId);
-      if (dbErr) throw dbErr;
+        const { error: upErr } = await supabase.storage
+          .from("client-photos")
+          .upload(path, blob, { upsert: true, contentType: "image/webp" });
+        if (upErr) throw upErr;
 
-      setLocalUrl(publicUrl);
-      await queryClient.invalidateQueries({ queryKey: ["clients", clientId] });
-      toast({ title: "✅ ছবি আপলোড সফল!" });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
-      toast({ title: "আপলোড ব্যর্থ", description: errMsg, variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
-  }, [clientId, queryClient, toast]);
+        // Store ONLY the path (no full URL, no cache buster)
+        const { error: dbErr } = await supabase
+          .from("clients")
+          .update({ photo_url: path } as never)
+          .eq("id", clientId);
+        if (dbErr) throw dbErr;
 
-  const photoUrl = localUrl ?? currentPhotoUrl;
+        setPathOverride(path);
+        await queryClient.invalidateQueries({ queryKey: ["clients", clientId] });
+        toast({ title: "✅ ছবি আপলোড সফল!" });
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : "An unknown error occurred";
+        toast({ title: "আপলোড ব্যর্থ", description: errMsg, variant: "destructive" });
+      } finally {
+        setUploading(false);
+      }
+    },
+    [clientId, queryClient, toast, tenantId]
+  );
+
+  const initial = getInitial(clientName);
 
   return (
-    <div className="relative group w-full h-full rounded-full overflow-hidden aspect-square" style={{ borderRadius: 9999 }}>
-      {photoUrl ? (
-        <img
-          src={photoUrl}
-          alt="Client photo"
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 w-full h-full object-cover rounded-full"
-          style={{ borderRadius: 9999 }}
-          onError={() => setLocalUrl(null)}
+    <div className="relative group w-full h-full">
+      <Avatar className="w-full h-full ring-4 ring-background shadow-xl">
+        <AvatarImage
+          src={signedUrl ?? undefined}
+          alt={clientName ?? "Client photo"}
+          className="object-cover"
         />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-primary/10">
-          <User className="w-1/2 h-1/2 text-primary/60" />
-        </div>
-      )}
+        <AvatarFallback className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-primary-foreground text-2xl font-semibold">
+          {initial}
+        </AvatarFallback>
+      </Avatar>
 
       {uploading && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm rounded-full">
           <Loader2 className="w-5 h-5 text-white animate-spin" />
         </div>
       )}
@@ -142,7 +182,7 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
         <>
           <button
             onClick={() => inputRef.current?.click()}
-            className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+            className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer rounded-full"
             aria-label="ছবি পরিবর্তন করুন"
             type="button"
           >
@@ -151,7 +191,7 @@ export default function ClientPhotoUpload({ clientId, currentPhotoUrl, canEdit =
           <input
             ref={inputRef}
             type="file"
-            accept={ACCEPTED.join(",")}
+            accept={ACCEPTED_MIME.join(",")}
             onChange={handleFile}
             className="hidden"
             aria-hidden="true"
