@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AUTH_STATES } from "@/contexts/AuthContext";
 import { ROUTES } from "@/config/routes";
 import { getRoleHomeRoute } from "@/config/roleRoutes";
 import { canAccessRoute } from "@/config/routeGuard";
-import type { AppRole, AppPermission } from "@/config/rolePermissions";
+import { ROLE_PERMISSIONS, type AppRole, type AppPermission } from "@/config/rolePermissions";
+import { logInvalidRoleAccess } from "@/security/authAudit";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

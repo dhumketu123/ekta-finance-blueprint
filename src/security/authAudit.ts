@@ -67,13 +67,13 @@ export const logInvalidRoleAccess = (payload: InvalidRolePayload): void => {
   // break the app.
   void (async () => {
     try {
-      await supabase.from("audit_logs").insert({
+      await supabase.from("audit_logs").insert([{
         action_type: "invalid_role_access",
         entity_type: "auth_guard",
-        entity_id: payload.userId ?? null,
-        user_id: payload.userId ?? null,
+        entity_id: payload.userId ?? undefined,
+        user_id: payload.userId ?? undefined,
         details: record,
-      });
+      }]);
     } catch {
       /* swallow — audit best-effort only */
     }
