@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // ─── Security gate: POST-only + constant-time secret check ───
+  // ─── Phase 3: POST-only ───
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip");
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
@@ -163,8 +163,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST" },
     });
   }
-  const expectedSecret = Deno.env.get("CRON_SECRET");
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // ─── Phase 2 + 3: Vault-resolved secret + timing-safe compare ───
+  const expectedSecret = await resolveCronSecret(supabase);
   if (!expectedSecret) {
+    await logCronAudit(supabase, "daily-cron", false, ip, "secret_unavailable");
     return new Response(JSON.stringify({ error: "Server misconfigured" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -172,24 +179,82 @@ Deno.serve(async (req) => {
   }
   const providedSecret = extractProvidedSecret(req);
   if (!providedSecret || !timingSafeEqual(providedSecret, expectedSecret)) {
-    const supabaseUrlEarly = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKeyEarly = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sbEarly = createClient(supabaseUrlEarly, supabaseKeyEarly);
-    await logCronAudit(sbEarly, "daily-cron", false, ip, "unauthorized");
+    await logCronAudit(supabase, "daily-cron", false, ip, "unauthorized");
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
+  // ─── Phase 7: DRY_RUN flag ───
+  let dryRun = req.headers.get("x-dry-run") === "true";
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await logCronAudit(supabase, "daily-cron", true, ip);
+    const text = await req.text();
+    if (text) {
+      const body = JSON.parse(text);
+      if (body?.dry_run === true) dryRun = true;
+    }
+  } catch { /* body optional */ }
 
-    const today = new Date().toISOString().split("T")[0];
-    const results: Record<string, unknown> = {};
+  const today = new Date().toISOString().split("T")[0];
+
+  // ─── Phase 4: Idempotency claim (one run per UTC day) ───
+  const executionKey = `daily-cron:${today}`;
+  const jobName = "daily-cron";
+  const { data: claimData, error: claimErr } = await supabase.rpc("claim_cron_execution", {
+    p_job_name: jobName,
+    p_execution_key: executionKey,
+    p_dry_run: dryRun,
+    p_metadata: { ip, triggered_at: new Date().toISOString() },
+  });
+  if (claimErr) {
+    await logCronAudit(supabase, jobName, false, ip, `claim_error: ${claimErr.message}`, { execution_key: executionKey });
+    return new Response(JSON.stringify({ error: "Idempotency claim failed", detail: claimErr.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const claim = (claimData ?? {}) as Record<string, unknown>;
+  if (!claim.claimed) {
+    await logCronAudit(supabase, jobName, true, ip, undefined, {
+      execution_key: executionKey,
+      skipped_reason: "already_executed_for_period",
+      previous_executed_at: claim.previous_executed_at,
+    });
+    return new Response(JSON.stringify({
+      success: true,
+      skipped: true,
+      reason: "already_executed_for_period",
+      execution_key: executionKey,
+      previous_executed_at: claim.previous_executed_at,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  await logCronAudit(supabase, "daily-cron", true, ip, undefined, { execution_key: executionKey, dry_run: dryRun });
+
+  try {
+    const results: Record<string, unknown> = { dry_run: dryRun, execution_key: executionKey };
+
+    // In DRY_RUN we short-circuit destructive aggregation but still report planned actions.
+    if (dryRun) {
+      const { count: overdueCandidates } = await supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true })
+        .lt("next_payment_date", today)
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .gt("loan_amount", 0);
+      results.overdue_candidates = overdueCandidates ?? 0;
+      await supabase.rpc("complete_cron_execution", {
+        p_execution_key: executionKey,
+        p_success: true,
+        p_error: null,
+        p_metadata: results,
+      });
+      return new Response(JSON.stringify({ success: true, ...results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ═══ 1. Auto-flag overdue loans on clients ═══
     const { data: overdueClients, error: overdueErr } = await supabase
