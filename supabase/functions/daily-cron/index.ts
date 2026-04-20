@@ -710,12 +710,30 @@ Deno.serve(async (req) => {
       details: results,
     });
 
+    // Phase 9: finalize idempotency record
+    await supabase.rpc("complete_cron_execution", {
+      p_execution_key: executionKey,
+      p_success: true,
+      p_error: null,
+      p_metadata: { notif_count: totalNotifCount },
+    });
+
     return new Response(JSON.stringify({ success: true, ...results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    // Phase 10: mark failure but DO NOT release the lock (prevents auto re-run).
+    try {
+      await supabase.rpc("complete_cron_execution", {
+        p_execution_key: executionKey,
+        p_success: false,
+        p_error: msg,
+        p_metadata: null,
+      });
+    } catch { /* ignore */ }
+    await logCronAudit(supabase, "daily-cron", false, ip, msg, { execution_key: executionKey });
+    return new Response(JSON.stringify({ error: msg, execution_key: executionKey }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
