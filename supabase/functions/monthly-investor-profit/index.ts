@@ -19,11 +19,9 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 function extractProvidedSecret(req: Request): string | null {
-  const xCron = req.headers.get("x-cron-secret");
-  if (xCron) return xCron;
-  const auth = req.headers.get("authorization");
-  if (auth?.startsWith("Bearer ")) return auth.slice(7);
-  return null;
+  // CRON authentication uses ONLY x-cron-secret header.
+  // Authorization: Bearer is intentionally NOT accepted for cron auth.
+  return req.headers.get("x-cron-secret");
 }
 
 async function logCronAudit(

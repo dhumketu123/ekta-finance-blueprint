@@ -1,1 +1,7 @@
 project_id = "fjyhblhlfbmuyfiffynv"
+
+[functions.daily-cron]
+verify_jwt = false
+
+[functions.monthly-investor-profit]
+verify_jwt = false
