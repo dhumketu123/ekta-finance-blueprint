@@ -1303,6 +1303,42 @@ export type Database = {
           },
         ]
       }
+      cron_execution_log: {
+        Row: {
+          completed_at: string | null
+          dry_run: boolean
+          error_message: string | null
+          executed_at: string
+          execution_key: string
+          id: string
+          job_name: string
+          metadata: Json
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          dry_run?: boolean
+          error_message?: string | null
+          executed_at?: string
+          execution_key: string
+          id?: string
+          job_name: string
+          metadata?: Json
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          dry_run?: boolean
+          error_message?: string | null
+          executed_at?: string
+          execution_key?: string
+          id?: string
+          job_name?: string
+          metadata?: Json
+          status?: string
+        }
+        Relationships: []
+      }
       cron_global_locks: {
         Row: {
           job_name: string
@@ -5383,7 +5419,25 @@ export type Database = {
       }
       check_commitment_alert_thresholds: { Args: never; Returns: Json }
       check_graph_integrity: { Args: never; Returns: Json }
+      claim_cron_execution: {
+        Args: {
+          p_dry_run?: boolean
+          p_execution_key: string
+          p_job_name: string
+          p_metadata?: Json
+        }
+        Returns: Json
+      }
       cleanup_stale_execution_locks: { Args: never; Returns: undefined }
+      complete_cron_execution: {
+        Args: {
+          p_error?: string
+          p_execution_key: string
+          p_metadata?: Json
+          p_success: boolean
+        }
+        Returns: undefined
+      }
       create_approval_request: {
         Args: {
           p_action_type: string
@@ -5764,6 +5818,7 @@ export type Database = {
         }[]
       }
       get_branch_risk_summary: { Args: never; Returns: Json }
+      get_cron_secret_from_vault: { Args: never; Returns: string }
       get_dashboard_summary_metrics: {
         Args: { p_tenant_id: string }
         Returns: Json
