@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.monthly-investor-profit]
 verify_jwt = false
+
+[functions.seed-cron-vault]
+verify_jwt = false
