@@ -2,18 +2,90 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
+
+// ═══════════════════════════════════════════════════════════
+// CRON Security Hardening — constant-time secret comparison
+// ═══════════════════════════════════════════════════════════
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const enc = new TextEncoder();
+  const aBytes = enc.encode(a);
+  const bBytes = enc.encode(b);
+  let diff = 0;
+  for (let i = 0; i < aBytes.length; i++) diff |= aBytes[i] ^ bBytes[i];
+  return diff === 0;
+}
+
+function extractProvidedSecret(req: Request): string | null {
+  const xCron = req.headers.get("x-cron-secret");
+  if (xCron) return xCron;
+  const auth = req.headers.get("authorization");
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  return null;
+}
+
+async function logCronAudit(
+  supabase: ReturnType<typeof createClient>,
+  fnName: string,
+  success: boolean,
+  ip: string | null,
+  errorMessage?: string,
+) {
+  try {
+    await supabase.from("audit_logs").insert({
+      action_type: "cron_execution",
+      entity_type: "edge_function",
+      ip_address: ip,
+      details: {
+        function_name: fnName,
+        success,
+        executed_at: new Date().toISOString(),
+        ...(errorMessage ? { error: errorMessage } : {}),
+      },
+    });
+  } catch { /* never let audit failure break execution */ }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ─── Security gate: POST-only + constant-time secret check ───
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip");
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST" },
+    });
+  }
+  const expectedSecret = Deno.env.get("CRON_SECRET");
+  if (!expectedSecret) {
+    return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const providedSecret = extractProvidedSecret(req);
+  if (!providedSecret || !timingSafeEqual(providedSecret, expectedSecret)) {
+    const sbEarly = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    await logCronAudit(sbEarly, "monthly-investor-profit", false, ip, "unauthorized");
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    await logCronAudit(supabase, "monthly-investor-profit", true, ip);
 
     // Get only active investors (exclude matured/closed)
     const { data: investors, error } = await supabase
