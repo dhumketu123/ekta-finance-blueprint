@@ -42,6 +42,7 @@ async function logCronAudit(
   success: boolean,
   ip: string | null,
   errorMessage?: string,
+  extraDetails?: Record<string, unknown>,
 ) {
   try {
     await supabase.from("audit_logs").insert({
@@ -53,6 +54,7 @@ async function logCronAudit(
         success,
         executed_at: new Date().toISOString(),
         ...(errorMessage ? { error: errorMessage } : {}),
+        ...(extraDetails ?? {}),
       },
     });
   } catch { /* never let audit failure break execution */ }
