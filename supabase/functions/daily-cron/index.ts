@@ -2,8 +2,20 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret, x-dry-run",
 };
+
+// Vault-first secret resolution; environment fallback is permitted.
+async function resolveCronSecret(
+  supabase: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  try {
+    const { data } = await supabase.rpc("get_cron_secret_from_vault");
+    if (typeof data === "string" && data.length > 0) return data;
+  } catch { /* fall through to env */ }
+  const envSecret = Deno.env.get("CRON_SECRET");
+  return envSecret && envSecret.length > 0 ? envSecret : null;
+}
 
 // ═══════════════════════════════════════════════════════════
 // CRON Security Hardening — constant-time secret comparison
