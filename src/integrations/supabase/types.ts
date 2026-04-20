@@ -6048,6 +6048,7 @@ export type Database = {
       }
       run_retained_earnings_closure: { Args: never; Returns: Json }
       secure_delete_owner: { Args: { _owner_user_id: string }; Returns: Json }
+      seed_cron_secret_to_vault: { Args: { p_secret: string }; Returns: string }
       seed_default_chart_of_accounts: {
         Args: { p_tenant_id: string }
         Returns: undefined
