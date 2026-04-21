@@ -433,6 +433,55 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+    // ── Auth gate: JWT + admin/owner role OR x-cron-secret ─────────────────
+    // Without this, the endpoint leaks tenant/portfolio internals and can
+    // trigger auto-fix write operations as an unauthenticated caller.
+    const timingSafeEqual = (a: string, b: string): boolean => {
+      if (a.length !== b.length) return false;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      return diff === 0;
+    };
+
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const providedCronSecret = req.headers.get("x-cron-secret");
+    const isCronCall = !!(cronSecret && providedCronSecret && timingSafeEqual(providedCronSecret, cronSecret));
+
+    if (!isCronCall) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (!authHeader.startsWith("Bearer ") || !anonKey) {
+        return new Response(
+          JSON.stringify({ status: "unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return new Response(
+          JSON.stringify({ status: "unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      // Require admin or owner role
+      const { data: roleRow } = await userClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .in("role", ["admin", "owner", "super_admin"])
+        .limit(1)
+        .maybeSingle();
+      if (!roleRow) {
+        return new Response(
+          JSON.stringify({ status: "forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const startTotal = Date.now();
