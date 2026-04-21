@@ -248,18 +248,45 @@ export const useDashboardMetrics = () => {
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_dashboard_summary_v2" as any, {
-        p_tenant_id: tenantId,
-      });
-      if (error) throw error;
-      const r = (data ?? {}) as Record<string, any>;
-      // Map RPC keys → existing consumer shape (Index.tsx expects camelCase fields)
+      // Reserve Architecture v2: parallel fetch — RPC summary + snapshot balances + liquidity
+      const [rpcRes, snapRes, liqRes] = await Promise.all([
+        supabase.rpc("get_dashboard_summary_v2" as any, { p_tenant_id: tenantId }),
+        supabase
+          .from("account_balance_snapshot_v2")
+          .select("account_id, balance, accounts:account_id(account_code)")
+          .eq("tenant_id", tenantId)
+          .eq("snapshot_date", new Date().toISOString().slice(0, 10)),
+        supabase
+          .from("daily_financial_summary")
+          .select("liquidity_ratio, summary_date")
+          .order("summary_date", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (rpcRes.error) throw rpcRes.error;
+      const r = (rpcRes.data ?? {}) as Record<string, any>;
+
+      // Index snapshot balances by account_code (sub-millisecond reads)
+      const snapByCode: Record<string, number> = {};
+      for (const row of (snapRes.data ?? []) as any[]) {
+        const code = row?.accounts?.account_code;
+        if (code) snapByCode[code] = (snapByCode[code] ?? 0) + Number(row.balance ?? 0);
+      }
+      const pickSnap = (code: string, fallback: number) =>
+        snapByCode[code] != null ? Math.abs(snapByCode[code]) : fallback;
+
+      const rpcTotalLoan = Number(r.total_loan_amount ?? 0);
+      const rpcTotalCapital = Number(r.total_capital ?? 0);
+      const rpcSavings = Number(r.savings_this_month ?? 0);
+
       return {
         totalClients: Number(r.total_clients ?? 0),
         activeLoansCount: Number(r.active_loans_count ?? 0),
-        totalLoanAmount: Number(r.total_loan_amount ?? 0),
-        totalCapital: Number(r.total_capital ?? 0),
-        totalPrincipalInvested: Number(r.total_principal_invested ?? 0),
+        // Snapshot-first reads (Reserve Architecture v2)
+        totalLoanAmount: pickSnap("LOAN_PRINCIPAL", rpcTotalLoan),
+        totalCapital: pickSnap("INVESTOR_CAPITAL", rpcTotalCapital),
+        totalPrincipalInvested: pickSnap("INVESTOR_CAPITAL", Number(r.total_principal_invested ?? 0)),
         totalAccumulatedProfit: Number(r.total_accumulated_profit ?? 0),
         totalProfitDistributed: Number(r.total_profit_distributed ?? 0),
         investorCount: Number(r.investor_count ?? 0),
@@ -267,8 +294,11 @@ export const useDashboardMetrics = () => {
         reinvestorCount: Number(r.reinvestor_count ?? 0),
         overdueCount: Number(r.overdue_count ?? 0),
         pendingCount: Number(r.pending_count ?? 0),
-        savingsThisMonth: Number(r.savings_this_month ?? 0),
+        savingsThisMonth: pickSnap("SAVINGS_LIABILITY", rpcSavings),
         profitThisMonth: Number(r.profit_this_month ?? 0),
+        // Liquidity ratio from daily_financial_summary (Reserve Architecture v2)
+        liquidityRatio: liqRes.data?.liquidity_ratio != null ? Number(liqRes.data.liquidity_ratio) : null,
+        liquiditySnapshotDate: liqRes.data?.summary_date ?? null,
         // Extra fields exposed for cashflow oracle reuse
         _activeLoans: Number(r.active_loans ?? 0),
         _defaultLoans: Number(r.default_loans ?? 0),
