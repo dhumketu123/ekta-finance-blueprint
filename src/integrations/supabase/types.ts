@@ -1391,6 +1391,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          liquidity_ratio: number | null
           summary_date: string
           total_collection: number
           total_disbursement: number
@@ -1404,6 +1405,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          liquidity_ratio?: number | null
           summary_date: string
           total_collection?: number
           total_disbursement?: number
@@ -1417,6 +1419,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          liquidity_ratio?: number | null
           summary_date?: string
           total_collection?: number
           total_disbursement?: number
@@ -5350,6 +5353,19 @@ export type Database = {
       }
     }
     Functions: {
+      _post_balanced_pair: {
+        Args: {
+          p_actor: string
+          p_amount: number
+          p_credit_code: string
+          p_debit_code: string
+          p_narration: string
+          p_reference_id: string
+          p_reference_type: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
       admin_redistribute_treasury: { Args: { _method: string }; Returns: Json }
       apply_loan_payment: {
         Args: {
@@ -6100,6 +6116,18 @@ export type Database = {
           p_role: Database["public"]["Enums"]["app_role"]
           p_user_id: string
         }
+        Returns: Json
+      }
+      rpc_calculate_daily_liquidity: {
+        Args: { p_summary_date?: string }
+        Returns: Json
+      }
+      rpc_disburse_loan_with_provision: {
+        Args: { p_amount: number; p_loan_id: string; p_provision_rate?: number }
+        Returns: Json
+      }
+      rpc_monthly_profit_close: {
+        Args: { p_period_month?: string }
         Returns: Json
       }
       run_retained_earnings_closure: { Args: never; Returns: Json }
