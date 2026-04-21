@@ -5934,6 +5934,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_transaction_pin: { Args: never; Returns: boolean }
       insert_deduplicated_alert: {
         Args: {
           p_fingerprint: string
