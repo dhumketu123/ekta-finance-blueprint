@@ -36,16 +36,10 @@ export async function verifyTransactionPin(pin: string): Promise<PinVerifyResult
 
 /**
  * Check if the current user has a transaction PIN set.
+ * Uses a SECURITY DEFINER RPC so the bcrypt hash never leaves the database.
  */
 export async function hasTransactionPin(): Promise<boolean> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) return false;
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("transaction_pin_hash")
-    .eq("id", user.user.id)
-    .single();
-
-  return !!data?.transaction_pin_hash;
+  const { data, error } = await supabase.rpc("has_transaction_pin");
+  if (error) return false;
+  return !!data;
 }
