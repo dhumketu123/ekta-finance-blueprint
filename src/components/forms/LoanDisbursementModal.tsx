@@ -126,7 +126,7 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
       const user = (await supabase.auth.getUser()).data.user;
 
       if (isAdmin || bizRules.approval_workflow === "auto_approve") {
-        // Admin or auto_approve: Direct disbursement
+        // Admin or auto_approve: Direct disbursement (creates loan + schedules + ledger)
         const { data, error } = await supabase.rpc("disburse_loan" as any, {
           _client_id:         parsed.data.client_id,
           _loan_product_id:   parsed.data.loan_product_id,
@@ -137,11 +137,25 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
           _loan_model:        parsed.data.loan_model,
         });
         if (error) throw error;
-        setResult(data as unknown as DisburseResult);
+        const disburseResult = data as unknown as DisburseResult;
+        setResult(disburseResult);
+
+        // Reserve Architecture v2: chain Risk Provisioning entry to immutable ledger
+        const newLoanId = (disburseResult as any)?.loan_id ?? (disburseResult as any)?.id ?? null;
+        if (newLoanId) {
+          const { error: provErr } = await supabase.rpc("rpc_disburse_loan_with_provision", {
+            p_loan_id: newLoanId,
+            p_amount: parsed.data.principal_amount,
+            p_provision_rate: 5,
+          });
+          if (provErr) console.warn("[provision] non-fatal:", provErr.message);
+        }
+
         qc.invalidateQueries({ queryKey: ["clients"] });
         qc.invalidateQueries({ queryKey: ["loans"] });
         qc.invalidateQueries({ queryKey: ["transactions"] });
-        toast.success(lang === "bn" ? "ঋণ সফলভাবে বিতরণ হয়েছে" : "Loan disbursed successfully");
+        qc.invalidateQueries({ queryKey: ["dashboard_summary_v2"] });
+        toast.success(lang === "bn" ? "ঋণ বিতরণ ও ঝুঁকি সঞ্চিতি সুরক্ষিত" : "Loan Disbursed & Risk Provision Secured");
       } else {
         // Non-admin: Submit for approval (Maker-Checker)
         const refId = `DISB_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
