@@ -1387,6 +1387,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_balance_snapshot: {
+        Row: {
+          account_id: string
+          balance: number | null
+          created_at: string | null
+          id: string
+          snapshot_date: string
+          tenant_id: string
+        }
+        Insert: {
+          account_id: string
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          snapshot_date: string
+          tenant_id: string
+        }
+        Update: {
+          account_id?: string
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          snapshot_date?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       daily_financial_summary: {
         Row: {
           created_at: string
@@ -1845,6 +1872,39 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_audit_log: {
+        Row: {
+          action: string
+          amount: number | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          reference_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          amount?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          amount?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          tenant_id?: string | null
         }
         Relationships: []
       }
@@ -2791,6 +2851,7 @@ export type Database = {
           payment_type: Database["public"]["Enums"]["payment_type"]
           product_name_bn: string
           product_name_en: string
+          provision_rate: number | null
           tenure_months: number
           updated_at: string
           upfront_savings_pct: number | null
@@ -2808,6 +2869,7 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["payment_type"]
           product_name_bn?: string
           product_name_en: string
+          provision_rate?: number | null
           tenure_months?: number
           updated_at?: string
           upfront_savings_pct?: number | null
@@ -2825,6 +2887,7 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["payment_type"]
           product_name_bn?: string
           product_name_en?: string
+          provision_rate?: number | null
           tenure_months?: number
           updated_at?: string
           upfront_savings_pct?: number | null
@@ -5287,6 +5350,22 @@ export type Database = {
           },
         ]
       }
+      v_account_balance: {
+        Row: {
+          account_id: string | null
+          balance: number | null
+          tenant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_entry_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_ai_chip_usage: {
         Row: {
           chip_date: string | null
@@ -6122,10 +6201,12 @@ export type Database = {
         Args: { p_summary_date?: string }
         Returns: Json
       }
+      rpc_calculate_daily_liquidity_v2: { Args: never; Returns: Json }
       rpc_disburse_loan_with_provision: {
         Args: { p_amount: number; p_loan_id: string; p_provision_rate?: number }
         Returns: Json
       }
+      rpc_generate_daily_snapshot: { Args: never; Returns: undefined }
       rpc_monthly_profit_close: {
         Args: { p_period_month?: string }
         Returns: Json
