@@ -46,6 +46,15 @@ interface Props {
   analytics?: AnalyticsSnapshot;
 }
 
+// HTML-escape helper — prevents stored XSS via DB values injected into print window HTML
+const esc = (v: unknown): string =>
+  String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 export default function ClientStatementExport({ open, onClose, clientName, memberId, loans, transactions, savingsBalance, analytics }: Props) {
   const { lang } = useLanguage();
   const bn = lang === "bn";
@@ -109,7 +118,7 @@ export default function ClientStatementExport({ open, onClose, clientName, membe
       const html = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>${bn ? "ক্লায়েন্ট স্টেটমেন্ট" : "Client Statement"} - ${clientName}</title>
+<title>${bn ? "ক্লায়েন্ট স্টেটমেন্ট" : "Client Statement"} - ${esc(clientName)}</title>
 <style>
   body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #1a1a1a; font-size: 12px; }
   .header { text-align: center; border-bottom: 3px solid #0ea5e9; padding-bottom: 16px; margin-bottom: 24px; }
@@ -140,7 +149,7 @@ export default function ClientStatementExport({ open, onClose, clientName, membe
 <div class="header">
   <h1>${bn ? "একতা ফাইন্যান্স" : "Ekta Finance"}</h1>
   <p>${bn ? "ক্লায়েন্ট স্টেটমেন্ট" : "Client Financial Statement"}</p>
-  <p><strong>${clientName}</strong> | ${bn ? "সদস্য:" : "Member:"} ${memberId}</p>
+  <p><strong>${esc(clientName)}</strong> | ${bn ? "সদস্য:" : "Member:"} ${esc(memberId)}</p>
   <p>${bn ? "তারিখ:" : "Date:"} ${new Date().toLocaleDateString(bn ? "bn-BD" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}</p>
 </div>
 
@@ -176,7 +185,7 @@ ${analytics ? `
     </div>
     <div class="summary-card">
       <div class="label">${bn ? "ঝুঁকি মাত্রা" : "Risk Level"}</div>
-      <div class="value ${analytics.riskLevel === "low" ? "success" : analytics.riskLevel === "critical" ? "danger" : "warning"}">${analytics.riskLevel.toUpperCase()}</div>
+      <div class="value ${analytics.riskLevel === "low" ? "success" : analytics.riskLevel === "critical" ? "danger" : "warning"}">${esc(analytics.riskLevel.toUpperCase())}</div>
     </div>
     <div class="summary-card">
       <div class="label">${bn ? "উচ্চ ঝুঁকি ঋণ" : "High Risk Loans"}</div>
@@ -204,8 +213,8 @@ ${analytics ? `
     </tr></thead>
     <tbody>
     ${loans.map(l => `<tr>
-      <td>${l.loan_id || "—"}</td>
-      <td><span class="status-badge ${l.status === "active" ? "approved" : l.status === "default" ? "rejected" : "pending"}">${l.status}</span></td>
+      <td>${esc(l.loan_id || "—")}</td>
+      <td><span class="status-badge ${l.status === "active" ? "approved" : l.status === "default" ? "rejected" : "pending"}">${esc(l.status)}</span></td>
       <td>৳${Number(l.total_principal).toLocaleString()}</td>
       <td>৳${Number(l.total_interest).toLocaleString()}</td>
       <td class="danger">৳${(Number(l.outstanding_principal) + Number(l.outstanding_interest)).toLocaleString()}</td>
@@ -228,11 +237,11 @@ ${analytics ? `
     </tr></thead>
     <tbody>
     ${transactions.slice(0, 100).map(tx => `<tr>
-      <td>${new Date(tx.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "2-digit" })}</td>
-      <td>${tx.transaction_type.replace(/_/g, " ")}</td>
+      <td>${esc(new Date(tx.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "2-digit" }))}</td>
+      <td>${esc(String(tx.transaction_type ?? "").replace(/_/g, " "))}</td>
       <td>৳${Number(tx.amount).toLocaleString()}</td>
-      <td><span class="status-badge ${tx.approval_status === "approved" ? "approved" : tx.approval_status === "rejected" ? "rejected" : "pending"}">${tx.approval_status}</span></td>
-      <td>${tx.receipt_number || "—"}</td>
+      <td><span class="status-badge ${tx.approval_status === "approved" ? "approved" : tx.approval_status === "rejected" ? "rejected" : "pending"}">${esc(tx.approval_status)}</span></td>
+      <td>${esc(tx.receipt_number || "—")}</td>
     </tr>`).join("")}
     </tbody>
   </table>

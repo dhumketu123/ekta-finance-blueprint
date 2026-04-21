@@ -311,18 +311,27 @@ const BalanceSheetPage = () => {
     if (!printWindow) return;
     const dateLabel = formatLocalDate(effectiveDate, lang);
 
+    // HTML-escape helper — prevents stored XSS via DB values injected into print window HTML
+    const esc = (v: unknown): string =>
+      String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
     const sectionHTML = VALID_SECTIONS.map((sec) => {
       const meta = SECTION_META[sec];
       const items = computed.sections[sec];
       const total = sec === "asset" ? computed.totalAssets : sec === "liability" ? computed.totalLiabilities : computed.totalEquity;
       return `
-        <h3 style="margin:18px 0 6px;font-size:14px;font-weight:700;">${bn ? meta.labelBn : meta.labelEn}</h3>
+        <h3 style="margin:18px 0 6px;font-size:14px;font-weight:700;">${esc(bn ? meta.labelBn : meta.labelEn)}</h3>
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="background:#f3f4f6;"><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "হিসাব" : "Account"}</th><th style="text-align:left;padding:6px 8px;border:1px solid #ddd;">${bn ? "কোড" : "Code"}</th><th style="text-align:right;padding:6px 8px;border:1px solid #ddd;">${bn ? "ব্যালেন্স" : "Balance"}</th></tr></thead>
           <tbody>
             ${items.length === 0
               ? `<tr><td colspan="3" style="text-align:center;padding:12px;color:#999;">${bn ? "ডেটা নেই" : "No data"}</td></tr>`
-              : items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${bn ? (r.name_bn || r.name) : r.name}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${r.code}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">${fmtAmt(r.balance)}</td></tr>`).join("")}
+              : items.map((r) => `<tr><td style="padding:5px 8px;border:1px solid #eee;">${esc(bn ? (r.name_bn || r.name) : r.name)}</td><td style="padding:5px 8px;border:1px solid #eee;font-family:monospace;font-size:11px;">${esc(r.code)}</td><td style="text-align:right;padding:5px 8px;border:1px solid #eee;font-family:monospace;">${fmtAmt(r.balance)}</td></tr>`).join("")}
             <tr style="background:#f9fafb;font-weight:700;"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;">${bn ? "মোট" : "Total"}</td><td style="text-align:right;padding:6px 8px;border:1px solid #ddd;font-family:monospace;">${fmtAmt(total)}</td></tr>
           </tbody>
         </table>`;
