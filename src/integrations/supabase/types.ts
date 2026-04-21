@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_balance_snapshot_v2: {
+        Row: {
+          account_id: string
+          balance: number
+          id: string
+          snapshot_date: string | null
+          snapshot_time: string | null
+          tenant_id: string
+          version: number | null
+        }
+        Insert: {
+          account_id: string
+          balance: number
+          id?: string
+          snapshot_date?: string | null
+          snapshot_time?: string | null
+          tenant_id: string
+          version?: number | null
+        }
+        Update: {
+          account_id?: string
+          balance?: number
+          id?: string
+          snapshot_date?: string | null
+          snapshot_time?: string | null
+          tenant_id?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       account_balances: {
         Row: {
           account_id: string
@@ -1568,12 +1598,15 @@ export type Database = {
           credit: number
           currency: string
           debit: number
+          event_type: string | null
           id: string
           integrity_checked_at: string | null
+          is_reversed: boolean | null
           isolated: boolean
           narration: string | null
           reference_id: string | null
           reference_type: string
+          root_reference_id: string | null
           tenant_id: string
         }
         Insert: {
@@ -1586,12 +1619,15 @@ export type Database = {
           credit?: number
           currency?: string
           debit?: number
+          event_type?: string | null
           id?: string
           integrity_checked_at?: string | null
+          is_reversed?: boolean | null
           isolated?: boolean
           narration?: string | null
           reference_id?: string | null
           reference_type: string
+          root_reference_id?: string | null
           tenant_id: string
         }
         Update: {
@@ -1604,12 +1640,15 @@ export type Database = {
           credit?: number
           currency?: string
           debit?: number
+          event_type?: string | null
           id?: string
           integrity_checked_at?: string | null
+          is_reversed?: boolean | null
           isolated?: boolean
           narration?: string | null
           reference_id?: string | null
           reference_type?: string
+          root_reference_id?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -1875,6 +1914,39 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_anomaly_log: {
+        Row: {
+          anomaly_type: string | null
+          created_at: string | null
+          detected_value: number | null
+          id: string
+          reference_id: string | null
+          severity: string | null
+          tenant_id: string | null
+          threshold_value: number | null
+        }
+        Insert: {
+          anomaly_type?: string | null
+          created_at?: string | null
+          detected_value?: number | null
+          id?: string
+          reference_id?: string | null
+          severity?: string | null
+          tenant_id?: string | null
+          threshold_value?: number | null
+        }
+        Update: {
+          anomaly_type?: string | null
+          created_at?: string | null
+          detected_value?: number | null
+          id?: string
+          reference_id?: string | null
+          severity?: string | null
+          tenant_id?: string | null
+          threshold_value?: number | null
+        }
+        Relationships: []
+      }
       financial_audit_log: {
         Row: {
           action: string
@@ -1905,6 +1977,36 @@ export type Database = {
           metadata?: Json | null
           reference_id?: string | null
           tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      financial_event_log: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          root_reference_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          root_reference_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          root_reference_id?: string
+          tenant_id?: string
         }
         Relationships: []
       }
@@ -6102,6 +6204,19 @@ export type Database = {
       }
       populate_daily_summary: { Args: { _target_date?: string }; Returns: Json }
       post_advance_buffer_entries: { Args: never; Returns: Json }
+      post_double_entry_event: {
+        Args: {
+          p_actor?: string
+          p_amount: number
+          p_credit_account: string
+          p_debit_account: string
+          p_event_type: string
+          p_meta?: Json
+          p_ref: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
       predict_loan_risk: { Args: never; Returns: Json }
       process_approved_request: {
         Args: { p_request_id: string }
@@ -6207,10 +6322,12 @@ export type Database = {
         Returns: Json
       }
       rpc_generate_daily_snapshot: { Args: never; Returns: undefined }
+      rpc_generate_snapshot_v2: { Args: never; Returns: undefined }
       rpc_monthly_profit_close: {
         Args: { p_period_month?: string }
         Returns: Json
       }
+      rpc_reconcile_ledger: { Args: never; Returns: Json }
       run_retained_earnings_closure: { Args: never; Returns: Json }
       secure_delete_owner: { Args: { _owner_user_id: string }; Returns: Json }
       seed_cron_secret_to_vault: { Args: { p_secret: string }; Returns: string }
