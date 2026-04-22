@@ -248,12 +248,12 @@ export const useDashboardMetrics = () => {
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      // Reserve Architecture v2: parallel fetch — RPC summary + snapshot balances + liquidity
-      const [rpcRes, snapRes, liqRes] = await Promise.all([
+      // Reserve Architecture v3: parallel fetch — RPC summary + snapshot balances + liquidity + reconciliation
+      const [rpcRes, snapRes, liqRes, reconRes] = await Promise.all([
         supabase.rpc("get_dashboard_summary_v2" as any, { p_tenant_id: tenantId }),
         supabase
           .from("account_balance_snapshot_v2")
-          .select("account_id, balance, accounts:account_id(account_code)")
+          .select("account_id, balance, last_run_at, accounts:account_id(account_code)")
           .eq("tenant_id", tenantId)
           .eq("snapshot_date", new Date().toISOString().slice(0, 10)),
         supabase
@@ -262,6 +262,8 @@ export const useDashboardMetrics = () => {
           .order("summary_date", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        // Live reconciliation check — flags ledger imbalances
+        supabase.rpc("rpc_reconcile_ledger" as any),
       ]);
 
       if (rpcRes.error) throw rpcRes.error;
@@ -269,9 +271,13 @@ export const useDashboardMetrics = () => {
 
       // Index snapshot balances by account_code (sub-millisecond reads)
       const snapByCode: Record<string, number> = {};
+      let snapshotLastRun: string | null = null;
       for (const row of (snapRes.data ?? []) as any[]) {
         const code = row?.accounts?.account_code;
         if (code) snapByCode[code] = (snapByCode[code] ?? 0) + Number(row.balance ?? 0);
+        if (row?.last_run_at && (!snapshotLastRun || row.last_run_at > snapshotLastRun)) {
+          snapshotLastRun = row.last_run_at;
+        }
       }
       const pickSnap = (code: string, fallback: number) =>
         snapByCode[code] != null ? Math.abs(snapByCode[code]) : fallback;
@@ -279,6 +285,11 @@ export const useDashboardMetrics = () => {
       const rpcTotalLoan = Number(r.total_loan_amount ?? 0);
       const rpcTotalCapital = Number(r.total_capital ?? 0);
       const rpcSavings = Number(r.savings_this_month ?? 0);
+
+      // Reconciliation status (issue_count > 0 → red pulsing alert)
+      const reconData = (reconRes.data ?? {}) as Record<string, any>;
+      const reconciliationIssueCount = Number(reconData.issue_count ?? 0);
+      const reconciliationStatus = (reconData.reconciliation_status as string) ?? "UNKNOWN";
 
       return {
         totalClients: Number(r.total_clients ?? 0),
@@ -296,9 +307,16 @@ export const useDashboardMetrics = () => {
         pendingCount: Number(r.pending_count ?? 0),
         savingsThisMonth: pickSnap("SAVINGS_LIABILITY", rpcSavings),
         profitThisMonth: Number(r.profit_this_month ?? 0),
+        // v3: Risk Reserve Fund (ঝুঁকি সঞ্চিতি) — equity account, credit-balance polarity
+        riskReserve: snapByCode["RISK_RESERVE"] != null ? Math.abs(snapByCode["RISK_RESERVE"]) : 0,
         // Liquidity ratio from daily_financial_summary (Reserve Architecture v2)
         liquidityRatio: liqRes.data?.liquidity_ratio != null ? Number(liqRes.data.liquidity_ratio) : null,
         liquiditySnapshotDate: liqRes.data?.summary_date ?? null,
+        // Snapshot freshness (v3 last_run_at)
+        snapshotLastRun,
+        // Reconciliation alert signal
+        reconciliationIssueCount,
+        reconciliationStatus,
         // Extra fields exposed for cashflow oracle reuse
         _activeLoans: Number(r.active_loans ?? 0),
         _defaultLoans: Number(r.default_loans ?? 0),
