@@ -33,7 +33,10 @@ export default function ClosedLoans() {
 
   useEffect(() => {
     const fetchClosedLoans = async () => {
-      if (!tenantId) return;
+      if (!tenantId) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
 
       const { data, error } = await supabase
@@ -48,11 +51,12 @@ export default function ClosedLoans() {
           clients (id, name_en, name_bn, phone)
         `)
         .eq("tenant_id", tenantId)
-        .or("status.eq.closed,outstanding_principal.lte.0")
-        .order("updated_at", { ascending: false });
+        .eq("status", "closed")
+        .order("updated_at", { ascending: false })
+        .limit(100);
 
-      if (!error && data) {
-        setLoans(data as unknown as ClosedLoan[]);
+      if (!error) {
+        setLoans((data ?? []) as ClosedLoan[]);
       }
       setLoading(false);
     };
