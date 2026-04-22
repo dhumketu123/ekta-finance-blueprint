@@ -126,8 +126,9 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
       const user = (await supabase.auth.getUser()).data.user;
 
       if (isAdmin || bizRules.approval_workflow === "auto_approve") {
-        // Admin or auto_approve: Direct disbursement (creates loan + schedules + ledger)
-        const { data, error } = await supabase.rpc("disburse_loan" as any, {
+        // v3: Atomic disbursement — single RPC handles loan + 5% risk provisioning
+        // in ONE transaction. If provisioning fails, the loan rollback is automatic.
+        const { data, error } = await supabase.rpc("rpc_disburse_loan_atomic" as any, {
           _client_id:         parsed.data.client_id,
           _loan_product_id:   parsed.data.loan_product_id,
           _principal_amount:  parsed.data.principal_amount,
@@ -135,21 +136,12 @@ export default function LoanDisbursementModal({ open, onClose, prefilledClientId
           _assigned_officer:  user?.id ?? null,
           _notes:             parsed.data.notes || null,
           _loan_model:        parsed.data.loan_model,
+          _provision_rate:    5,
         });
         if (error) throw error;
-        const disburseResult = data as unknown as DisburseResult;
+        // Atomic RPC returns { success, disbursement, provision } — extract disbursement payload
+        const disburseResult = ((data as any)?.disbursement ?? data) as DisburseResult;
         setResult(disburseResult);
-
-        // Reserve Architecture v2: chain Risk Provisioning entry to immutable ledger
-        const newLoanId = (disburseResult as any)?.loan_id ?? (disburseResult as any)?.id ?? null;
-        if (newLoanId) {
-          const { error: provErr } = await supabase.rpc("rpc_disburse_loan_with_provision", {
-            p_loan_id: newLoanId,
-            p_amount: parsed.data.principal_amount,
-            p_provision_rate: 5,
-          });
-          if (provErr) console.warn("[provision] non-fatal:", provErr.message);
-        }
 
         qc.invalidateQueries({ queryKey: ["clients"] });
         qc.invalidateQueries({ queryKey: ["loans"] });
