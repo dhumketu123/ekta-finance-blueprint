@@ -19,6 +19,7 @@ export type Database = {
           account_id: string
           balance: number
           id: string
+          last_run_at: string | null
           snapshot_date: string | null
           snapshot_time: string | null
           tenant_id: string
@@ -28,6 +29,7 @@ export type Database = {
           account_id: string
           balance: number
           id?: string
+          last_run_at?: string | null
           snapshot_date?: string | null
           snapshot_time?: string | null
           tenant_id: string
@@ -37,6 +39,7 @@ export type Database = {
           account_id?: string
           balance?: number
           id?: string
+          last_run_at?: string | null
           snapshot_date?: string | null
           snapshot_time?: string | null
           tenant_id?: string
@@ -6317,6 +6320,19 @@ export type Database = {
         Returns: Json
       }
       rpc_calculate_daily_liquidity_v2: { Args: never; Returns: Json }
+      rpc_disburse_loan_atomic: {
+        Args: {
+          _assigned_officer?: string
+          _client_id: string
+          _disbursement_date: string
+          _loan_model?: string
+          _loan_product_id: string
+          _notes?: string
+          _principal_amount: number
+          _provision_rate?: number
+        }
+        Returns: Json
+      }
       rpc_disburse_loan_with_provision: {
         Args: { p_amount: number; p_loan_id: string; p_provision_rate?: number }
         Returns: Json
