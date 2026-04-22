@@ -22,6 +22,7 @@ export const ROUTES = {
   CLIENT_DETAIL: "/clients/:id",
   LOANS: "/loans",
   LOAN_DETAIL: "/loans/:id",
+  CLOSED_LOANS: "/loans/closed",
   SAVINGS: "/savings",
   SAVINGS_DETAIL: "/savings/:id",
   INVESTORS: "/investors",

@@ -58,6 +58,7 @@ const AlumniDashboard = React.lazy(() => import("./pages/AlumniDashboard"));
 const GovernanceCore = React.lazy(() => import("./pages/GovernanceCore"));
 const BulkOnboarding = React.lazy(() => import("./pages/BulkOnboarding"));
 const KnowledgeDashboard = React.lazy(() => import("./pages/KnowledgeDashboard"));
+const ClosedLoans = React.lazy(() => import("./pages/ClosedLoans"));
 
 /* ── Premium page loader ── */
 const PageLoader = () => (
@@ -113,6 +114,7 @@ const App = () => (
                 <Route path={ROUTES.CLIENTS} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><Clients /></ProtectedRoute>} />
                 <Route path={ROUTES.CLIENT_DETAIL} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><ClientDetail /></ProtectedRoute>} />
                 <Route path={ROUTES.LOANS} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><Loans /></ProtectedRoute>} />
+                <Route path={ROUTES.CLOSED_LOANS} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><ClosedLoans /></ProtectedRoute>} />
                 <Route path={ROUTES.LOAN_DETAIL} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer"]}><LoanDetail /></ProtectedRoute>} />
                 <Route path={ROUTES.SAVINGS} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><Savings /></ProtectedRoute>} />
                 <Route path={ROUTES.SAVINGS_DETAIL} element={<ProtectedRoute allowedRoles={["admin", "owner", "field_officer", "treasurer"]}><SavingsDetail /></ProtectedRoute>} />
