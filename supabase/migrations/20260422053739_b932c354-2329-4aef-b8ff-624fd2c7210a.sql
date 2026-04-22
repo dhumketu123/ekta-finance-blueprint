@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_loans_tenant_status ON public.loans(tenant_id, status);
