@@ -111,7 +111,7 @@ export default function ClosedLoans() {
 
     const { data, error } = await supabase
       .from("loan_schedules")
-      .select("id, due_date, paid_date, amount_paid, total_amount")
+      .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
       .eq("loan_id", loan.id)
       .order("due_date", { ascending: true })
       .limit(50);
