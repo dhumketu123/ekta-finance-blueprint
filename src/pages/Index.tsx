@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MetricCardSkeleton, TableSkeleton, SummaryCardSkeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock, Minus } from "lucide-react";
+import { Users, TrendingUp, Wallet, PiggyBank, CreditCard, Send, Plus, ArrowUpRight, AlertTriangle, Clock, Minus, Shield, Droplets, ShieldAlert } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMetrics, useClients, useInvestors } from "@/hooks/useSupabaseData";
 import ExpenseEntryModal from "@/components/expenses/ExpenseEntryModal";
@@ -118,6 +118,52 @@ const Dashboard = () => {
           icon={<PiggyBank className="w-5 h-5" />}
           variant="default"
         />
+      </div>
+
+      {/* v3: Risk Reserve + Liquidity row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+        <MetricCard
+          title={lang === "bn" ? "ঝুঁকি সঞ্চিতি" : "Risk Reserve Fund"}
+          value={`৳${((metrics?.riskReserve ?? 0) / 1000).toFixed(1)}K`}
+          subtitle={lang === "bn" ? "RISK_RESERVE অ্যাকাউন্ট" : "RISK_RESERVE account"}
+          icon={<Shield className="w-5 h-5" />}
+          variant="success"
+        />
+        <MetricCard
+          title={lang === "bn" ? "তারল্য অনুপাত" : "Liquidity Ratio"}
+          value={metrics?.liquidityRatio != null ? metrics.liquidityRatio.toFixed(4) : "—"}
+          subtitle={metrics?.liquiditySnapshotDate
+            ? `${lang === "bn" ? "তারিখ" : "As of"}: ${metrics.liquiditySnapshotDate}`
+            : (lang === "bn" ? "ডেটা নেই" : "No data")}
+          icon={<Droplets className="w-5 h-5" />}
+          variant={metrics?.liquidityRatio != null && metrics.liquidityRatio < 1 ? "warning" : "default"}
+        />
+        {/* Reconciliation health — red pulsing when issues > 0 */}
+        <div className={`card-elevated p-5 border-l-4 ${
+          (metrics?.reconciliationIssueCount ?? 0) > 0
+            ? "border-l-destructive animate-pulse"
+            : "border-l-success"
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-lg ${
+              (metrics?.reconciliationIssueCount ?? 0) > 0 ? "bg-destructive/10" : "bg-success/10"
+            }`}>
+              <ShieldAlert className={`w-4 h-4 ${
+                (metrics?.reconciliationIssueCount ?? 0) > 0 ? "text-destructive" : "text-success"
+              }`} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-card-foreground">
+                {(metrics?.reconciliationIssueCount ?? 0) > 0
+                  ? `⚠️ ${metrics?.reconciliationIssueCount} ${lang === "bn" ? "লেজার অমিল" : "Ledger Imbalance(s)"}`
+                  : (lang === "bn" ? "লেজার পরিচ্ছন্ন" : "Ledger Clean")}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                {metrics?.reconciliationStatus ?? "—"}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <PendingApprovalsWidget />
