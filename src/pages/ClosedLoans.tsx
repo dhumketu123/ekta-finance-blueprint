@@ -291,7 +291,7 @@ export default function ClosedLoans() {
                         </span>
                         <span className="font-medium">
                           {formatCurrency(
-                            (s.principal_paid ?? 0) + (s.interest_paid ?? 0) || s.total_due ?? 0
+                            ((s.principal_paid ?? 0) + (s.interest_paid ?? 0)) || (s.total_due ?? 0)
                           )}
                         </span>
                       </div>
