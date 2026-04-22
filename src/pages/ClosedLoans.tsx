@@ -32,8 +32,9 @@ interface LoanSchedule {
   id: string;
   due_date: string | null;
   paid_date: string | null;
-  amount_paid: number | null;
-  total_amount: number | null;
+  principal_paid: number | null;
+  interest_paid: number | null;
+  total_due: number | null;
 }
 
 const formatCurrency = (amount: number) =>
