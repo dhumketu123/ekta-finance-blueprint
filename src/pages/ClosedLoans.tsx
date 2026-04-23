@@ -370,6 +370,70 @@ export default function ClosedLoans() {
                   </div>
                 )}
               </div>
+
+              {/* Audit Trail Ledger */}
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                  📘 অডিট ট্রেইল লেজার
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="rounded-md border border-white/5 bg-white/5 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      মোট ডেবিট
+                    </div>
+                    <div className="text-base font-semibold mt-1 text-red-400">
+                      {formatCurrency(ledgerTotals.debit)}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-white/5 bg-white/5 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      মোট ক্রেডিট
+                    </div>
+                    <div className="text-base font-semibold mt-1 text-green-400">
+                      {formatCurrency(ledgerTotals.credit)}
+                    </div>
+                  </div>
+                </div>
+
+                {ledgerLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    লোড হচ্ছে...
+                  </div>
+                ) : ledgerEntries.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    কোনো লেজার এন্ট্রি নেই।
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {ledgerEntries.map((e) => (
+                      <div
+                        key={e.id}
+                        className="border-b border-white/5 hover:bg-white/5 transition rounded-sm px-2 py-2 last:border-0"
+                      >
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{formatDate(e.transaction_date)}</span>
+                          <span className="uppercase tracking-wider">
+                            {e.reference_type ?? "—"}
+                          </span>
+                        </div>
+                        <div className="text-sm font-medium mt-1 line-clamp-2">
+                          {e.description ?? "—"}
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1.5">
+                          <span className="text-red-400">
+                            ডেবিট: {formatCurrency(e.debit ?? 0)}
+                          </span>
+                          <span className="text-green-400">
+                            ক্রেডিট: {formatCurrency(e.credit ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </SheetContent>
