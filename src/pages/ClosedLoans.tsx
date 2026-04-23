@@ -205,7 +205,9 @@ export default function ClosedLoans() {
 
       <Sheet
         open={!!selectedLoan}
-        onOpenChange={(open) => !open && setSelectedLoan(null)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedLoan(null);
+        }}
       >
         <SheetContent
           side="right"
