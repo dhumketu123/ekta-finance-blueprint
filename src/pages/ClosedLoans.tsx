@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { CheckCircle, Phone, Calendar, ShieldCheck } from "lucide-react";
+import { CheckCircle, Phone, Calendar, ShieldCheck, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 interface ClosedLoan {
