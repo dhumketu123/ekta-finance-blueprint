@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { CheckCircle, Phone, Calendar, ShieldCheck } from "lucide-react";
+import { CheckCircle, Phone, Calendar, ShieldCheck, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 interface ClosedLoan {
@@ -41,6 +41,15 @@ interface LoanSchedule {
   total_due: number | null;
 }
 
+interface LedgerEntry {
+  id: string;
+  transaction_date: string | null;
+  description: string | null;
+  debit: number | null;
+  credit: number | null;
+  reference_type: string | null;
+}
+
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("bn-BD", {
     style: "currency",
@@ -68,6 +77,8 @@ export default function ClosedLoans() {
   const [selectedLoan, setSelectedLoan] = useState<ClosedLoan | null>(null);
   const [schedules, setSchedules] = useState<LoanSchedule[]>([]);
   const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
 
   useEffect(() => {
     const fetchClosedLoans = async () => {
@@ -112,26 +123,60 @@ export default function ClosedLoans() {
   const handleRowClick = async (loan: ClosedLoan) => {
     setSelectedLoan(loan);
     setSchedules([]);
+    setLedgerEntries([]);
     setSchedulesLoading(true);
+    setLedgerLoading(true);
 
     if (loan.tenant_id !== tenantId) {
       setSchedulesLoading(false);
+      setLedgerLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("loan_schedules")
-      .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
-      .eq("loan_id", loan.id)
-      .order("due_date", { ascending: true })
-      .limit(50);
+    const [schedulesRes, ledgerRes] = await Promise.all([
+      supabase
+        .from("loan_schedules")
+        .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
+        .eq("loan_id", loan.id)
+        .order("due_date", { ascending: true })
+        .limit(50),
+      supabase
+        .from("double_entry_ledger")
+        .select("id, created_at, narration, debit, credit, reference_type, reference_id, root_reference_id, tenant_id")
+        .eq("tenant_id", tenantId)
+        .or(`reference_id.eq.${loan.id},root_reference_id.eq.${loan.id}`)
+        .order("created_at", { ascending: true })
+        .limit(200),
+    ]);
 
-    if (error) {
+    if (schedulesRes.error) {
       toast.error("পেমেন্ট ইতিহাস লোড করা যায়নি");
     } else {
-      setSchedules((data ?? []) as LoanSchedule[]);
+      setSchedules((schedulesRes.data ?? []) as LoanSchedule[]);
     }
     setSchedulesLoading(false);
+
+    if (ledgerRes.error) {
+      toast.error("অডিট ট্রেইল লোড করা যায়নি");
+    } else {
+      const mapped: LedgerEntry[] = (ledgerRes.data ?? []).map((row: {
+        id: string;
+        created_at: string | null;
+        narration: string | null;
+        debit: number | null;
+        credit: number | null;
+        reference_type: string | null;
+      }) => ({
+        id: row.id,
+        transaction_date: row.created_at,
+        description: row.narration,
+        debit: row.debit,
+        credit: row.credit,
+        reference_type: row.reference_type,
+      }));
+      setLedgerEntries(mapped);
+    }
+    setLedgerLoading(false);
   };
 
   const riskProvision = selectedLoan
@@ -142,6 +187,13 @@ export default function ClosedLoans() {
   const totalPaid = selectedLoan
     ? selectedLoan.total_principal + selectedLoan.total_interest
     : 0;
+  const ledgerTotals = ledgerEntries.reduce(
+    (acc, e) => ({
+      debit: acc.debit + (e.debit ?? 0),
+      credit: acc.credit + (e.credit ?? 0),
+    }),
+    { debit: 0, credit: 0 }
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -206,7 +258,13 @@ export default function ClosedLoans() {
       <Sheet
         open={!!selectedLoan}
         onOpenChange={(open) => {
-          if (!open) setSelectedLoan(null);
+          if (!open) {
+            setSelectedLoan(null);
+            setSchedules([]);
+            setSchedulesLoading(false);
+            setLedgerEntries([]);
+            setLedgerLoading(false);
+          }
         }}
       >
         <SheetContent
@@ -307,6 +365,70 @@ export default function ClosedLoans() {
                             ((s.principal_paid ?? 0) + (s.interest_paid ?? 0)) || (s.total_due ?? 0)
                           )}
                         </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Audit Trail Ledger */}
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                  📘 অডিট ট্রেইল লেজার
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="rounded-md border border-white/5 bg-white/5 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      মোট ডেবিট
+                    </div>
+                    <div className="text-base font-semibold mt-1 text-red-400">
+                      {formatCurrency(ledgerTotals.debit)}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-white/5 bg-white/5 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      মোট ক্রেডিট
+                    </div>
+                    <div className="text-base font-semibold mt-1 text-green-400">
+                      {formatCurrency(ledgerTotals.credit)}
+                    </div>
+                  </div>
+                </div>
+
+                {ledgerLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    লোড হচ্ছে...
+                  </div>
+                ) : ledgerEntries.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    কোনো লেজার এন্ট্রি নেই।
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {ledgerEntries.map((e) => (
+                      <div
+                        key={e.id}
+                        className="border-b border-white/5 hover:bg-white/5 transition rounded-sm px-2 py-2 last:border-0"
+                      >
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{formatDate(e.transaction_date)}</span>
+                          <span className="uppercase tracking-wider">
+                            {e.reference_type ?? "—"}
+                          </span>
+                        </div>
+                        <div className="text-sm font-medium mt-1 line-clamp-2">
+                          {e.description ?? "—"}
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1.5">
+                          <span className="text-red-400">
+                            ডেবিট: {formatCurrency(e.debit ?? 0)}
+                          </span>
+                          <span className="text-green-400">
+                            ক্রেডিট: {formatCurrency(e.credit ?? 0)}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
