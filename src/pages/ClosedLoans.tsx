@@ -20,11 +20,15 @@ interface ClosedLoan {
   outstanding_principal: number;
   status: string;
   updated_at: string;
+  tenant_id: string;
   clients: {
     id: string;
     name_en: string;
     name_bn: string;
     phone?: string | null;
+  } | null;
+  loan_products?: {
+    provision_rate: number | null;
   } | null;
 }
 
@@ -82,7 +86,9 @@ export default function ClosedLoans() {
           outstanding_principal,
           status,
           updated_at,
-          clients (id, name_en, name_bn, phone)
+          tenant_id,
+          clients (id, name_en, name_bn, phone),
+          loan_products (provision_rate)
         `)
         .eq("tenant_id", tenantId)
         .eq("status", "closed")
@@ -90,7 +96,6 @@ export default function ClosedLoans() {
         .limit(100);
 
       if (error) {
-        console.error("[ClosedLoans] fetch error:", error);
         toast.error("পরিশোধিত ঋণ লোড করা যায়নি", {
           description: error.message,
         });
@@ -109,6 +114,11 @@ export default function ClosedLoans() {
     setSchedules([]);
     setSchedulesLoading(true);
 
+    if (loan.tenant_id !== tenantId) {
+      setSchedulesLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("loan_schedules")
       .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
@@ -117,7 +127,6 @@ export default function ClosedLoans() {
       .limit(50);
 
     if (error) {
-      console.error("[ClosedLoans] schedules error:", error);
       toast.error("পেমেন্ট ইতিহাস লোড করা যায়নি");
     } else {
       setSchedules((data ?? []) as LoanSchedule[]);
@@ -126,7 +135,9 @@ export default function ClosedLoans() {
   };
 
   const riskProvision = selectedLoan
-    ? selectedLoan.total_principal * 0.05
+    ? (selectedLoan.total_principal *
+        (selectedLoan.loan_products?.provision_rate ?? 5)) /
+      100
     : 0;
   const totalPaid = selectedLoan
     ? selectedLoan.total_principal + selectedLoan.total_interest
@@ -194,7 +205,9 @@ export default function ClosedLoans() {
 
       <Sheet
         open={!!selectedLoan}
-        onOpenChange={(open) => !open && setSelectedLoan(null)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedLoan(null);
+        }}
       >
         <SheetContent
           side="right"
@@ -258,7 +271,7 @@ export default function ClosedLoans() {
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4 col-span-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
-                    পরিশোধ তারিখ
+                    সর্বশেষ আপডেট / পরিশোধের তারিখ
                   </div>
                   <div className="text-sm font-medium mt-1">
                     {formatDate(selectedLoan.updated_at)}
