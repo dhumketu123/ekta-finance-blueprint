@@ -123,26 +123,60 @@ export default function ClosedLoans() {
   const handleRowClick = async (loan: ClosedLoan) => {
     setSelectedLoan(loan);
     setSchedules([]);
+    setLedgerEntries([]);
     setSchedulesLoading(true);
+    setLedgerLoading(true);
 
     if (loan.tenant_id !== tenantId) {
       setSchedulesLoading(false);
+      setLedgerLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("loan_schedules")
-      .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
-      .eq("loan_id", loan.id)
-      .order("due_date", { ascending: true })
-      .limit(50);
+    const [schedulesRes, ledgerRes] = await Promise.all([
+      supabase
+        .from("loan_schedules")
+        .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
+        .eq("loan_id", loan.id)
+        .order("due_date", { ascending: true })
+        .limit(50),
+      supabase
+        .from("double_entry_ledger")
+        .select("id, created_at, narration, debit, credit, reference_type, reference_id, root_reference_id, tenant_id")
+        .eq("tenant_id", tenantId)
+        .or(`reference_id.eq.${loan.id},root_reference_id.eq.${loan.id}`)
+        .order("created_at", { ascending: true })
+        .limit(200),
+    ]);
 
-    if (error) {
+    if (schedulesRes.error) {
       toast.error("পেমেন্ট ইতিহাস লোড করা যায়নি");
     } else {
-      setSchedules((data ?? []) as LoanSchedule[]);
+      setSchedules((schedulesRes.data ?? []) as LoanSchedule[]);
     }
     setSchedulesLoading(false);
+
+    if (ledgerRes.error) {
+      toast.error("অডিট ট্রেইল লোড করা যায়নি");
+    } else {
+      const mapped: LedgerEntry[] = (ledgerRes.data ?? []).map((row: {
+        id: string;
+        created_at: string | null;
+        narration: string | null;
+        debit: number | null;
+        credit: number | null;
+        reference_type: string | null;
+      }) => ({
+        id: row.id,
+        transaction_date: row.created_at,
+        description: row.narration,
+        debit: row.debit,
+        credit: row.credit,
+        reference_type: row.reference_type,
+      }));
+      setLedgerEntries(mapped);
+    }
+    setLedgerLoading(false);
   };
 
   const riskProvision = selectedLoan
