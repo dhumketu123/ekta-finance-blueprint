@@ -77,6 +77,8 @@ export default function ClosedLoans() {
   const [selectedLoan, setSelectedLoan] = useState<ClosedLoan | null>(null);
   const [schedules, setSchedules] = useState<LoanSchedule[]>([]);
   const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
 
   useEffect(() => {
     const fetchClosedLoans = async () => {
