@@ -86,7 +86,9 @@ export default function ClosedLoans() {
           outstanding_principal,
           status,
           updated_at,
-          clients (id, name_en, name_bn, phone)
+          tenant_id,
+          clients (id, name_en, name_bn, phone),
+          loan_products (provision_rate)
         `)
         .eq("tenant_id", tenantId)
         .eq("status", "closed")
