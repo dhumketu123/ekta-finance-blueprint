@@ -20,11 +20,15 @@ interface ClosedLoan {
   outstanding_principal: number;
   status: string;
   updated_at: string;
+  tenant_id: string;
   clients: {
     id: string;
     name_en: string;
     name_bn: string;
     phone?: string | null;
+  } | null;
+  loan_products?: {
+    provision_rate: number | null;
   } | null;
 }
 
