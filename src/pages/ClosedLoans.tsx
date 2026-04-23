@@ -41,6 +41,15 @@ interface LoanSchedule {
   total_due: number | null;
 }
 
+interface LedgerEntry {
+  id: string;
+  transaction_date: string | null;
+  description: string | null;
+  debit: number | null;
+  credit: number | null;
+  reference_type: string | null;
+}
+
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("bn-BD", {
     style: "currency",
