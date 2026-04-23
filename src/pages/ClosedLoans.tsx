@@ -115,6 +115,11 @@ export default function ClosedLoans() {
     setSchedules([]);
     setSchedulesLoading(true);
 
+    if (loan.tenant_id !== tenantId) {
+      setSchedulesLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("loan_schedules")
       .select("id, due_date, paid_date, principal_paid, interest_paid, total_due")
@@ -123,7 +128,6 @@ export default function ClosedLoans() {
       .limit(50);
 
     if (error) {
-      console.error("[ClosedLoans] schedules error:", error);
       toast.error("পেমেন্ট ইতিহাস লোড করা যায়নি");
     } else {
       setSchedules((data ?? []) as LoanSchedule[]);
@@ -132,7 +136,9 @@ export default function ClosedLoans() {
   };
 
   const riskProvision = selectedLoan
-    ? selectedLoan.total_principal * 0.05
+    ? (selectedLoan.total_principal *
+        (selectedLoan.loan_products?.provision_rate ?? 5)) /
+      100
     : 0;
   const totalPaid = selectedLoan
     ? selectedLoan.total_principal + selectedLoan.total_interest
