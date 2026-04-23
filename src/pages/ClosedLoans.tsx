@@ -187,6 +187,13 @@ export default function ClosedLoans() {
   const totalPaid = selectedLoan
     ? selectedLoan.total_principal + selectedLoan.total_interest
     : 0;
+  const ledgerTotals = ledgerEntries.reduce(
+    (acc, e) => ({
+      debit: acc.debit + (e.debit ?? 0),
+      credit: acc.credit + (e.credit ?? 0),
+    }),
+    { debit: 0, credit: 0 }
+  );
 
   return (
     <div className="p-6 space-y-6">
