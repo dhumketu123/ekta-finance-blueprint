@@ -271,7 +271,7 @@ export default function ClosedLoans() {
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4 col-span-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
-                    পরিশোধ তারিখ
+                    সর্বশেষ আপডেট / পরিশোধের তারিখ
                   </div>
                   <div className="text-sm font-medium mt-1">
                     {formatDate(selectedLoan.updated_at)}
