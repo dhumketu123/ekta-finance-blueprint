@@ -258,7 +258,13 @@ export default function ClosedLoans() {
       <Sheet
         open={!!selectedLoan}
         onOpenChange={(open) => {
-          if (!open) setSelectedLoan(null);
+          if (!open) {
+            setSelectedLoan(null);
+            setSchedules([]);
+            setSchedulesLoading(false);
+            setLedgerEntries([]);
+            setLedgerLoading(false);
+          }
         }}
       >
         <SheetContent
