@@ -96,7 +96,6 @@ export default function ClosedLoans() {
         .limit(100);
 
       if (error) {
-        console.error("[ClosedLoans] fetch error:", error);
         toast.error("পরিশোধিত ঋণ লোড করা যায়নি", {
           description: error.message,
         });
