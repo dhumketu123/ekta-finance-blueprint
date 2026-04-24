@@ -2022,6 +2022,42 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_gateway: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       financial_event_log: {
         Row: {
           created_at: string | null
@@ -2061,6 +2097,7 @@ export type Database = {
           id: string
           payload: Json
           reference_id: string | null
+          replayed: boolean
           source: string
           success: boolean
           tenant_id: string | null
@@ -2073,6 +2110,7 @@ export type Database = {
           id?: string
           payload?: Json
           reference_id?: string | null
+          replayed?: boolean
           source?: string
           success?: boolean
           tenant_id?: string | null
@@ -2085,6 +2123,7 @@ export type Database = {
           id?: string
           payload?: Json
           reference_id?: string | null
+          replayed?: boolean
           source?: string
           success?: boolean
           tenant_id?: string | null
@@ -5947,6 +5986,11 @@ export type Database = {
         Args: { p_id: string; p_priority: string; p_user_id: string }
         Returns: undefined
       }
+      enqueue_financial_event: {
+        Args: { p_event_type: string; p_payload: Json; p_tenant_id: string }
+        Returns: string
+      }
+      enterprise_system_health: { Args: never; Returns: Json }
       escalate_critical_alerts: { Args: never; Returns: Json }
       execute_loan_disbursement: {
         Args: { p_request_id: string }
@@ -6501,6 +6545,7 @@ export type Database = {
         Returns: Json
       }
       process_digest: { Args: never; Returns: undefined }
+      process_financial_event_gateway: { Args: never; Returns: Json }
       process_ghost_penalties: { Args: never; Returns: Json }
       process_investor_capital_injection: {
         Args: {
@@ -6568,6 +6613,7 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      replay_financial_events: { Args: { p_limit?: number }; Returns: Json }
       request_day_reopen: {
         Args: { p_close_id: string; p_reason: string }
         Returns: Json
