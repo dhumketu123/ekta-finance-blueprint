@@ -25,11 +25,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [expenseOpen, setExpenseOpen] = useState(false);
 
+  // 🚀 PHASE 0 — ZERO-WATERFALL: each section loads independently.
+  // No global `loading` gate — layout renders instantly.
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
   const { data: dbClients, isLoading: clientsLoading } = useClients();
   const { data: dbInvestors, isLoading: investorsLoading } = useInvestors();
-
-  const loading = metricsLoading || clientsLoading || investorsLoading;
 
   // Use DB data only — no fake fallbacks
   const displayClients = (dbClients ?? []).slice(0, 4);
@@ -43,21 +43,6 @@ const Dashboard = () => {
   const savingsThisMonth = metrics?.savingsThisMonth ?? 0;
   const overdueCount = metrics?.overdueCount ?? 0;
   const pendingCount = metrics?.pendingCount ?? 0;
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <PageHeader title={t("dashboard.title")} description={t("dashboard.description")} badge={lang === "bn" ? "🏠 কমান্ড সেন্টার" : "🏠 Command Center"} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          {Array.from({ length: 3 }).map((_, i) => <SummaryCardSkeleton key={i} />)}
-        </div>
-        <TableSkeleton rows={4} cols={5} />
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
