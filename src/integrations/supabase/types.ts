@@ -5839,6 +5839,7 @@ export type Database = {
       }
       execution_engine_v3: { Args: { p_request_id: string }; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      financial_system_health: { Args: never; Returns: Json }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {
         Args: { p_target_table: string }
@@ -6619,6 +6620,7 @@ export type Database = {
         }[]
       }
       validate_financial_contract_integrity: { Args: never; Returns: undefined }
+      validate_financial_system_integrity: { Args: never; Returns: undefined }
       validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
       validate_ledger_v2_balance: {
         Args: { _txn_group_id: string }
