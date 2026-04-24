@@ -6578,6 +6578,7 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      validate_financial_contract_integrity: { Args: never; Returns: undefined }
       validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
       validate_ledger_v2_balance: {
         Args: { _txn_group_id: string }
