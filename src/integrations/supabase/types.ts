@@ -2052,6 +2052,45 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_logs: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          reference_id: string | null
+          source: string
+          success: boolean
+          tenant_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          reference_id?: string | null
+          source?: string
+          success?: boolean
+          tenant_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          reference_id?: string | null
+          source?: string
+          success?: boolean
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       financial_event_registry: {
         Row: {
           created_at: string
@@ -4957,6 +4996,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_integrity_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          message: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          snapshot: Json
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          snapshot?: Json
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       system_knowledge_graph: {
         Row: {
           category: string
@@ -6309,6 +6384,18 @@ export type Database = {
         Returns: Json
       }
       lock_expired_subscriptions: { Args: never; Returns: undefined }
+      log_financial_event: {
+        Args: {
+          p_error_message?: string
+          p_event_type: string
+          p_payload?: Json
+          p_reference_id?: string
+          p_source?: string
+          p_success?: boolean
+          p_tenant_id?: string
+        }
+        Returns: string
+      }
       log_notification_click: {
         Args: { p_notification_id: string; p_user_id: string }
         Returns: undefined
@@ -6540,6 +6627,7 @@ export type Database = {
         Returns: Json
       }
       rpc_reconcile_ledger: { Args: never; Returns: Json }
+      run_daily_integrity_check: { Args: never; Returns: Json }
       run_ledger_reconciliation: {
         Args: never
         Returns: {
