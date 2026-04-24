@@ -2160,6 +2160,27 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_worker_state: {
+        Row: {
+          id: number
+          is_running: boolean | null
+          last_run: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          is_running?: boolean | null
+          last_run?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          is_running?: boolean | null
+          last_run?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           account_id: string | null
@@ -6002,6 +6023,7 @@ export type Database = {
       }
       execution_engine_v3: { Args: { p_request_id: string }; Returns: Json }
       exit_investor_secure: { Args: { p_id: string }; Returns: undefined }
+      financial_autonomy_health: { Args: never; Returns: Json }
       financial_system_health: { Args: never; Returns: Json }
       fn_audit_execute_master: { Args: never; Returns: Json }
       fn_audit_recursion_guard: {
@@ -6674,6 +6696,7 @@ export type Database = {
       }
       rpc_reconcile_ledger: { Args: never; Returns: Json }
       run_daily_integrity_check: { Args: never; Returns: Json }
+      run_financial_event_worker: { Args: never; Returns: Json }
       run_ledger_reconciliation: {
         Args: never
         Returns: {
@@ -6805,6 +6828,10 @@ export type Database = {
           missing_code: string
           tenant_id: string
         }[]
+      }
+      validate_event_payload: {
+        Args: { p_event_type: string; p_payload: Json }
+        Returns: undefined
       }
       validate_event_system_integrity: { Args: never; Returns: undefined }
       validate_financial_contract_integrity: { Args: never; Returns: undefined }
