@@ -5636,6 +5636,7 @@ export type Database = {
         Args: { auto_fix?: boolean }
         Returns: undefined
       }
+      assert_system_deploy_safe: { Args: never; Returns: undefined }
       assert_system_zero_gap: { Args: never; Returns: undefined }
       assign_role: {
         Args: {
@@ -6130,6 +6131,13 @@ export type Database = {
       }
       get_dashboard_summary_v2: { Args: { p_tenant_id: string }; Returns: Json }
       get_day_close_summary: { Args: { p_date: string }; Returns: Json }
+      get_frozen_contract: {
+        Args: { p_event: string }
+        Returns: {
+          credit: string
+          debit: string
+        }[]
+      }
       get_function_dependencies: {
         Args: { _function_name: string }
         Returns: Json
