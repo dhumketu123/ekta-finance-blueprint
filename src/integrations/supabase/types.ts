@@ -2052,6 +2052,36 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_registry: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          is_active: boolean | null
+          payload_schema: Json | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          is_active?: boolean | null
+          payload_schema?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          is_active?: boolean | null
+          payload_schema?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           account_id: string | null
@@ -6566,6 +6596,7 @@ export type Database = {
         Returns: undefined
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
+      system_readiness_check: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
       unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
       update_client_secure: {
@@ -6641,6 +6672,7 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      validate_event_system_integrity: { Args: never; Returns: undefined }
       validate_financial_contract_integrity: { Args: never; Returns: undefined }
       validate_financial_system_integrity: { Args: never; Returns: undefined }
       validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
