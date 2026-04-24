@@ -5589,6 +5589,14 @@ export type Database = {
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
+      backfill_missing_loan_schedules: {
+        Args: never
+        Returns: {
+          flagged_count: number
+          generated_count: number
+          skipped_count: number
+        }[]
+      }
       calculate_credit_score: { Args: { _client_id: string }; Returns: Json }
       calculate_installment: {
         Args: { _interest_rate: number; _principal: number; _tenure: number }
