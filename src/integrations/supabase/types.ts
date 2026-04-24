@@ -5466,6 +5466,24 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_reconciliation_check: {
+        Row: {
+          imbalance: number | null
+          status: string | null
+          tenant_id: string | null
+          total_credit: number | null
+          total_debit: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_entry_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_financial_summary: {
         Row: {
           client_id: string | null
