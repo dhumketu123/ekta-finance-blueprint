@@ -1611,6 +1611,7 @@ export type Database = {
           reference_type: string
           root_reference_id: string | null
           tenant_id: string
+          trace_hash: string | null
         }
         Insert: {
           account_id: string
@@ -1632,6 +1633,7 @@ export type Database = {
           reference_type: string
           root_reference_id?: string | null
           tenant_id: string
+          trace_hash?: string | null
         }
         Update: {
           account_id?: string
@@ -1653,6 +1655,7 @@ export type Database = {
           reference_type?: string
           root_reference_id?: string | null
           tenant_id?: string
+          trace_hash?: string | null
         }
         Relationships: [
           {
@@ -5633,12 +5636,22 @@ export type Database = {
         Args: { auto_fix?: boolean }
         Returns: undefined
       }
+      assert_system_zero_gap: { Args: never; Returns: undefined }
       assign_role: {
         Args: {
           p_role: Database["public"]["Enums"]["app_role"]
           p_user_id: string
         }
         Returns: Json
+      }
+      audit_contract_coverage: {
+        Args: never
+        Returns: {
+          event_type: string
+          missing_credit: boolean
+          missing_debit: boolean
+          orphan_event: boolean
+        }[]
       }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
@@ -6251,6 +6264,7 @@ export type Database = {
       is_privileged_user: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
+      ledger_final_state: { Args: never; Returns: Json }
       ledger_system_health_check: { Args: never; Returns: Json }
       lock_accounting_period: {
         Args: { p_lock?: boolean; p_month: string }
