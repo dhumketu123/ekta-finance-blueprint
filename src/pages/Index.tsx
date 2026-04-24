@@ -73,36 +73,42 @@ const Dashboard = () => {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-        <MetricCard
-          title={t("dashboard.totalClients")}
-          value={totalClients}
-          subtitle={`${activeLoansCount} ${t("dashboard.activeLoansCount")}`}
-          icon={<Users className="w-5 h-5" />}
-          trend={{ value: 8, positive: true }}
-        />
-        <MetricCard
-          title={t("dashboard.activeLoans")}
-          value={`৳${(totalLoanAmount / 1000).toFixed(0)}K`}
-          subtitle={`${activeLoansCount} ${t("dashboard.disbursed")}`}
-          icon={<Wallet className="w-5 h-5" />}
-          variant="warning"
-          trend={{ value: 12, positive: true }}
-        />
-        <MetricCard
-          title={t("dashboard.investorCapital")}
-          value={`৳${(totalCapital / 100000).toFixed(1)}L`}
-          subtitle={`${investorCount} ${t("dashboard.investors")}`}
-          icon={<TrendingUp className="w-5 h-5" />}
-          variant="success"
-          trend={{ value: 5, positive: true }}
-        />
-        <MetricCard
-          title={t("dashboard.savingsCollected")}
-          value={`৳${(savingsThisMonth / 1000).toFixed(0)}K`}
-          subtitle={t("dashboard.thisMonth")}
-          icon={<PiggyBank className="w-5 h-5" />}
-          variant="default"
-        />
+        {metricsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />)
+        ) : (
+          <>
+            <MetricCard
+              title={t("dashboard.totalClients")}
+              value={totalClients}
+              subtitle={`${activeLoansCount} ${t("dashboard.activeLoansCount")}`}
+              icon={<Users className="w-5 h-5" />}
+              trend={{ value: 8, positive: true }}
+            />
+            <MetricCard
+              title={t("dashboard.activeLoans")}
+              value={`৳${(totalLoanAmount / 1000).toFixed(0)}K`}
+              subtitle={`${activeLoansCount} ${t("dashboard.disbursed")}`}
+              icon={<Wallet className="w-5 h-5" />}
+              variant="warning"
+              trend={{ value: 12, positive: true }}
+            />
+            <MetricCard
+              title={t("dashboard.investorCapital")}
+              value={`৳${(totalCapital / 100000).toFixed(1)}L`}
+              subtitle={`${investorCount} ${t("dashboard.investors")}`}
+              icon={<TrendingUp className="w-5 h-5" />}
+              variant="success"
+              trend={{ value: 5, positive: true }}
+            />
+            <MetricCard
+              title={t("dashboard.savingsCollected")}
+              value={`৳${(savingsThisMonth / 1000).toFixed(0)}K`}
+              subtitle={t("dashboard.thisMonth")}
+              icon={<PiggyBank className="w-5 h-5" />}
+              variant="default"
+            />
+          </>
+        )}
       </div>
 
       {/* v3: Risk Reserve + Liquidity row */}
