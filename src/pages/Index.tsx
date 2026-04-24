@@ -256,75 +256,83 @@ const Dashboard = () => {
             {t("dashboard.viewAll")}
           </Button>
         </div>
-        <div className="hidden sm:block">
-          <Table className="table-premium">
-            <TableHeader className="table-header-premium">
-              <TableRow>
-                <TableHead>{t("table.name")}</TableHead>
-                <TableHead>{t("table.area")}</TableHead>
-                <TableHead>{t("table.loan")}</TableHead>
-                <TableHead>{t("table.status")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {clientsLoading ? (
+          <div className="p-4">
+            <TableSkeleton rows={4} cols={4} />
+          </div>
+        ) : (
+          <>
+            <div className="hidden sm:block">
+              <Table className="table-premium">
+                <TableHeader className="table-header-premium">
+                  <TableRow>
+                    <TableHead>{t("table.name")}</TableHead>
+                    <TableHead>{t("table.area")}</TableHead>
+                    <TableHead>{t("table.loan")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayClients.map((client) => {
+                    const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
+                    const area = (client as any).area;
+                    const loanAmt = (client as any).loan_amount;
+                    const status = (client as any).status;
+                    const id = (client as any).id;
+                    const nextPayment = (client as any).next_payment_date;
+
+                    return (
+                      <TooltipProvider key={id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <TableRow className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
+                              <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                              <TableCell className="text-xs">{area || "—"}</TableCell>
+                              <TableCell className="text-xs font-semibold">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</TableCell>
+                              <TableCell><StatusBadge status={status === "overdue" ? "overdue" : status === "pending" ? "pending" : status === "active" ? "active" : "inactive"} /></TableCell>
+                            </TableRow>
+                          </TooltipTrigger>
+                          <TooltipContent className="tooltip-premium" side="top">
+                            <p>{nextPayment ? `Next payment: ${nextPayment}` : "No payment scheduled"}</p>
+                            {loanAmt && <p>Loan: ৳{Number(loanAmt).toLocaleString()}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="sm:hidden divide-y divide-border">
               {displayClients.map((client) => {
                 const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
-                const area = (client as any).area;
                 const loanAmt = (client as any).loan_amount;
+                const area = (client as any).area;
                 const status = (client as any).status;
                 const id = (client as any).id;
-                const nextPayment = (client as any).next_payment_date;
 
                 return (
-                  <TooltipProvider key={id}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <TableRow className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
-                          <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
-                          <TableCell className="text-xs">{area || "—"}</TableCell>
-                          <TableCell className="text-xs font-semibold">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</TableCell>
-                          <TableCell><StatusBadge status={status === "overdue" ? "overdue" : status === "pending" ? "pending" : status === "active" ? "active" : "inactive"} /></TableCell>
-                        </TableRow>
-                      </TooltipTrigger>
-                      <TooltipContent className="tooltip-premium" side="top">
-                        <p>{nextPayment ? `Next payment: ${nextPayment}` : "No payment scheduled"}</p>
-                        {loanAmt && <p>Loan: ৳{Number(loanAmt).toLocaleString()}</p>}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold truncate">{name}</p>
+                        <StatusBadge status={status === "overdue" ? "overdue" : status === "active" ? "active" : "inactive"} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                        <span>{area}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-foreground">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</span>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="sm:hidden divide-y divide-border">
-          {displayClients.map((client) => {
-            const name = lang === "bn" ? (client as any).name_bn : (client as any).name_en;
-            const loanAmt = (client as any).loan_amount;
-            const area = (client as any).area;
-            const status = (client as any).status;
-            const id = (client as any).id;
-
-            return (
-              <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/clients/${id}`)}>
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <StatusBadge status={status === "overdue" ? "overdue" : status === "active" ? "active" : "inactive"} />
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                    <span>{area}</span>
-                    <span>•</span>
-                    <span className="font-semibold text-foreground">{loanAmt ? `৳${Number(loanAmt).toLocaleString()}` : "—"}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Investors */}
