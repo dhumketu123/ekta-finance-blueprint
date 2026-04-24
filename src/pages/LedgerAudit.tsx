@@ -14,12 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ShieldCheck, ShieldAlert, RefreshCw, FileText, Link2, Link2Off, Download, AlertTriangle, Activity } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, RefreshCw, FileText, Link2, Link2Off, Download, AlertTriangle, Activity, Heart, FileWarning, ScrollText, CheckCircle2 } from "lucide-react";
 import { verifyLedgerChain } from "@/lib/pdf-utils";
 import { format } from "date-fns";
 import { formatLocalDateTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { LedgerHealthPanel } from "@/components/governance/LedgerHealthPanel";
+import { ContractViolationsPanel } from "@/components/governance/ContractViolationsPanel";
 
 interface AuditEntry {
   id: string;
@@ -148,11 +150,24 @@ export default function LedgerAudit() {
         </Alert>
       )}
 
-      <Tabs defaultValue="events" className="w-full">
-        <TabsList className="mb-4">
+      <Tabs defaultValue="health" className="w-full">
+        <TabsList className="mb-4 flex-wrap h-auto">
+          <TabsTrigger value="health" className="gap-1.5"><Heart className="w-4 h-4" /> {bn ? "লেজার স্বাস্থ্য" : "Ledger Health"}</TabsTrigger>
+          <TabsTrigger value="violations" className="gap-1.5"><FileWarning className="w-4 h-4" /> {bn ? "চুক্তি লঙ্ঘন" : "Contract Violations"}</TabsTrigger>
           <TabsTrigger value="events" className="gap-1.5"><Activity className="w-4 h-4" /> {bn ? "আর্থিক ইভেন্ট" : "Financial Events"}</TabsTrigger>
           <TabsTrigger value="pdf" className="gap-1.5"><FileText className="w-4 h-4" /> {bn ? "PDF চেইন" : "PDF Chain"}</TabsTrigger>
         </TabsList>
+
+        {/* ── TAB 0: Live Ledger Health ── */}
+        <TabsContent value="health">
+          <LedgerHealthPanel bn={bn} lang={lang} />
+        </TabsContent>
+
+        {/* ── TAB 1: Contract Violations ── */}
+        <TabsContent value="violations">
+          <ContractViolationsPanel bn={bn} />
+        </TabsContent>
+
 
         {/* ── TAB 1: Financial Event Log (v3 primary) ── */}
         <TabsContent value="events">
