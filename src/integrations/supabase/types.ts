@@ -6282,6 +6282,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      post_event: {
+        Args: {
+          p_actor?: string
+          p_amount: number
+          p_event_type: string
+          p_reference_id: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
       post_financial_event: {
         Args: {
           p_amount: number
