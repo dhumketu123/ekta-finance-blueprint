@@ -343,17 +343,43 @@ const Dashboard = () => {
             {t("dashboard.viewAll")}
           </Button>
         </div>
-        <div className="hidden sm:block">
-          <Table className="table-premium">
-            <TableHeader className="table-header-premium">
-              <TableRow>
-                <TableHead>{t("table.name")}</TableHead>
-                <TableHead>{t("table.capital")}</TableHead>
-                <TableHead>{t("table.monthlyProfit")}</TableHead>
-                <TableHead>{t("table.reinvest")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {investorsLoading ? (
+          <div className="p-4">
+            <TableSkeleton rows={4} cols={4} />
+          </div>
+        ) : (
+          <>
+            <div className="hidden sm:block">
+              <Table className="table-premium">
+                <TableHeader className="table-header-premium">
+                  <TableRow>
+                    <TableHead>{t("table.name")}</TableHead>
+                    <TableHead>{t("table.capital")}</TableHead>
+                    <TableHead>{t("table.monthlyProfit")}</TableHead>
+                    <TableHead>{t("table.reinvest")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayInvestors.map((inv) => {
+                    const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
+                    const capital = (inv as any).capital;
+                    const profitPct = (inv as any).monthly_profit_percent;
+                    const reinvest = (inv as any).reinvest;
+                    const id = (inv as any).id;
+
+                    return (
+                      <TableRow key={id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
+                        <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
+                        <TableCell className="text-xs font-semibold">৳{Number(capital).toLocaleString()}</TableCell>
+                        <TableCell className="text-xs">{profitPct}%</TableCell>
+                        <TableCell><StatusBadge status={reinvest ? "active" : "inactive"} /></TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="sm:hidden divide-y divide-border">
               {displayInvestors.map((inv) => {
                 const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
                 const capital = (inv as any).capital;
@@ -362,45 +388,27 @@ const Dashboard = () => {
                 const id = (inv as any).id;
 
                 return (
-                  <TableRow key={id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
-                    <TableCell><p className="text-xs font-medium">{name}</p></TableCell>
-                    <TableCell className="text-xs font-semibold">৳{Number(capital).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs">{profitPct}%</TableCell>
-                    <TableCell><StatusBadge status={reinvest ? "active" : "inactive"} /></TableCell>
-                  </TableRow>
+                  <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
+                    <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <TrendingUp className="w-4 h-4 text-success" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold truncate">{name}</p>
+                        <StatusBadge status={reinvest ? "active" : "inactive"} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">৳{Number(capital).toLocaleString()}</span>
+                        <span>•</span>
+                        <span>{profitPct}% {t("table.monthlyProfit")}</span>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="sm:hidden divide-y divide-border">
-          {displayInvestors.map((inv) => {
-            const name = lang === "bn" ? (inv as any).name_bn : (inv as any).name_en;
-            const capital = (inv as any).capital;
-            const profitPct = (inv as any).monthly_profit_percent;
-            const reinvest = (inv as any).reinvest;
-            const id = (inv as any).id;
-
-            return (
-              <div key={id} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/investors/${id}`)}>
-                <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <StatusBadge status={reinvest ? "active" : "inactive"} />
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">৳{Number(capital).toLocaleString()}</span>
-                    <span>•</span>
-                    <span>{profitPct}% {t("table.monthlyProfit")}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+            </div>
+          </>
+        )}
       </div>
       <ExpenseEntryModal open={expenseOpen} onClose={() => setExpenseOpen(false)} />
     </AppLayout>
