@@ -1983,6 +1983,36 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_contract: {
+        Row: {
+          created_at: string
+          credit_account_code: string
+          debit_account_code: string
+          description: string | null
+          event_type: string
+          ledger_required: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_account_code: string
+          debit_account_code: string
+          description?: string | null
+          event_type: string
+          ledger_required?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_account_code?: string
+          debit_account_code?: string
+          description?: string | null
+          event_type?: string
+          ledger_required?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financial_event_log: {
         Row: {
           created_at: string | null
@@ -6328,6 +6358,14 @@ export type Database = {
       }
       reset_sms_quota: { Args: { p_tenant_id: string }; Returns: undefined }
       resolve_anomaly_alert: { Args: { p_event_id: string }; Returns: boolean }
+      resolve_event_accounts: {
+        Args: { p_event_type: string; p_tenant_id: string }
+        Returns: {
+          credit_account_id: string
+          debit_account_id: string
+          ledger_required: boolean
+        }[]
+      }
       retry_failed_execution: { Args: { p_request_id: string }; Returns: Json }
       reverse_ledger_transaction: {
         Args: {
@@ -6485,6 +6523,14 @@ export type Database = {
       upsert_tenant_setting: {
         Args: { p_setting_key: string; p_setting_value: Json }
         Returns: undefined
+      }
+      validate_event_contract: {
+        Args: never
+        Returns: {
+          event_type: string
+          missing_code: string
+          tenant_id: string
+        }[]
       }
       validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
       validate_ledger_v2_balance: {
