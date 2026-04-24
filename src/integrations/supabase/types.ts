@@ -5643,6 +5643,16 @@ export type Database = {
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
+      backfill_ledger_from_transactions: {
+        Args: { p_dry_run?: boolean; p_limit?: number }
+        Returns: {
+          details: Json
+          failed: number
+          posted: number
+          scanned: number
+          skipped: number
+        }[]
+      }
       backfill_missing_loan_schedules: {
         Args: never
         Returns: {
@@ -5770,7 +5780,26 @@ export type Database = {
         Args: { p_decision: string; p_reason?: string; p_request_id: string }
         Returns: Json
       }
+      detect_financial_gaps: {
+        Args: never
+        Returns: {
+          event_type: string
+          issue: string
+        }[]
+      }
       detect_high_risk_clients: { Args: never; Returns: Json }
+      detect_ledger_anomalies: {
+        Args: never
+        Returns: {
+          event_type: string
+          issue: string
+          leg_count: number
+          reference_id: string
+          severity: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       detect_officer_burnout: {
         Args: { _failure_threshold?: number; _weekly_threshold?: number }
         Returns: Json
@@ -6221,6 +6250,7 @@ export type Database = {
       is_privileged_user: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_treasurer: { Args: never; Returns: boolean }
+      ledger_system_health_check: { Args: never; Returns: Json }
       lock_accounting_period: {
         Args: { p_lock?: boolean; p_month: string }
         Returns: Json
@@ -6457,6 +6487,16 @@ export type Database = {
         Returns: Json
       }
       rpc_reconcile_ledger: { Args: never; Returns: Json }
+      run_ledger_reconciliation: {
+        Args: never
+        Returns: {
+          balance_status: string
+          tenant_id: string
+          total_credit: number
+          total_debit: number
+          variance: number
+        }[]
+      }
       run_retained_earnings_closure: { Args: never; Returns: Json }
       secure_delete_owner: { Args: { _owner_user_id: string }; Returns: Json }
       seed_cron_secret_to_vault: { Args: { p_secret: string }; Returns: string }
