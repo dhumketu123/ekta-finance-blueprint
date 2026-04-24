@@ -24,8 +24,12 @@ function extractProvidedSecret(req: Request): string | null {
   return req.headers.get("x-cron-secret");
 }
 
+// Loose client type to bypass strict generated-type narrowing in Deno edge runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SbClient = any;
+
 async function logCronAudit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
   fnName: string,
   success: boolean,
   ip: string | null,
@@ -50,7 +54,7 @@ async function logCronAudit(
 
 // Vault-first secret resolution; environment fallback is permitted but vault wins.
 async function resolveCronSecret(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
 ): Promise<string | null> {
   try {
     const { data } = await supabase.rpc("get_cron_secret_from_vault");
