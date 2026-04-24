@@ -1,0 +1,1 @@
+ALTER VIEW public.ledger_reconciliation_check SET (security_invoker = true);
