@@ -44,11 +44,8 @@ export function LedgerHealthPanel({ bn, lang }: { bn: boolean; lang: "bn" | "en"
     setLoading(true);
     try {
       const [{ data: ledgerData, error: e1 }, { data: readyData, error: e2 }, { data: alertData, error: e3 }] = await Promise.all([
-        // @ts-expect-error rpc names not yet in generated types
         supabase.rpc("ledger_final_state"),
-        // @ts-expect-error rpc names not yet in generated types
         supabase.rpc("system_readiness_check"),
-        // @ts-expect-error table not yet in generated types
         supabase.from("system_integrity_alerts").select("*").order("created_at", { ascending: false }).limit(10),
       ]);
       if (e1) throw e1;

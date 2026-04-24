@@ -24,7 +24,6 @@ export function ContractViolationsPanel({ bn }: { bn: boolean }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      // @ts-expect-error rpc not yet in generated types
       const { data, error } = await supabase.rpc("audit_contract_coverage");
       if (error) throw error;
       setRows((data ?? []) as CoverageRow[]);
