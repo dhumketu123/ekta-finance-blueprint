@@ -1990,6 +1990,8 @@ export type Database = {
           debit_account_code: string
           description: string | null
           event_type: string
+          is_active: boolean
+          is_tenant_overridable: boolean
           ledger_required: boolean
           updated_at: string
         }
@@ -1999,6 +2001,8 @@ export type Database = {
           debit_account_code: string
           description?: string | null
           event_type: string
+          is_active?: boolean
+          is_tenant_overridable?: boolean
           ledger_required?: boolean
           updated_at?: string
         }
@@ -2008,6 +2012,8 @@ export type Database = {
           debit_account_code?: string
           description?: string | null
           event_type?: string
+          is_active?: boolean
+          is_tenant_overridable?: boolean
           ledger_required?: boolean
           updated_at?: string
         }
@@ -6254,6 +6260,18 @@ export type Database = {
           p_event_type: string
           p_meta?: Json
           p_ref: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      post_financial_event: {
+        Args: {
+          p_amount: number
+          p_created_by?: string
+          p_event_type: string
+          p_narration?: string
+          p_reference_id: string
+          p_reference_type?: string
           p_tenant_id: string
         }
         Returns: undefined
