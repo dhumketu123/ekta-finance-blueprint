@@ -1114,16 +1114,8 @@ const SystemDnaTab = () => {
   );
 };
 
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <PageHeader title={lang === "bn" ? "সিস্টেম মনিটরিং" : "System Monitoring"} description={lang === "bn" ? "সার্ভার স্বাস্থ্য ও ডেলিভারি পরিসংখ্যান" : "Server health & delivery metrics"} badge={lang === "bn" ? "🖥️ সিস্টেম অপস" : "🖥️ System Ops"} />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <MetricCardSkeleton key={i} />)}
-        </div>
-      </AppLayout>
-    );
-  }
+  // 🚀 PHASE 0 — ZERO-WATERFALL: layout renders instantly; tabs handle their own loading.
+  // (Old global `if (isLoading) { ... }` block removed — was a 1-2s blocker.)
 
   return (
     <AppLayout>
