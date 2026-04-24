@@ -6228,6 +6228,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      post_loan_disbursement_event: {
+        Args: {
+          _actor: string
+          _amount: number
+          _loan_id: string
+          _tenant_id: string
+        }
+        Returns: undefined
+      }
+      post_loan_repayment_event: {
+        Args: {
+          _actor: string
+          _ft_id: string
+          _interest: number
+          _loan_id: string
+          _penalty: number
+          _principal: number
+          _tenant_id: string
+        }
+        Returns: undefined
+      }
       predict_loan_risk: { Args: never; Returns: Json }
       process_approved_request: {
         Args: { p_request_id: string }
