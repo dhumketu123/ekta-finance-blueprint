@@ -5,9 +5,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret, x-dry-run",
 };
 
+// Loose client type to bypass strict generated-type narrowing in Deno edge runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SbClient = any;
+
 // Vault-first secret resolution; environment fallback is permitted.
 async function resolveCronSecret(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
 ): Promise<string | null> {
   try {
     const { data } = await supabase.rpc("get_cron_secret_from_vault");
@@ -37,7 +41,7 @@ function extractProvidedSecret(req: Request): string | null {
 }
 
 async function logCronAudit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SbClient,
   fnName: string,
   success: boolean,
   ip: string | null,
