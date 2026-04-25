@@ -2031,6 +2031,7 @@ export type Database = {
           id: string
           next_retry_at: string | null
           payload: Json
+          replay_version: number
           resolved_at: string | null
           retry_count: number
           source_event_id: string | null
@@ -2045,6 +2046,7 @@ export type Database = {
           id?: string
           next_retry_at?: string | null
           payload?: Json
+          replay_version?: number
           resolved_at?: string | null
           retry_count?: number
           source_event_id?: string | null
@@ -2059,6 +2061,7 @@ export type Database = {
           id?: string
           next_retry_at?: string | null
           payload?: Json
+          replay_version?: number
           resolved_at?: string | null
           retry_count?: number
           source_event_id?: string | null
@@ -4888,6 +4891,33 @@ export type Database = {
         }
         Relationships: []
       }
+      system_cron_registry: {
+        Row: {
+          authoritative_function: string
+          is_locked: boolean
+          job_name: string
+          notes: string | null
+          registered_at: string
+          schedule: string
+        }
+        Insert: {
+          authoritative_function: string
+          is_locked?: boolean
+          job_name: string
+          notes?: string | null
+          registered_at?: string
+          schedule: string
+        }
+        Update: {
+          authoritative_function?: string
+          is_locked?: boolean
+          job_name?: string
+          notes?: string | null
+          registered_at?: string
+          schedule?: string
+        }
+        Relationships: []
+      }
       system_dna: {
         Row: {
           category: string
@@ -5869,6 +5899,7 @@ export type Database = {
         Args: { _reason?: string; _reviewer_id: string; _tx_id: string }
         Returns: Json
       }
+      archive_dlq_events: { Args: never; Returns: Json }
       archive_notification: { Args: { p_id: string }; Returns: undefined }
       archive_old_audit_logs: { Args: { p_cutoff: string }; Returns: number }
       archive_old_financial_transactions: {
@@ -6092,6 +6123,7 @@ export type Database = {
       }
       enterprise_governance_snapshot: { Args: never; Returns: Json }
       enterprise_system_health: { Args: never; Returns: Json }
+      enterprise_system_status: { Args: never; Returns: Json }
       escalate_critical_alerts: { Args: never; Returns: Json }
       execute_loan_disbursement: {
         Args: { p_request_id: string }
