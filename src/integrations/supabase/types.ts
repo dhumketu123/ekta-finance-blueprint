@@ -6738,6 +6738,10 @@ export type Database = {
       refresh_ai_system_health: { Args: never; Returns: undefined }
       refresh_ai_views_safe: { Args: never; Returns: undefined }
       refresh_trial_balance_mv: { Args: never; Returns: undefined }
+      register_cron_job: {
+        Args: { p_function: string; p_job_name: string; p_schedule: string }
+        Returns: Json
+      }
       reject_financial_transaction: {
         Args: { _reason: string; _rejector_id: string; _tx_id: string }
         Returns: undefined
