@@ -2077,6 +2077,7 @@ export type Database = {
           error_message: string | null
           event_type: string
           id: string
+          idempotency_key: string | null
           payload: Json
           processed_at: string | null
           status: string
@@ -2088,6 +2089,7 @@ export type Database = {
           error_message?: string | null
           event_type: string
           id?: string
+          idempotency_key?: string | null
           payload?: Json
           processed_at?: string | null
           status?: string
@@ -2099,6 +2101,7 @@ export type Database = {
           error_message?: string | null
           event_type?: string
           id?: string
+          idempotency_key?: string | null
           payload?: Json
           processed_at?: string | null
           status?: string
@@ -5906,6 +5909,11 @@ export type Database = {
         Args: { p_cutoff: string }
         Returns: number
       }
+      assert_execution_authority: {
+        Args: { p_function: string; p_job_name: string }
+        Returns: undefined
+      }
+      assert_governance_execution_gate: { Args: never; Returns: undefined }
       assert_pipeline_idempotency: {
         Args: { auto_fix?: boolean }
         Returns: undefined
@@ -6113,6 +6121,7 @@ export type Database = {
         Args: { p_notification_id: string }
         Returns: undefined
       }
+      enforce_dlq_quarantine: { Args: never; Returns: Json }
       enqueue_digest: {
         Args: { p_id: string; p_priority: string; p_user_id: string }
         Returns: undefined
@@ -6870,6 +6879,10 @@ export type Database = {
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
       system_final_audit_check: { Args: never; Returns: Json }
+      system_guard_execute: {
+        Args: { p_function: string; p_job: string }
+        Returns: undefined
+      }
       system_readiness_check: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
       unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
