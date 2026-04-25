@@ -6567,7 +6567,6 @@ export type Database = {
         Returns: Json
       }
       process_digest: { Args: never; Returns: undefined }
-      process_financial_event_gateway: { Args: never; Returns: Json }
       process_ghost_penalties: { Args: never; Returns: Json }
       process_investor_capital_injection: {
         Args: {
