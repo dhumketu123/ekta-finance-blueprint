@@ -2022,6 +2022,51 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_event_dlq: {
+        Row: {
+          created_by: string | null
+          error_message: string | null
+          event_type: string
+          failed_at: string
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          resolved_at: string | null
+          retry_count: number
+          source_event_id: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_by?: string | null
+          error_message?: string | null
+          event_type: string
+          failed_at?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          resolved_at?: string | null
+          retry_count?: number
+          source_event_id?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_by?: string | null
+          error_message?: string | null
+          event_type?: string
+          failed_at?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          resolved_at?: string | null
+          retry_count?: number
+          source_event_id?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       financial_event_gateway: {
         Row: {
           created_at: string
@@ -2164,19 +2209,31 @@ export type Database = {
         Row: {
           id: number
           is_running: boolean | null
+          last_duration_ms: number | null
           last_run: string | null
+          last_status: string | null
+          total_failed: number
+          total_processed: number
           updated_at: string | null
         }
         Insert: {
           id?: number
           is_running?: boolean | null
+          last_duration_ms?: number | null
           last_run?: string | null
+          last_status?: string | null
+          total_failed?: number
+          total_processed?: number
           updated_at?: string | null
         }
         Update: {
           id?: number
           is_running?: boolean | null
+          last_duration_ms?: number | null
           last_run?: string | null
+          last_status?: string | null
+          total_failed?: number
+          total_processed?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -2321,6 +2378,27 @@ export type Database = {
           id?: string
           success?: boolean
           tenant_id?: string
+        }
+        Relationships: []
+      }
+      governance_metrics_history: {
+        Row: {
+          health_score: number
+          id: string
+          snapshot_time: string
+          system_state: Json
+        }
+        Insert: {
+          health_score: number
+          id?: string
+          snapshot_time?: string
+          system_state?: Json
+        }
+        Update: {
+          health_score?: number
+          id?: string
+          snapshot_time?: string
+          system_state?: Json
         }
         Relationships: []
       }
@@ -5821,6 +5899,7 @@ export type Database = {
       }
       audit_missing_indexes: { Args: never; Returns: Json }
       auto_default_loans: { Args: never; Returns: Json }
+      auto_gate_repair: { Args: never; Returns: Json }
       auto_resolve_user_tenant: { Args: never; Returns: string }
       backfill_ledger_from_transactions: {
         Args: { p_dry_run?: boolean; p_limit?: number }
@@ -6011,6 +6090,7 @@ export type Database = {
         Args: { p_event_type: string; p_payload: Json; p_tenant_id: string }
         Returns: string
       }
+      enterprise_governance_snapshot: { Args: never; Returns: Json }
       enterprise_system_health: { Args: never; Returns: Json }
       escalate_critical_alerts: { Args: never; Returns: Json }
       execute_loan_disbursement: {
@@ -6634,6 +6714,7 @@ export type Database = {
         Args: { _reason: string; _reviewer_id: string; _tx_id: string }
         Returns: undefined
       }
+      replay_dlq_events: { Args: { p_limit?: number }; Returns: Json }
       replay_financial_events: { Args: { p_limit?: number }; Returns: Json }
       request_day_reopen: {
         Args: { p_close_id: string; p_reason: string }
@@ -6752,6 +6833,7 @@ export type Database = {
         Returns: undefined
       }
       sync_overdue_schedules: { Args: never; Returns: Json }
+      system_final_audit_check: { Args: never; Returns: Json }
       system_readiness_check: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
       unsuspend_tenant: { Args: { p_tenant_id: string }; Returns: undefined }
