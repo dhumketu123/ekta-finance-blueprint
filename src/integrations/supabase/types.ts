@@ -1785,6 +1785,24 @@ export type Database = {
         }
         Relationships: []
       }
+      event_type_mapping: {
+        Row: {
+          contract_event: string
+          created_at: string
+          legacy_type: string
+        }
+        Insert: {
+          contract_event: string
+          created_at?: string
+          legacy_type: string
+        }
+        Update: {
+          contract_event?: string
+          created_at?: string
+          legacy_type?: string
+        }
+        Relationships: []
+      }
       execution_audit_log: {
         Row: {
           action_type: string | null
@@ -6971,7 +6989,9 @@ export type Database = {
       validate_event_system_integrity: { Args: never; Returns: undefined }
       validate_financial_contract_integrity: { Args: never; Returns: undefined }
       validate_financial_system_integrity: { Args: never; Returns: undefined }
-      validate_ledger_balance: { Args: { p_tenant_id?: string }; Returns: Json }
+      validate_ledger_balance:
+        | { Args: never; Returns: undefined }
+        | { Args: { p_tenant_id?: string }; Returns: Json }
       validate_ledger_v2_balance: {
         Args: { _txn_group_id: string }
         Returns: boolean
@@ -7036,7 +7056,7 @@ export type Database = {
       investment_model: "profit_only" | "profit_plus_principal"
       investor_status: "active" | "matured" | "closed"
       loan_model: "flat" | "reducing"
-      loan_status: "active" | "closed" | "default"
+      loan_status: "active" | "closed" | "default" | "legacy_quarantine"
       notification_channel: "sms" | "whatsapp"
       notification_event:
         | "loan_due"
@@ -7231,7 +7251,7 @@ export const Constants = {
       investment_model: ["profit_only", "profit_plus_principal"],
       investor_status: ["active", "matured", "closed"],
       loan_model: ["flat", "reducing"],
-      loan_status: ["active", "closed", "default"],
+      loan_status: ["active", "closed", "default", "legacy_quarantine"],
       notification_channel: ["sms", "whatsapp"],
       notification_event: [
         "loan_due",
