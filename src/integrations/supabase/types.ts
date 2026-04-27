@@ -6886,6 +6886,7 @@ export type Database = {
         Returns: undefined
       }
       system_health_finalizer: { Args: never; Returns: Json }
+      system_integrity_report: { Args: never; Returns: Json }
       system_orchestration_controller: { Args: never; Returns: Json }
       system_readiness_check: { Args: never; Returns: Json }
       unlock_subscription: { Args: { p_tenant_id: string }; Returns: undefined }
